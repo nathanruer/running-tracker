@@ -233,7 +233,24 @@ const SessionDialog = ({
                   <FormItem>
                     <FormLabel>Distance (km)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || value === '-') {
+                            field.onChange(value);
+                          } else {
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue)) {
+                              // Arrondir à 2 décimales
+                              const rounded = Math.round(numValue * 100) / 100;
+                              field.onChange(rounded);
+                            }
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -16,7 +16,7 @@ export const sessionSchema = z.object({
   duration: z
     .string()
     .regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format HH:MM:SS'),
-  distance: z.number().min(0),
+  distance: z.number().min(0).transform((val) => Math.round(val * 100) / 100),
   avgPace: z
     .string()
     .regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS'),

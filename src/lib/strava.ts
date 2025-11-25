@@ -198,7 +198,8 @@ export function formatStravaActivity(
     .toString()
     .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-  const distance = activity.distance / 1000;
+  // Arrondir à 2 décimales maximum
+  const distance = Math.round((activity.distance / 1000) * 100) / 100;
 
   const paceSeconds = distance > 0 ? (activity.moving_time / distance) : 0;
   const paceMinutes = Math.floor(paceSeconds / 60);

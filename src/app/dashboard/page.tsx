@@ -208,7 +208,7 @@ const DashboardPage = () => {
                         </TableCell>
                         <TableCell>{session.sessionType}</TableCell>
                         <TableCell>{session.duration}</TableCell>
-                        <TableCell>{session.distance} km</TableCell>
+                        <TableCell>{session.distance.toFixed(2)} km</TableCell>
                         <TableCell>{session.avgPace}</TableCell>
                         <TableCell>{session.avgHeartRate} bpm</TableCell>
                         <TableCell className="max-w-xs truncate">
