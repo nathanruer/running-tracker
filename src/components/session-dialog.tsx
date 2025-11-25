@@ -22,6 +22,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { addSession, updateSession, type TrainingSessionPayload, type TrainingSession } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +64,7 @@ const SessionDialog = ({
 }: SessionDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isCustomSessionType, setIsCustomSessionType] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,6 +80,8 @@ const SessionDialog = ({
   });
 
   useEffect(() => {
+    const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné'];
+    
     if (session) {
       form.reset({
         date: session.date,
@@ -82,6 +92,8 @@ const SessionDialog = ({
         avgHeartRate: session.avgHeartRate,
         comments: session.comments,
       });
+      // Vérifier si le type est personnalisé
+      setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
       const { sessionType, ...importedFields } = initialData;
       form.reset({
@@ -94,6 +106,7 @@ const SessionDialog = ({
         comments: '',
         ...importedFields,
       });
+      setIsCustomSessionType(false);
     } else {
       form.reset({
         date: new Date().toISOString().split('T')[0],
@@ -104,6 +117,7 @@ const SessionDialog = ({
         avgHeartRate: 0,
         comments: '',
       });
+      setIsCustomSessionType(false);
     }
   }, [session, initialData, form]);
 
@@ -171,6 +185,7 @@ const SessionDialog = ({
                   avgHeartRate: 0,
                   comments: '',
                 });
+                setIsCustomSessionType(false);
               }}
               className="text-xs text-muted-foreground hover:text-foreground shrink-0"
             >
@@ -227,9 +242,51 @@ const SessionDialog = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type de séance</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Footing, Sortie longue, Fractionné..." {...field} />
-                  </FormControl>
+                  {!isCustomSessionType ? (
+                    <Select
+                      onValueChange={(value) => {
+                        if (value === 'autre') {
+                          setIsCustomSessionType(true);
+                          field.onChange('');
+                        } else {
+                          field.onChange(value);
+                        }
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez un type de séance" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Footing">Footing</SelectItem>
+                        <SelectItem value="Sortie longue">Sortie longue</SelectItem>
+                        <SelectItem value="Fractionné">Fractionné</SelectItem>
+                        <SelectItem value="autre">Autre (personnalisé)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="Type de séance personnalisé"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsCustomSessionType(false);
+                          field.onChange('');
+                        }}
+                        className="h-10"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
