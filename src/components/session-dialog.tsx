@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useEffect, useState } from 'react';
-import { Watch } from 'lucide-react';
+import { Watch, RotateCcw } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
@@ -153,9 +153,31 @@ const SessionDialog = ({
           <DialogTitle className="text-gradient">
             {session ? 'Modifier la séance' : 'Nouvelle séance'}
           </DialogTitle>
-          <DialogDescription>
-            {session ? 'Modifiez les informations de votre séance' : 'Enregistrez votre séance d\'entraînement'}
-          </DialogDescription>
+          <div className="flex items-center justify-between gap-4">
+            <DialogDescription>
+              {session ? 'Modifiez les informations de votre séance' : 'Enregistrez votre séance d\'entraînement'}
+            </DialogDescription>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                form.reset({
+                  date: new Date().toISOString().split('T')[0],
+                  sessionType: '',
+                  duration: '00:00:00',
+                  distance: 0,
+                  avgPace: '00:00',
+                  avgHeartRate: 0,
+                  comments: '',
+                });
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+            >
+              <RotateCcw className="mr-1 h-3 w-3" />
+              Réinitialiser
+            </Button>
+          </div>
         </DialogHeader>
         {onRequestStravaImport && (
           <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
