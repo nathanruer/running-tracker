@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  createdAt DateTime @default(now())
+  
+  // Strava OAuth fields
+  stravaId             String?   @unique
+  stravaAccessToken    String?
+  stravaRefreshToken   String?
+  stravaTokenExpiresAt DateTime?
+  
+  sessions  TrainingSession[]
+  
+  @@map("users")
+}
+
+model TrainingSession {
+  id             String   @id @default(uuid())
+  sessionNumber  Int
+  week           Int
+  date           DateTime
+  sessionType    String
+  duration       String   // Format: HH:MM:SS
+  distance       Float
+  avgPace        String   // Format: MM:SS
+  avgHeartRate   Int
+  comments       String   @default("")
+  createdAt      DateTime @default(now())
+  
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("training_sessions")
+  @@index([userId])
+}
