@@ -147,7 +147,9 @@ const DashboardPage = () => {
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-4xl font-bold text-gradient">Running Tracker</h1>
-            <p className="mt-2 text-muted-foreground">{user.email}</p>
+            <div className="mt-2 flex items-center gap-3">
+              <p className="text-muted-foreground">{user.email}</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button

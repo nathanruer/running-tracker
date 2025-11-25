@@ -17,6 +17,8 @@ export type TrainingSessionPayload = Omit<TrainingSession, 'id' | 'userId'>;
 export interface User {
   id: string;
   email: string;
+  stravaId?: string | null;
+  stravaTokenExpiresAt?: Date | null;
 }
 
 const apiRequest = async <T = unknown>(

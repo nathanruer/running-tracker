@@ -2,7 +2,7 @@ import pino from 'pino';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-export const logger = pino({
+const pinoConfig = {
   level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
   
   transport: isDevelopment
@@ -26,8 +26,13 @@ export const logger = pino({
     req: pino.stdSerializers.req,
     res: pino.stdSerializers.res,
   },
-});
+};
 
+const globalForLogger = global as unknown as { logger: pino.Logger };
+
+export const logger = globalForLogger.logger || pino(pinoConfig);
+
+if (process.env.NODE_ENV !== 'production') globalForLogger.logger = logger;
 
 export function createLogger(context: Record<string, any>) {
   return logger.child(context);
