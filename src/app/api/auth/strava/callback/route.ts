@@ -68,7 +68,6 @@ export async function GET(request: NextRequest) {
       athlete,
     } = tokenData;
 
-    // Vérifier si un utilisateur est déjà connecté
     const existingToken = request.cookies.get('token')?.value;
     let currentUser = null;
     
@@ -84,13 +83,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Chercher si ce compte Strava existe déjà
     let user = await prisma.user.findUnique({
       where: { stravaId: athlete.id.toString() },
     });
 
     if (user) {
-      // Le compte Strava existe déjà, mettre à jour les tokens
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -101,8 +98,6 @@ export async function GET(request: NextRequest) {
       });
       logger.info({ userId: user.id }, 'Updated existing Strava-linked user');
     } else if (currentUser) {
-      // Un utilisateur est connecté ET ce Strava n'est lié à aucun compte
-      // => Lier Strava au compte existant
       user = await prisma.user.update({
         where: { id: currentUser.id },
         data: {
@@ -114,8 +109,6 @@ export async function GET(request: NextRequest) {
       });
       logger.info({ userId: user.id }, 'Linked Strava to existing logged-in user');
     } else {
-      // Aucun utilisateur connecté et ce Strava n'existe pas
-      // => Créer un nouveau compte (comportement par défaut)
       user = await prisma.user.create({
         data: {
           email: `strava_${athlete.id}@strava.local`,

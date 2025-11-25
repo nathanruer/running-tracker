@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { partialSessionSchema } from '@/lib/validators';
 import { logger } from '@/lib/logger';
+import { recalculateSessionNumbers } from '@/lib/session-utils';
 
 export const runtime = 'nodejs';
 
@@ -33,12 +34,20 @@ export async function PUT(
       );
     }
 
-    const updated = await prisma.trainingSession.update({
+    await prisma.trainingSession.update({
       where: { id: params.id },
       data: {
         ...updates,
         ...(updates.date && { date: new Date(updates.date) }),
       },
+    });
+
+    if (updates.date) {
+      await recalculateSessionNumbers(userId);
+    }
+
+    const updated = await prisma.trainingSession.findUnique({
+      where: { id: params.id },
     });
 
     return NextResponse.json({ session: updated });
@@ -77,6 +86,10 @@ export async function DELETE(
   }
 
   await prisma.trainingSession.delete({ where: { id: params.id } });
+  
+  await recalculateSessionNumbers(userId);
+  
   return NextResponse.json({ message: 'Séance supprimée' });
 }
+
 

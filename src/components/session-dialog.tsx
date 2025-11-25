@@ -1,9 +1,10 @@
 'use client';
-import { type Resolver, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useEffect, useState } from 'react';
 import { Watch } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
@@ -26,14 +27,12 @@ import { addSession, updateSession, type TrainingSessionPayload, type TrainingSe
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  sessionNumber: z.coerce.number().min(1, 'Numéro requis'),
-  week: z.coerce.number().min(1, 'Semaine requise'),
   date: z.string().min(1, 'Date requise'),
   sessionType: z.string().min(1, 'Type de séance requis'),
   duration: z.string().regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format: HH:MM:SS'),
-  distance: z.coerce.number().min(0, 'Distance requise'),
+  distance: z.number().min(0, 'Distance requise'),
   avgPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format: MM:SS'),
-  avgHeartRate: z.coerce.number().min(0, 'FC requise'),
+  avgHeartRate: z.number().min(0, 'FC requise'),
   comments: z.string(),
 });
 
@@ -60,10 +59,8 @@ const SessionDialog = ({
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as Resolver<FormValues>,
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      sessionNumber: 1,
-      week: 1,
       date: new Date().toISOString().split('T')[0],
       sessionType: '',
       duration: '00:00:00',
@@ -77,8 +74,6 @@ const SessionDialog = ({
   useEffect(() => {
     if (session) {
       form.reset({
-        sessionNumber: session.sessionNumber,
-        week: session.week,
         date: session.date,
         sessionType: session.sessionType,
         duration: session.duration,
@@ -90,8 +85,6 @@ const SessionDialog = ({
     } else if (initialData) {
       const { sessionType, ...importedFields } = initialData;
       form.reset({
-        sessionNumber: 1,
-        week: 1,
         date: new Date().toISOString().split('T')[0],
         sessionType: '',
         duration: '00:00:00',
@@ -103,8 +96,6 @@ const SessionDialog = ({
       });
     } else {
       form.reset({
-        sessionNumber: 1,
-        week: 1,
         date: new Date().toISOString().split('T')[0],
         sessionType: '',
         duration: '00:00:00',
@@ -120,8 +111,6 @@ const SessionDialog = ({
     setLoading(true);
     try {
       const sessionData: TrainingSessionPayload = {
-        sessionNumber: values.sessionNumber,
-        week: values.week,
         date: values.date,
         sessionType: values.sessionType,
         duration: values.duration,
@@ -191,42 +180,20 @@ const SessionDialog = ({
         )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="sessionNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>#</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="week"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Semaine</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker
+                      date={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => {
+                        field.onChange(date ? date.toISOString().split('T')[0] : '');
+                      }}
+                      placeholder="Sélectionner une date"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

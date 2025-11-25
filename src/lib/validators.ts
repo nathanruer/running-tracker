@@ -11,8 +11,6 @@ export const loginSchema = z.object({
 });
 
 export const sessionSchema = z.object({
-  sessionNumber: z.number().int().min(1),
-  week: z.number().int().min(1),
   date: z.string(),
   sessionType: z.string().min(1),
   duration: z

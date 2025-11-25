@@ -12,7 +12,7 @@ export interface TrainingSession {
   userId: string;
 }
 
-export type TrainingSessionPayload = Omit<TrainingSession, 'id' | 'userId'>;
+export type TrainingSessionPayload = Omit<TrainingSession, 'id' | 'userId' | 'sessionNumber' | 'week'>;
 
 export interface User {
   id: string;

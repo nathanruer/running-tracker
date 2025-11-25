@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { sessionSchema } from '@/lib/validators';
 import { logger } from '@/lib/logger';
+import { recalculateSessionNumbers } from '@/lib/session-utils';
 
 export const runtime = 'nodejs';
 
@@ -37,11 +38,19 @@ export async function POST(request: NextRequest) {
       data: {
         ...payload,
         date: new Date(payload.date),
+        sessionNumber: 1,
+        week: 1,
         userId,
       },
     });
 
-    return NextResponse.json({ session }, { status: 201 });
+    await recalculateSessionNumbers(userId);
+
+    const updatedSession = await prisma.trainingSession.findUnique({
+      where: { id: session.id },
+    });
+
+    return NextResponse.json({ session: updatedSession }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
