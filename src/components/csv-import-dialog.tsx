@@ -20,6 +20,7 @@ interface CsvImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (sessions: any[]) => void;
+  onCancel?: () => void;
 }
 
 interface ParsedSession {
@@ -37,6 +38,7 @@ export function CsvImportDialog({
   open,
   onOpenChange,
   onImport,
+  onCancel,
 }: CsvImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<ParsedSession[]>([]);
@@ -211,7 +213,10 @@ export function CsvImportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(val) => {
+      onOpenChange(val);
+      if (!val && onCancel) onCancel();
+    }}>
       <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Importer des séances depuis CSV</DialogTitle>

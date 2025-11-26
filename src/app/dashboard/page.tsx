@@ -187,6 +187,7 @@ const DashboardPage = () => {
     try {
       await bulkImportSessions(sessions);
       await Promise.all([loadSessions(), loadTypes()]);
+      setIsDialogOpen(false);
       toast({
         title: 'Import réussi',
         description: `${sessions.length} séance(s) importée(s) avec succès.`,
@@ -229,13 +230,6 @@ const DashboardPage = () => {
             >
               <Plus className="mr-2 h-4 w-4" />
               Nouvelle séance
-            </Button>
-            <Button
-              onClick={() => setIsCsvDialogOpen(true)}
-              className="gradient-orange"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Importer CSV
             </Button>
             <Button variant="outline" onClick={() => router.push('/profile')}>
               <UserIcon className="mr-2 h-4 w-4" />
@@ -377,7 +371,11 @@ const DashboardPage = () => {
         onClose={handleDialogClose}
         session={editingSession}
         initialData={importedData}
+
         onRequestStravaImport={handleRequestStravaImport}
+        onRequestCsvImport={() => {
+          setIsCsvDialogOpen(true);
+        }}
       />
 
       <CsvImportDialog

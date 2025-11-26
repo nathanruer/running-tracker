@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useEffect, useState } from 'react';
-import { Watch, RotateCcw } from 'lucide-react';
+import { Watch, RotateCcw, FileSpreadsheet } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
@@ -53,6 +53,7 @@ interface SessionDialogProps {
   session?: TrainingSession | null;
   initialData?: Partial<FormValues> | null;
   onRequestStravaImport?: () => void;
+  onRequestCsvImport?: () => void;
 }
 
 const SessionDialog = ({
@@ -62,6 +63,7 @@ const SessionDialog = ({
   session,
   initialData,
   onRequestStravaImport,
+  onRequestCsvImport,
 }: SessionDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -200,24 +202,38 @@ const SessionDialog = ({
             </Button>
           </div>
         </DialogHeader>
-        {onRequestStravaImport && (
+        {(onRequestStravaImport || onRequestCsvImport) && (
           <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3">
               <div>
-                <p className="font-medium">Importer une course depuis Strava</p>
+                <p className="font-medium">Importer une séance</p>
                 <p className="text-sm text-muted-foreground">
-                  Se connecter à Strava pour pré-remplir automatiquement cette séance.
+                  Pré-remplissez votre séance automatiquement depuis une source externe.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                className="gradient-orange"
-                onClick={onRequestStravaImport}
-              >
-                <Watch className="mr-2 h-4 w-4" />
-                Importer Strava
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                {onRequestStravaImport && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="gradient-orange"
+                    onClick={onRequestStravaImport}
+                  >
+                    <Watch className="mr-2 h-4 w-4" />
+                    Strava
+                  </Button>
+                )}
+                {onRequestCsvImport && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={onRequestCsvImport}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Fichier CSV
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
