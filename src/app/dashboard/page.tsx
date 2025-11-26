@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Edit, LogOut, Plus, Trash2, FileSpreadsheet, User as UserIcon } from 'lucide-react';
+import { Edit, LogOut, Plus, Trash2, FileSpreadsheet, User as UserIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 import SessionDialog from '@/components/session-dialog';
 import { StravaImportDialog } from '@/components/strava-import-dialog';
@@ -75,6 +75,8 @@ const DashboardPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -211,6 +213,82 @@ const DashboardPage = () => {
     }
   };
 
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'desc') {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortedSessions = () => {
+    if (!sortColumn || !sortDirection) {
+      return sessions;
+    }
+
+    return [...sessions].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'sessionNumber':
+          aValue = a.sessionNumber;
+          bValue = b.sessionNumber;
+          break;
+        case 'week':
+          aValue = a.week;
+          bValue = b.week;
+          break;
+        case 'date':
+          aValue = new Date(a.date).getTime();
+          bValue = new Date(b.date).getTime();
+          break;
+        case 'sessionType':
+          aValue = a.sessionType.toLowerCase();
+          bValue = b.sessionType.toLowerCase();
+          break;
+        case 'duration':
+          aValue = a.duration;
+          bValue = b.duration;
+          break;
+        case 'distance':
+          aValue = a.distance;
+          bValue = b.distance;
+          break;
+        case 'avgPace':
+          aValue = a.avgPace;
+          bValue = b.avgPace;
+          break;
+        case 'avgHeartRate':
+          aValue = a.avgHeartRate;
+          bValue = b.avgHeartRate;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="mr-2 h-4 w-4" />;
+    }
+    if (sortDirection === 'desc') {
+      return <ChevronDown className="mr-2 h-4 w-4 text-foreground" />;
+    }
+    return <ChevronUp className="mr-2 h-4 w-4 text-foreground" />;
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -293,19 +371,41 @@ const DashboardPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16">#</TableHead>
-                      <TableHead className="w-20">Semaine</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Séance</TableHead>
-                      <TableHead>Durée</TableHead>
-                      <TableHead>Distance</TableHead>
-                      <TableHead>
-                        <div className="flex items-center gap-1">
-                          Allure
+                      <TableHead className="w-16 text-center">#</TableHead>
+                      <TableHead className="w-20 text-center">Semaine</TableHead>
+                      <TableHead className="text-center">Date</TableHead>
+                      <TableHead className="text-center">Séance</TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('duration')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="duration" />
+                          <span className={sortColumn === 'duration' ? 'text-foreground' : ''}>Durée</span>
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('distance')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="distance" />
+                          <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Distance</span>
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => handleSort('avgPace')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            <SortIcon column="avgPace" />
+                            <span className={sortColumn === 'avgPace' ? 'text-foreground' : ''}>Allure</span>
+                          </button>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger>
-                                <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p className="max-w-xs">
@@ -318,13 +418,19 @@ const DashboardPage = () => {
                           </TooltipProvider>
                         </div>
                       </TableHead>
-                      <TableHead>
-                        <div className="flex items-center gap-1">
-                          FC
+                      <TableHead className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => handleSort('avgHeartRate')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            <SortIcon column="avgHeartRate" />
+                            <span className={sortColumn === 'avgHeartRate' ? 'text-foreground' : ''}>FC</span>
+                          </button>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger>
-                                <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p className="max-w-xs">
@@ -342,18 +448,18 @@ const DashboardPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sessions.map((session) => (
+                    {getSortedSessions().map((session) => (
                       <TableRow key={session.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-center">
                           {session.sessionNumber}
                         </TableCell>
-                        <TableCell>{session.week}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">{session.week}</TableCell>
+                        <TableCell className="text-center">
                           {new Date(session.date).toLocaleDateString('fr-FR')}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold">{session.sessionType}</span>
+                        <TableCell className="text-center">
+                          <div className="flex flex-col gap-0.5 items-center">
+                            <span>{session.sessionType}</span>
                             {session.intervalStructure && (
                               <span className="text-xs text-orange-600 dark:text-orange-400">
                                 {session.intervalStructure}
@@ -361,10 +467,10 @@ const DashboardPage = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{session.duration}</TableCell>
-                        <TableCell>{session.distance.toFixed(2)} km</TableCell>
-                        <TableCell>{session.avgPace}</TableCell>
-                        <TableCell>{session.avgHeartRate} bpm</TableCell>
+                        <TableCell className="text-center">{session.duration}</TableCell>
+                        <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
+                        <TableCell className="text-center">{session.avgPace}</TableCell>
+                        <TableCell className="text-center">{session.avgHeartRate} bpm</TableCell>
                         <TableCell className="min-w-[200px] max-w-[400px]">
                           <p className="whitespace-normal break-words text-sm text-muted-foreground">
                             {session.comments}

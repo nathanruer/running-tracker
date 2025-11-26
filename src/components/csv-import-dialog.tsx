@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import Papa from 'papaparse';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -42,7 +51,10 @@ export function CsvImportDialog({
 }: CsvImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<ParsedSession[]>([]);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string>('');
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   const { toast } = useToast();
 
   const parseDate = (dateStr: string): string => {
@@ -142,6 +154,8 @@ export function CsvImportDialog({
     setLoading(true);
     setError('');
     setPreview([]);
+    setSortColumn(null);
+    setSortDirection(null);
 
     Papa.parse(file, {
       header: true,
@@ -186,6 +200,7 @@ export function CsvImportDialog({
             setError('Aucune séance valide trouvée dans le fichier. Vérifiez que les colonnes Date et Séance sont présentes.');
           } else {
             setPreview(parsedSessions);
+            setSelectedIndices(new Set(parsedSessions.map((_, i) => i)));
           }
         } catch (err) {
           setError('Erreur lors de l\'analyse du fichier. Vérifiez le format.');
@@ -203,21 +218,122 @@ export function CsvImportDialog({
   };
 
   const handleImport = () => {
-    onImport(preview);
+    const selectedSessions = preview.filter((_, i) => selectedIndices.has(i));
+    
+    if (selectedSessions.length === 0) {
+      toast({
+        title: 'Aucune séance sélectionnée',
+        description: 'Veuillez sélectionner au moins une séance à importer.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    onImport(selectedSessions);
     setPreview([]);
+    setSelectedIndices(new Set());
     onOpenChange(false);
     toast({
       title: 'Import réussi',
-      description: `${preview.length} séance(s) importée(s) avec succès.`,
+      description: `${selectedSessions.length} séance(s) importée(s) avec succès.`,
     });
   };
+
+  const toggleSelectAll = () => {
+    if (selectedIndices.size === preview.length) {
+      setSelectedIndices(new Set());
+    } else {
+      setSelectedIndices(new Set(preview.map((_, i) => i)));
+    }
+  };
+
+  const toggleSelect = (index: number) => {
+    const newSelected = new Set(selectedIndices);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedIndices(newSelected);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'desc') {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortedPreview = () => {
+    if (!sortColumn || !sortDirection) {
+      return [...preview].reverse();
+    }
+
+    const sorted = [...preview].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'date':
+          aValue = new Date(a.date).getTime();
+          bValue = new Date(b.date).getTime();
+          break;
+        case 'sessionType':
+          aValue = a.sessionType.toLowerCase();
+          bValue = b.sessionType.toLowerCase();
+          break;
+        case 'duration':
+          aValue = a.duration;
+          bValue = b.duration;
+          break;
+        case 'distance':
+          aValue = a.distance;
+          bValue = b.distance;
+          break;
+        case 'avgPace':
+          aValue = a.avgPace;
+          bValue = b.avgPace;
+          break;
+        case 'avgHeartRate':
+          aValue = a.avgHeartRate;
+          bValue = b.avgHeartRate;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="mr-2 h-4 w-4" />;
+    }
+    if (sortDirection === 'desc') {
+      return <ChevronDown className="mr-2 h-4 w-4 text-foreground" />;
+    }
+    return <ChevronUp className="mr-2 h-4 w-4 text-foreground" />;
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={(val) => {
       onOpenChange(val);
       if (!val && onCancel) onCancel();
     }}>
-      <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-[700px]">
+      <DialogContent className={`max-h-xl overflow-hidden ${preview.length === 0 ? 'sm:max-w-2xl' : 'sm:max-w-6xl'}`}>
         <DialogHeader>
           <DialogTitle>Importer des séances depuis CSV</DialogTitle>
           <DialogDescription>
@@ -267,52 +383,118 @@ export function CsvImportDialog({
                 <p className="text-sm font-medium">
                   {preview.length} séance(s) détectée(s)
                 </p>
-                <label htmlFor="csv-upload-replace">
-                  <Button variant="outline" size="sm" asChild>
-                    <span>Changer de fichier</span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={toggleSelectAll}
+                  >
+                    {selectedIndices.size === preview.length ? 'Tout désélectionner' : 'Tout sélectionner'}
                   </Button>
-                </label>
-                <input
-                  id="csv-upload-replace"
-                  type="file"
-                  accept=".csv,.txt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
+                  <label htmlFor="csv-upload-replace">
+                    <Button variant="outline" size="sm" asChild>
+                      <span>Changer de fichier</span>
+                    </Button>
+                  </label>
+                  <input
+                    id="csv-upload-replace"
+                    type="file"
+                    accept=".csv,.txt"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
               </div>
               
-              <ScrollArea className="h-[400px] rounded-md border p-4">
-                <div className="space-y-3">
-                  {preview.map((session, index) => (
-                    <div
-                      key={index}
-                      className="rounded-lg border p-3 space-y-1 text-sm"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="font-medium">{session.sessionType}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(session.date).toLocaleDateString('fr-FR')}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                        <div>⏱️ {session.duration}</div>
-                        <div>📏 {session.distance.toFixed(2)} km</div>
-                        <div>🏃 {session.avgPace} /km</div>
-                        <div>❤️ {session.avgHeartRate} bpm</div>
-                      </div>
-                      {session.intervalStructure && (
-                        <div className="text-xs font-medium text-orange-600 dark:text-orange-400">
-                          📊 {session.intervalStructure}
-                        </div>
-                      )}
-                      {session.comments && (
-                        <div className="text-xs text-muted-foreground italic">
-                          {session.comments}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <ScrollArea className="h-[400px] rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">
+                        <Checkbox 
+                          checked={preview.length > 0 && selectedIndices.size === preview.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead className="text-center">Date</TableHead>
+                      <TableHead className="text-center">Séance</TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('duration')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="duration" />
+                          <span className={sortColumn === 'duration' ? 'text-foreground' : ''}>Durée</span>
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('distance')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="distance" />
+                          <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Distance</span>
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('avgPace')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="avgPace" />
+                          <span className={sortColumn === 'avgPace' ? 'text-foreground' : ''}>Allure</span>
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('avgHeartRate')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="avgHeartRate" />
+                          <span className={sortColumn === 'avgHeartRate' ? 'text-foreground' : ''}>FC</span>
+                        </button>
+                      </TableHead>
+                      <TableHead>Commentaires</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getSortedPreview().map((session, index) => {
+                      const originalIndex = preview.findIndex(s => s === session);
+                      return (
+                        <TableRow key={originalIndex}>
+                          <TableCell>
+                            <Checkbox 
+                              checked={selectedIndices.has(originalIndex)}
+                              onCheckedChange={() => toggleSelect(originalIndex)}
+                            />
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-center">
+                            {new Date(session.date).toLocaleDateString('fr-FR')}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex flex-col items-center">
+                              <span>{session.sessionType}</span>
+                              {session.intervalStructure && (
+                                <span className="text-xs text-orange-600 dark:text-orange-400">
+                                  {session.intervalStructure}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">{session.duration}</TableCell>
+                          <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
+                          <TableCell className="text-center">{session.avgPace}</TableCell>
+                          <TableCell className="text-center">{session.avgHeartRate}</TableCell>
+                          <TableCell className="max-w-[200px]">
+                            <p className="truncate text-xs text-muted-foreground" title={session.comments}>
+                              {session.comments}
+                            </p>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </ScrollArea>
 
               <div className="flex gap-3">
@@ -330,7 +512,7 @@ export function CsvImportDialog({
                   onClick={handleImport}
                   className="flex-1 gradient-violet"
                 >
-                  Importer {preview.length} séance(s)
+                  Importer {selectedIndices.size} séance(s)
                 </Button>
               </div>
             </>
