@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -76,10 +77,14 @@ const calculatePace = (vma: number, percentage: number): string => {
 };
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { toast } = useToast();
+
+  const { data: user, isLoading: loading } = useQuery({
+    queryKey: ['user'],
+    queryFn: getCurrentUser,
+  });
 
   const {
     register,
@@ -102,50 +107,52 @@ export default function ProfilePage() {
   const vma = watch('vma');
 
   useEffect(() => {
-    const init = async () => {
-      const currentUser = await getCurrentUser();
-      if (!currentUser) {
-        router.replace('/');
-        return;
-      }
-      setUser(currentUser);
-      setValue('email', currentUser.email);
-      setValue('weight', currentUser.weight?.toString() ?? '');
-      setValue('age', currentUser.age?.toString() ?? '');
-      setValue('maxHeartRate', currentUser.maxHeartRate?.toString() ?? '');
-      setValue('vma', currentUser.vma?.toString() ?? '');
-      setLoading(false);
-    };
+    if (!loading && !user) {
+      router.replace('/');
+      return;
+    }
 
-    init();
-  }, [router, setValue]);
+    if (user) {
+      setValue('email', user.email);
+      setValue('weight', user.weight?.toString() ?? '');
+      setValue('age', user.age?.toString() ?? '');
+      setValue('maxHeartRate', user.maxHeartRate?.toString() ?? '');
+      setValue('vma', user.vma?.toString() ?? '');
+    }
+  }, [user, loading, router, setValue]);
 
-  const onSubmit = async (data: any) => {
-    const values = data as ProfileFormValues;
-    try {
-      const updatedUser = await updateUser({
-        email: values.email,
-        weight: values.weight,
-        age: values.age,
-        maxHeartRate: values.maxHeartRate,
-        vma: values.vma,
-      });
-      setUser(updatedUser);
+  const mutation = useMutation({
+    mutationFn: updateUser,
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(['user'], updatedUser);
       toast({
         title: 'Profil mis à jour',
         description: 'Vos informations ont été enregistrées avec succès.',
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: 'Erreur',
         description: 'Impossible de mettre à jour le profil.',
         variant: 'destructive',
       });
-    }
+    },
+  });
+
+  const onSubmit = (data: any) => {
+    const values = data as ProfileFormValues;
+    mutation.mutate({
+      email: values.email,
+      weight: values.weight,
+      age: values.age,
+      maxHeartRate: values.maxHeartRate,
+      vma: values.vma,
+    });
   };
 
   const handleLogout = async () => {
     await logoutUser();
+    queryClient.clear();
     router.replace('/');
   };
 

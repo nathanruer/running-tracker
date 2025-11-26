@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Edit, LogOut, Plus, Trash2, FileSpreadsheet, User as UserIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Edit, LogOut, Plus, Trash2, User as UserIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 import SessionDialog from '@/components/session-dialog';
 import { StravaImportDialog } from '@/components/strava-import-dialog';
@@ -60,11 +61,9 @@ import {
 } from '@/lib/api';
 
 const DashboardPage = () => {
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<'paginated' | 'all'>('paginated');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
-  const [hasMore, setHasMore] = useState(true);
   const LIMIT = 10;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] =
@@ -73,87 +72,76 @@ const DashboardPage = () => {
   const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
-  const loadSessions = useCallback(async () => {
-    try {
-      if (viewMode === 'all') {
-        const data = await getSessions(undefined, undefined, selectedType);
-        setSessions(data);
-        setHasMore(false);
-      } else {
-        const data = await getSessions(LIMIT, 0, selectedType);
-        setSessions(data);
-        setHasMore(data.length === LIMIT);
-      }
-    } catch {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les séances',
-        variant: 'destructive',
-      });
-    }
-  }, [toast, viewMode, selectedType]);
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: getCurrentUser,
+  });
 
-  const loadMoreSessions = async () => {
-    try {
-      const data = await getSessions(LIMIT, sessions.length, selectedType);
-      setSessions((prev) => [...prev, ...data]);
-      setHasMore(data.length === LIMIT);
-    } catch {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger plus de séances',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const loadTypes = useCallback(async () => {
-    try {
+  const { data: availableTypes = [] } = useQuery({
+    queryKey: ['sessionTypes'],
+    queryFn: async () => {
       const types = await getSessionTypes();
       const defaultTypes = ['Footing', 'Sortie longue', 'Fractionné'];
-      const allTypes = Array.from(new Set([...defaultTypes, ...types])).sort();
-      setAvailableTypes(allTypes);
-    } catch (error) {
-      console.error('Failed to load session types:', error);
-    }
-  }, []);
+      return Array.from(new Set([...defaultTypes, ...types])).sort();
+    },
+  });
 
-  useEffect(() => {
-    const init = async () => {
-      const currentUser = await getCurrentUser();
-      if (!currentUser) {
-        router.replace('/');
-        return;
-      }
-      setUser(currentUser);
-      
-      await Promise.all([
-        loadTypes(),
-        loadSessions()
-      ]);
-      
-      setLoading(false);
-    };
+  const { 
+    data: allSessionsData, 
+    isLoading: allSessionsLoading 
+  } = useQuery({
+    queryKey: ['sessions', 'all', selectedType],
+    queryFn: () => getSessions(undefined, undefined, selectedType),
+    enabled: viewMode === 'all' && !!user,
+  });
 
-    init();
-  }, [loadSessions, loadTypes, router]);
+  const {
+    data: paginatedSessionsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: paginatedSessionsLoading
+  } = useInfiniteQuery({
+    queryKey: ['sessions', 'paginated', selectedType],
+    queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === LIMIT ? allPages.length * LIMIT : undefined;
+    },
+    enabled: viewMode === 'paginated' && !!user,
+  });
+
+  const sessions = viewMode === 'all'
+    ? (allSessionsData || [])
+    : (paginatedSessionsData?.pages.flat() || []);
+
+  const loading = userLoading || (viewMode === 'all' ? allSessionsLoading : paginatedSessionsLoading);
+  const hasMore = viewMode === 'paginated' ? hasNextPage : false;
+
+  const loadMoreSessions = () => {
+    fetchNextPage();
+  };
+
+  if (!userLoading && !user) {
+    router.replace('/');
+  }
 
   const handleLogout = async () => {
     await logoutUser();
+    queryClient.clear();
     router.replace('/');
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteSession(id);
-      await Promise.all([loadSessions(), loadTypes()]);
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
       setDeletingId(null);
       toast({
         title: 'Séance supprimée',
@@ -180,7 +168,8 @@ const DashboardPage = () => {
     setIsDialogOpen(false);
     setEditingSession(null);
     setImportedData(null);
-    await Promise.all([loadSessions(), loadTypes()]);
+    queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
   };
 
   const handleStravaImport = (data: any) => {
@@ -195,7 +184,8 @@ const DashboardPage = () => {
   const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
     try {
       await bulkImportSessions(sessions);
-      await Promise.all([loadSessions(), loadTypes()]);
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
       setIsDialogOpen(false);
       toast({
         title: 'Import réussi',
@@ -509,8 +499,9 @@ const DashboardPage = () => {
               variant="outline"
               onClick={loadMoreSessions}
               className="w-full md:w-auto"
+              disabled={isFetchingNextPage}
             >
-              Voir plus
+              {isFetchingNextPage ? 'Chargement...' : 'Voir plus'}
             </Button>
           </div>
         )}
@@ -566,4 +557,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
