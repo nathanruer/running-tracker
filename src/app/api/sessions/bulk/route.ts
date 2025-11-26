@@ -46,11 +46,6 @@ export async function POST(request: NextRequest) {
 
     await recalculateSessionNumbers(userId);
 
-    logger.info(
-      { userId, count: createdSessions.length },
-      'Bulk import completed'
-    );
-
     return NextResponse.json(
       {
         message: `${createdSessions.length} séance(s) importée(s) avec succès`,

@@ -106,9 +106,18 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 };
 
-export const getSessions = async (): Promise<TrainingSession[]> => {
+export const getSessions = async (
+  limit?: number,
+  offset?: number,
+): Promise<TrainingSession[]> => {
+  const params = new URLSearchParams();
+  if (limit) params.append('limit', limit.toString());
+  if (offset) params.append('offset', offset.toString());
+
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+
   const data = await apiRequest<{ sessions: TrainingSession[] }>(
-    '/api/sessions',
+    `/api/sessions${queryString}`,
   );
   return data.sessions;
 };

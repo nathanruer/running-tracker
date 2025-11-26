@@ -32,6 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
   deleteSession,
@@ -46,6 +53,9 @@ import {
 
 const DashboardPage = () => {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [viewMode, setViewMode] = useState<'paginated' | 'all'>('paginated');
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 10;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] =
     useState<TrainingSession | null>(null);
@@ -60,8 +70,15 @@ const DashboardPage = () => {
 
   const loadSessions = useCallback(async () => {
     try {
-      const data = await getSessions();
-      setSessions(data);
+      if (viewMode === 'all') {
+        const data = await getSessions();
+        setSessions(data);
+        setHasMore(false);
+      } else {
+        const data = await getSessions(LIMIT, 0);
+        setSessions(data);
+        setHasMore(data.length === LIMIT);
+      }
     } catch {
       toast({
         title: 'Erreur',
@@ -69,7 +86,21 @@ const DashboardPage = () => {
         variant: 'destructive',
       });
     }
-  }, [toast]);
+  }, [toast, viewMode]);
+
+  const loadMoreSessions = async () => {
+    try {
+      const data = await getSessions(LIMIT, sessions.length);
+      setSessions((prev) => [...prev, ...data]);
+      setHasMore(data.length === LIMIT);
+    } catch {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger plus de séances',
+        variant: 'destructive',
+      });
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -195,8 +226,20 @@ const DashboardPage = () => {
         </div>
 
         <Card className="border-border/50">
-          <CardHeader>
-            <CardTitle>Historique des séances</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
+            <Select
+              value={viewMode}
+              onValueChange={(value: 'paginated' | 'all') => setViewMode(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Affichage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="paginated">10 dernières</SelectItem>
+                <SelectItem value="all">Tout afficher</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent>
             {sessions.length === 0 ? (
@@ -277,6 +320,18 @@ const DashboardPage = () => {
             )}
           </CardContent>
         </Card>
+
+        {hasMore && sessions.length > 0 && (
+          <div className="mt-4 flex justify-center">
+            <Button
+              variant="outline"
+              onClick={loadMoreSessions}
+              className="w-full md:w-auto"
+            >
+              Voir plus
+            </Button>
+          </div>
+        )}
       </div>
 
       <SessionDialog

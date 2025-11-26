@@ -16,9 +16,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const limit = parseInt(searchParams.get('limit') ?? '0');
+  const offset = parseInt(searchParams.get('offset') ?? '0');
+
   const sessions = await prisma.trainingSession.findMany({
     where: { userId },
     orderBy: { date: 'desc' },
+    ...(limit > 0 ? { take: limit } : {}),
+    ...(offset > 0 ? { skip: offset } : {}),
   });
 
   return NextResponse.json({ sessions });

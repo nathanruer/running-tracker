@@ -158,7 +158,6 @@ export function CsvImportDialog({
             const allureRaw = columnMap.has('avgPace') ? row[columnMap.get('avgPace')!] || '00:00' : '00:00';
             const avgPace = parseAllure(allureRaw);
             
-            // Priorité à la colonne Intervalle si présente, sinon extraction depuis l'allure (rétrocompatibilité)
             let intervalStructure = '';
             if (columnMap.has('intervalStructure')) {
               intervalStructure = (row[columnMap.get('intervalStructure')!] || '').trim();
