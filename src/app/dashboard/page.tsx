@@ -39,6 +39,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   deleteSession,
@@ -292,8 +299,44 @@ const DashboardPage = () => {
                       <TableHead>Séance</TableHead>
                       <TableHead>Durée</TableHead>
                       <TableHead>Distance</TableHead>
-                      <TableHead>Allure Cible/Moy.</TableHead>
-                      <TableHead>FC Max/Moy.</TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-1">
+                          Allure
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  Footing/SL : Allure moyenne
+                                  <br />
+                                  Fractionné : Allure cible pendant l'effort
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-1">
+                          FC
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  Footing/SL : FC moyenne
+                                  <br />
+                                  Fractionné : FC cible pendant l'effort
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableHead>
                       <TableHead>Commentaires</TableHead>
                       <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
@@ -322,8 +365,10 @@ const DashboardPage = () => {
                         <TableCell>{session.distance.toFixed(2)} km</TableCell>
                         <TableCell>{session.avgPace}</TableCell>
                         <TableCell>{session.avgHeartRate} bpm</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {session.comments}
+                        <TableCell className="min-w-[200px] max-w-[400px]">
+                          <p className="whitespace-normal break-words text-sm text-muted-foreground">
+                            {session.comments}
+                          </p>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">

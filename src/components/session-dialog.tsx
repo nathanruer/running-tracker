@@ -401,7 +401,7 @@ const SessionDialog = ({
                   <FormItem>
                     <FormLabel>
                       {form.watch('sessionType') === 'Fractionné'
-                        ? 'FC cible/max (bpm)'
+                        ? 'FC cible (bpm)'
                         : 'FC moyenne (bpm)'}
                     </FormLabel>
                     <FormControl>
