@@ -16,11 +16,15 @@ model User {
   password  String   // Hashed with bcrypt
   createdAt DateTime @default(now())
   
-  // Strava OAuth fields
   stravaId             String?   @unique
   stravaAccessToken    String?
   stravaRefreshToken   String?
   stravaTokenExpiresAt DateTime?
+
+  weight       Float?
+  age          Int?
+  maxHeartRate Int?
+  vma          Float?
   
   sessions  TrainingSession[]
   
@@ -28,17 +32,18 @@ model User {
 }
 
 model TrainingSession {
-  id             String   @id @default(uuid())
-  sessionNumber  Int
-  week           Int
-  date           DateTime
-  sessionType    String
-  duration       String   // Format: HH:MM:SS
-  distance       Float
-  avgPace        String   // Format: MM:SS
-  avgHeartRate   Int
-  comments       String   @default("")
-  createdAt      DateTime @default(now())
+  id                String   @id @default(uuid())
+  sessionNumber     Int
+  week              Int
+  date              DateTime
+  sessionType       String
+  duration          String
+  distance          Float
+  avgPace           String
+  avgHeartRate      Int
+  intervalStructure String?
+  comments          String   @default("")
+  createdAt         DateTime @default(now())
   
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -8,6 +8,7 @@ export interface TrainingSession {
   distance: number;
   avgPace: string;
   avgHeartRate: number;
+  intervalStructure?: string;
   comments: string;
   userId: string;
 }
@@ -17,8 +18,21 @@ export type TrainingSessionPayload = Omit<TrainingSession, 'id' | 'userId' | 'se
 export interface User {
   id: string;
   email: string;
+  weight?: number | null;
+  age?: number | null;
+  maxHeartRate?: number | null;
+  vma?: number | null;
   stravaId?: string | null;
   stravaTokenExpiresAt?: Date | null;
+}
+
+export interface UserUpdatePayload {
+  email?: string;
+  password?: string;
+  weight?: number;
+  age?: number;
+  maxHeartRate?: number;
+  vma?: number;
 }
 
 const apiRequest = async <T = unknown>(
@@ -130,4 +144,28 @@ export const deleteSession = async (id: string): Promise<void> => {
     method: 'DELETE',
   });
 };
+
+export const bulkImportSessions = async (
+  sessions: TrainingSessionPayload[],
+): Promise<{ count: number; message: string }> => {
+  const data = await apiRequest<{ count: number; message: string }>(
+    '/api/sessions/bulk',
+    {
+      method: 'POST',
+      body: JSON.stringify({ sessions }),
+    }
+  );
+
+  return data;
+};
+
+export const updateUser = async (updates: UserUpdatePayload): Promise<User> => {
+  const data = await apiRequest<{ user: User }>('/api/auth/me', {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+
+  return data.user;
+};
+
 

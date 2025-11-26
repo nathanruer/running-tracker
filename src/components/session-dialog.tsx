@@ -40,6 +40,7 @@ const formSchema = z.object({
   distance: z.number().min(0, 'Distance requise'),
   avgPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format: MM:SS'),
   avgHeartRate: z.number().min(0, 'FC requise'),
+  intervalStructure: z.string().optional(),
   comments: z.string(),
 });
 
@@ -75,6 +76,7 @@ const SessionDialog = ({
       distance: 0,
       avgPace: '00:00',
       avgHeartRate: 0,
+      intervalStructure: '',
       comments: '',
     },
   });
@@ -90,9 +92,9 @@ const SessionDialog = ({
         distance: session.distance,
         avgPace: session.avgPace,
         avgHeartRate: session.avgHeartRate,
+        intervalStructure: session.intervalStructure || '',
         comments: session.comments,
       });
-      // Vérifier si le type est personnalisé
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
       const { sessionType, ...importedFields } = initialData;
@@ -103,6 +105,7 @@ const SessionDialog = ({
         distance: 0,
         avgPace: '00:00',
         avgHeartRate: 0,
+        intervalStructure: '',
         comments: '',
         ...importedFields,
       });
@@ -115,6 +118,7 @@ const SessionDialog = ({
         distance: 0,
         avgPace: '00:00',
         avgHeartRate: 0,
+        intervalStructure: '',
         comments: '',
       });
       setIsCustomSessionType(false);
@@ -131,6 +135,7 @@ const SessionDialog = ({
         distance: values.distance,
         avgPace: values.avgPace,
         avgHeartRate: values.avgHeartRate,
+        intervalStructure: values.intervalStructure,
         comments: values.comments,
       };
 
@@ -183,6 +188,7 @@ const SessionDialog = ({
                   distance: 0,
                   avgPace: '00:00',
                   avgHeartRate: 0,
+                  intervalStructure: '',
                   comments: '',
                 });
                 setIsCustomSessionType(false);
@@ -291,6 +297,24 @@ const SessionDialog = ({
                 </FormItem>
               )}
             />
+            {form.watch('sessionType') === 'Fractionné' && (
+              <FormField
+                control={form.control}
+                name="intervalStructure"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Structure du fractionné</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: 8x1'/1', TEMPO: 3x4'/2', 10x400m/1'30"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -342,7 +366,11 @@ const SessionDialog = ({
                 name="avgPace"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Allure (min/km)</FormLabel>
+                    <FormLabel>
+                      {form.watch('sessionType') === 'Fractionné'
+                        ? 'Allure cible (min/km)'
+                        : 'Allure moyenne (min/km)'}
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="05:30" {...field} />
                     </FormControl>
@@ -355,9 +383,20 @@ const SessionDialog = ({
                 name="avgHeartRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>FC moyenne (bpm)</FormLabel>
+                    <FormLabel>
+                      {form.watch('sessionType') === 'Fractionné'
+                        ? 'FC cible/max (bpm)'
+                        : 'FC moyenne (bpm)'}
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input 
+                        type="number" 
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value === '' ? 0 : parseInt(value));
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
