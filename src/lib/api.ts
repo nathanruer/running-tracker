@@ -109,10 +109,12 @@ export const getCurrentUser = async (): Promise<User | null> => {
 export const getSessions = async (
   limit?: number,
   offset?: number,
+  type?: string,
 ): Promise<TrainingSession[]> => {
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
   if (offset) params.append('offset', offset.toString());
+  if (type && type !== 'all') params.append('type', type);
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
 
@@ -166,6 +168,10 @@ export const bulkImportSessions = async (
   );
 
   return data;
+};
+export const getSessionTypes = async (): Promise<string[]> => {
+  const data = await apiRequest<{ types: string[] }>('/api/sessions/types');
+  return data.types;
 };
 
 export const updateUser = async (updates: UserUpdatePayload): Promise<User> => {

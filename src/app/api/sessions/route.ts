@@ -19,9 +19,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get('limit') ?? '0');
   const offset = parseInt(searchParams.get('offset') ?? '0');
+  const sessionType = searchParams.get('type');
+
+  const whereClause: any = { userId };
+  if (sessionType && sessionType !== 'all') {
+    whereClause.sessionType = sessionType;
+  }
 
   const sessions = await prisma.trainingSession.findMany({
-    where: { userId },
+    where: whereClause,
     orderBy: { date: 'desc' },
     ...(limit > 0 ? { take: limit } : {}),
     ...(offset > 0 ? { skip: offset } : {}),

@@ -45,6 +45,7 @@ import {
   getCurrentUser,
   getSessions,
   logoutUser,
+  getSessionTypes,
   bulkImportSessions,
   type TrainingSession,
   type TrainingSessionPayload,
@@ -54,6 +55,8 @@ import {
 const DashboardPage = () => {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [viewMode, setViewMode] = useState<'paginated' | 'all'>('paginated');
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const LIMIT = 10;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -71,11 +74,11 @@ const DashboardPage = () => {
   const loadSessions = useCallback(async () => {
     try {
       if (viewMode === 'all') {
-        const data = await getSessions();
+        const data = await getSessions(undefined, undefined, selectedType);
         setSessions(data);
         setHasMore(false);
       } else {
-        const data = await getSessions(LIMIT, 0);
+        const data = await getSessions(LIMIT, 0, selectedType);
         setSessions(data);
         setHasMore(data.length === LIMIT);
       }
@@ -86,11 +89,11 @@ const DashboardPage = () => {
         variant: 'destructive',
       });
     }
-  }, [toast, viewMode]);
+  }, [toast, viewMode, selectedType]);
 
   const loadMoreSessions = async () => {
     try {
-      const data = await getSessions(LIMIT, sessions.length);
+      const data = await getSessions(LIMIT, sessions.length, selectedType);
       setSessions((prev) => [...prev, ...data]);
       setHasMore(data.length === LIMIT);
     } catch {
@@ -102,6 +105,17 @@ const DashboardPage = () => {
     }
   };
 
+  const loadTypes = useCallback(async () => {
+    try {
+      const types = await getSessionTypes();
+      const defaultTypes = ['Footing', 'Sortie longue', 'Fractionné'];
+      const allTypes = Array.from(new Set([...defaultTypes, ...types])).sort();
+      setAvailableTypes(allTypes);
+    } catch (error) {
+      console.error('Failed to load session types:', error);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const currentUser = await getCurrentUser();
@@ -110,12 +124,17 @@ const DashboardPage = () => {
         return;
       }
       setUser(currentUser);
-      await loadSessions();
+      
+      await Promise.all([
+        loadTypes(),
+        loadSessions()
+      ]);
+      
       setLoading(false);
     };
 
     init();
-  }, [loadSessions, router]);
+  }, [loadSessions, loadTypes, router]);
 
   const handleLogout = async () => {
     await logoutUser();
@@ -125,7 +144,7 @@ const DashboardPage = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteSession(id);
-      await loadSessions();
+      await Promise.all([loadSessions(), loadTypes()]);
       setDeletingId(null);
       toast({
         title: 'Séance supprimée',
@@ -152,7 +171,7 @@ const DashboardPage = () => {
     setIsDialogOpen(false);
     setEditingSession(null);
     setImportedData(null);
-    await loadSessions();
+    await Promise.all([loadSessions(), loadTypes()]);
   };
 
   const handleStravaImport = (data: any) => {
@@ -167,7 +186,7 @@ const DashboardPage = () => {
   const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
     try {
       await bulkImportSessions(sessions);
-      await loadSessions();
+      await Promise.all([loadSessions(), loadTypes()]);
       toast({
         title: 'Import réussi',
         description: `${sessions.length} séance(s) importée(s) avec succès.`,
@@ -226,20 +245,38 @@ const DashboardPage = () => {
         </div>
 
         <Card className="border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-col gap-4 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
-            <Select
-              value={viewMode}
-              onValueChange={(value: 'paginated' | 'all') => setViewMode(value)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Affichage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="paginated">10 dernières</SelectItem>
-                <SelectItem value="all">Tout afficher</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Select
+                value={selectedType}
+                onValueChange={setSelectedType}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Type de séance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  {availableTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={viewMode}
+                onValueChange={(value: 'paginated' | 'all') => setViewMode(value)}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Affichage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paginated">10 dernières</SelectItem>
+                  <SelectItem value="all">Tout afficher</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {sessions.length === 0 ? (
