@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -80,6 +80,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: user, isLoading: loading } = useQuery({
     queryKey: ['user'],
@@ -152,85 +153,37 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    await logoutUser();
-    queryClient.clear();
-    router.replace('/');
-    toast({
-      title: 'Déconnexion réussie',
-      description: 'À bientôt!',
-    });
+    try {
+      setIsLoggingOut(true);
+      
+      queryClient.clear();
+      
+      // Then logout on the server (remove session cookie)
+      await logoutUser();
+      
+      toast({
+        title: 'Déconnexion réussie',
+        description: 'À bientôt!',
+      });
+      
+      router.replace('/');
+    } catch (error) {
+      setIsLoggingOut(false);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la déconnexion',
+        variant: 'destructive',
+      });
+    }
   };
 
-  if (loading) {
+  if (loading || isLoggingOut) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 animate-pulse rounded-md bg-muted" />
-              <div className="h-9 w-48 animate-pulse rounded-lg bg-muted" />
-            </div>
-            <div className="h-10 w-32 animate-pulse rounded-md bg-muted" />
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-1 rounded-lg border border-border/50 bg-card">
-              <div className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <div className="h-6 w-48 animate-pulse rounded bg-muted" />
-                  <div className="h-4 w-full animate-pulse rounded bg-muted/70" />
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="h-5 w-16 animate-pulse rounded bg-muted" />
-                    <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="h-5 w-20 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                        <div className="h-10 w-full animate-pulse rounded-md bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="pt-6">
-                    <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-2 rounded-lg border border-border/50 bg-card">
-              <div className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <div className="h-6 w-56 animate-pulse rounded bg-muted" />
-                  <div className="h-4 w-full animate-pulse rounded bg-muted/70" />
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex gap-4 border-b border-border pb-3">
-                    <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-                    <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-                    <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                    <div className="flex-1 h-4 animate-pulse rounded bg-muted" />
-                  </div>
-                  
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="flex gap-4 items-center py-3 border-b border-border/30">
-                      <div className="h-5 w-32 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                      <div className="h-5 w-20 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                      <div className="h-5 w-24 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                      <div className="flex-1 h-5 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-lg font-medium text-muted-foreground animate-pulse">
+          {isLoggingOut ? 'Déconnexion...' : 'Chargement...'}
+        </p>
       </div>
     );
   }
