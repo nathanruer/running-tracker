@@ -159,8 +159,76 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Chargement...</div>
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="mx-auto max-w-5xl">
+          {/* Header skeleton */}
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-9 w-48 animate-pulse rounded-lg bg-muted" />
+            </div>
+            <div className="h-10 w-32 animate-pulse rounded-md bg-muted" />
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Form card skeleton */}
+            <div className="md:col-span-1 rounded-lg border border-border/50 bg-card">
+              <div className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-full animate-pulse rounded bg-muted/70" />
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+                    <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-5 w-20 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                        <div className="h-10 w-full animate-pulse rounded-md bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="pt-6">
+                    <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 rounded-lg border border-border/50 bg-card">
+              <div className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <div className="h-6 w-56 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-full animate-pulse rounded bg-muted/70" />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex gap-4 border-b border-border pb-3">
+                    <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                    <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                    <div className="flex-1 h-4 animate-pulse rounded bg-muted" />
+                  </div>
+                  
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex gap-4 items-center py-3 border-b border-border/30">
+                      <div className="h-5 w-32 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                      <div className="h-5 w-20 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                      <div className="h-5 w-24 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                      <div className="flex-1 h-5 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

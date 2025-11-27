@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Edit, LogOut, Plus, Trash2, User as UserIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
@@ -95,11 +95,13 @@ const DashboardPage = () => {
 
   const { 
     data: allSessionsData, 
-    isLoading: allSessionsLoading 
+    isLoading: allSessionsLoading,
+    isFetching: allSessionsFetching
   } = useQuery({
     queryKey: ['sessions', 'all', selectedType],
     queryFn: () => getSessions(undefined, undefined, selectedType),
     enabled: viewMode === 'all' && !!user,
+    placeholderData: (previousData) => previousData,
   });
 
   const {
@@ -107,7 +109,8 @@ const DashboardPage = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading: paginatedSessionsLoading
+    isLoading: paginatedSessionsLoading,
+    isFetching: paginatedSessionsFetching
   } = useInfiniteQuery({
     queryKey: ['sessions', 'paginated', selectedType],
     queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType),
@@ -116,13 +119,19 @@ const DashboardPage = () => {
       return lastPage.length === LIMIT ? allPages.length * LIMIT : undefined;
     },
     enabled: viewMode === 'paginated' && !!user,
+    placeholderData: (previousData) => previousData,
   });
 
   const sessions = viewMode === 'all'
     ? (allSessionsData || [])
     : (paginatedSessionsData?.pages.flat() || []);
 
-  const loading = userLoading || (viewMode === 'all' ? allSessionsLoading : paginatedSessionsLoading);
+  const initialLoading = userLoading || (
+    !sessions.length && (
+      viewMode === 'all' ? allSessionsLoading : paginatedSessionsLoading
+    )
+  );
+  const isFetchingData = viewMode === 'all' ? allSessionsFetching : paginatedSessionsFetching;
   const hasMore = viewMode === 'paginated' ? hasNextPage : false;
 
   const loadMoreSessions = () => {
@@ -279,13 +288,7 @@ const DashboardPage = () => {
     return <ChevronUp className="mr-2 h-4 w-4 text-foreground" />;
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Chargement...</div>
-      </div>
-    );
-  }
+
 
   if (!user) {
     return null;
@@ -325,7 +328,12 @@ const DashboardPage = () => {
 
         <Card className="border-border/50">
           <CardHeader className="flex flex-col gap-4 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
+              {isFetchingData && (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              )}
+            </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select
                 value={selectedType}
@@ -358,15 +366,7 @@ const DashboardPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {sessions.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                <p className="mb-4">Aucune séance enregistrée</p>
-                <Button onClick={() => setIsDialogOpen(true)} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Ajouter votre première séance
-                </Button>
-              </div>
-            ) : (
+            {initialLoading || sessions.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -448,56 +448,91 @@ const DashboardPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getSortedSessions().map((session) => (
-                      <TableRow key={session.id}>
-                        <TableCell className="font-medium text-center">
-                          {session.sessionNumber}
-                        </TableCell>
-                        <TableCell className="text-center">{session.week}</TableCell>
-                        <TableCell className="text-center">
-                          {new Date(session.date).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex flex-col gap-0.5 items-center">
-                            <span>{session.sessionType}</span>
-                            {session.intervalStructure && (
-                              <span className="text-xs text-orange-600 dark:text-orange-400">
-                                {session.intervalStructure}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">{session.duration}</TableCell>
-                        <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
-                        <TableCell className="text-center">{session.avgPace}</TableCell>
-                        <TableCell className="text-center">{session.avgHeartRate} bpm</TableCell>
-                        <TableCell className="min-w-[200px] max-w-[400px]">
-                          <p className="whitespace-normal break-words text-sm text-muted-foreground">
-                            {session.comments}
-                          </p>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(session)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeletingId(session.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {initialLoading ? (
+                      [...Array(5)].map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell><div className="h-6 w-8 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-6 w-12 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-6 w-24 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1 items-center">
+                              <div className="h-5 w-24 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                              <div className="h-3 w-16 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                            </div>
+                          </TableCell>
+                          <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-6 w-20 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-10 w-full animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 justify-center">
+                              <div className="h-8 w-8 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                              <div className="h-8 w-8 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      getSortedSessions().map((session) => (
+                        <TableRow key={session.id}>
+                          <TableCell className="font-medium text-center">
+                            {session.sessionNumber}
+                          </TableCell>
+                          <TableCell className="text-center">{session.week}</TableCell>
+                          <TableCell className="text-center">
+                            {new Date(session.date).toLocaleDateString('fr-FR')}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex flex-col gap-0.5 items-center">
+                              <span>{session.sessionType}</span>
+                              {session.intervalStructure && (
+                                <span className="text-xs text-orange-600 dark:text-orange-400">
+                                  {session.intervalStructure}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">{session.duration}</TableCell>
+                          <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
+                          <TableCell className="text-center">{session.avgPace}</TableCell>
+                          <TableCell className="text-center">{session.avgHeartRate} bpm</TableCell>
+                          <TableCell className="min-w-[200px] max-w-[400px]">
+                            <p className="whitespace-normal break-words text-sm text-muted-foreground">
+                              {session.comments}
+                            </p>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(session)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingId(session.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground">
+                <p className="mb-4">Aucune séance enregistrée</p>
+                <Button onClick={() => setIsDialogOpen(true)} variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter votre première séance
+                </Button>
               </div>
             )}
           </CardContent>
