@@ -110,87 +110,7 @@ export async function getActivityDetails(
   return response.json();
 }
 
-export interface ExistingSession {
-  date: string;
-  week: number;
-  sessionNumber: number;
-}
-
-function calculateWeekAndSessionNumber(
-  activityDate: Date,
-  existingSessions: ExistingSession[]
-): { week: number; sessionNumber: number } {
-  if (existingSessions.length === 0) {
-    return { week: 1, sessionNumber: 1 };
-  }
-
-  const allDates = [
-    ...existingSessions.map(s => ({
-      date: new Date(s.date),
-      isNew: false,
-      originalWeek: s.week,
-      originalSessionNumber: s.sessionNumber,
-    })),
-    {
-      date: activityDate,
-      isNew: true,
-      originalWeek: 0,
-      originalSessionNumber: 0,
-    },
-  ];
-
-  allDates.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  let currentWeek = 1;
-  let currentWeekSessions: typeof allDates = [];
-  const weeks: Array<typeof allDates> = [];
-
-  for (let i = 0; i < allDates.length; i++) {
-    const session = allDates[i];
-    
-    if (currentWeekSessions.length === 0) {
-      currentWeekSessions.push(session);
-    } else {
-      const lastInWeek = currentWeekSessions[currentWeekSessions.length - 1];
-      const daysDiff = Math.floor(
-        (session.date.getTime() - lastInWeek.date.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      if (daysDiff <= 7) {
-        currentWeekSessions.push(session);
-      } else {
-        weeks.push([...currentWeekSessions]);
-        currentWeek++;
-        currentWeekSessions = [session];
-      }
-    }
-  }
-
-  if (currentWeekSessions.length > 0) {
-    weeks.push(currentWeekSessions);
-  }
-
-  let week = 1;
-  let sessionNumber = 1;
-
-  for (let weekIndex = 0; weekIndex < weeks.length; weekIndex++) {
-    const weekSessions = weeks[weekIndex];
-    const newSessionIndex = weekSessions.findIndex(s => s.isNew);
-    
-    if (newSessionIndex !== -1) {
-      week = weekIndex + 1;
-      sessionNumber = newSessionIndex + 1;
-      break;
-    }
-  }
-
-  return { week, sessionNumber };
-}
-
-export function formatStravaActivity(
-  activity: StravaActivity,
-  existingSessions: ExistingSession[] = []
-) {
+export function formatStravaActivity(activity: StravaActivity) {
   const hours = Math.floor(activity.moving_time / 3600);
   const minutes = Math.floor((activity.moving_time % 3600) / 60);
   const seconds = activity.moving_time % 60;
@@ -198,7 +118,6 @@ export function formatStravaActivity(
     .toString()
     .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-  // Arrondir à 2 décimales maximum
   const distance = Math.round((activity.distance / 1000) * 100) / 100;
 
   const paceSeconds = distance > 0 ? (activity.moving_time / distance) : 0;
@@ -209,16 +128,9 @@ export function formatStravaActivity(
     .padStart(2, '0')}`;
 
   const activityDate = new Date(activity.start_date_local);
-  
-  const { week, sessionNumber } = calculateWeekAndSessionNumber(
-    activityDate,
-    existingSessions
-  );
 
   return {
     date: activityDate.toISOString().split('T')[0],
-    week,
-    sessionNumber,
     sessionType: '',
     duration,
     distance,

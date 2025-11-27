@@ -74,6 +74,7 @@ const DashboardPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+  const [isImportingCsv, setIsImportingCsv] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -217,11 +218,18 @@ const DashboardPage = () => {
   };
 
   const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
+    setIsImportingCsv(true);
     try {
       await bulkImportSessions(sessions);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
+      
+      setIsCsvDialogOpen(false);
       setIsDialogOpen(false);
+      
+      setEditingSession(null);
+      setImportedData(null);
+      
       toast({
         title: 'Import réussi',
         description: `${sessions.length} séance(s) importée(s) avec succès.`,
@@ -235,6 +243,8 @@ const DashboardPage = () => {
             : 'Erreur lors de l\'import',
         variant: 'destructive',
       });
+    } finally {
+      setIsImportingCsv(false);
     }
   };
 
@@ -343,6 +353,11 @@ const DashboardPage = () => {
                   queryKey: ['user'],
                   queryFn: getCurrentUser,
                   staleTime: 10 * 60 * 1000,
+                });
+                queryClient.prefetchQuery({
+                  queryKey: ['sessions', 'all'],
+                  queryFn: () => getSessions(),
+                  staleTime: 5 * 60 * 1000,
                 });
               }}
             >
@@ -590,6 +605,7 @@ const DashboardPage = () => {
         open={isCsvDialogOpen}
         onOpenChange={setIsCsvDialogOpen}
         onImport={handleCsvImport}
+        isImporting={isImportingCsv}
       />
 
       <StravaImportDialog

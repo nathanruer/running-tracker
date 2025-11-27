@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { refreshAccessToken } from '@/lib/strava';
-import jwt from 'jsonwebtoken';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
+    const userId = getUserIdFromRequest(request);
 
-    if (!token) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
       );
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: userId },
     });
 
     if (!user || !user.stravaRefreshToken) {

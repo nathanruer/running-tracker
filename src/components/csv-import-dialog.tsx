@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileSpreadsheet, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, ArrowUpDown, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import Papa from 'papaparse';
 
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface CsvImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (sessions: any[]) => void;
+  onImport: (sessions: any[]) => Promise<void>;
   onCancel?: () => void;
+  isImporting?: boolean;
 }
 
 interface ParsedSession {
@@ -48,6 +49,7 @@ export function CsvImportDialog({
   onOpenChange,
   onImport,
   onCancel,
+  isImporting = false,
 }: CsvImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<ParsedSession[]>([]);
@@ -217,7 +219,7 @@ export function CsvImportDialog({
     event.target.value = '';
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const selectedSessions = preview.filter((_, i) => selectedIndices.has(i));
     
     if (selectedSessions.length === 0) {
@@ -229,14 +231,10 @@ export function CsvImportDialog({
       return;
     }
 
-    onImport(selectedSessions);
+    await onImport(selectedSessions);
+    
     setPreview([]);
     setSelectedIndices(new Set());
-    onOpenChange(false);
-    toast({
-      title: 'Import réussi',
-      description: `${selectedSessions.length} séance(s) importée(s) avec succès.`,
-    });
   };
 
   const toggleSelectAll = () => {
@@ -505,14 +503,23 @@ export function CsvImportDialog({
                     setError('');
                   }}
                   className="flex-1"
+                  disabled={isImporting}
                 >
                   Annuler
                 </Button>
                 <Button
                   onClick={handleImport}
                   className="flex-1 gradient-violet"
+                  disabled={isImporting || selectedIndices.size === 0}
                 >
-                  Importer {selectedIndices.size} séance(s)
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Import en cours...
+                    </>
+                  ) : (
+                    `Importer ${selectedIndices.size} séance(s)`
+                  )}
                 </Button>
               </div>
             </>

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActivityDetails, formatStravaActivity, refreshAccessToken } from '@/lib/strava';
-import jwt from 'jsonwebtoken';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+
 
 async function getValidAccessToken(user: any): Promise<string> {
   if (!user.stravaAccessToken || !user.stravaRefreshToken) {
@@ -38,18 +38,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.cookies.get('token')?.value;
+    const userId = getUserIdFromRequest(request);
 
-    if (!token) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
       );
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -70,28 +69,12 @@ export async function GET(
 
     const { id } = await params;
     
-    const sessionsFromDb = await prisma.trainingSession.findMany({
-      where: { userId: user.id },
-      select: {
-        date: true,
-        week: true,
-        sessionNumber: true,
-      },
-      orderBy: { date: 'desc' },
-    });
-
-    const existingSessions = sessionsFromDb.map(s => ({
-      date: typeof s.date === 'string' ? s.date : s.date.toISOString().split('T')[0],
-      week: s.week,
-      sessionNumber: s.sessionNumber,
-    }));
-
     const activityId = parseInt(id, 10);
     logger.info({ activityId, userId: user.id }, 'Fetching Strava activity');
     
     const activity = await getActivityDetails(accessToken, activityId);
 
-    const formattedData = formatStravaActivity(activity, existingSessions);
+    const formattedData = formatStravaActivity(activity);
 
     return NextResponse.json(formattedData);
   } catch (error) {
