@@ -155,13 +155,16 @@ export default function ProfilePage() {
     await logoutUser();
     queryClient.clear();
     router.replace('/');
+    toast({
+      title: 'Déconnexion réussie',
+      description: 'À bientôt!',
+    });
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-4 md:p-8">
         <div className="mx-auto max-w-5xl">
-          {/* Header skeleton */}
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 animate-pulse rounded-md bg-muted" />
@@ -171,7 +174,6 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
-            {/* Form card skeleton */}
             <div className="md:col-span-1 rounded-lg border border-border/50 bg-card">
               <div className="p-6 space-y-6">
                 <div className="space-y-2">

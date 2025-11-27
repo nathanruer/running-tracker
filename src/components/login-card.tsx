@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { loginUser, registerUser } from '@/lib/api';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 const LoginCard = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -23,6 +25,7 @@ const LoginCard = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -41,6 +44,9 @@ const LoginCard = () => {
           description: 'Votre compte a été créé avec succès !',
         });
       }
+      
+      await queryClient.invalidateQueries({ queryKey: ['user'] });
+      
       router.push('/dashboard');
       router.refresh();
     } catch (error) {

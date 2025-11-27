@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Edit, LogOut, Plus, Trash2, User as UserIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Edit, Plus, Trash2, User as UserIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 import SessionDialog from '@/components/session-dialog';
 import { StravaImportDialog } from '@/components/strava-import-dialog';
@@ -101,7 +101,20 @@ const DashboardPage = () => {
     queryKey: ['sessions', 'all', selectedType],
     queryFn: () => getSessions(undefined, undefined, selectedType),
     enabled: viewMode === 'all' && !!user,
-    placeholderData: (previousData) => previousData,
+    placeholderData: (previousData) => {
+      if (previousData) return previousData;
+      
+      const paginatedData = queryClient.getQueryData<InfiniteData<TrainingSession[]>>(['sessions', 'paginated', selectedType]);
+      
+      if (paginatedData) {
+        const lastPage = paginatedData.pages[paginatedData.pages.length - 1];
+        if (lastPage && lastPage.length < LIMIT) {
+          return paginatedData.pages.flat();
+        }
+      }
+      
+      return undefined;
+    },
   });
 
   const {
@@ -138,15 +151,28 @@ const DashboardPage = () => {
     fetchNextPage();
   };
 
-  if (!userLoading && !user) {
-    router.replace('/');
+  const showGlobalLoading = userLoading || (
+    !allSessionsData && !paginatedSessionsData && (allSessionsLoading || paginatedSessionsLoading)
+  );
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.replace('/');
+    }
+  }, [user, userLoading, router]);
+
+  if (showGlobalLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-lg font-medium text-muted-foreground animate-pulse">Chargement de vos performances...</p>
+      </div>
+    );
   }
 
-  const handleLogout = async () => {
-    await logoutUser();
-    queryClient.clear();
-    router.replace('/');
-  };
+  if (!user) {
+    return null;
+  }
 
   const handleDelete = async (id: string) => {
     try {
@@ -328,12 +354,7 @@ const DashboardPage = () => {
 
         <Card className="border-border/50">
           <CardHeader className="flex flex-col gap-4 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
-              {isFetchingData && (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              )}
-            </div>
+            <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select
                 value={selectedType}
@@ -444,7 +465,7 @@ const DashboardPage = () => {
                         </div>
                       </TableHead>
                       <TableHead>Commentaires</TableHead>
-                      <TableHead className="w-24">Actions</TableHead>
+                      <TableHead className="w-24 text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -487,7 +508,7 @@ const DashboardPage = () => {
                             <div className="flex flex-col gap-0.5 items-center">
                               <span>{session.sessionType}</span>
                               {session.intervalStructure && (
-                                <span className="text-xs text-orange-600 dark:text-orange-400">
+                                <span className="text-xs text-gradient">
                                   {session.intervalStructure}
                                 </span>
                               )}
