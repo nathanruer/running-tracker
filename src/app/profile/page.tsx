@@ -84,6 +84,7 @@ export default function ProfilePage() {
   const { data: user, isLoading: loading } = useQuery({
     queryKey: ['user'],
     queryFn: getCurrentUser,
+    staleTime: 10 * 60 * 1000,
   });
 
   const {

@@ -80,6 +80,7 @@ const DashboardPage = () => {
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user'],
     queryFn: getCurrentUser,
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: availableTypes = [] } = useQuery({
@@ -89,6 +90,7 @@ const DashboardPage = () => {
       const defaultTypes = ['Footing', 'Sortie longue', 'Fractionné'];
       return Array.from(new Set([...defaultTypes, ...types])).sort();
     },
+    staleTime: 15 * 60 * 1000,
   });
 
   const { 
@@ -141,7 +143,6 @@ const DashboardPage = () => {
     try {
       await deleteSession(id);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
       setDeletingId(null);
       toast({
         title: 'Séance supprimée',
@@ -169,7 +170,6 @@ const DashboardPage = () => {
     setEditingSession(null);
     setImportedData(null);
     queryClient.invalidateQueries({ queryKey: ['sessions'] });
-    queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
   };
 
   const handleStravaImport = (data: any) => {
@@ -306,7 +306,17 @@ const DashboardPage = () => {
               <Plus className="mr-2 h-4 w-4" />
               Nouvelle séance
             </Button>
-            <Button variant="outline" onClick={() => router.push('/profile')}>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/profile')}
+              onMouseEnter={() => {
+                queryClient.prefetchQuery({
+                  queryKey: ['user'],
+                  queryFn: getCurrentUser,
+                  staleTime: 10 * 60 * 1000,
+                });
+              }}
+            >
               <UserIcon className="mr-2 h-4 w-4" />
               Profil
             </Button>
