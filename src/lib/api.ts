@@ -9,6 +9,7 @@ export interface TrainingSession {
   avgPace: string;
   avgHeartRate: number;
   intervalStructure?: string;
+  perceivedExertion?: number | null;
   comments: string;
   userId: string;
 }

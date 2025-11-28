@@ -42,6 +42,7 @@ model TrainingSession {
   avgPace           String
   avgHeartRate      Int
   intervalStructure String?
+  perceivedExertion Int?     @default(0)
   comments          String   @default("")
   createdAt         DateTime @default(now())
   

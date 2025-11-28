@@ -41,6 +41,7 @@ const formSchema = z.object({
   avgPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format: MM:SS'),
   avgHeartRate: z.number().min(0, 'FC requise'),
   intervalStructure: z.string().optional(),
+  perceivedExertion: z.number().min(0).max(10).optional(),
   comments: z.string(),
 });
 
@@ -79,6 +80,7 @@ const SessionDialog = ({
       avgPace: '00:00',
       avgHeartRate: 0,
       intervalStructure: '',
+      perceivedExertion: 0,
       comments: '',
     },
   });
@@ -88,26 +90,28 @@ const SessionDialog = ({
     
     if (session) {
       form.reset({
-        date: session.date,
+        date: session.date.split('T')[0],
         sessionType: session.sessionType,
         duration: session.duration,
         distance: session.distance,
         avgPace: session.avgPace,
         avgHeartRate: session.avgHeartRate,
         intervalStructure: session.intervalStructure || '',
+        perceivedExertion: session.perceivedExertion || 0,
         comments: session.comments,
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
-      const { sessionType, ...importedFields } = initialData;
+      const { sessionType, date, ...importedFields } = initialData;
       form.reset({
-        date: new Date().toISOString().split('T')[0],
+        date: date ? (date.includes('T') ? date.split('T')[0] : date) : new Date().toISOString().split('T')[0],
         sessionType: '',
         duration: '00:00:00',
         distance: 0,
         avgPace: '00:00',
         avgHeartRate: 0,
         intervalStructure: '',
+        perceivedExertion: 0,
         comments: '',
         ...importedFields,
       });
@@ -121,6 +125,7 @@ const SessionDialog = ({
         avgPace: '00:00',
         avgHeartRate: 0,
         intervalStructure: '',
+        perceivedExertion: 0,
         comments: '',
       });
       setIsCustomSessionType(false);
@@ -137,7 +142,8 @@ const SessionDialog = ({
         distance: values.distance,
         avgPace: values.avgPace,
         avgHeartRate: values.avgHeartRate,
-        intervalStructure: values.intervalStructure,
+        intervalStructure: values.sessionType === 'Fractionné' ? values.intervalStructure : '',
+        perceivedExertion: values.perceivedExertion,
         comments: values.comments,
       };
 
@@ -191,6 +197,7 @@ const SessionDialog = ({
                   avgPace: '00:00',
                   avgHeartRate: 0,
                   intervalStructure: '',
+                  perceivedExertion: 0,
                   comments: '',
                 });
                 setIsCustomSessionType(false);
@@ -265,61 +272,99 @@ const SessionDialog = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="sessionType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type de séance</FormLabel>
-                  {!isCustomSessionType ? (
+            <div className="flex gap-4">
+              <FormField
+                control={form.control}
+                name="sessionType"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Type de séance</FormLabel>
+                    {!isCustomSessionType ? (
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === 'autre') {
+                            setIsCustomSessionType(true);
+                            field.onChange('');
+                          } else {
+                            field.onChange(value);
+                            if (value !== 'Fractionné') {
+                              form.setValue('intervalStructure', '');
+                            }
+                          }
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez un type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Footing">Footing</SelectItem>
+                          <SelectItem value="Sortie longue">Sortie longue</SelectItem>
+                          <SelectItem value="Fractionné">Fractionné</SelectItem>
+                          <SelectItem value="autre">Autre (personnalisé)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="Type personnalisé"
+                            {...field}
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsCustomSessionType(false);
+                            field.onChange('');
+                          }}
+                          className="h-10 px-3"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="perceivedExertion"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>RPE (1-10)</FormLabel>
                     <Select
-                      onValueChange={(value) => {
-                        if (value === 'autre') {
-                          setIsCustomSessionType(true);
-                          field.onChange('');
-                        } else {
-                          field.onChange(value);
-                        }
-                      }}
-                      value={field.value}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value?.toString()}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un type de séance" />
+                          <SelectValue placeholder="Note" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Footing">Footing</SelectItem>
-                        <SelectItem value="Sortie longue">Sortie longue</SelectItem>
-                        <SelectItem value="Fractionné">Fractionné</SelectItem>
-                        <SelectItem value="autre">Autre (personnalisé)</SelectItem>
+                        <SelectItem value="0">Non spécifié</SelectItem>
+                        <SelectItem value="1">1 - Très facile</SelectItem>
+                        <SelectItem value="2">2 - Facile</SelectItem>
+                        <SelectItem value="3">3 - Modéré</SelectItem>
+                        <SelectItem value="4">4 - Un peu difficile</SelectItem>
+                        <SelectItem value="5">5 - Difficile</SelectItem>
+                        <SelectItem value="6">6 - Très difficile</SelectItem>
+                        <SelectItem value="7">7 - Extrêmement difficile</SelectItem>
+                        <SelectItem value="8">8 - Épuisant</SelectItem>
+                        <SelectItem value="9">9 - Presque maximal</SelectItem>
+                        <SelectItem value="10">10 - Maximal</SelectItem>
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input
-                          placeholder="Type de séance personnalisé"
-                          {...field}
-                        />
-                      </FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsCustomSessionType(false);
-                          field.onChange('');
-                        }}
-                        className="h-10"
-                      >
-                        Annuler
-                      </Button>
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             {form.watch('sessionType') === 'Fractionné' && (
               <FormField
                 control={form.control}

@@ -41,6 +41,7 @@ interface ParsedSession {
   avgPace: string;
   avgHeartRate: number;
   intervalStructure?: string;
+  perceivedExertion?: number;
   comments: string;
 }
 
@@ -139,6 +140,8 @@ export function CsvImportDialog({
         columnMap.set('avgPace', header);
       } else if (normalizedHeader.includes('fc') || normalizedHeader.includes('heart')) {
         columnMap.set('avgHeartRate', header);
+      } else if (normalizedHeader.includes('rpe') || normalizedHeader === 'effort') {
+        columnMap.set('perceivedExertion', header);
       } else if (normalizedHeader.includes('intervalle') || normalizedHeader.includes('interval') || normalizedHeader.includes('structure') || normalizedHeader.includes('fractionné') || normalizedHeader.includes('fractionne')) {
         columnMap.set('intervalStructure', header);
       } else if (normalizedHeader.includes('commentaire') || normalizedHeader.includes('comment')) {
@@ -184,6 +187,7 @@ export function CsvImportDialog({
             }
             
             const avgHeartRate = columnMap.has('avgHeartRate') ? Math.round(parseNumber(row[columnMap.get('avgHeartRate')!] || '0')) : 0;
+            const perceivedExertion = columnMap.has('perceivedExertion') ? Math.round(parseNumber(row[columnMap.get('perceivedExertion')!] || '0')) : undefined;
             const comments = columnMap.has('comments') ? (row[columnMap.get('comments')!] || '').trim() : '';
 
             return {
@@ -194,6 +198,7 @@ export function CsvImportDialog({
               avgPace,
               avgHeartRate,
               intervalStructure,
+              perceivedExertion,
               comments,
             };
           }).filter(session => session.date && session.sessionType);
@@ -352,11 +357,11 @@ export function CsvImportDialog({
               <FileSpreadsheet className="h-16 w-16 text-muted-foreground" />
               <div className="text-center">
                 <p className="font-medium mb-2">Sélectionnez un fichier CSV</p>
-                <p className="text-sm text-muted-foreground mb-2">
-                  <strong>Colonnes requises :</strong> Date, Séance, Durée, Distance, Allure Cible/Moy, FC Max/Moy
+                <p className="text-xs text-muted-foreground mb-2">
+                  <strong>Colonnes attendues :</strong> Date, Séance, Durée, Distance (km), Allure (min/km), FC moyenne, RPE, Commentaires
                 </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  <strong>Pour les fractionnés :</strong> Ajoutez une colonne "Intervalle" (ex: 8x1'/1', TEMPO: 3x4'/2')
+                <p className="text-xs text-muted-foreground mb-4">
+                  <strong>Note :</strong> La colonne "Intervalles" est nécessaire uniquement pour les séances de fractionné (ex: 8x1'/1')
                 </p>
               </div>
               <label htmlFor="csv-upload">
@@ -452,6 +457,15 @@ export function CsvImportDialog({
                           <span className={sortColumn === 'avgHeartRate' ? 'text-foreground' : ''}>FC</span>
                         </button>
                       </TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('perceivedExertion')}
+                          className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                        >
+                          <SortIcon column="perceivedExertion" />
+                          <span className={sortColumn === 'perceivedExertion' ? 'text-foreground' : ''}>RPE</span>
+                        </button>
+                      </TableHead>
                       <TableHead>Commentaires</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -483,6 +497,20 @@ export function CsvImportDialog({
                           <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
                           <TableCell className="text-center">{session.avgPace}</TableCell>
                           <TableCell className="text-center">{session.avgHeartRate}</TableCell>
+                          <TableCell className="text-center">
+                            {session.perceivedExertion ? (
+                              <span className={
+                                session.perceivedExertion <= 3 ? 'text-green-500' :
+                                session.perceivedExertion <= 6 ? 'text-yellow-500' :
+                                session.perceivedExertion <= 8 ? 'text-orange-500' :
+                                'text-red-500 font-bold'
+                              }>
+                                {session.perceivedExertion}/10
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                           <TableCell className="max-w-[200px]">
                             <p className="truncate text-xs text-muted-foreground" title={session.comments}>
                               {session.comments}

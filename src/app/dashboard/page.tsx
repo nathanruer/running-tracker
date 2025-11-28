@@ -479,6 +479,15 @@ const DashboardPage = () => {
                           </TooltipProvider>
                         </div>
                       </TableHead>
+                      <TableHead className="text-center">
+                        <button 
+                          onClick={() => handleSort('perceivedExertion')}
+                          className="flex items-center justify-center w-full hover:text-foreground transition-colors"
+                        >
+                          <SortIcon column="perceivedExertion" />
+                          <span className={sortColumn === 'perceivedExertion' ? 'text-foreground' : ''}>RPE</span>
+                        </button>
+                      </TableHead>
                       <TableHead>Commentaires</TableHead>
                       <TableHead className="w-24 text-center">Actions</TableHead>
                     </TableRow>
@@ -500,6 +509,7 @@ const DashboardPage = () => {
                           <TableCell><div className="h-6 w-20 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                           <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                           <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                          <TableCell><div className="h-6 w-12 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                           <TableCell><div className="h-10 w-full animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                           <TableCell>
                             <div className="flex gap-2 justify-center">
@@ -533,6 +543,20 @@ const DashboardPage = () => {
                           <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
                           <TableCell className="text-center">{session.avgPace}</TableCell>
                           <TableCell className="text-center">{session.avgHeartRate} bpm</TableCell>
+                          <TableCell className="text-center">
+                            {session.perceivedExertion ? (
+                              <span className={
+                                session.perceivedExertion <= 3 ? 'text-green-500' :
+                                session.perceivedExertion <= 6 ? 'text-yellow-500' :
+                                session.perceivedExertion <= 8 ? 'text-orange-500' :
+                                'text-red-500 font-bold'
+                              }>
+                                {session.perceivedExertion}/10
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                           <TableCell className="min-w-[200px] max-w-[400px]">
                             <p className="whitespace-normal break-words text-sm text-muted-foreground">
                               {session.comments}
