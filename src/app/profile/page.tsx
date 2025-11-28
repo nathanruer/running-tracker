@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, LogOut, Save, TrendingUp, Activity, Calendar, User as UserIcon, BarChart3 } from 'lucide-react';
+import { ArrowLeft, LogOut, Save, TrendingUp, Activity, Calendar, User as UserIcon, BarChart3, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Table,
   TableBody,
@@ -81,7 +82,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [dateRange, setDateRange] = useState<'week' | '30days' | 'all'>('all');
+  const [dateRange, setDateRange] = useState<'week' | '30days' | 'all' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [activeView, setActiveView] = useState<'profile' | 'analytics'>('profile');
 
   const { data: user, isLoading: loading } = useQuery({
@@ -128,6 +131,19 @@ export default function ProfilePage() {
       } else if (dateRange === '30days') {
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         return sessionDate >= thirtyDaysAgo;
+      } else if (dateRange === 'custom') {
+        if (!customStartDate && !customEndDate) return true;
+
+        const startDate = customStartDate ? new Date(customStartDate + 'T00:00:00') : null;
+        const endDate = customEndDate ? new Date(customEndDate + 'T23:59:59') : null;
+
+        if (startDate && endDate) {
+          return sessionDate >= startDate && sessionDate <= endDate;
+        } else if (startDate) {
+          return sessionDate >= startDate;
+        } else if (endDate) {
+          return sessionDate <= endDate;
+        }
       }
       return true;
     });
@@ -431,23 +447,68 @@ export default function ProfilePage() {
 
             <Card className="border-border/50">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Évolution hebdomadaire</CardTitle>
-                    <CardDescription>
-                      Kilomètres parcourus par semaine
-                    </CardDescription>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Évolution hebdomadaire</CardTitle>
+                      <CardDescription>
+                        Kilomètres parcourus par semaine
+                      </CardDescription>
+                    </div>
+                    <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="week">Dernière semaine</SelectItem>
+                        <SelectItem value="30days">30 derniers jours</SelectItem>
+                        <SelectItem value="all">Toutes les données</SelectItem>
+                        <SelectItem value="custom">Personnalisé</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="week">Dernière semaine</SelectItem>
-                      <SelectItem value="30days">30 derniers jours</SelectItem>
-                      <SelectItem value="all">Toutes les données</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {dateRange === 'custom' && (
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                      <div className="flex flex-col gap-2 flex-1">
+                        <Label htmlFor="start-date" className="text-sm font-medium">
+                          Date de début
+                        </Label>
+                        <DatePicker
+                          date={customStartDate ? new Date(customStartDate + 'T00:00:00') : undefined}
+                          onSelect={(date: Date | undefined) => {
+                            if (date) {
+                              const year = date.getFullYear();
+                              const month = String(date.getMonth() + 1).padStart(2, '0');
+                              const day = String(date.getDate()).padStart(2, '0');
+                              setCustomStartDate(`${year}-${month}-${day}`);
+                            } else {
+                              setCustomStartDate('');
+                            }
+                          }}
+                          placeholder="Sélectionner la date de début"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1">
+                        <Label htmlFor="end-date" className="text-sm font-medium">
+                          Date de fin
+                        </Label>
+                        <DatePicker
+                          date={customEndDate ? new Date(customEndDate + 'T00:00:00') : undefined}
+                          onSelect={(date: Date | undefined) => {
+                            if (date) {
+                              const year = date.getFullYear();
+                              const month = String(date.getMonth() + 1).padStart(2, '0');
+                              const day = String(date.getDate()).padStart(2, '0');
+                              setCustomEndDate(`${year}-${month}-${day}`);
+                            } else {
+                              setCustomEndDate('');
+                            }
+                          }}
+                          placeholder="Sélectionner la date de fin"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -575,8 +636,17 @@ export default function ProfilePage() {
 
                 <div className='pt-6'>
                   <Button type="submit" className="w-full gradient-violet" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Enregistrer
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enregistrement...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Enregistrer
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

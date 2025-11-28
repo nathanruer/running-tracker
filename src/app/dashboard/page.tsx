@@ -304,6 +304,10 @@ const DashboardPage = () => {
           aValue = a.avgHeartRate;
           bValue = b.avgHeartRate;
           break;
+        case 'perceivedExertion':
+          aValue = a.perceivedExertion ?? 0;
+          bValue = b.perceivedExertion ?? 0;
+          break;
         default:
           return 0;
       }
