@@ -473,8 +473,12 @@ export function CsvImportDialog({
                     {getSortedPreview().map((session, index) => {
                       const originalIndex = preview.findIndex(s => s === session);
                       return (
-                        <TableRow key={originalIndex}>
-                          <TableCell>
+                        <TableRow 
+                          key={originalIndex}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => toggleSelect(originalIndex)}
+                        >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox 
                               checked={selectedIndices.has(originalIndex)}
                               onCheckedChange={() => toggleSelect(originalIndex)}

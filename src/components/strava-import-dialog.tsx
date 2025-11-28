@@ -332,8 +332,12 @@ export function StravaImportDialog({
                   {getSortedActivities().map((activity, index) => {
                     const originalIndex = activities.findIndex(a => a === activity);
                     return (
-                      <TableRow key={activity.id}>
-                        <TableCell>
+                      <TableRow 
+                        key={activity.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleSelect(originalIndex)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox 
                             checked={selectedIndices.has(originalIndex)}
                             onCheckedChange={() => toggleSelect(originalIndex)}
