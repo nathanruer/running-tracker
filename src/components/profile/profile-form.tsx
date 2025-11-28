@@ -16,24 +16,22 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser, type User } from '@/lib/api';
 
+const optionalNumber = z
+  .union([z.string(), z.number()])
+  .optional()
+  .transform((val) => {
+    if (val === '' || val === undefined || val === null) return undefined;
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return isNaN(num) ? undefined : num;
+  })
+  .pipe(z.number().positive().optional());
+
 const profileSchema = z.object({
   email: z.string().email('Email invalide'),
-  weight: z.preprocess(
-    (val) => (val === '' ? undefined : val),
-    z.coerce.number().optional()
-  ),
-  age: z.preprocess(
-    (val) => (val === '' ? undefined : val),
-    z.coerce.number().optional()
-  ),
-  maxHeartRate: z.preprocess(
-    (val) => (val === '' ? undefined : val),
-    z.coerce.number().optional()
-  ),
-  vma: z.preprocess(
-    (val) => (val === '' ? undefined : val),
-    z.coerce.number().optional()
-  ),
+  weight: optionalNumber,
+  age: optionalNumber,
+  maxHeartRate: optionalNumber,
+  vma: optionalNumber,
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -51,7 +49,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(profileSchema) as any,
     defaultValues: {
       email: user.email,
       weight: user.weight ?? undefined,
@@ -82,10 +80,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
   const onSubmit = (data: ProfileFormValues) => {
     mutation.mutate({
       email: data.email,
-      weight: data.weight,
-      age: data.age,
-      maxHeartRate: data.maxHeartRate,
-      vma: data.vma,
+      weight: data.weight ?? undefined,
+      age: data.age ?? undefined,
+      maxHeartRate: data.maxHeartRate ?? undefined,
+      vma: data.vma ?? undefined,
     });
   };
 
@@ -93,7 +91,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     <Card className="md:col-span-1">
       <CardHeader>
         <CardTitle>Informations personnelles</CardTitle>
-        <CardDescription>
+        <CardDescription> 
           Mettez à jour vos informations pour calculer vos zones d'entraînement.
         </CardDescription>
       </CardHeader>

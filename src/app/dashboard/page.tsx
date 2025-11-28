@@ -9,6 +9,7 @@ import { StravaImportDialog } from '@/components/strava-import-dialog';
 import { CsvImportDialog } from '@/components/csv-import-dialog';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SessionsTable } from '@/components/dashboard/sessions-table';
+import { SessionChat } from '@/components/dashboard/session-chat';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -225,6 +226,10 @@ const DashboardPage = () => {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
         <DashboardHeader onNewSession={() => setIsDialogOpen(true)} />
+
+        <div className="mb-8 space-y-6">
+          <SessionChat sessions={sessions} user={user} />
+        </div>
 
         {initialLoading || sessions.length > 0 ? (
           <SessionsTable
