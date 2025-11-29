@@ -1,29 +1,8 @@
-import { logger } from './logger';
+import type { StravaTokens, StravaActivity } from '@/lib/types';
+import { logger } from '@/lib/infrastructure/logger';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
-
-export interface StravaTokens {
-  access_token: string;
-  refresh_token: string;
-  expires_at: number;
-}
-
-export interface StravaActivity {
-  id: number;
-  name: string;
-  distance: number;
-  moving_time: number;
-  elapsed_time: number;
-  total_elevation_gain: number;
-  type: string;
-  start_date: string;
-  start_date_local: string;
-  average_speed: number;
-  max_speed: number;
-  average_heartrate?: number;
-  max_heartrate?: number;
-}
 
 export async function exchangeCodeForTokens(code: string): Promise<StravaTokens> {
   const response = await fetch('https://www.strava.com/oauth/token', {
@@ -108,34 +87,4 @@ export async function getActivityDetails(
   }
 
   return response.json();
-}
-
-export function formatStravaActivity(activity: StravaActivity) {
-  const hours = Math.floor(activity.moving_time / 3600);
-  const minutes = Math.floor((activity.moving_time % 3600) / 60);
-  const seconds = activity.moving_time % 60;
-  const duration = `${hours.toString().padStart(2, '0')}:${minutes
-    .toString()
-    .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-  const distance = Math.round((activity.distance / 1000) * 100) / 100;
-
-  const paceSeconds = distance > 0 ? (activity.moving_time / distance) : 0;
-  const paceMinutes = Math.floor(paceSeconds / 60);
-  const paceRemainingSeconds = Math.floor(paceSeconds % 60);
-  const avgPace = `${paceMinutes.toString().padStart(2, '0')}:${paceRemainingSeconds
-    .toString()
-    .padStart(2, '0')}`;
-
-  const activityDate = new Date(activity.start_date_local);
-
-  return {
-    date: activityDate.toISOString().split('T')[0],
-    sessionType: '',
-    duration,
-    distance,
-    avgPace,
-    avgHeartRate: activity.average_heartrate || 0,
-    comments: activity.name || '',
-  };
 }

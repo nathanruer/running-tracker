@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export const runtime = 'nodejs';
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
-  const types = await prisma.trainingSession.findMany({
+  const types = await prisma.training_sessions.findMany({
     where: { userId },
     distinct: ['sessionType'],
     select: {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URI;

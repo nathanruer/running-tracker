@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Edit, Trash2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { HelpCircle } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
+import { PlannedSessionRow } from './planned-session-row';
+import { CompletedSessionRow } from './completed-session-row';
 import {
   Card,
   CardContent,
@@ -29,8 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
-import { type TrainingSession } from '@/lib/api';
+import { type TrainingSession } from '@/lib/types';
 
 interface SessionsTableProps {
   sessions: TrainingSession[];
@@ -91,8 +92,8 @@ export function SessionsTable({
           bValue = b.week;
           break;
         case 'date':
-          aValue = new Date(a.date).getTime();
-          bValue = new Date(b.date).getTime();
+          aValue = a.date ? new Date(a.date).getTime() : 0;
+          bValue = b.date ? new Date(b.date).getTime() : 0;
           break;
         case 'sessionType':
           aValue = a.sessionType.toLowerCase();
@@ -289,68 +290,23 @@ export function SessionsTable({
                   </TableRow>
                 ))
               ) : (
-                getSortedSessions().map((session) => (
-                  <TableRow key={session.id}>
-                    <TableCell className="font-medium text-center">
-                      {session.sessionNumber}
-                    </TableCell>
-                    <TableCell className="text-center">{session.week}</TableCell>
-                    <TableCell className="text-center">
-                      {new Date(session.date).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex flex-col gap-0.5 items-center">
-                        <span>{session.sessionType}</span>
-                        {session.intervalStructure && (
-                          <span className="text-xs text-gradient">
-                            {session.intervalStructure}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{session.duration}</TableCell>
-                    <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
-                    <TableCell className="text-center">{session.avgPace}</TableCell>
-                    <TableCell className="text-center">{session.avgHeartRate} bpm</TableCell>
-                    <TableCell className="text-center">
-                      {session.perceivedExertion ? (
-                        <span className={
-                          session.perceivedExertion <= 3 ? 'text-green-500' :
-                          session.perceivedExertion <= 6 ? 'text-yellow-500' :
-                          session.perceivedExertion <= 8 ? 'text-orange-500' :
-                          'text-red-500 font-bold'
-                        }>
-                          {session.perceivedExertion}/10
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <p className="whitespace-normal break-words text-sm text-muted-foreground">
-                        {session.comments}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onEdit(session)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDelete(session.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                getSortedSessions().map((session) => 
+                  session.status === 'planned' ? (
+                    <PlannedSessionRow
+                      key={session.id}
+                      session={session}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
+                  ) : (
+                    <CompletedSessionRow
+                      key={session.id}
+                      session={session}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
+                  )
+                )
               )}
             </TableBody>
           </Table>

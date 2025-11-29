@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { partialSessionSchema } from '@/lib/validators';
-import { logger } from '@/lib/logger';
-import { recalculateSessionNumbers } from '@/lib/session-utils';
+import { partialSessionSchema } from '@/lib/validation';
+import { logger } from '@/lib/infrastructure/logger';
+import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +23,7 @@ export async function PUT(
   try {
     const updates = partialSessionSchema.parse(await request.json());
 
-    const session = await prisma.trainingSession.findFirst({
+    const session = await prisma.training_sessions.findFirst({
       where: { id: params.id, userId },
     });
 
@@ -34,7 +34,7 @@ export async function PUT(
       );
     }
 
-    await prisma.trainingSession.update({
+    await prisma.training_sessions.update({
       where: { id: params.id },
       data: {
         ...updates,
@@ -46,7 +46,7 @@ export async function PUT(
       await recalculateSessionNumbers(userId);
     }
 
-    const updated = await prisma.trainingSession.findUnique({
+    const updated = await prisma.training_sessions.findUnique({
       where: { id: params.id },
     });
 
@@ -77,7 +77,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
-  const session = await prisma.trainingSession.findFirst({
+  const session = await prisma.training_sessions.findFirst({
     where: { id: params.id, userId },
   });
 
@@ -85,7 +85,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Séance introuvable' }, { status: 404 });
   }
 
-  await prisma.trainingSession.delete({ where: { id: params.id } });
+  await prisma.training_sessions.delete({ where: { id: params.id } });
   
   await recalculateSessionNumbers(userId);
   

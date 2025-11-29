@@ -10,7 +10,7 @@ import { ProfileForm } from '@/components/profile/profile-form';
 import { TrainingZonesTable } from '@/components/profile/training-zones-table';
 import { AnalyticsView } from '@/components/profile/analytics-view';
 import { useToast } from '@/hooks/use-toast';
-import { getCurrentUser, logoutUser, getSessions } from '@/lib/api';
+import { getCurrentUser, logoutUser, getSessions } from '@/lib/services/api-client';
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { sessionSchema } from '@/lib/validators';
-import { logger } from '@/lib/logger';
-import { recalculateSessionNumbers } from '@/lib/session-utils';
+import { sessionSchema } from '@/lib/validation';
+import { logger } from '@/lib/infrastructure/logger';
+import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 
 export const runtime = 'nodejs';
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const createdSessions = await Promise.all(
       validatedSessions.map((session) =>
-        prisma.trainingSession.create({
+        prisma.training_sessions.create({
           data: {
             ...session,
             date: new Date(session.date),

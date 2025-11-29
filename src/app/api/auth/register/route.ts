@@ -2,10 +2,10 @@ import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-import { prisma } from '@/lib/prisma';
-import { registerSchema } from '@/lib/validators';
+import { prisma } from '@/lib/database';
+import { registerSchema } from '@/lib/validation';
 import { createSessionToken, persistSessionCookie } from '@/lib/auth';
-import { logger } from '@/lib/logger';
+import { logger } from '@/lib/infrastructure/logger';
 
 export const runtime = 'nodejs';
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = registerSchema.parse(body);
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.users.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json(
         { error: 'Cet email est déjà utilisé.' },
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
         email,
         password: hashedPassword,

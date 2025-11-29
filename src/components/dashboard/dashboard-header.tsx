@@ -1,8 +1,8 @@
-import { Plus, User as UserIcon } from 'lucide-react';
+import { Plus, User as UserIcon, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { getCurrentUser, getSessions } from '@/lib/api';
+import { getCurrentUser, getSessions } from '@/lib/services/api-client';
 
 interface DashboardHeaderProps {
   onNewSession: () => void;
@@ -24,6 +24,13 @@ export function DashboardHeader({ onNewSession }: DashboardHeaderProps) {
         >
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle séance
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => router.push('/chat')}
+        >
+          <MessageSquare className="mr-2 h-4 w-4" />
+          Bob - ton coach IA
         </Button>
         <Button
           variant="outline"

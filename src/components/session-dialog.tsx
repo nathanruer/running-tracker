@@ -30,7 +30,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { addSession, updateSession, type TrainingSessionPayload, type TrainingSession } from '@/lib/api';
+import { addSession, updateSession } from '@/lib/services/api-client';
+import { type TrainingSessionPayload, type TrainingSession } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -53,6 +54,7 @@ interface SessionDialogProps {
   onClose: () => void;
   session?: TrainingSession | null;
   initialData?: Partial<FormValues> | null;
+  mode?: 'create' | 'edit' | 'complete';
   onRequestStravaImport?: () => void;
   onRequestCsvImport?: () => void;
 }
@@ -63,6 +65,7 @@ const SessionDialog = ({
   onClose,
   session,
   initialData,
+  mode = 'create',
   onRequestStravaImport,
   onRequestCsvImport,
 }: SessionDialogProps) => {
@@ -86,19 +89,38 @@ const SessionDialog = ({
   });
 
   useEffect(() => {
-    const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné'];
-    
-    if (session) {
+    const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné', 'Autre'];
+
+    if (session && mode === 'complete' && initialData) {
+      const { sessionType: importedType, date, ...importedFields } = initialData;
+      const sessionDate = date ? (date.includes('T') ? date.split('T')[0] : date) :
+                          (session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0]);
+
       form.reset({
-        date: session.date.split('T')[0],
+        date: sessionDate,
         sessionType: session.sessionType,
-        duration: session.duration,
-        distance: session.distance,
-        avgPace: session.avgPace,
-        avgHeartRate: session.avgHeartRate,
+        intervalStructure: session.intervalStructure || '',
+        perceivedExertion: 0,
+        comments: session.comments || '',
+        duration: '00:00:00',
+        distance: 0,
+        avgPace: '00:00',
+        avgHeartRate: 0,
+        ...importedFields,
+      });
+      setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
+    } else if (session && (mode === 'edit' || mode === 'complete')) {
+      const sessionDate = session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0];
+      form.reset({
+        date: sessionDate,
+        sessionType: session.sessionType,
+        duration: session.duration || '00:00:00',
+        distance: session.distance || 0,
+        avgPace: session.avgPace || '00:00',
+        avgHeartRate: session.avgHeartRate || 0,
         intervalStructure: session.intervalStructure || '',
         perceivedExertion: session.perceivedExertion || 0,
-        comments: session.comments,
+        comments: session.comments || '',
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
@@ -130,7 +152,7 @@ const SessionDialog = ({
       });
       setIsCustomSessionType(false);
     }
-  }, [session, initialData, form]);
+  }, [session, initialData, mode, form]);
 
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
@@ -147,7 +169,23 @@ const SessionDialog = ({
         comments: values.comments,
       };
 
-      if (session) {
+      if (mode === 'complete' && session) {
+        const response = await fetch(`/api/sessions/${session.id}/complete`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sessionData),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Erreur lors de l\'enregistrement de la séance');
+        }
+
+        toast({
+          title: 'Séance enregistrée',
+          description: 'La séance a été enregistrée avec succès.',
+        });
+      } else if (mode === 'edit' && session) {
         await updateSession(session.id, sessionData);
         toast({
           title: 'Séance modifiée',
@@ -178,11 +216,11 @@ const SessionDialog = ({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="text-gradient">
-            {session ? 'Modifier la séance' : 'Nouvelle séance'}
+            {mode === 'complete' ? 'Enregistrer la séance' : mode === 'edit' ? 'Modifier la séance' : 'Ajouter une séance'}
           </DialogTitle>
           <div className="flex items-center justify-between gap-4">
             <DialogDescription>
-              {session ? 'Modifiez les informations de votre séance' : 'Enregistrez votre séance d\'entraînement'}
+              {mode === 'complete' ? 'Remplissez les détails de votre séance réalisée' : mode === 'edit' ? 'Modifiez les informations de votre séance' : 'Enregistrez votre séance d\'entraînement'}
             </DialogDescription>
             <Button
               type="button"
@@ -209,7 +247,7 @@ const SessionDialog = ({
             </Button>
           </div>
         </DialogHeader>
-        {(onRequestStravaImport || onRequestCsvImport) && (
+        {(mode === 'create' || mode === 'complete') && (onRequestStravaImport || onRequestCsvImport) && (
           <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
             <div className="flex flex-col gap-3">
               <div>
@@ -282,7 +320,7 @@ const SessionDialog = ({
                     {!isCustomSessionType ? (
                       <Select
                         onValueChange={(value) => {
-                          if (value === 'autre') {
+                          if (value === 'custom') {
                             setIsCustomSessionType(true);
                             field.onChange('');
                           } else {
@@ -303,7 +341,8 @@ const SessionDialog = ({
                           <SelectItem value="Footing">Footing</SelectItem>
                           <SelectItem value="Sortie longue">Sortie longue</SelectItem>
                           <SelectItem value="Fractionné">Fractionné</SelectItem>
-                          <SelectItem value="autre">Autre (personnalisé)</SelectItem>
+                          <SelectItem value="Autre">Autre</SelectItem>
+                          <SelectItem value="custom">Personnalisé...</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (

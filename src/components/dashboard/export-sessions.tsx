@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { type TrainingSession } from '@/lib/api';
+import { type TrainingSession } from '@/lib/types';
 
 interface ExportSessionsProps {
   sessions: TrainingSession[];
@@ -14,7 +14,8 @@ interface ExportSessionsProps {
 
 export function ExportSessions({ sessions }: ExportSessionsProps) {
   const exportToCSV = () => {
-    if (sessions.length === 0) return;
+    const completedSessions = sessions.filter((s) => s.status === 'completed' && s.date);
+    if (completedSessions.length === 0) return;
 
     const headers = [
       'Numéro',
@@ -30,15 +31,15 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
       'Commentaires',
     ];
 
-    const rows = sessions.map((session) => [
+    const rows = completedSessions.map((session) => [
       session.sessionNumber,
       session.week,
-      new Date(session.date).toLocaleDateString('fr-FR'),
+      new Date(session.date!).toLocaleDateString('fr-FR'),
       session.sessionType,
-      session.duration,
-      session.distance,
-      session.avgPace,
-      session.avgHeartRate,
+      session.duration || '',
+      session.distance || '',
+      session.avgPace || '',
+      session.avgHeartRate || '',
       session.perceivedExertion || '',
       session.intervalStructure || '',
       session.comments || '',
@@ -49,7 +50,6 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
       ...rows.map((row) =>
         row.map((cell) => {
           const cellStr = String(cell);
-          // Échapper les guillemets et entourer de guillemets si nécessaire
           if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
             return `"${cellStr.replace(/"/g, '""')}"`;
           }
@@ -70,17 +70,18 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
   };
 
   const exportToJSON = () => {
-    if (sessions.length === 0) return;
+    const completedSessions = sessions.filter((s) => s.status === 'completed' && s.date);
+    if (completedSessions.length === 0) return;
 
-    const cleanedSessions = sessions.map((session) => ({
+    const cleanedSessions = completedSessions.map((session) => ({
       numero: session.sessionNumber,
       semaine: session.week,
-      date: new Date(session.date).toLocaleDateString('fr-FR'),
+      date: new Date(session.date!).toLocaleDateString('fr-FR'),
       type: session.sessionType,
-      duree: session.duration,
-      distance_km: session.distance,
-      allure_min_km: session.avgPace,
-      fc_moyenne_bpm: session.avgHeartRate,
+      duree: session.duration || '',
+      distance_km: session.distance || 0,
+      allure_min_km: session.avgPace || '',
+      fc_moyenne_bpm: session.avgHeartRate || 0,
       rpe: session.perceivedExertion || null,
       structure_intervalle: session.intervalStructure || null,
       commentaires: session.comments || null,
@@ -99,9 +100,9 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
   };
 
   const exportToExcel = () => {
-    if (sessions.length === 0) return;
+    const completedSessions = sessions.filter((s) => s.status === 'completed' && s.date);
+    if (completedSessions.length === 0) return;
 
-    // Format Excel simple (TSV avec extension .xls)
     const headers = [
       'Numéro',
       'Semaine',
@@ -116,15 +117,15 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
       'Commentaires',
     ];
 
-    const rows = sessions.map((session) => [
+    const rows = completedSessions.map((session) => [
       session.sessionNumber,
       session.week,
-      new Date(session.date).toLocaleDateString('fr-FR'),
+      new Date(session.date!).toLocaleDateString('fr-FR'),
       session.sessionType,
-      session.duration,
-      session.distance,
-      session.avgPace,
-      session.avgHeartRate,
+      session.duration || '',
+      session.distance || '',
+      session.avgPace || '',
+      session.avgHeartRate || '',
       session.perceivedExertion || '',
       session.intervalStructure || '',
       session.comments || '',

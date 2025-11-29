@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { loginUser, registerUser } from '@/lib/api';
+import { loginUser, registerUser } from '@/lib/services/api-client';
 
 const LoginCard = () => {
   const [isLogin, setIsLogin] = useState(true);

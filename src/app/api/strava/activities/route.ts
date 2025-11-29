@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getActivities, refreshAccessToken } from '@/lib/strava';
+import { prisma } from '@/lib/database';
+import { getActivities, refreshAccessToken } from '@/lib/services/strava';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { logger } from '@/lib/logger';
+import { logger } from '@/lib/infrastructure/logger';
 
 async function getValidAccessToken(user: any): Promise<string> {
   if (!user.stravaAccessToken || !user.stravaRefreshToken) {
@@ -16,7 +16,7 @@ async function getValidAccessToken(user: any): Promise<string> {
   if (!expiresAt || expiresAt < fiveMinutesFromNow) {
     const tokenData = await refreshAccessToken(user.stravaRefreshToken);
 
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: user.id },
       data: {
         stravaAccessToken: tokenData.access_token,
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
     });
 

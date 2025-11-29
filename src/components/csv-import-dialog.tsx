@@ -491,7 +491,7 @@ export function CsvImportDialog({
                             <div className="flex flex-col items-center">
                               <span>{session.sessionType}</span>
                               {session.intervalStructure && (
-                                <span className="text-xs text-orange-600 dark:text-orange-400">
+                                <span className="text-xs text-gradient">
                                   {session.intervalStructure}
                                 </span>
                               )}

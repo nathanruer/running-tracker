@@ -17,7 +17,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { type TrainingSession } from '@/lib/api';
+import { type TrainingSession } from '@/lib/types';
 
 interface AnalyticsViewProps {
   sessions: TrainingSession[];
@@ -30,8 +30,10 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
 
   const getFilteredSessions = () => {
     const now = new Date();
-    const filtered = sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
+    const completedSessions = sessions.filter((s) => s.status === 'completed' && s.date);
+
+    const filtered = completedSessions.filter((session) => {
+      const sessionDate = new Date(session.date!);
       if (dateRange === 'week') {
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         return sessionDate >= oneWeekAgo;
@@ -74,11 +76,12 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
 
     filteredSessions.forEach((session) => {
       const week = session.week;
+      const distance = session.distance || 0;
       if (!weeklyKm[week]) {
         weeklyKm[week] = 0;
       }
-      weeklyKm[week] += session.distance;
-      totalKm += session.distance;
+      weeklyKm[week] += distance;
+      totalKm += distance;
     });
 
     const weeks = Object.keys(weeklyKm).length;

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,45 +7,76 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // Hashed with bcrypt
-  createdAt DateTime @default(now())
-  
-  stravaId             String?   @unique
-  stravaAccessToken    String?
-  stravaRefreshToken   String?
-  stravaTokenExpiresAt DateTime?
-
-  weight       Float?
-  age          Int?
-  maxHeartRate Int?
-  vma          Float?
-  
-  sessions  TrainingSession[]
-  
-  @@map("users")
-}
-
-model TrainingSession {
-  id                String   @id @default(uuid())
+model training_sessions {
+  id                String   @id @default(cuid())
   sessionNumber     Int
   week              Int
-  date              DateTime
+  date              DateTime?
   sessionType       String
-  duration          String
-  distance          Float
-  avgPace           String
-  avgHeartRate      Int
-  intervalStructure String?
-  perceivedExertion Int?     @default(0)
+  duration          String?
+  distance          Float?
+  avgPace           String?
+  avgHeartRate      Int?
   comments          String   @default("")
   createdAt         DateTime @default(now())
-  
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("training_sessions")
+  userId            String
+  intervalStructure String?
+  perceivedExertion Int?     @default(0)
+  status            String   @default("completed")
+  plannedDate       DateTime?
+  targetPace        String?
+  targetDuration    Int?
+  targetDistance    Float?
+  targetHeartRateZone String?
+  targetHeartRateBpm String?
+  targetRPE         Int?
+  recommendationId  String?
+  users             users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
+  @@index([status])
+  @@index([recommendationId])
+}
+
+model users {
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  password             String
+  createdAt            DateTime              @default(now())
+  stravaAccessToken    String?
+  stravaId             String?               @unique
+  stravaRefreshToken   String?
+  stravaTokenExpiresAt DateTime?
+  age                  Int?
+  maxHeartRate         Int?
+  weight               Float?
+  vma                  Float?
+  training_sessions    training_sessions[]
+  chat_conversations   chat_conversations[]
+}
+
+model chat_conversations {
+  id            String          @id @default(cuid())
+  title         String
+  userId        String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  users         users           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat_messages chat_messages[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model chat_messages {
+  id               String              @id @default(cuid())
+  conversationId   String
+  role             String
+  content          String              @db.Text
+  recommendations  Json?
+  model            String?
+  createdAt        DateTime            @default(now())
+  chat_conversations chat_conversations @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
 }

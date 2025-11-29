@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export const runtime = 'nodejs';
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
       vma: vma !== undefined && vma !== '' ? parseFloat(vma) : undefined,
     };
 
-    const user = await prisma.user.update({
+    const user = await prisma.users.update({
       where: { id: userId },
       data: updateData,
       select: {

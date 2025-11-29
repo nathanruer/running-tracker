@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { logger } from '@/lib/logger';
+import { prisma } from '@/lib/database';
+import { exchangeCodeForTokens } from '@/lib/services/strava';
 import { getUserIdFromRequest, createSessionToken } from '@/lib/auth';
+import { logger } from '@/lib/infrastructure/logger';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     let currentUser = null;
     
     if (currentUserId) {
-      currentUser = await prisma.user.findUnique({
+      currentUser = await prisma.users.findUnique({
         where: { id: currentUserId },
       });
     }
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
     let user;
 
     if (currentUser) {
-      const stravaAlreadyLinked = await prisma.user.findFirst({
+      const stravaAlreadyLinked = await prisma.users.findFirst({
         where: { 
           stravaId: athlete.id.toString(),
           id: { not: currentUser.id }
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      user = await prisma.user.update({
+      user = await prisma.users.update({
         where: { id: currentUser.id },
         data: {
           stravaId: athlete.id.toString(),
@@ -102,12 +103,12 @@ export async function GET(request: NextRequest) {
       });
       logger.info({ userId: user.id, stravaId: athlete.id }, 'Successfully linked Strava to existing logged-in user');
     } else {
-      user = await prisma.user.findUnique({
+      user = await prisma.users.findUnique({
         where: { stravaId: athlete.id.toString() },
       });
 
       if (user) {
-        user = await prisma.user.update({
+        user = await prisma.users.update({
           where: { id: user.id },
           data: {
             stravaAccessToken: access_token,
@@ -117,7 +118,7 @@ export async function GET(request: NextRequest) {
         });
         logger.info({ userId: user.id }, 'Updated tokens for existing Strava user');
       } else {
-        user = await prisma.user.create({
+        user = await prisma.users.create({
           data: {
             email: `strava_${athlete.id}@strava.local`,
             password: '',

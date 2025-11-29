@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { MessageCircle, Send, Loader2, Sparkles, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MessageCircle, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { type TrainingSession, type User, getSessions } from '@/lib/api';
+import { type TrainingSession, type User } from '@/lib/types';
+import { getSessions } from '@/lib/services/api-client';
 import { useQuery } from '@tanstack/react-query';
 
 interface SessionChatProps {
@@ -30,7 +31,7 @@ interface Recommendations {
   week_summary: string;
 }
 
-type MessageType = 'user' | 'assistant' | 'recommendations';
+type MessageType = 'user' | 'assistant' | 'recommendations' | 'analysis';
 
 interface Message {
   id: string;
@@ -45,17 +46,21 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Récupérer tout l'historique pour l'analyse (jusqu'à 100 séances)
   const { data: allSessions = [] } = useQuery({
     queryKey: ['sessions', 'history'],
-    queryFn: () => getSessions(100, 0, 'all'),
-    staleTime: 5 * 60 * 1000, // Cache de 5 minutes
+    queryFn: () => getSessions(20, 0, 'all'),
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Utiliser les sessions passées en props pour la semaine en cours (car elles sont à jour)
-  // Mais utiliser allSessions pour l'historique complet
   const sessions = initialSessions.length > 0 ? initialSessions : allSessions;
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const getCurrentWeek = () => {
     if (sessions.length === 0) return 1;
@@ -82,40 +87,44 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
     setLoading(true);
 
     try {
-      // Extraction améliorée du nombre de séances (chiffres et texte)
-      let remainingSessions = 2; // Valeur par défaut
-      const lowerInput = input.toLowerCase();
-      const numberMatch = lowerInput.match(/(\d+)/);
-      
-      if (numberMatch) {
-        remainingSessions = parseInt(numberMatch[1]);
-      } else if (lowerInput.includes('une') || lowerInput.includes('un')) {
-        remainingSessions = 1;
-      } else if (lowerInput.includes('deux')) {
-        remainingSessions = 2;
-      } else if (lowerInput.includes('trois')) {
-        remainingSessions = 3;
-      } else if (lowerInput.includes('quatre')) {
-        remainingSessions = 4;
-      } else if (lowerInput.includes('cinq')) {
-        remainingSessions = 5;
-      }
+      const conversationHistory = [
+        ...messages.slice(-5).map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.type === 'recommendations' && msg.recommendations
+            ? msg.recommendations.week_summary
+            : msg.content
+        })),
+        {
+          role: 'user',
+          content: userMessage.content
+        }
+      ];
 
       const currentWeekSessions = getCurrentWeekSessions();
-      // Prendre les 50 dernières séances de l'historique complet pour l'analyse de performance
-      const recentSessions = allSessions
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(-50);
 
-      const response = await fetch('/api/session-recommendations', {
+      const response = await fetch('/api/ai-coach', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          completedSessions: currentWeekSessions,
-          recentSessions: recentSessions,
-          remainingSessions,
+          conversationHistory,
+          currentWeekSessions: currentWeekSessions.map(s => ({
+            sessionType: s.sessionType,
+            duration: s.duration,
+            distance: s.distance,
+            avgPace: s.avgPace,
+            avgHeartRate: s.avgHeartRate,
+            date: s.date,
+          })),
+          allSessions: allSessions.map(s => ({
+            sessionType: s.sessionType,
+            duration: s.duration,
+            distance: s.distance,
+            avgPace: s.avgPace,
+            avgHeartRate: s.avgHeartRate,
+            date: s.date,
+          })),
           userProfile: {
             maxHeartRate: user?.maxHeartRate,
             vma: user?.vma,
@@ -130,17 +139,37 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
         throw new Error(errorData.error || 'Erreur lors de la génération');
       }
 
-      const recommendations: Recommendations = await response.json();
+      const data = await response.json();
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'recommendations',
-        content: recommendations.week_summary,
-        recommendations,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      if (data.responseType === 'conversation') {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else if (data.responseType === 'recommendations') {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'recommendations',
+          content: data.week_summary,
+          recommendations: {
+            recommended_sessions: data.recommended_sessions,
+            week_summary: data.week_summary
+          },
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else if (data.responseType === 'analysis') {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'analysis',
+          content: data.message,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -161,8 +190,6 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
     }
   };
 
-
-
   const currentWeek = getCurrentWeek();
   const currentWeekSessions = getCurrentWeekSessions();
 
@@ -172,8 +199,7 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-purple-500" />
-              Coach IA - Recommandations de séances
+              Bob - ton oach IA de course à pied
             </CardTitle>
             <CardDescription>
               Demandez des recommandations personnalisées pour compléter votre semaine
@@ -186,9 +212,8 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Zone de messages */}
         {messages.length > 0 && (
-          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+          <div ref={messagesContainerRef} className="space-y-4 max-h-[350px] overflow-y-auto pr-2">
             {messages.map((message) => (
               <div key={message.id}>
                 {message.type === 'user' && (
@@ -200,16 +225,35 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
                 )}
 
                 {message.type === 'assistant' && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg px-4 py-2 max-w-[80%]">
-                      <p className="text-sm">{message.content}</p>
+                  <div className="space-y-3">
+                    <div className="bg-background/50 rounded-lg p-4 border border-border/30">
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                        {message.content}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {message.type === 'analysis' && (
+                  <div className="bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-pink-500/5 rounded-xl p-6 border border-purple-500/20 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
+                        <span className="text-white text-sm font-bold">📊</span>
+                      </div>
+                      <h4 className="font-semibold text-purple-700 dark:text-purple-300">
+                        Analyse de progression
+                      </h4>
+                    </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <p className="text-sm leading-relaxed whitespace-pre-line text-foreground/90">
+                        {message.content}
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {message.type === 'recommendations' && message.recommendations && (
                   <div className="space-y-3">
-                    {/* Résumé */}
                     <div className="bg-background/50 rounded-lg p-4 border border-border/30">
                       <div className="flex items-start gap-2">
                         <p className="text-sm text-muted-foreground leading-relaxed">
@@ -218,7 +262,6 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
                       </div>
                     </div>
 
-                    {/* Recommandations de séances */}
                     {message.recommendations.recommended_sessions.length > 0 && (
                       <div className="space-y-3">
                         <p className="text-sm font-medium flex items-center gap-2">
@@ -238,15 +281,32 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
                                     • {session.duration_min} min
                                   </span>
                                   <span className="text-sm text-muted-foreground">
-                                    • {session.target_pace_min_km}/km
+                                    • {session.target_pace_min_km} min/km
                                   </span>
                                 </div>
 
-                                {session.interval_structure && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {session.interval_structure}
-                                  </Badge>
-                                )}
+                                {session.interval_structure && (() => {
+                                  const parts = session.interval_structure.split(':');
+                                  if (parts.length === 2) {
+                                    const subtype = parts[0].trim();
+                                    const structure = parts[1].trim();
+                                    return (
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant="default" className="text-xs font-semibold">
+                                          {subtype}
+                                        </Badge>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {structure}
+                                        </Badge>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {session.interval_structure}
+                                    </Badge>
+                                  );
+                                })()}
 
                                 <p className="text-sm text-muted-foreground">
                                   {session.reason}
@@ -254,7 +314,7 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
 
                                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                   <span>FC cible: {session.target_hr} bpm</span>
-                                  <span>Allure: {session.target_pace_min_km}/km</span>
+                                  <span>Allure: {session.target_pace_min_km} min/km</span>
                                 </div>
                               </div>
                             </div>
@@ -280,25 +340,12 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
           </div>
         )}
 
-        {/* Message initial si pas de messages */}
         {messages.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <MessageCircle className="h-12 w-12 mx-auto mb-4 text-purple-500/50" />
-            <p className="text-sm mb-4 max-w-md mx-auto">
-              Demandez au coach de vous proposer des séances pour compléter votre semaine
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Badge variant="secondary" className="text-xs">
-                Exemple: "Je voudrais 2 séances en plus"
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                "Propose-moi 3 séances pour cette semaine"
-              </Badge>
-            </div>
           </div>
         )}
 
-        {/* Zone d'input */}
         <div className="flex gap-2 pt-4 border-t border-border/50">
           <Input
             placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
@@ -325,10 +372,6 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
             )}
           </Button>
         </div>
-
-        <p className="text-xs text-muted-foreground text-center">
-          Décrivez le nombre de séances souhaitées et le coach adaptera les recommandations
-        </p>
       </CardContent>
     </Card>
   );

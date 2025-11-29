@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { updateUser, type User } from '@/lib/api';
+import { updateUser } from '@/lib/services/api-client';
+import { type User } from '@/lib/types';
 
 const optionalNumber = z
   .union([z.string(), z.number()])

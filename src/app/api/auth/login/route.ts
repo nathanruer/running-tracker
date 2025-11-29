@@ -2,10 +2,10 @@ import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/database';
 import { createSessionToken, persistSessionCookie } from '@/lib/auth';
-import { loginSchema } from '@/lib/validators';
-import { logger } from '@/lib/logger';
+import { loginSchema } from '@/lib/validation';
+import { logger } from '@/lib/infrastructure/logger';
 
 export const runtime = 'nodejs';
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json(
         { error: 'Identifiants invalides' },

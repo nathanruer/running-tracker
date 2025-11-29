@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import { prisma } from '@/lib/database';
 
 function getCalendarWeek(date: Date): { year: number; week: number } {
   const d = new Date(date);
@@ -14,18 +14,20 @@ function getCalendarWeek(date: Date): { year: number; week: number } {
 }
 
 export async function recalculateSessionNumbers(userId: string): Promise<void> {
-  const sessions = await prisma.trainingSession.findMany({
+  const sessions = await prisma.training_sessions.findMany({
     where: { userId },
     orderBy: { date: 'asc' },
   });
 
-  if (sessions.length === 0) {
+  const completedSessions = sessions.filter(s => s.date !== null && s.status === 'completed');
+
+  if (completedSessions.length === 0) {
     return;
   }
 
-  const sessionsWithWeek = sessions.map(session => ({
+  const sessionsWithWeek = completedSessions.map(session => ({
     ...session,
-    calendarWeek: getCalendarWeek(session.date),
+    calendarWeek: getCalendarWeek(session.date!),
   }));
 
   const weekMap = new Map<string, typeof sessionsWithWeek>();
@@ -49,12 +51,12 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
 
   for (let weekIndex = 0; weekIndex < sortedWeeks.length; weekIndex++) {
     const [, weekSessions] = sortedWeeks[weekIndex];
-    weekSessions.sort((a, b) => a.date.getTime() - b.date.getTime());
+    weekSessions.sort((a, b) => a.date!.getTime() - b.date!.getTime());
     
     for (let sessionIndex = 0; sessionIndex < weekSessions.length; sessionIndex++) {
       const session = weekSessions[sessionIndex];
       updates.push(
-        prisma.trainingSession.update({
+        prisma.training_sessions.update({
           where: { id: session.id },
           data: {
             sessionNumber: globalSessionNumber,

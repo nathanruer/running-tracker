@@ -9,7 +9,6 @@ import { StravaImportDialog } from '@/components/strava-import-dialog';
 import { CsvImportDialog } from '@/components/csv-import-dialog';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SessionsTable } from '@/components/dashboard/sessions-table';
-import { SessionChat } from '@/components/dashboard/session-chat';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -28,9 +27,11 @@ import {
   getSessions,
   getSessionTypes,
   bulkImportSessions,
+} from '@/lib/services/api-client';
+import {
   type TrainingSession,
   type TrainingSessionPayload,
-} from '@/lib/api';
+} from '@/lib/types';
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
@@ -58,7 +59,7 @@ const DashboardPage = () => {
     queryKey: ['sessionTypes'],
     queryFn: async () => {
       const types = await getSessionTypes();
-      const defaultTypes = ['Footing', 'Sortie longue', 'Fractionné'];
+      const defaultTypes = ['Footing', 'Sortie longue', 'Fractionné', 'Autre'];
       return Array.from(new Set([...defaultTypes, ...types])).sort();
     },
     staleTime: 15 * 60 * 1000,
@@ -171,11 +172,24 @@ const DashboardPage = () => {
     setIsDialogOpen(true);
   };
 
+  const getDialogMode = () => {
+    if (!editingSession) return 'create';
+    return editingSession.status === 'planned' ? 'complete' : 'edit';
+  };
+
   const handleDialogClose = async () => {
     setIsDialogOpen(false);
     setEditingSession(null);
     setImportedData(null);
     queryClient.invalidateQueries({ queryKey: ['sessions'] });
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setEditingSession(null);
+      setImportedData(null);
+    }
+    setIsDialogOpen(open);
   };
 
   const handleStravaImport = (data: any) => {
@@ -225,11 +239,10 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
-        <DashboardHeader onNewSession={() => setIsDialogOpen(true)} />
-
-        <div className="mb-8 space-y-6">
-          <SessionChat sessions={sessions} user={user} />
-        </div>
+        <DashboardHeader onNewSession={() => {
+          setEditingSession(null);
+          setIsDialogOpen(true);
+        }} />
 
         {initialLoading || sessions.length > 0 ? (
           <SessionsTable
@@ -246,7 +259,10 @@ const DashboardPage = () => {
         ) : (
           <div className="rounded-lg border border-border/50 bg-card p-12 text-center text-muted-foreground">
             <p className="mb-4">Aucune séance enregistrée</p>
-            <Button onClick={() => setIsDialogOpen(true)} variant="outline">
+            <Button onClick={() => {
+              setEditingSession(null);
+              setIsDialogOpen(true);
+            }} variant="outline">
               Ajouter votre première séance
             </Button>
           </div>
@@ -268,11 +284,11 @@ const DashboardPage = () => {
 
       <SessionDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={handleDialogOpenChange}
         onClose={handleDialogClose}
         session={editingSession}
         initialData={importedData}
-
+        mode={getDialogMode()}
         onRequestStravaImport={handleRequestStravaImport}
         onRequestCsvImport={() => {
           setIsCsvDialogOpen(true);

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { sessionSchema } from '@/lib/validators';
-import { logger } from '@/lib/logger';
-import { recalculateSessionNumbers } from '@/lib/session-utils';
+import { sessionSchema } from '@/lib/validation';
+import { logger } from '@/lib/infrastructure/logger';
+import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 
 export const runtime = 'nodejs';
 
@@ -20,15 +20,24 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') ?? '0');
   const offset = parseInt(searchParams.get('offset') ?? '0');
   const sessionType = searchParams.get('type');
+  const status = searchParams.get('status');
 
   const whereClause: any = { userId };
+
+  if (status && status !== 'all') {
+    whereClause.status = status;
+  }
+
   if (sessionType && sessionType !== 'all') {
     whereClause.sessionType = sessionType;
   }
 
-  const sessions = await prisma.trainingSession.findMany({
+  const sessions = await prisma.training_sessions.findMany({
     where: whereClause,
-    orderBy: { date: 'desc' },
+    orderBy: [
+      { status: 'desc' },
+      { sessionNumber: 'desc' },
+    ],
     ...(limit > 0 ? { take: limit } : {}),
     ...(offset > 0 ? { skip: offset } : {}),
   });
@@ -46,19 +55,20 @@ export async function POST(request: NextRequest) {
   try {
     const payload = sessionSchema.parse(await request.json());
 
-    const session = await prisma.trainingSession.create({
+    const session = await prisma.training_sessions.create({
       data: {
         ...payload,
         date: new Date(payload.date),
         sessionNumber: 1,
         week: 1,
         userId,
+        status: 'completed',
       },
     });
 
     await recalculateSessionNumbers(userId);
 
-    const updatedSession = await prisma.trainingSession.findUnique({
+    const updatedSession = await prisma.training_sessions.findUnique({
       where: { id: session.id },
     });
 
