@@ -113,7 +113,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-3 items-start">
             <div className="md:col-span-1 rounded-lg border border-border/50 bg-card p-6">
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -194,7 +194,7 @@ export default function ProfilePage() {
         )}
 
         {activeView === 'profile' && (
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-3 items-start">
             <ProfileForm user={user} />
             <TrainingZonesTable
               maxHeartRate={user.maxHeartRate ?? undefined}

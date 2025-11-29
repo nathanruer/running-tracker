@@ -51,6 +51,7 @@ model users {
   maxHeartRate         Int?
   weight               Float?
   vma                  Float?
+  goal                 String?               @db.Text
   training_sessions    training_sessions[]
   chat_conversations   chat_conversations[]
 }

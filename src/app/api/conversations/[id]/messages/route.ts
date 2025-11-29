@@ -44,7 +44,6 @@ export async function POST(
       return NextResponse.json({ error: 'Contenu invalide' }, { status: 400 });
     }
 
-    // Trouver le numéro de séance le plus élevé parmi les séances complétées
     const lastCompletedSession = await prisma.training_sessions.findFirst({
       where: {
         userId,
@@ -82,6 +81,7 @@ export async function POST(
         maxHeartRate: user.maxHeartRate || undefined,
         vma: user.vma || undefined,
         age: user.age || undefined,
+        goal: user.goal || undefined,
       },
       nextSessionNumber,
     });

@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       age: true,
       maxHeartRate: true,
       vma: true,
+      goal: true,
     } as any,
   });
 
@@ -43,7 +44,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, weight, age, maxHeartRate, vma } = body;
+    const { email, weight, age, maxHeartRate, vma, goal } = body;
 
     const updateData: any = {
       email,
@@ -51,6 +52,7 @@ export async function PUT(request: NextRequest) {
       age: age !== undefined && age !== '' ? parseInt(age) : undefined,
       maxHeartRate: maxHeartRate !== undefined && maxHeartRate !== '' ? parseInt(maxHeartRate) : undefined,
       vma: vma !== undefined && vma !== '' ? parseFloat(vma) : undefined,
+      goal: goal !== undefined ? goal : undefined,
     };
 
     const user = await prisma.users.update({
@@ -66,6 +68,7 @@ export async function PUT(request: NextRequest) {
         age: true,
         maxHeartRate: true,
         vma: true,
+        goal: true,
       } as any,
     });
 

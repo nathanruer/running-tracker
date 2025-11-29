@@ -5,6 +5,7 @@ export interface User {
   age?: number | null;
   maxHeartRate?: number | null;
   vma?: number | null;
+  goal?: string | null;
   stravaId?: string | null;
   stravaTokenExpiresAt?: Date | null;
 }
@@ -16,4 +17,5 @@ export interface UserUpdatePayload {
   age?: number;
   maxHeartRate?: number;
   vma?: number;
+  goal?: string;
 }

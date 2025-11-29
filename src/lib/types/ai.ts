@@ -14,6 +14,7 @@ export interface UserProfile {
   maxHeartRate?: number;
   vma?: number;
   age?: number;
+  goal?: string;
 }
 
 export interface BuildContextParams {

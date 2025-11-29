@@ -42,7 +42,10 @@ export function buildContextMessage({
   if (userProfile.vma) {
     context += `- VMA : ${userProfile.vma} km/h\n`;
   }
-  if (!userProfile.age && !userProfile.maxHeartRate && !userProfile.vma) {
+  if (userProfile.goal) {
+    context += `- Objectif : ${userProfile.goal}\n`;
+  }
+  if (!userProfile.age && !userProfile.maxHeartRate && !userProfile.vma && !userProfile.goal) {
     context += '- Profil non renseigné\n';
   }
 

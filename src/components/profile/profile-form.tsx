@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser } from '@/lib/services/api-client';
 import { type User } from '@/lib/types';
@@ -33,6 +34,7 @@ const profileSchema = z.object({
   age: optionalNumber,
   maxHeartRate: optionalNumber,
   vma: optionalNumber,
+  goal: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -57,6 +59,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       age: user.age ?? undefined,
       maxHeartRate: user.maxHeartRate ?? undefined,
       vma: user.vma ?? undefined,
+      goal: user.goal ?? undefined,
     },
   });
 
@@ -85,6 +88,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       age: data.age ?? undefined,
       maxHeartRate: data.maxHeartRate ?? undefined,
       vma: data.vma ?? undefined,
+      goal: data.goal ?? undefined,
     });
   };
 
@@ -103,6 +107,19 @@ export function ProfileForm({ user }: ProfileFormProps) {
             <Input id="email" {...register('email')} />
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="goal">Objectif / Contexte</Label>
+            <Textarea
+              id="goal"
+              {...register('goal')}
+              placeholder="Ex: Je veux courir un 10km en moins de 50 minutes dans 2 mois"
+              rows={3}
+            />
+            {errors.goal && (
+              <p className="text-sm text-destructive">{errors.goal.message}</p>
             )}
           </div>
 
