@@ -22,41 +22,20 @@ export async function POST(request: NextRequest) {
       targetRPE,
       intervalStructure,
       plannedDate,
-      sessionNumber: requestedSessionNumber,
       recommendationId,
+      comments,
     } = body;
 
-    let nextSessionNumber;
+    // Always calculate the next available session number dynamically
+    const allSessions = await prisma.training_sessions.findMany({
+      where: { userId },
+      select: { sessionNumber: true },
+      orderBy: { sessionNumber: 'desc' },
+    });
 
-    if (requestedSessionNumber) {
-      const existingSession = await prisma.training_sessions.findFirst({
-        where: { 
-          userId,
-          sessionNumber: requestedSessionNumber 
-        },
-      });
-
-      if (existingSession) {
-        if (existingSession.status === 'planned') {
-          await prisma.training_sessions.delete({
-            where: { id: existingSession.id },
-          });
-          nextSessionNumber = requestedSessionNumber;
-        } else {
-          const sessionCount = await prisma.training_sessions.count({
-            where: { userId },
-          });
-          nextSessionNumber = sessionCount + 1;
-        }
-      } else {
-        nextSessionNumber = requestedSessionNumber;
-      }
-    } else {
-      const sessionCount = await prisma.training_sessions.count({
-        where: { userId },
-      });
-      nextSessionNumber = sessionCount + 1;
-    }
+    const nextSessionNumber = allSessions.length > 0
+      ? allSessions[0].sessionNumber + 1
+      : 1;
 
     const baseDate = plannedDate ? new Date(plannedDate) : new Date();
     const firstSession = await prisma.training_sessions.findFirst({
@@ -87,7 +66,7 @@ export async function POST(request: NextRequest) {
         intervalStructure,
         plannedDate: plannedDate ? new Date(plannedDate) : null,
         recommendationId,
-        comments: '',
+        comments: comments || '',
       },
     });
 

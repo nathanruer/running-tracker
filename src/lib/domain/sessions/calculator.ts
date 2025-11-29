@@ -20,47 +20,68 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
   });
 
   const completedSessions = sessions.filter(s => s.date !== null && s.status === 'completed');
+  const plannedSessions = sessions.filter(s => s.status === 'planned');
 
-  if (completedSessions.length === 0) {
+  if (completedSessions.length === 0 && plannedSessions.length === 0) {
     return;
   }
-
-  const sessionsWithWeek = completedSessions.map(session => ({
-    ...session,
-    calendarWeek: getCalendarWeek(session.date!),
-  }));
-
-  const weekMap = new Map<string, typeof sessionsWithWeek>();
-  
-  for (const session of sessionsWithWeek) {
-    const weekKey = `${session.calendarWeek.year}-W${session.calendarWeek.week}`;
-    if (!weekMap.has(weekKey)) {
-      weekMap.set(weekKey, []);
-    }
-    weekMap.get(weekKey)!.push(session);
-  }
-
-  const sortedWeeks = Array.from(weekMap.entries()).sort((a, b) => {
-    const [yearA, weekA] = a[0].split('-W').map(Number);
-    const [yearB, weekB] = b[0].split('-W').map(Number);
-    return yearA !== yearB ? yearA - yearB : weekA - weekB;
-  });
 
   const updates: any[] = [];
   let globalSessionNumber = 1;
 
-  for (let weekIndex = 0; weekIndex < sortedWeeks.length; weekIndex++) {
-    const [, weekSessions] = sortedWeeks[weekIndex];
-    weekSessions.sort((a, b) => a.date!.getTime() - b.date!.getTime());
-    
-    for (let sessionIndex = 0; sessionIndex < weekSessions.length; sessionIndex++) {
-      const session = weekSessions[sessionIndex];
+  // Recalculate completed sessions first
+  if (completedSessions.length > 0) {
+    const sessionsWithWeek = completedSessions.map(session => ({
+      ...session,
+      calendarWeek: getCalendarWeek(session.date!),
+    }));
+
+    const weekMap = new Map<string, typeof sessionsWithWeek>();
+
+    for (const session of sessionsWithWeek) {
+      const weekKey = `${session.calendarWeek.year}-W${session.calendarWeek.week}`;
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, []);
+      }
+      weekMap.get(weekKey)!.push(session);
+    }
+
+    const sortedWeeks = Array.from(weekMap.entries()).sort((a, b) => {
+      const [yearA, weekA] = a[0].split('-W').map(Number);
+      const [yearB, weekB] = b[0].split('-W').map(Number);
+      return yearA !== yearB ? yearA - yearB : weekA - weekB;
+    });
+
+    for (let weekIndex = 0; weekIndex < sortedWeeks.length; weekIndex++) {
+      const [, weekSessions] = sortedWeeks[weekIndex];
+      weekSessions.sort((a, b) => a.date!.getTime() - b.date!.getTime());
+
+      for (let sessionIndex = 0; sessionIndex < weekSessions.length; sessionIndex++) {
+        const session = weekSessions[sessionIndex];
+        updates.push(
+          prisma.training_sessions.update({
+            where: { id: session.id },
+            data: {
+              sessionNumber: globalSessionNumber,
+              week: weekIndex + 1,
+            },
+          })
+        );
+        globalSessionNumber++;
+      }
+    }
+  }
+
+  // Recalculate planned sessions after completed ones
+  if (plannedSessions.length > 0) {
+    const sortedPlannedSessions = plannedSessions.sort((a, b) => a.sessionNumber - b.sessionNumber);
+
+    for (const session of sortedPlannedSessions) {
       updates.push(
         prisma.training_sessions.update({
           where: { id: session.id },
           data: {
             sessionNumber: globalSessionNumber,
-            week: weekIndex + 1,
           },
         })
       );
@@ -68,5 +89,7 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
     }
   }
 
-  await prisma.$transaction(updates);
+  if (updates.length > 0) {
+    await prisma.$transaction(updates);
+  }
 }

@@ -37,6 +37,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
     return `${h}h${m.toString().padStart(2, '0')}`;
   };
 
+  const getNextSessionNumber = () => {
+    if (allSessions.length === 0) return 1;
+    return Math.max(...allSessions.map(s => s.sessionNumber)) + 1;
+  };
+
   const [input, setInput] = useState('');
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -77,6 +82,9 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const acceptSessionMutation = useMutation({
     mutationFn: async (session: any) => {
+      const recommendationText = session.why_this_session || session.reason || '';
+      const comments = recommendationText ? `Séance recommandée : ${recommendationText}` : '';
+
       const response = await fetch('/api/sessions/planned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,8 +97,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
           targetHeartRateBpm: session.target_hr_bpm,
           targetRPE: session.target_rpe,
           intervalStructure: session.interval_structure,
-          sessionNumber: session.session_number || session.sessionNumber,
           recommendationId: session.recommendation_id,
+          comments,
         }),
       });
 
@@ -290,20 +298,31 @@ export function ChatView({ conversationId }: ChatViewProps) {
                     <p className="text-sm font-medium">
                       {message.recommendations.recommended_sessions.length === 1
                         ? 'Séance recommandée :'
-                        : 'Séances recommandées :'}
+                        : `${message.recommendations.recommended_sessions.length} séances recommandées :`}
                     </p>
-                    {message.recommendations.recommended_sessions.map((session: any, idx: number) => (
+                    {message.recommendations.recommended_sessions.map((session: any, idx: number) => {
+                      const isAdded = isSessionAlreadyAdded(session);
+
+                      const notAddedSessionsBeforeThis = message.recommendations.recommended_sessions
+                        .slice(0, idx)
+                        .filter((s: any) => !isSessionAlreadyAdded(s))
+                        .length;
+                      const dynamicSessionNumber = getNextSessionNumber() + notAddedSessionsBeforeThis;
+
+                      const displaySessionNumber = isAdded
+                        ? (session.session_number || session.sessionNumber)
+                        : dynamicSessionNumber;
+
+                      return (
                       <div
                         key={idx}
                         className="bg-card rounded-lg p-4 border border-border space-y-3"
                       >
                         <div className="flex items-center justify-between gap-3 flex-wrap">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {(session.session_number || session.sessionNumber) && (
-                              <Badge variant="default" className="font-semibold">
-                                Séance {session.session_number || session.sessionNumber}
-                              </Badge>
-                            )}
+                            <Badge variant="default" className="font-semibold">
+                              Séance {displaySessionNumber}
+                            </Badge>
                             <Badge variant="outline" className="font-medium">
                               {(() => {
                                 const sessionType = session.session_type || session.type;
@@ -314,7 +333,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
                               })()}
                             </Badge>
                           </div>
-                          {!isSessionAlreadyAdded(session) ? (
+                          {!isAdded ? (
                             <Button
                               size="sm"
                               variant="default"
@@ -373,7 +392,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
                           {session.why_this_session || session.reason}
                         </p>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )}
 

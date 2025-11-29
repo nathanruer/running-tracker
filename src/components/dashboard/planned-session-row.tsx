@@ -84,7 +84,6 @@ export function PlannedSessionRow({ session, onEdit, onDelete }: PlannedSessionR
             variant="ghost"
             size="sm"
             onClick={() => onEdit(session)}
-            className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/20"
           >
             <CheckCircle className="h-4 w-4" />
           </Button>
