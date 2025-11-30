@@ -1,7 +1,7 @@
 export interface TrainingSession {
   id: string;
   sessionNumber: number;
-  week: number;
+  week: number | null;
   date: string | null;
   sessionType: string;
   duration: string | null;

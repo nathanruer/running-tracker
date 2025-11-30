@@ -34,15 +34,22 @@ export async function PUT(
       );
     }
 
+    // Gérer la date : undefined = pas de changement, '' = NULL (à planifier), valeur = nouvelle date
+    const dateUpdate = updates.date !== undefined
+      ? updates.date === ''
+        ? { date: null }
+        : { date: new Date(updates.date) }
+      : {};
+
     await prisma.training_sessions.update({
       where: { id: params.id },
       data: {
         ...updates,
-        ...(updates.date && { date: new Date(updates.date) }),
+        ...dateUpdate,
       },
     });
 
-    if (updates.date) {
+    if (updates.date !== undefined) {
       await recalculateSessionNumbers(userId);
     }
 

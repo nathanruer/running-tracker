@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LogOut, User as UserIcon, BarChart3 } from 'lucide-react';
+import { ArrowLeft, LogOut, User as UserIcon, BarChart3, Calendar } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ProfileForm } from '@/components/profile/profile-form';
 import { TrainingZonesTable } from '@/components/profile/training-zones-table';
 import { AnalyticsView } from '@/components/profile/analytics-view';
+import { CalendarView } from '@/components/profile/calendar-view';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser, logoutUser, getSessions } from '@/lib/services/api-client';
 
@@ -17,7 +18,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [activeView, setActiveView] = useState<'profile' | 'analytics'>('profile');
+  const [activeView, setActiveView] = useState<'profile' | 'analytics' | 'calendar'>('profile');
 
   const { data: user, isLoading: loading } = useQuery({
     queryKey: ['user'],
@@ -110,6 +111,14 @@ export default function ProfilePage() {
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Analyse
               </Button>
+              <Button
+                variant={activeView === 'calendar' ? 'default' : 'ghost'}
+                onClick={() => setActiveView('calendar')}
+                className={`${activeView === 'calendar' ? 'gradient-violet' : ''}`}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Calendrier
+              </Button>
             </div>
           </div>
 
@@ -186,11 +195,23 @@ export default function ProfilePage() {
               <BarChart3 className="mr-2 h-4 w-4" />
               Analyse
             </Button>
+            <Button
+              variant={activeView === 'calendar' ? 'default' : 'ghost'}
+              onClick={() => setActiveView('calendar')}
+              className={`${activeView === 'calendar' ? 'gradient-violet' : ''}`}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Calendrier
+            </Button>
           </div>
         </div>
 
         {activeView === 'analytics' && (
           <AnalyticsView sessions={sessions} />
+        )}
+
+        {activeView === 'calendar' && (
+          <CalendarView sessions={sessions} />
         )}
 
         {activeView === 'profile' && (

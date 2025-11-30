@@ -20,7 +20,7 @@ export function PlannedSessionRow({ session, onEdit, onDelete }: PlannedSessionR
           {session.sessionNumber}
         </div>
       </TableCell>
-      <TableCell className="text-center">{session.week}</TableCell>
+      <TableCell className="text-center">{session.week ?? '-'}</TableCell>
       <TableCell className="text-center">
         {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : (
           <span className="text-sm">À planifier</span>

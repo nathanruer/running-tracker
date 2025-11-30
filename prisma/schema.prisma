@@ -10,7 +10,7 @@ datasource db {
 model training_sessions {
   id                String   @id @default(cuid())
   sessionNumber     Int
-  week              Int
+  week              Int?
   date              DateTime?
   sessionType       String
   duration          String?

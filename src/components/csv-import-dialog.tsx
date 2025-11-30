@@ -31,6 +31,7 @@ interface CsvImportDialogProps {
   onImport: (sessions: any[]) => Promise<void>;
   onCancel?: () => void;
   isImporting?: boolean;
+  mode?: 'create' | 'edit' | 'complete';
 }
 
 interface ParsedSession {
@@ -51,6 +52,7 @@ export function CsvImportDialog({
   onImport,
   onCancel,
   isImporting = false,
+  mode = 'create',
 }: CsvImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<ParsedSession[]>([]);
@@ -255,6 +257,10 @@ export function CsvImportDialog({
     if (newSelected.has(index)) {
       newSelected.delete(index);
     } else {
+      // En mode 'complete', limiter à une seule sélection
+      if (mode === 'complete') {
+        newSelected.clear();
+      }
       newSelected.add(index);
     }
     setSelectedIndices(newSelected);
@@ -301,12 +307,21 @@ export function CsvImportDialog({
           bValue = b.distance;
           break;
         case 'avgPace':
-          aValue = a.avgPace;
-          bValue = b.avgPace;
+          // Convertir l'allure MM:SS en secondes pour un tri correct
+          const parseAvgPace = (pace: string) => {
+            const [min, sec] = pace.split(':').map(Number);
+            return (min || 0) * 60 + (sec || 0);
+          };
+          aValue = parseAvgPace(a.avgPace);
+          bValue = parseAvgPace(b.avgPace);
           break;
         case 'avgHeartRate':
           aValue = a.avgHeartRate;
           bValue = b.avgHeartRate;
+          break;
+        case 'perceivedExertion':
+          aValue = a.perceivedExertion || 0;
+          bValue = b.perceivedExertion || 0;
           break;
         default:
           return 0;
@@ -340,7 +355,9 @@ export function CsvImportDialog({
         <DialogHeader>
           <DialogTitle>Importer des séances depuis CSV</DialogTitle>
           <DialogDescription>
-            Importez plusieurs séances en une seule fois depuis un fichier CSV ou Excel (exporté en CSV)
+            {mode === 'complete'
+              ? 'Importez les données d\'une séance depuis un fichier CSV'
+              : 'Importez plusieurs séances en une seule fois depuis un fichier CSV ou Excel (exporté en CSV)'}
           </DialogDescription>
         </DialogHeader>
 
@@ -387,13 +404,15 @@ export function CsvImportDialog({
                   {preview.length} séance(s) détectée(s)
                 </p>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={toggleSelectAll}
-                  >
-                    {selectedIndices.size === preview.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-                  </Button>
+                  {mode !== 'complete' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleSelectAll}
+                    >
+                      {selectedIndices.size === preview.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                    </Button>
+                  )}
                   <label htmlFor="csv-upload-replace">
                     <Button variant="outline" size="sm" asChild>
                       <span>Changer de fichier</span>
@@ -414,10 +433,12 @@ export function CsvImportDialog({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[50px]">
-                        <Checkbox 
-                          checked={preview.length > 0 && selectedIndices.size === preview.length}
-                          onCheckedChange={toggleSelectAll}
-                        />
+                        {mode !== 'complete' && (
+                          <Checkbox
+                            checked={preview.length > 0 && selectedIndices.size === preview.length}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        )}
                       </TableHead>
                       <TableHead className="text-center">Date</TableHead>
                       <TableHead className="text-center">Séance</TableHead>

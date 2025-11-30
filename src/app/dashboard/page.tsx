@@ -202,18 +202,29 @@ const DashboardPage = () => {
   };
 
   const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
+    // En mode 'complete', utiliser les données de la première séance pour pré-remplir le formulaire
+    if (getDialogMode() === 'complete') {
+      if (sessions.length > 0) {
+        setImportedData(sessions[0]);
+        setIsCsvDialogOpen(false);
+        setIsDialogOpen(true);
+      }
+      return;
+    }
+
+    // En mode 'create', importer toutes les séances en masse
     setIsImportingCsv(true);
     try {
       await bulkImportSessions(sessions);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
-      
+
       setIsCsvDialogOpen(false);
       setIsDialogOpen(false);
-      
+
       setEditingSession(null);
       setImportedData(null);
-      
+
       toast({
         title: 'Import réussi',
         description: `${sessions.length} séance(s) importée(s) avec succès.`,
@@ -300,12 +311,14 @@ const DashboardPage = () => {
         onOpenChange={setIsCsvDialogOpen}
         onImport={handleCsvImport}
         isImporting={isImportingCsv}
+        mode={getDialogMode()}
       />
 
       <StravaImportDialog
         open={isStravaDialogOpen}
         onOpenChange={setIsStravaDialogOpen}
         onImport={handleStravaImport}
+        mode={getDialogMode()}
       />
 
       <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>

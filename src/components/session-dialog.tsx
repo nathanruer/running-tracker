@@ -35,7 +35,7 @@ import { type TrainingSessionPayload, type TrainingSession } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  date: z.string().min(1, 'Date requise'),
+  date: z.string(),
   sessionType: z.string().min(1, 'Type de séance requis'),
   duration: z.string().regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format: HH:MM:SS'),
   distance: z.number().min(0, 'Distance requise'),
@@ -92,15 +92,18 @@ const SessionDialog = ({
     const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné', 'Autre'];
 
     if (session && mode === 'complete' && initialData) {
-      const { sessionType: importedType, date, ...importedFields } = initialData;
+      const { sessionType: importedType, date, comments: importedComments, perceivedExertion: importedRPE, ...importedFields } = initialData;
       const sessionDate = date ? (date.includes('T') ? date.split('T')[0] : date) :
                           (session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0]);
+
+      // Préserver le RPE cible de la séance programmée
+      const perceivedExertion = session.targetRPE || 0;
 
       form.reset({
         date: sessionDate,
         sessionType: session.sessionType,
         intervalStructure: session.intervalStructure || '',
-        perceivedExertion: 0,
+        perceivedExertion,
         comments: session.comments || '',
         duration: '00:00:00',
         distance: 0,
@@ -110,16 +113,35 @@ const SessionDialog = ({
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (session && (mode === 'edit' || mode === 'complete')) {
-      const sessionDate = session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0];
+      const sessionDate = session.date ? session.date.split('T')[0] : '';
+
+      // Pour les séances programmées en mode 'complete', pré-remplir avec les valeurs cibles
+      const isPlanned = session.status === 'planned';
+      const duration = isPlanned && session.targetDuration
+        ? `${Math.floor(session.targetDuration / 60).toString().padStart(2, '0')}:${(session.targetDuration % 60).toString().padStart(2, '0')}:00`
+        : session.duration || '00:00:00';
+      const distance = isPlanned && session.targetDistance
+        ? session.targetDistance
+        : session.distance || 0;
+      const avgPace = isPlanned && session.targetPace
+        ? session.targetPace
+        : session.avgPace || '00:00';
+      const avgHeartRate = isPlanned && session.targetHeartRateBpm
+        ? parseInt(session.targetHeartRateBpm)
+        : session.avgHeartRate || 0;
+      const perceivedExertion = isPlanned && session.targetRPE
+        ? session.targetRPE
+        : session.perceivedExertion || 0;
+
       form.reset({
         date: sessionDate,
         sessionType: session.sessionType,
-        duration: session.duration || '00:00:00',
-        distance: session.distance || 0,
-        avgPace: session.avgPace || '00:00',
-        avgHeartRate: session.avgHeartRate || 0,
+        duration,
+        distance,
+        avgPace,
+        avgHeartRate,
         intervalStructure: session.intervalStructure || '',
-        perceivedExertion: session.perceivedExertion || 0,
+        perceivedExertion,
         comments: session.comments || '',
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
@@ -154,7 +176,52 @@ const SessionDialog = ({
     }
   }, [session, initialData, mode, form]);
 
+  const onUpdate = async (values: FormValues) => {
+    if (!session) return;
+
+    setLoading(true);
+    try {
+      const sessionData: TrainingSessionPayload = {
+        date: values.date,
+        sessionType: values.sessionType,
+        duration: values.duration,
+        distance: values.distance,
+        avgPace: values.avgPace,
+        avgHeartRate: values.avgHeartRate,
+        intervalStructure: values.sessionType === 'Fractionné' ? values.intervalStructure : '',
+        perceivedExertion: values.perceivedExertion,
+        comments: values.comments,
+      };
+
+      await updateSession(session.id, sessionData);
+      toast({
+        title: 'Séance modifiée',
+        description: 'La séance a été mise à jour avec succès.',
+      });
+      onClose();
+      form.reset();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: error instanceof Error ? error.message : 'Une erreur est survenue lors de la modification.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onSubmit = async (values: FormValues) => {
+    // Validation personnalisée de la date
+    if (!values.date) {
+      toast({
+        title: 'Erreur',
+        description: 'La date est requise pour marquer une séance comme réalisée',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const sessionData: TrainingSessionPayload = {
@@ -303,7 +370,8 @@ const SessionDialog = ({
                           field.onChange('');
                         }
                       }}
-                      placeholder="Sélectionner une date"
+                      placeholder={mode === 'complete' ? "À planifier" : "Sélectionner une date"}
+                      allowClear={mode === 'complete'}
                     />
                   </FormControl>
                   <FormMessage />
@@ -539,9 +607,30 @@ const SessionDialog = ({
               >
                 Annuler
               </Button>
-              <Button type="submit" className="flex-1 gradient-violet" disabled={loading}>
-                {loading ? 'Enregistrement...' : (session ? 'Modifier' : 'Enregistrer')}
-              </Button>
+              {mode === 'complete' ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={form.handleSubmit(onUpdate)}
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    {loading ? 'Modification...' : 'Modifier'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 gradient-violet"
+                    disabled={loading}
+                  >
+                    {loading ? 'Enregistrement...' : 'Modifier et marquer comme réalisé'}
+                  </Button>
+                </>
+              ) : (
+                <Button type="submit" className="flex-1 gradient-violet" disabled={loading}>
+                  {loading ? 'Enregistrement...' : (session ? 'Modifier' : 'Enregistrer')}
+                </Button>
+              )}
             </div>
           </form>
         </Form>

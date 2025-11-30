@@ -64,7 +64,9 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
 
   const getCurrentWeek = () => {
     if (sessions.length === 0) return 1;
-    return Math.max(...sessions.map(s => s.week));
+    const validWeeks = sessions.filter(s => s.week !== null).map(s => s.week as number);
+    if (validWeeks.length === 0) return 1;
+    return Math.max(...validWeeks);
   };
 
   const getCurrentWeekSessions = () => {

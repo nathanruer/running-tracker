@@ -76,6 +76,9 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
 
     filteredSessions.forEach((session) => {
       const week = session.week;
+      // Skip sessions without a week assigned
+      if (week === null) return;
+      
       const distance = session.distance || 0;
       if (!weeklyKm[week]) {
         weeklyKm[week] = 0;

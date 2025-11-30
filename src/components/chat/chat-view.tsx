@@ -56,7 +56,13 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const isSessionAlreadyAdded = (recommendedSession: any) => {
     return allSessions.some(
-      (s: any) => s.status === 'planned' && s.recommendationId === recommendedSession.recommendation_id
+      (s: any) => (s.status === 'planned' || s.status === 'completed') && s.recommendationId === recommendedSession.recommendation_id
+    );
+  };
+
+  const isSessionCompleted = (recommendedSession: any) => {
+    return allSessions.some(
+      (s: any) => s.status === 'completed' && s.recommendationId === recommendedSession.recommendation_id
     );
   };
 
@@ -65,6 +71,12 @@ export function ChatView({ conversationId }: ChatViewProps) {
       (s: any) => s.status === 'planned' && s.recommendationId === recommendedSession.recommendation_id
     );
     return session?.id;
+  };
+
+  const getCompletedSession = (recommendedSession: any) => {
+    return allSessions.find(
+      (s: any) => s.status === 'completed' && s.recommendationId === recommendedSession.recommendation_id
+    );
   };
 
   const { data: conversation, isLoading } = useQuery({
@@ -164,7 +176,9 @@ export function ChatView({ conversationId }: ChatViewProps) {
     mutationFn: async (content: string) => {
       if (!conversationId) throw new Error('Aucune conversation sélectionnée');
 
-      const currentWeek = allSessions.length > 0 ? Math.max(...allSessions.map(s => s.week)) : 1;
+      const currentWeek = allSessions.length > 0 
+        ? Math.max(...allSessions.filter(s => s.week !== null).map(s => s.week as number), 1)
+        : 1;
       const currentWeekSessions = allSessions.filter(s => s.week === currentWeek);
 
       const response = await fetch(`/api/conversations/${conversationId}/messages`, {
@@ -302,6 +316,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
                     </p>
                     {message.recommendations.recommended_sessions.map((session: any, idx: number) => {
                       const isAdded = isSessionAlreadyAdded(session);
+                      const isCompleted = isSessionCompleted(session);
+                      const completedSession = isCompleted ? getCompletedSession(session) : null;
 
                       const notAddedSessionsBeforeThis = message.recommendations.recommended_sessions
                         .slice(0, idx)
@@ -310,7 +326,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
                       const dynamicSessionNumber = getNextSessionNumber() + notAddedSessionsBeforeThis;
 
                       const displaySessionNumber = isAdded
-                        ? (session.session_number || session.sessionNumber)
+                        ? (completedSession?.sessionNumber || session.session_number || session.sessionNumber)
                         : dynamicSessionNumber;
 
                       return (
@@ -344,6 +360,14 @@ export function ChatView({ conversationId }: ChatViewProps) {
                               <Check className="h-4 w-4 mr-2" />
                               Ajouter
                             </Button>
+                          ) : isCompleted ? (
+                            <Badge 
+                              variant="secondary" 
+                              className="shrink-0 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800"
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Réalisé
+                            </Badge>
                           ) : (
                             <Button
                               size="sm"

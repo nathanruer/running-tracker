@@ -15,7 +15,7 @@ export function CompletedSessionRow({ session, onEdit, onDelete }: CompletedSess
       <TableCell className="font-medium text-center">
         {session.sessionNumber}
       </TableCell>
-      <TableCell className="text-center">{session.week}</TableCell>
+      <TableCell className="text-center">{session.week ?? '-'}</TableCell>
       <TableCell className="text-center">
         {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : '-'}
       </TableCell>

@@ -37,17 +37,21 @@ export async function POST(request: NextRequest) {
       ? allSessions[0].sessionNumber + 1
       : 1;
 
-    const baseDate = plannedDate ? new Date(plannedDate) : new Date();
-    const firstSession = await prisma.training_sessions.findFirst({
-      where: { userId },
-      orderBy: { date: 'asc' },
-    });
+    // Only calculate week if plannedDate is provided
+    let week: number | null = null;
+    if (plannedDate) {
+      const baseDate = new Date(plannedDate);
+      const firstSession = await prisma.training_sessions.findFirst({
+        where: { userId },
+        orderBy: { date: 'asc' },
+      });
 
-    let week = 1;
-    if (firstSession && firstSession.date) {
-      const diffTime = Math.abs(baseDate.getTime() - firstSession.date.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      week = Math.floor(diffDays / 7) + 1;
+      week = 1;
+      if (firstSession && firstSession.date) {
+        const diffTime = Math.abs(baseDate.getTime() - firstSession.date.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        week = Math.floor(diffDays / 7) + 1;
+      }
     }
 
     const plannedSession = await prisma.training_sessions.create({

@@ -38,12 +38,14 @@ interface StravaImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (data: any) => void;
+  mode?: 'create' | 'edit' | 'complete';
 }
 
 export function StravaImportDialog({
   open,
   onOpenChange,
   onImport,
+  mode = 'create',
 }: StravaImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -99,6 +101,10 @@ export function StravaImportDialog({
     if (newSelected.has(index)) {
       newSelected.delete(index);
     } else {
+      // En mode 'complete', limiter à une seule sélection
+      if (mode === 'complete') {
+        newSelected.clear();
+      }
       newSelected.add(index);
     }
     setSelectedIndices(newSelected);
@@ -145,6 +151,11 @@ export function StravaImportDialog({
         case 'duration':
           aValue = a.moving_time;
           bValue = b.moving_time;
+          break;
+        case 'pace':
+          // Calculer l'allure en secondes par km (plus petit = plus rapide)
+          aValue = a.distance > 0 ? (a.moving_time / (a.distance / 1000)) : 999999;
+          bValue = b.distance > 0 ? (b.moving_time / (b.distance / 1000)) : 999999;
           break;
         case 'heartRate':
           aValue = a.average_heartrate || 0;
@@ -231,7 +242,9 @@ export function StravaImportDialog({
           <DialogDescription>
             {!isConnected
               ? 'Connectez-vous à Strava pour accéder à vos activités.'
-              : 'Sélectionnez une ou plusieurs activités à importer.'}
+              : mode === 'complete'
+                ? 'Sélectionnez une activité à importer pour cette séance.'
+                : 'Sélectionnez une ou plusieurs activités à importer.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -269,13 +282,15 @@ export function StravaImportDialog({
               <p className="text-sm font-medium">
                 {activities.length} activité(s) trouvée(s)
               </p>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={toggleSelectAll}
-              >
-                {selectedIndices.size === activities.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-              </Button>
+              {mode !== 'complete' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleSelectAll}
+                >
+                  {selectedIndices.size === activities.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                </Button>
+              )}
             </div>
             
             <ScrollArea className="h-[400px] rounded-md border">
@@ -283,10 +298,12 @@ export function StravaImportDialog({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[50px]">
-                      <Checkbox 
-                        checked={activities.length > 0 && selectedIndices.size === activities.length}
-                        onCheckedChange={toggleSelectAll}
-                      />
+                      {mode !== 'complete' && (
+                        <Checkbox
+                          checked={activities.length > 0 && selectedIndices.size === activities.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      )}
                     </TableHead>
                     <TableHead className="text-center">
                       <button 
@@ -316,7 +333,15 @@ export function StravaImportDialog({
                         <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Distance</span>
                       </button>
                     </TableHead>
-                    <TableHead className="text-center">Allure</TableHead>
+                    <TableHead className="text-center">
+                      <button
+                        onClick={() => handleSort('pace')}
+                        className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full"
+                      >
+                        <SortIcon column="pace" />
+                        <span className={sortColumn === 'pace' ? 'text-foreground' : ''}>Allure</span>
+                      </button>
+                    </TableHead>
                     <TableHead className="text-center">
                       <button 
                         onClick={() => handleSort('heartRate')}
