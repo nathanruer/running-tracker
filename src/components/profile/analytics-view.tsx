@@ -76,7 +76,6 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
 
     filteredSessions.forEach((session) => {
       const week = session.week;
-      // Skip sessions without a week assigned
       if (week === null) return;
       
       const distance = session.distance || 0;
@@ -96,7 +95,20 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
         week: Number(week),
         km: Number(km.toFixed(1)),
       }))
-      .sort((a, b) => a.week - b.week);
+      .sort((a, b) => a.week - b.week)
+      .map((data, index, array) => {
+        if (index === 0) {
+          return { ...data, changePercent: null };
+        }
+        const previousKm = array[index - 1].km;
+        const changePercent = previousKm > 0 
+          ? ((data.km - previousKm) / previousKm) * 100 
+          : null;
+        return {
+          ...data,
+          changePercent: changePercent !== null ? Number(changePercent.toFixed(1)) : null,
+        };
+      });
 
     return {
       totalKm,
@@ -263,7 +275,66 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                     borderRadius: '8px',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  formatter={(value: any) => [`${value} km`, 'Distance']}
+                  formatter={(value: any, name: any, props: any) => {
+                    const changePercent = props.payload.changePercent;
+                    if (name === 'km') {
+                      return [`${value} km`, 'Distance'];
+                    }
+                    return [value, name];
+                  }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length > 0) {
+                      const data = payload[0].payload;
+                      const changePercent = data.changePercent;
+                      
+                      return (
+                        <div 
+                          style={{
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            padding: '12px',
+                          }}
+                        >
+                          <p style={{ 
+                            color: 'hsl(var(--foreground))', 
+                            fontWeight: '600',
+                            marginBottom: '8px'
+                          }}>
+                            {label}
+                          </p>
+                          <p style={{ 
+                            color: 'hsl(var(--foreground))',
+                            marginBottom: changePercent !== null ? '4px' : '0',
+                          }}>
+                            Distance: <span style={{ fontWeight: '600' }}>{data.km} km</span>
+                          </p>
+                          {changePercent !== null && (
+                            <p style={{ 
+                              color: changePercent >= 0 ? '#10b981' : '#ef4444',
+                              fontWeight: '600',
+                              fontSize: '0.875rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}>
+                              {changePercent >= 0 ? '↗' : '↘'} 
+                              {changePercent >= 0 ? '+' : ''}{changePercent}%
+                              <span style={{ 
+                                fontWeight: '400', 
+                                fontSize: '0.75rem',
+                                color: 'hsl(var(--muted-foreground))',
+                                marginLeft: '4px',
+                              }}>
+                                vs semaine précédente
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
                 <Legend />
                 <Line

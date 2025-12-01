@@ -34,7 +34,6 @@ export async function PUT(
       );
     }
 
-    // Gérer la date : undefined = pas de changement, '' = NULL (à planifier), valeur = nouvelle date
     const dateUpdate = updates.date !== undefined
       ? updates.date === ''
         ? { date: null }

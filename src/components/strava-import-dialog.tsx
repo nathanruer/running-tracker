@@ -101,7 +101,6 @@ export function StravaImportDialog({
     if (newSelected.has(index)) {
       newSelected.delete(index);
     } else {
-      // En mode 'complete', limiter à une seule sélection
       if (mode === 'complete') {
         newSelected.clear();
       }
@@ -153,7 +152,6 @@ export function StravaImportDialog({
           bValue = b.moving_time;
           break;
         case 'pace':
-          // Calculer l'allure en secondes par km (plus petit = plus rapide)
           aValue = a.distance > 0 ? (a.moving_time / (a.distance / 1000)) : 999999;
           bValue = b.distance > 0 ? (b.moving_time / (b.distance / 1000)) : 999999;
           break;

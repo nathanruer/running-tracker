@@ -29,7 +29,6 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
   const updates: any[] = [];
   let globalSessionNumber = 1;
 
-  // Recalculate completed sessions first
   if (completedSessions.length > 0) {
     const sessionsWithWeek = completedSessions.map(session => ({
       ...session,
@@ -72,7 +71,6 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
     }
   }
 
-  // Recalculate planned sessions after completed ones
   if (plannedSessions.length > 0) {
     const sortedPlannedSessions = plannedSessions.sort((a, b) => a.sessionNumber - b.sessionNumber);
 

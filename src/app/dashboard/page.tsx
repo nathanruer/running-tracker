@@ -202,7 +202,6 @@ const DashboardPage = () => {
   };
 
   const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
-    // En mode 'complete', utiliser les données de la première séance pour pré-remplir le formulaire
     if (getDialogMode() === 'complete') {
       if (sessions.length > 0) {
         setImportedData(sessions[0]);
@@ -212,7 +211,6 @@ const DashboardPage = () => {
       return;
     }
 
-    // En mode 'create', importer toutes les séances en masse
     setIsImportingCsv(true);
     try {
       await bulkImportSessions(sessions);

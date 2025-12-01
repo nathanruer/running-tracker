@@ -33,10 +33,8 @@ export function CalendarView({ sessions }: CalendarViewProps) {
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Organiser les sessions par date
   const sessionsByDate = sessions.reduce((acc, session) => {
     try {
-      // Les séances ont une date si elles sont planifiées à une date précise ou effectuées
       if (session.date) {
         const sessionDate = parseISO(session.date);
         const dateKey = format(sessionDate, 'yyyy-MM-dd');
@@ -45,7 +43,6 @@ export function CalendarView({ sessions }: CalendarViewProps) {
           acc[dateKey] = [];
         }
 
-        // Déterminer le type basé sur le status
         const type = session.status === 'completed' ? 'completed' : 'planned';
 
         acc[dateKey].push({
@@ -55,7 +52,6 @@ export function CalendarView({ sessions }: CalendarViewProps) {
         });
       }
     } catch (error) {
-      // Ignorer les dates invalides
       console.error('Erreur lors du parsing de la date pour la session', session.id, error);
     }
     return acc;

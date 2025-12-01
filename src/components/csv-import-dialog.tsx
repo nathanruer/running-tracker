@@ -257,7 +257,6 @@ export function CsvImportDialog({
     if (newSelected.has(index)) {
       newSelected.delete(index);
     } else {
-      // En mode 'complete', limiter à une seule sélection
       if (mode === 'complete') {
         newSelected.clear();
       }
@@ -307,7 +306,6 @@ export function CsvImportDialog({
           bValue = b.distance;
           break;
         case 'avgPace':
-          // Convertir l'allure MM:SS en secondes pour un tri correct
           const parseAvgPace = (pace: string) => {
             const [min, sec] = pace.split(':').map(Number);
             return (min || 0) * 60 + (sec || 0);

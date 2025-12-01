@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the highest session number to calculate next available numbers
     const allSessions = await prisma.training_sessions.findMany({
       where: { userId },
       select: { sessionNumber: true },
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
       });
 
       createdSessions.push(plannedSession);
-      nextSessionNumber++; // Increment for the next session
+      nextSessionNumber++;
     }
 
     logger.info(

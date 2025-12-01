@@ -96,7 +96,6 @@ const SessionDialog = ({
       const sessionDate = date ? (date.includes('T') ? date.split('T')[0] : date) :
                           (session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0]);
 
-      // Préserver le RPE cible de la séance programmée
       const perceivedExertion = session.targetRPE || 0;
 
       form.reset({
@@ -115,7 +114,6 @@ const SessionDialog = ({
     } else if (session && (mode === 'edit' || mode === 'complete')) {
       const sessionDate = session.date ? session.date.split('T')[0] : '';
 
-      // Pour les séances programmées en mode 'complete', pré-remplir avec les valeurs cibles
       const isPlanned = session.status === 'planned';
       const duration = isPlanned && session.targetDuration
         ? `${Math.floor(session.targetDuration / 60).toString().padStart(2, '0')}:${(session.targetDuration % 60).toString().padStart(2, '0')}:00`
@@ -212,7 +210,6 @@ const SessionDialog = ({
   };
 
   const onSubmit = async (values: FormValues) => {
-    // Validation personnalisée de la date
     if (!values.date) {
       toast({
         title: 'Erreur',

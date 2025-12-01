@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
       comments,
     } = body;
 
-    // Always calculate the next available session number dynamically
     const allSessions = await prisma.training_sessions.findMany({
       where: { userId },
       select: { sessionNumber: true },
@@ -37,7 +36,6 @@ export async function POST(request: NextRequest) {
       ? allSessions[0].sessionNumber + 1
       : 1;
 
-    // Only calculate week if plannedDate is provided
     let week: number | null = null;
     if (plannedDate) {
       const baseDate = new Date(plannedDate);
