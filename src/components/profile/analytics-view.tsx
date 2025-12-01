@@ -72,41 +72,119 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
     }
 
     const weeklyKm: Record<number, number> = {};
+    const weeklyPlannedKm: Record<number, number> = {};
+    const weeklyCompletedCount: Record<number, number> = {};
+    const weeklyPlannedCount: Record<number, number> = {};
     let totalKm = 0;
 
     filteredSessions.forEach((session) => {
       const week = session.week;
       if (week === null) return;
-      
+
       const distance = session.distance || 0;
       if (!weeklyKm[week]) {
         weeklyKm[week] = 0;
+        weeklyCompletedCount[week] = 0;
       }
       weeklyKm[week] += distance;
+      weeklyCompletedCount[week]++;
       totalKm += distance;
+    });
+
+    const now = new Date();
+    const plannedSessions = sessions.filter((s) => s.status === 'planned' && s.week !== null);
+    
+    const filteredPlannedSessions = plannedSessions.filter((session) => {
+      if (dateRange === 'all') return true;
+      
+      const sessionDate = session.date ? new Date(session.date) : null;
+      if (!sessionDate) {
+        return true;
+      }
+      
+      if (dateRange === 'week') {
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return sessionDate >= oneWeekAgo;
+      } else if (dateRange === '30days') {
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return sessionDate >= thirtyDaysAgo;
+      } else if (dateRange === 'custom') {
+        if (!customStartDate && !customEndDate) return true;
+
+        const startDate = customStartDate ? new Date(customStartDate + 'T00:00:00') : null;
+        const endDate = customEndDate ? new Date(customEndDate + 'T23:59:59') : null;
+
+        if (startDate && endDate) {
+          return sessionDate >= startDate && sessionDate <= endDate;
+        } else if (startDate) {
+          return sessionDate >= startDate;
+        } else if (endDate) {
+          return sessionDate <= endDate;
+        }
+      }
+      return true;
+    });
+
+    filteredPlannedSessions.forEach((session) => {
+      const week = session.week;
+      if (week === null) return;
+
+      const distance = session.distance || 0;
+      if (!weeklyPlannedKm[week]) {
+        weeklyPlannedKm[week] = 0;
+        weeklyPlannedCount[week] = 0;
+      }
+      weeklyPlannedKm[week] += distance;
+      weeklyPlannedCount[week]++;
     });
 
     const weeks = Object.keys(weeklyKm).length;
     const averageKmPerWeek = weeks > 0 ? totalKm / weeks : 0;
 
-    const chartData = Object.entries(weeklyKm)
-      .map(([week, km]) => ({
-        semaine: `S${week}`,
-        week: Number(week),
-        km: Number(km.toFixed(1)),
-      }))
+    const allWeeks = new Set([...Object.keys(weeklyKm), ...Object.keys(weeklyPlannedKm)]);
+
+    const chartData = Array.from(allWeeks)
+      .map((week) => {
+        const weekNum = Number(week);
+        const completedKm = weeklyKm[weekNum] || 0;
+        const plannedKm = weeklyPlannedKm[weekNum] || 0;
+
+        return {
+          semaine: `S${week}`,
+          week: weekNum,
+          km: completedKm > 0 ? Number(completedKm.toFixed(1)) : null,
+          plannedKm: Number(plannedKm.toFixed(1)),
+          totalWithPlanned: plannedKm > 0 ? Number((completedKm + plannedKm).toFixed(1)) : null,
+          completedCount: weeklyCompletedCount[weekNum] || 0,
+          plannedCount: weeklyPlannedCount[weekNum] || 0,
+        };
+      })
       .sort((a, b) => a.week - b.week)
       .map((data, index, array) => {
         if (index === 0) {
-          return { ...data, changePercent: null };
+          return { ...data, changePercent: null, changePercentWithPlanned: null };
         }
-        const previousKm = array[index - 1].km;
-        const changePercent = previousKm > 0 
-          ? ((data.km - previousKm) / previousKm) * 100 
+
+        let previousKm = null;
+        for (let i = index - 1; i >= 0; i--) {
+          if (array[i].km !== null) {
+            previousKm = array[i].km;
+            break;
+          }
+        }
+
+        const changePercent = data.km !== null && previousKm !== null && previousKm > 0
+          ? ((data.km - previousKm) / previousKm) * 100
           : null;
+
+        const changePercentWithPlanned = previousKm !== null && previousKm > 0 && data.totalWithPlanned !== null
+          ? ((data.totalWithPlanned - previousKm) / previousKm) * 100
+          : null;
+
         return {
           ...data,
           changePercent: changePercent !== null ? Number(changePercent.toFixed(1)) : null,
+          changePercentWithPlanned: changePercentWithPlanned !== null ? Number(changePercentWithPlanned.toFixed(1)) : null,
         };
       });
 
@@ -275,8 +353,7 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                     borderRadius: '8px',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  formatter={(value: any, name: any, props: any) => {
-                    const changePercent = props.payload.changePercent;
+                  formatter={(value: any, name: any) => {
                     if (name === 'km') {
                       return [`${value} km`, 'Distance'];
                     }
@@ -286,9 +363,12 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                     if (active && payload && payload.length > 0) {
                       const data = payload[0].payload;
                       const changePercent = data.changePercent;
-                      
+                      const plannedKm = data.plannedKm || 0;
+                      const completedCount = data.completedCount || 0;
+                      const plannedCount = data.plannedCount || 0;
+
                       return (
-                        <div 
+                        <div
                           style={{
                             backgroundColor: 'hsl(var(--background))',
                             border: '1px solid hsl(var(--border))',
@@ -296,38 +376,110 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                             padding: '12px',
                           }}
                         >
-                          <p style={{ 
-                            color: 'hsl(var(--foreground))', 
+                          <p style={{
+                            color: 'hsl(var(--foreground))',
                             fontWeight: '600',
                             marginBottom: '8px'
                           }}>
                             {label}
                           </p>
-                          <p style={{ 
-                            color: 'hsl(var(--foreground))',
-                            marginBottom: changePercent !== null ? '4px' : '0',
-                          }}>
-                            Distance: <span style={{ fontWeight: '600' }}>{data.km} km</span>
-                          </p>
-                          {changePercent !== null && (
-                            <p style={{ 
-                              color: changePercent >= 0 ? '#10b981' : '#ef4444',
-                              fontWeight: '600',
-                              fontSize: '0.875rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}>
-                              {changePercent >= 0 ? '↗' : '↘'} 
-                              {changePercent >= 0 ? '+' : ''}{changePercent}%
-                              <span style={{ 
-                                fontWeight: '400', 
-                                fontSize: '0.75rem',
-                                color: 'hsl(var(--muted-foreground))',
-                                marginLeft: '4px',
+                          {data.km !== null ? (
+                            <>
+                              <p style={{
+                                color: 'hsl(var(--foreground))',
+                                marginBottom: '2px',
                               }}>
-                                vs semaine précédente
-                              </span>
+                                Distance réalisée: <span style={{ fontWeight: '600' }}>{data.km} km</span>
+                              </p>
+                              <p style={{
+                                color: '#9ca3af',
+                                marginBottom: plannedKm > 0 ? '4px' : '8px',
+                                fontSize: '0.75rem',
+                              }}>
+                                {completedCount} séance{completedCount > 1 ? 's' : ''} réalisée{completedCount > 1 ? 's' : ''}
+                                {plannedCount > 0 && `, ${plannedCount} planifiée${plannedCount > 1 ? 's' : ''}`}
+                              </p>
+                              {plannedKm > 0 && (
+                                <>
+                                  <p style={{
+                                    color: '#9ca3af',
+                                    marginBottom: '4px',
+                                    fontSize: '0.875rem',
+                                  }}>
+                                    + {plannedKm} km encore planifiés
+                                  </p>
+                                  <p style={{
+                                    color: '#9ca3af',
+                                    marginBottom: changePercent !== null ? '4px' : '0',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600',
+                                  }}>
+                                    = {data.totalWithPlanned} km au total prévu
+                                  </p>
+                                </>
+                              )}
+                            </>
+                          ) : plannedKm > 0 ? (
+                            <>
+                              <p style={{
+                                color: '#9ca3af',
+                                marginBottom: '2px',
+                              }}>
+                                Total prévu: <span style={{ fontWeight: '600' }}>{plannedKm} km</span>
+                              </p>
+                              <p style={{
+                                color: '#9ca3af',
+                                marginBottom: data.changePercentWithPlanned !== null ? '4px' : '0',
+                                fontSize: '0.75rem',
+                              }}>
+                                {plannedCount} séance{plannedCount > 1 ? 's' : ''} prévue{plannedCount > 1 ? 's' : ''}
+                              </p>
+                            </>
+                          ) : null}
+                          {changePercent !== null && (
+                            <>
+                              <p style={{
+                                color: changePercent >= 0 ? '#10b981' : '#ef4444',
+                                fontWeight: '600',
+                                fontSize: '0.875rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}>
+                                {changePercent >= 0 ? '↗ ' : '↘ '}
+                                {changePercent >= 0 ? '+' : ''}{changePercent}%
+                                <span style={{
+                                  fontWeight: '400',
+                                  fontSize: '0.75rem',
+                                  color: 'hsl(var(--muted-foreground))',
+                                  marginLeft: '4px',
+                                }}>
+                                  vs semaine précédente
+                                </span>
+                              </p>
+                              {data.changePercentWithPlanned !== null && data.changePercentWithPlanned !== changePercent && (
+                                <p style={{
+                                  color: '#9ca3af',
+                                  fontWeight: '500',
+                                  fontSize: '0.75rem',
+                                  marginTop: '2px',
+                                  fontStyle: 'italic',
+                                }}>
+                                  ({data.changePercentWithPlanned >= 0 ? '+' : ''}{data.changePercentWithPlanned}% si toutes les séances sont réalisées)
+                                </p>
+                              )}
+                            </>
+                          )}
+                          {changePercent === null && data.changePercentWithPlanned !== null && (
+                            <p style={{
+                              color: data.changePercentWithPlanned >= 0 ? '#10b981' : '#ef4444',
+                              fontWeight: '600',
+                              fontSize: '0.75rem',
+                              fontStyle: 'italic',
+                              marginTop: '2px',
+                            }}>
+                              {data.changePercentWithPlanned >= 0 ? '↗ ' : '↘ '}
+                              {data.changePercentWithPlanned >= 0 ? '+' : ''}{data.changePercentWithPlanned}% prévu vs semaine précédente
                             </p>
                           )}
                         </div>
@@ -344,7 +496,18 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                   strokeWidth={3}
                   dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }}
                   activeDot={{ r: 7 }}
-                  name="Kilomètres"
+                  name="Kilomètres réalisés"
+                  connectNulls={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="totalWithPlanned"
+                  stroke="transparent"
+                  strokeWidth={0}
+                  dot={{ fill: '#9ca3af', strokeWidth: 2, r: 5, opacity: 0.7 }}
+                  activeDot={{ r: 7, fill: '#9ca3af' }}
+                  name="Total prévu (réalisé + planifié)"
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>

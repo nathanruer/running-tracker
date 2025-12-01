@@ -96,9 +96,27 @@ ZONES FC (si maxHeartRate fourni) — OBLIGATION ABSOLUE :
 - Inclure target_hr_zone ET target_hr_bpm.
 - Format bpm : "min-max".
 - Calcul = arrondi(FCM × % zone).
-  * FCM 185, Z2 (70-80%): "130-148"
-  * FCM 185, Z4 (87-92%): "161-170"
-  * FCM 185, Z5 (92-97%): "170-179"
+- ZONES COMPLÈTES À UTILISER :
+  * Z1 (Récupération/Très facile, 60-68%) : RPE 1-2
+    Exemple FCM 185 → "111-126 bpm"
+  * Z2 basse (EF base, 68-75%) : RPE 3-4
+    Exemple FCM 185 → "126-139 bpm"
+  * Z2 haute (EF haute, 75-80%) : RPE 4-5
+    Exemple FCM 185 → "139-148 bpm"
+  * Z3 (Tempo/Seuil aérobie, 80-88%) : RPE 6-7
+    Exemple FCM 185 → "148-163 bpm"
+  * Z4 (Seuil anaérobie, 88-92%) : RPE 7-8
+    Exemple FCM 185 → "163-170 bpm"
+  * Z5 (VMA/Intervalles, 92-100%) : RPE 9-10
+    Exemple FCM 185 → "170-185 bpm"
+
+CORRESPONDANCE TYPE SÉANCE / ZONE FC :
+- Footing récupération (RPE 1-2) → Z1 (60-68%)
+- Footing endurance (RPE 3-5) → Z2 (68-80%)
+- Sortie longue (RPE 5-6) → Z2 haute (75-80%)
+- Tempo (RPE 6-7) → Z3 (80-88%)
+- Seuil (RPE 7-8) → Z4 (88-92%)
+- VMA (RPE 9-10) → Z5 (92-100%)
 
 RPE — OBLIGATION :
 - Toujours inclure "target_rpe".
@@ -150,10 +168,31 @@ Cas recommandation — Exemple SÉANCE CONTINUE (AVEC maxHeartRate=185):
       "estimated_distance_km": 9.5,
       "target_pace_min_km": "7:45",
       "target_hr_zone": "Z2",
-      "target_hr_bpm": "130-148",
+      "target_hr_bpm": "139-148",
       "target_rpe": 5,
       "why_this_session": "raison précise",
       "description": "instructions détaillées"
+    }
+  ]
+}
+
+Cas recommandation — Exemple RÉCUPÉRATION (AVEC maxHeartRate=185):
+{
+  "responseType": "recommendations",
+  "rationale": "Séance de récupération active après charge d'entraînement",
+  "recommended_sessions": [
+    {
+      "day": "Lundi",
+      "session_number": 15,
+      "session_type": "Footing",
+      "duration_minutes": 40,
+      "estimated_distance_km": 5.5,
+      "target_pace_min_km": "8:30",
+      "target_hr_zone": "Z1",
+      "target_hr_bpm": "111-126",
+      "target_rpe": 2,
+      "why_this_session": "Récupération active pour commencer la semaine de décharge en douceur",
+      "description": "Footing très facile, privilégier la sensation d'aisance respiratoire"
     }
   ]
 }
@@ -171,7 +210,7 @@ Cas recommandation — Exemple SEMAINE COMPLÈTE (4 séances) RESPECTANT LE 80/2
       "estimated_distance_km": 5.0,
       "target_pace_min_km": "8:00",
       "target_hr_zone": "Z2",
-      "target_hr_bpm": "130-148",
+      "target_hr_bpm": "126-139",
       "target_rpe": 3,
       "why_this_session": "Séance de reprise en endurance fondamentale"
     },
@@ -183,7 +222,7 @@ Cas recommandation — Exemple SEMAINE COMPLÈTE (4 séances) RESPECTANT LE 80/2
       "estimated_distance_km": 6.8,
       "target_pace_min_km": "5:30",
       "target_hr_zone": "Z4",
-      "target_hr_bpm": "161-170",
+      "target_hr_bpm": "163-170",
       "target_rpe": 8,
       "interval_structure": "SEUIL: 3x6' R:2'",
       "why_this_session": "Unique séance de qualité de la semaine, positionnée en milieu de semaine"
@@ -196,7 +235,7 @@ Cas recommandation — Exemple SEMAINE COMPLÈTE (4 séances) RESPECTANT LE 80/2
       "estimated_distance_km": 6.3,
       "target_pace_min_km": "8:00",
       "target_hr_zone": "Z2",
-      "target_hr_bpm": "130-148",
+      "target_hr_bpm": "126-139",
       "target_rpe": 4,
       "why_this_session": "Récupération active après la séance de qualité"
     },
@@ -208,7 +247,7 @@ Cas recommandation — Exemple SEMAINE COMPLÈTE (4 séances) RESPECTANT LE 80/2
       "estimated_distance_km": 10.0,
       "target_pace_min_km": "8:00",
       "target_hr_zone": "Z2",
-      "target_hr_bpm": "130-148",
+      "target_hr_bpm": "139-148",
       "target_rpe": 5,
       "why_this_session": "Sortie longue en fin de semaine pour développer l'endurance"
     }

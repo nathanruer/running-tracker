@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TrainingSession } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,10 @@ export function CalendarView({ sessions }: CalendarViewProps) {
     return duration || '--';
   };
 
+  const capitalize = (str: string): string => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -122,9 +126,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Calendrier */}
           <div className="space-y-2">
-            {/* En-têtes des jours */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
                 <div key={day} className="text-center text-sm font-medium text-muted-foreground p-2">
@@ -133,14 +135,11 @@ export function CalendarView({ sessions }: CalendarViewProps) {
               ))}
             </div>
 
-            {/* Grille du calendrier */}
             <div className="grid grid-cols-7 gap-1 auto-rows-fr">
-              {/* Jours vides avant le début du mois */}
               {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
                 <div key={`empty-${i}`} className="min-h-[80px] bg-muted/5 rounded-md" />
               ))}
 
-              {/* Jours du mois */}
               {days.map((day) => {
                 const daySessions = getSessionsForDay(day);
                 const hasSessions = daySessions.length > 0;
@@ -162,7 +161,6 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                       {format(day, 'd')}
                     </span>
                     
-                    {/* Liste des sessions */}
                     <div className="flex flex-col gap-1 w-full">
                       {daySessions.map((session, idx) => (
                         <div 
@@ -186,7 +184,6 @@ export function CalendarView({ sessions }: CalendarViewProps) {
             </div>
           </div>
 
-          {/* Légende */}
           <div className="mt-4 flex items-center justify-end gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-sm bg-violet-500/50" />
@@ -200,43 +197,48 @@ export function CalendarView({ sessions }: CalendarViewProps) {
         </CardContent>
       </Card>
 
-      {/* Dialog pour afficher les détails des sessions */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDate && format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-br from-violet-500/5 to-purple-500/5">
+            <DialogTitle className="text-3xl font-bold">
+              {selectedDate && capitalize(format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr }))}
             </DialogTitle>
+            <p className="text-base text-muted-foreground mt-1">
+              {selectedSessions.length} séance{selectedSessions.length > 1 ? 's' : ''}
+            </p>
           </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
+
+          <div className="overflow-y-auto px-6 py-4 space-y-8">
             {selectedSessions.map((session, index) => (
-              <Card key={index} className={`${
-                session.type === 'completed' 
-                  ? 'border-violet-500/50 bg-violet-500/5' 
-                  : 'border-gray-500/50 bg-gray-500/5'
-              }`}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      {session.sessionType}
-                    </CardTitle>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
+              <Card key={index} className="border-0 shadow-none bg-transparent pb-8 border-b border-border/30 last:border-0 last:pb-0">
+                <CardHeader className="pb-4 px-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-2xl mb-2">
+                        {session.sessionType}
+                      </CardTitle>
+                      {session.intervalStructure && (
+                        <p className="text-base text-muted-foreground font-medium">
+                          {session.intervalStructure}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`text-sm px-3 py-1.5 rounded-full font-semibold whitespace-nowrap ${
                       session.type === 'completed'
-                        ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300'
-                        : 'bg-gray-500/20 text-gray-700 dark:text-gray-300'
+                        ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/30'
+                        : 'bg-gray-500/20 text-gray-700 dark:text-gray-300 border border-gray-500/30'
                     }`}>
                       {session.type === 'completed' ? 'Effectuée' : 'Programmée'}
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
+                <CardContent className="space-y-4 px-6">
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="p-4 rounded-lg bg-muted/40">
+                      <p className="text-sm text-muted-foreground mb-1">
                         {session.type === 'completed' ? 'Distance' : 'Distance prévue'}
                       </p>
-                      <p className="text-lg font-semibold">
+                      <p className="text-2xl font-bold">
                         {session.type === 'completed'
                           ? `${session.distance ?? '--'} km`
                           : session.targetDistance
@@ -245,11 +247,12 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                         }
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
+
+                    <div className="p-4 rounded-lg bg-muted/40">
+                      <p className="text-sm text-muted-foreground mb-1">
                         {session.type === 'completed' ? 'Durée' : 'Durée prévue'}
                       </p>
-                      <p className="text-lg font-semibold">
+                      <p className="text-2xl font-bold">
                         {session.type === 'completed'
                           ? formatDuration(session.duration)
                           : session.targetDuration
@@ -258,44 +261,41 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                         }
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {session.type === 'completed' ? 'Allure moyenne' : 'Allure cible'}
+
+                    <div className="p-4 rounded-lg bg-muted/40">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Allure
                       </p>
-                      <p className="text-lg font-semibold">
+                      <p className="text-2xl font-bold">
                         {session.type === 'completed'
-                          ? `${formatPace(session.avgPace)} min/km`
+                          ? `${formatPace(session.avgPace)}`
                           : session.targetPace
-                            ? `~${session.targetPace} min/km`
+                            ? `~${session.targetPace}`
                             : '--'
                         }
                       </p>
+                      <p className="text-sm text-muted-foreground">min/km</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {session.type === 'completed' ? 'FC moyenne' : 'FC cible'}
+
+                    <div className="p-4 rounded-lg bg-muted/40">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        FC
                       </p>
-                      <p className="text-lg font-semibold">
+                      <p className="text-2xl font-bold">
                         {session.type === 'completed'
-                          ? `${session.avgHeartRate ?? '--'} bpm`
+                          ? `${session.avgHeartRate ?? '--'}`
                           : (session.targetHeartRateBpm || session.targetHeartRateZone)
-                            ? `${session.targetHeartRateBpm || session.targetHeartRateZone} bpm`
+                            ? `${session.targetHeartRateBpm || session.targetHeartRateZone}`
                             : '--'
                         }
                       </p>
+                      <p className="text-sm text-muted-foreground">bpm</p>
                     </div>
                   </div>
 
-                  {session.intervalStructure && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Structure</p>
-                      <p className="text-sm bg-muted/50 p-2 rounded">{session.intervalStructure}</p>
-                    </div>
-                  )}
-
                   {(session.type === 'completed' ? session.perceivedExertion : session.targetRPE) && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">
+                    <div className="mt-4 p-4 rounded-lg bg-muted/40">
+                      <p className="text-sm text-muted-foreground font-medium mb-3">
                         {session.type === 'completed' ? 'Effort perçu' : 'RPE cible'}
                       </p>
                       <div className="flex items-center gap-2">
@@ -303,15 +303,15 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                           {Array.from({ length: 10 }).map((_, i) => (
                             <div
                               key={i}
-                              className={`w-6 h-6 rounded ${
+                              className={`w-6 h-6 rounded transition-all ${
                                 i < ((session.type === 'completed' ? session.perceivedExertion : session.targetRPE) || 0)
-                                  ? 'bg-primary'
+                                  ? 'bg-primary shadow-sm'
                                   : 'bg-muted'
                               }`}
                             />
                           ))}
                         </div>
-                        <span className="text-sm font-medium">
+                        <span className="text-base font-bold">
                           {session.type === 'completed' ? session.perceivedExertion : session.targetRPE}/10
                         </span>
                       </div>
@@ -319,9 +319,9 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                   )}
 
                   {session.comments && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Commentaires</p>
-                      <p className="text-sm bg-muted/50 p-2 rounded">{session.comments}</p>
+                    <div className="mt-4 p-4 rounded-lg bg-muted/40">
+                      <p className="text-sm text-muted-foreground font-medium mb-3">Commentaires</p>
+                      <p className="text-base leading-relaxed italic text-muted-foreground">"{session.comments}"</p>
                     </div>
                   )}
                 </CardContent>
