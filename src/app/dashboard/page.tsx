@@ -59,8 +59,7 @@ const DashboardPage = () => {
     queryKey: ['sessionTypes'],
     queryFn: async () => {
       const types = await getSessionTypes();
-      const defaultTypes = ['Footing', 'Sortie longue', 'Fractionné', 'Autre'];
-      return Array.from(new Set([...defaultTypes, ...types])).sort();
+      return types.sort();
     },
     staleTime: 15 * 60 * 1000,
   });
@@ -133,6 +132,12 @@ const DashboardPage = () => {
     }
   }, [user, userLoading, router]);
 
+  useEffect(() => {
+    if (selectedType !== 'all' && availableTypes.length > 0 && !availableTypes.includes(selectedType)) {
+      setSelectedType('all');
+    }
+  }, [availableTypes, selectedType]);
+
   if (showGlobalLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
@@ -150,6 +155,7 @@ const DashboardPage = () => {
     try {
       await deleteSession(id);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
       setDeletingId(null);
       toast({
         title: 'Séance supprimée',
@@ -179,9 +185,9 @@ const DashboardPage = () => {
 
   const handleDialogClose = async () => {
     setIsDialogOpen(false);
-    setEditingSession(null);
     setImportedData(null);
     queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -253,7 +259,7 @@ const DashboardPage = () => {
           setIsDialogOpen(true);
         }} />
 
-        {initialLoading || sessions.length > 0 ? (
+        {initialLoading || sessions.length > 0 || selectedType !== 'all' ? (
           <SessionsTable
             sessions={sessions}
             availableTypes={availableTypes}
