@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SessionDialog from '@/components/session-dialog';
-import * as api from '@/lib/api';
+import * as api from '@/lib/services/api-client';
 
-vi.mock('@/lib/api', () => ({
+vi.mock('@/lib/services/api-client', () => ({
   addSession: vi.fn(),
   updateSession: vi.fn(),
 }));
@@ -61,7 +61,7 @@ describe('SessionDialog', () => {
       />
     );
 
-    expect(screen.getByText('Nouvelle séance')).toBeInTheDocument();
+    expect(screen.getByText('Ajouter une séance')).toBeInTheDocument();
     expect(screen.getByLabelText(/Durée/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Distance/i)).toBeInTheDocument();
   });

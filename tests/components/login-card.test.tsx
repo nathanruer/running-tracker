@@ -1,10 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import LoginCard from '@/components/login-card';
-import * as api from '@/lib/api';
+import * as api from '@/lib/services/api-client';
 import { useRouter } from 'next/navigation';
 
-vi.mock('@/lib/api', () => ({
+vi.mock('@/lib/services/api-client', () => ({
   loginUser: vi.fn(),
   registerUser: vi.fn(),
 }));
