@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendingUp, Activity, Calendar } from 'lucide-react';
 import {
   Card,
@@ -18,15 +18,33 @@ import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { type TrainingSession } from '@/lib/types';
+import { ExportWeeklyAnalytics } from './export-weekly-analytics';
 
 interface AnalyticsViewProps {
   sessions: TrainingSession[];
 }
 
 export function AnalyticsView({ sessions }: AnalyticsViewProps) {
-  const [dateRange, setDateRange] = useState<'week' | '30days' | 'all' | 'custom'>('all');
+  const [dateRange, setDateRange] = useState<'2weeks' | '4weeks' | '12weeks' | 'all' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [customDateError, setCustomDateError] = useState<string>('');
+
+  useEffect(() => {
+    if (dateRange === 'custom' && customStartDate && customEndDate) {
+      const startDate = new Date(customStartDate + 'T00:00:00');
+      const endDate = new Date(customEndDate + 'T23:59:59');
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff < 14) {
+        setCustomDateError('La plage doit être d\'au moins 2 semaines (14 jours)');
+      } else {
+        setCustomDateError('');
+      }
+    } else {
+      setCustomDateError('');
+    }
+  }, [dateRange, customStartDate, customEndDate]);
 
   const getFilteredSessions = () => {
     const now = new Date();
@@ -34,12 +52,15 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
 
     const filtered = completedSessions.filter((session) => {
       const sessionDate = new Date(session.date!);
-      if (dateRange === 'week') {
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return sessionDate >= oneWeekAgo;
-      } else if (dateRange === '30days') {
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return sessionDate >= thirtyDaysAgo;
+      if (dateRange === '2weeks') {
+        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        return sessionDate >= twoWeeksAgo;
+      } else if (dateRange === '4weeks') {
+        const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+        return sessionDate >= fourWeeksAgo;
+      } else if (dateRange === '12weeks') {
+        const twelveWeeksAgo = new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000);
+        return sessionDate >= twelveWeeksAgo;
       } else if (dateRange === 'custom') {
         if (!customStartDate && !customEndDate) return true;
 
@@ -47,6 +68,10 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
         const endDate = customEndDate ? new Date(customEndDate + 'T23:59:59') : null;
 
         if (startDate && endDate) {
+          const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysDiff < 14) {
+            return false;
+          }
           return sessionDate >= startDate && sessionDate <= endDate;
         } else if (startDate) {
           return sessionDate >= startDate;
@@ -96,18 +121,21 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
     
     const filteredPlannedSessions = plannedSessions.filter((session) => {
       if (dateRange === 'all') return true;
-      
+
       const sessionDate = session.date ? new Date(session.date) : null;
       if (!sessionDate) {
         return true;
       }
-      
-      if (dateRange === 'week') {
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return sessionDate >= oneWeekAgo;
-      } else if (dateRange === '30days') {
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return sessionDate >= thirtyDaysAgo;
+
+      if (dateRange === '2weeks') {
+        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        return sessionDate >= twoWeeksAgo;
+      } else if (dateRange === '4weeks') {
+        const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+        return sessionDate >= fourWeeksAgo;
+      } else if (dateRange === '12weeks') {
+        const twelveWeeksAgo = new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000);
+        return sessionDate >= twelveWeeksAgo;
       } else if (dateRange === 'custom') {
         if (!customStartDate && !customEndDate) return true;
 
@@ -269,17 +297,20 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                   Kilomètres parcourus par semaine
                 </CardDescription>
               </div>
-              <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">Dernière semaine</SelectItem>
-                  <SelectItem value="30days">30 derniers jours</SelectItem>
-                  <SelectItem value="all">Toutes les données</SelectItem>
-                  <SelectItem value="custom">Personnalisé</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <ExportWeeklyAnalytics data={stats.chartData} />
+                <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="4weeks">4 dernières semaines</SelectItem>
+                    <SelectItem value="12weeks">12 dernières semaines</SelectItem>
+                    <SelectItem value="all">Toutes les données</SelectItem>
+                    <SelectItem value="custom">Personnalisé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             {dateRange === 'custom' && (
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -323,6 +354,11 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                 </div>
               </div>
             )}
+            {customDateError && (
+              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-md p-3">
+                {customDateError}
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -363,8 +399,8 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                     if (active && payload && payload.length > 0) {
                       const data = payload[0].payload;
                       const changePercent = data.changePercent;
-                      const plannedKm = data.plannedKm || 0;
                       const completedCount = data.completedCount || 0;
+                      const plannedKm = data.plannedKm || 0;
                       const plannedCount = data.plannedCount || 0;
 
                       return (
