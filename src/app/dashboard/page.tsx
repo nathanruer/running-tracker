@@ -168,15 +168,15 @@ const DashboardPage = () => {
     });
     
     setDeletingId(null);
+    toast({
+      title: 'Séance supprimée',
+      description: 'La séance a été supprimée avec succès.',
+    });
     
     try {
       await deleteSession(id);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
-      toast({
-        title: 'Séance supprimée',
-        description: 'La séance a été supprimée avec succès.',
-      });
     } catch (error) {
       queryClient.setQueryData(['sessions', 'all', selectedType], previousAllData);
       queryClient.setQueryData(['sessions', 'paginated', selectedType], previousPaginatedData);
