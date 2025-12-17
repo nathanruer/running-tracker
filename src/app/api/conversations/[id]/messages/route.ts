@@ -19,39 +19,68 @@ export async function POST(
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
-    }
-
-    const conversation = await prisma.chat_conversations.findFirst({
-      where: {
-        id,
-        userId,
-      },
-    });
-
-    if (!conversation) {
-      return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
-    }
-
-    const { content, currentWeekSessions, allSessions } = await request.json();
+    const { content } = await request.json();
 
     if (!content || typeof content !== 'string') {
       return NextResponse.json({ error: 'Contenu invalide' }, { status: 400 });
     }
 
-    const lastCompletedSession = await prisma.training_sessions.findFirst({
-      where: {
-        userId,
-        status: 'completed'
-      },
-      orderBy: { sessionNumber: 'desc' },
-    });
+    const [user, conversation, sessionsStats] = await Promise.all([
+      prisma.users.findUnique({ where: { id: userId } }),
+      prisma.chat_conversations.findFirst({
+        where: { id, userId },
+        select: { id: true }
+      }),
+      prisma.training_sessions.findMany({
+        where: { userId },
+        orderBy: { date: 'desc' },
+        select: {
+          sessionNumber: true,
+          sessionType: true,
+          duration: true,
+          distance: true,
+          avgPace: true,
+          avgHeartRate: true,
+          date: true,
+          perceivedExertion: true,
+          comments: true,
+          intervalStructure: true,
+          status: true,
+          week: true
+        }
+      })
+    ]);
+
+    if (!user) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+    }
+
+    const mappedSessions = sessionsStats.map(s => ({
+      ...s,
+      date: s.date ? s.date.toISOString().split('T')[0] : '',
+      avgPace: s.avgPace || '',
+      duration: s.duration || '',
+      intervalStructure: s.intervalStructure || '',
+      comments: s.comments || '',
+      avgHeartRate: s.avgHeartRate || 0,
+      perceivedExertion: s.perceivedExertion || 0,
+      distance: s.distance || 0
+    }));
+
+    const currentWeekValue = mappedSessions.length > 0 
+      ? Math.max(...mappedSessions.filter(s => s.week !== null).map(s => s.week as number), 1)
+      : 1;
+    
+    const currentWeekSessions = mappedSessions.filter(s => s.week === currentWeekValue);
+    
+    const lastCompletedSession = mappedSessions.find(s => s.status === 'completed');
     const nextSessionNumber = lastCompletedSession ? lastCompletedSession.sessionNumber + 1 : 1;
+    
+    const allSessions = mappedSessions;
 
     const userMessage = await prisma.chat_messages.create({
       data: {

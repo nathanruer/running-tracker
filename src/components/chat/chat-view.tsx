@@ -176,38 +176,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
     mutationFn: async (content: string) => {
       if (!conversationId) throw new Error('Aucune conversation sélectionnée');
 
-      const currentWeek = allSessions.length > 0 
-        ? Math.max(...allSessions.filter(s => s.week !== null).map(s => s.week as number), 1)
-        : 1;
-      const currentWeekSessions = allSessions.filter(s => s.week === currentWeek);
-
       const response = await fetch(`/api/conversations/${conversationId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content,
-          currentWeekSessions: currentWeekSessions.map(s => ({
-            sessionType: s.sessionType,
-            duration: s.duration,
-            distance: s.distance,
-            avgPace: s.avgPace,
-            avgHeartRate: s.avgHeartRate,
-            date: s.date,
-            perceivedExertion: s.perceivedExertion,
-            comments: s.comments,
-            intervalStructure: s.intervalStructure,
-          })),
-          allSessions: allSessions.map(s => ({
-            sessionType: s.sessionType,
-            duration: s.duration,
-            distance: s.distance,
-            avgPace: s.avgPace,
-            avgHeartRate: s.avgHeartRate,
-            date: s.date,
-            perceivedExertion: s.perceivedExertion,
-            comments: s.comments,
-            intervalStructure: s.intervalStructure,
-          })),
         }),
       });
 
@@ -238,7 +211,22 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
       return { previousConversation };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(['conversation', conversationId], (old: any) => {
+        if (!old) return old;
+        
+        const messagesWithoutTemp = old.chat_messages.filter((m: any) => !m.id.toString().startsWith('temp-'));
+        
+        return {
+          ...old,
+          chat_messages: [
+            ...messagesWithoutTemp,
+            data.userMessage,
+            data.assistantMessage
+          ],
+        };
+      });
+
       queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       setInput('');
@@ -283,13 +271,13 @@ export function ChatView({ conversationId }: ChatViewProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {isLoading && (
+        {isLoading && !conversation && (
           <div className="flex justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         )}
 
-        {!isLoading && conversation?.chat_messages.map((message) => (
+        {conversation?.chat_messages.map((message) => (
           <div key={message.id}>
             {message.role === 'user' && (
               <div className="flex justify-end">

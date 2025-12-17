@@ -158,6 +158,18 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation }: Ch
     renameMutation.mutate({ id: selectedForRename.id, title: newTitle.trim() });
   };
 
+  const handlePrefetch = (id: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['conversation', id],
+      queryFn: async () => {
+        const response = await fetch(`/api/conversations/${id}`);
+        if (!response.ok) throw new Error('Erreur lors du chargement de la conversation');
+        return response.json();
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+
   return (
     <>
       <Card className="w-80 h-full flex flex-col p-4">
@@ -173,7 +185,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation }: Ch
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2">
-          {isLoading && (
+          {isLoading && conversations.length === 0 && (
             <div className="text-center text-muted-foreground py-4">Chargement...</div>
           )}
 
@@ -194,6 +206,9 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation }: Ch
                 ${selectedConversationId === conv.id ? 'bg-muted' : ''}
               `}
               onClick={() => onSelectConversation(conv.id)}
+              onMouseEnter={() => handlePrefetch(conv.id)}
+              onFocus={() => handlePrefetch(conv.id)}
+              tabIndex={0}
             >
               <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex-1 min-w-0">
