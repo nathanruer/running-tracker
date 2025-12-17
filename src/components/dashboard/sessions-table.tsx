@@ -208,20 +208,6 @@ export function SessionsTable({
                       <SortIcon column="avgPace" />
                       <span className={sortColumn === 'avgPace' ? 'text-foreground' : ''}>Allure</span>
                     </button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            Footing/SL : Allure moyenne
-                            <br />
-                            Fractionné : Allure cible pendant l'effort
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                   </div>
                 </TableHead>
                 <TableHead className="w-14 text-center">
@@ -233,20 +219,6 @@ export function SessionsTable({
                       <SortIcon column="avgHeartRate" />
                       <span className={sortColumn === 'avgHeartRate' ? 'text-foreground' : ''}>FC</span>
                     </button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            Footing/SL : FC moyenne
-                            <br />
-                            Fractionné : FC cible pendant l'effort
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                   </div>
                 </TableHead>
                 <TableHead className="w-14 text-center">

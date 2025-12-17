@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { type TrainingSession } from '@/lib/types';
+import { generateIntervalStructure } from '@/lib/utils';
 
 interface PlannedSessionRowProps {
   session: TrainingSession;
@@ -13,7 +14,7 @@ interface PlannedSessionRowProps {
 export function PlannedSessionRow({ session, onEdit, onDelete }: PlannedSessionRowProps) {
   return (
     <TableRow
-      className="border-b-2 border-dashed border-muted-foreground/30 bg-muted/20 text-muted-foreground italic"
+      className="border-b-2 border-dashed border-muted-foreground/30 bg-muted/20 text-muted-foreground italic hover:bg-muted/20"
     >
       <TableCell className="font-medium text-center">
         <div className="flex flex-col items-center gap-1">
@@ -29,9 +30,9 @@ export function PlannedSessionRow({ session, onEdit, onDelete }: PlannedSessionR
       <TableCell className="text-center">
         <div className="flex flex-col gap-0.5 items-center">
           <span>{session.sessionType}</span>
-          {session.intervalStructure && (
+          {session.intervalDetails && (
             <span className="text-xs text-gradient">
-              {session.intervalStructure}
+              {generateIntervalStructure(session.intervalDetails)}
             </span>
           )}
         </div>

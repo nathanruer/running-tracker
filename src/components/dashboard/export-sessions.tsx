@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { type TrainingSession } from '@/lib/types';
+import { generateIntervalStructure } from '@/lib/utils';
 
 interface ExportSessionsProps {
   sessions: TrainingSession[];
@@ -41,7 +42,7 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
       session.avgPace || '',
       session.avgHeartRate || '',
       session.perceivedExertion || '',
-      session.intervalStructure || '',
+      generateIntervalStructure(session.intervalDetails) || '',
       session.comments || '',
     ]);
 
@@ -83,7 +84,7 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
       allure_min_km: session.avgPace || '',
       fc_moyenne_bpm: session.avgHeartRate || 0,
       rpe: session.perceivedExertion || null,
-      structure_intervalle: session.intervalStructure || null,
+      details_intervalle: session.intervalDetails || null,
       commentaires: session.comments || null,
     }));
 
@@ -127,7 +128,7 @@ export function ExportSessions({ sessions }: ExportSessionsProps) {
       session.avgPace || '',
       session.avgHeartRate || '',
       session.perceivedExertion || '',
-      session.intervalStructure || '',
+      generateIntervalStructure(session.intervalDetails) || '',
       session.comments || '',
     ]);
 

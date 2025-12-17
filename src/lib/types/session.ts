@@ -1,3 +1,33 @@
+export interface IntervalStep {
+  stepNumber: number;
+  stepType: 'warmup' | 'effort' | 'recovery' | 'cooldown';
+  duration: string | null;
+  distance: number | null;
+  pace: string | null;
+  hr: number | null;
+}
+
+export interface IntervalDetails {
+  workoutType: string | null;        
+  repetitionCount: number | null;
+  effortDuration: string | null;
+  recoveryDuration: string | null;
+  effortDistance: number | null;
+  recoveryDistance: number | null;
+
+  targetEffortPace: string | null;
+  targetEffortHR: number | null;
+  targetRecoveryPace: string | null;
+
+  actualEffortPace: string | null;
+  actualEffortHR: number | null;
+  actualRecoveryPace: string | null;
+
+  steps: IntervalStep[];
+
+  entryMode?: 'quick' | 'detailed';
+}
+
 export interface TrainingSession {
   id: string;
   sessionNumber: number;
@@ -8,7 +38,7 @@ export interface TrainingSession {
   distance: number | null;
   avgPace: string | null;
   avgHeartRate: number | null;
-  intervalStructure?: string | null;
+  intervalDetails?: IntervalDetails | null;
   perceivedExertion?: number | null;
   comments: string;
   userId: string;

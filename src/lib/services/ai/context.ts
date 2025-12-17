@@ -1,4 +1,5 @@
 import type { BuildContextParams, Session } from '@/lib/types';
+import { generateIntervalStructure } from '@/lib/utils';
 
 function normalizePace(pace?: string): string {
   if (!pace || typeof pace !== 'string') return '00:00';
@@ -17,7 +18,7 @@ function getSessionData(s: Session) {
     avgHeartRate: s.avgHeartRate,
     perceivedExertion: s.perceivedExertion,
     comments: s.comments,
-    intervalStructure: s.intervalStructure,
+    intervalDetails: s.intervalDetails,
   };
 }
 
@@ -67,8 +68,11 @@ export function buildContextMessage({
       if (sessionData.perceivedExertion && sessionData.perceivedExertion > 0) {
         context += `   RPE: ${sessionData.perceivedExertion}/10\n`;
       }
-      if (sessionData.intervalStructure) {
-        context += `   Structure: ${sessionData.intervalStructure}\n`;
+      if (sessionData.intervalDetails) {
+        const structure = generateIntervalStructure(sessionData.intervalDetails);
+        if (structure) {
+          context += `   Structure: ${structure}\n`;
+        }
       }
       if (sessionData.comments && sessionData.comments.trim()) {
         context += `   Sensations/Notes: ${sessionData.comments}\n`;
@@ -140,8 +144,11 @@ export function buildContextMessage({
         context += `, RPE: ${sessionData.perceivedExertion}/10`;
       }
       context += '\n';
-      if (sessionData.intervalStructure) {
-        context += `   Structure: ${sessionData.intervalStructure}\n`;
+      if (sessionData.intervalDetails) {
+        const structure = generateIntervalStructure(sessionData.intervalDetails);
+        if (structure) {
+          context += `   Structure: ${structure}\n`;
+        }
       }
       if (sessionData.comments && sessionData.comments.trim()) {
         context += `   Sensations/Notes: ${sessionData.comments}\n`;

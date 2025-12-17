@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
@@ -61,9 +62,11 @@ export async function POST(request: NextRequest) {
     });
     const nextNumber = (stats._max.sessionNumber ?? 0) + 1;
 
+    const { intervalDetails, ...sessionData } = payload;
     const session = await prisma.training_sessions.create({
       data: {
-        ...payload,
+        ...sessionData,
+        intervalDetails: intervalDetails || Prisma.JsonNull,
         date: new Date(payload.date),
         sessionNumber: nextNumber,
         week: 1,

@@ -1,5 +1,34 @@
 import { z } from 'zod';
 
+export const intervalStepSchema = z.object({
+  stepNumber: z.number().min(1),
+  stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
+  duration: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  distance: z.number().min(0).nullable(),
+  pace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  hr: z.number().min(0).max(250).nullable(),
+});
+
+export const intervalDetailsSchema = z.object({
+  workoutType: z.string().nullable(),
+  repetitionCount: z.number().min(1).nullable(),
+  effortDuration: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  recoveryDuration: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  effortDistance: z.number().min(0).nullable(),
+
+  targetEffortPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  targetEffortHR: z.number().min(0).max(250).nullable(),
+  targetRecoveryPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+
+  actualEffortPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  actualEffortHR: z.number().min(0).max(250).nullable(),
+  actualRecoveryPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+
+  steps: z.array(intervalStepSchema),
+
+  entryMode: z.enum(['quick', 'detailed']).optional(),
+}).nullable();
+
 export const sessionSchema = z.object({
   date: z.string(),
   sessionType: z.string().min(1),
@@ -11,7 +40,7 @@ export const sessionSchema = z.object({
     .string()
     .regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS'),
   avgHeartRate: z.number().min(0),
-  intervalStructure: z.string().optional(),
+  intervalDetails: intervalDetailsSchema.optional(),
   perceivedExertion: z.number().min(0).max(10).optional().nullable(),
   comments: z.string().optional().default(''),
 });
@@ -19,3 +48,5 @@ export const sessionSchema = z.object({
 export const partialSessionSchema = sessionSchema.partial();
 
 export type SessionInput = z.infer<typeof sessionSchema>;
+export type IntervalDetailsInput = z.infer<typeof intervalDetailsSchema>;
+export type IntervalStepInput = z.infer<typeof intervalStepSchema>;

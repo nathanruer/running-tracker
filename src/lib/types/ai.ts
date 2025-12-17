@@ -7,7 +7,7 @@ export interface Session {
   distance: number;
   perceivedExertion?: number;
   comments?: string;
-  intervalStructure?: string;
+  intervalDetails?: any;
 }
 
 export interface UserProfile {

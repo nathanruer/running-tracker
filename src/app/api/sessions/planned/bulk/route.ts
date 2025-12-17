@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/database';
 import { logger } from '@/lib/infrastructure/logger';
+import { Prisma } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
           targetHeartRateZone: session.targetHeartRateZone,
           targetHeartRateBpm: session.targetHeartRateBpm,
           targetRPE: session.targetRPE,
-          intervalStructure: session.intervalStructure,
+          intervalDetails: session.intervalDetails ? session.intervalDetails : Prisma.JsonNull,
           plannedDate: session.plannedDate ? new Date(session.plannedDate) : null,
           recommendationId: session.recommendationId,
           comments: session.comments || '',

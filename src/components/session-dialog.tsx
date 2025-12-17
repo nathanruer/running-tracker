@@ -2,8 +2,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useEffect, useState } from 'react';
-import { Watch, RotateCcw, FileSpreadsheet } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Watch, RotateCcw, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
@@ -31,19 +31,40 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { addSession, updateSession } from '@/lib/services/api-client';
-import { type TrainingSessionPayload, type TrainingSession } from '@/lib/types';
+import { type TrainingSessionPayload, type TrainingSession, type IntervalDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { IntervalFields } from './interval-fields';
+import { parseTCXFile, tcxActivityToFormData, detectIntervalStructure } from '@/lib/parsers/tcx-parser';
 
 const formSchema = z.object({
   date: z.string(),
   sessionType: z.string().min(1, 'Type de séance requis'),
   duration: z.string().regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format: HH:MM:SS'),
-  distance: z.number().min(0, 'Distance requise'),
+  distance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
   avgPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format: MM:SS'),
-  avgHeartRate: z.number().min(0, 'FC requise'),
-  intervalStructure: z.string().optional(),
-  perceivedExertion: z.number().min(0).max(10).optional(),
+  avgHeartRate: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  perceivedExertion: z.number().min(0).max(10).nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
   comments: z.string(),
+  workoutType: z.string().optional(),
+  repetitionCount: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  effortDuration: z.string().optional(),
+  recoveryDuration: z.string().optional(),
+  effortDistance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  recoveryDistance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  targetEffortPace: z.string().optional(),
+  targetEffortHR: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  targetRecoveryPace: z.string().optional(),
+  actualEffortPace: z.string().optional(),
+  actualEffortHR: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  actualRecoveryPace: z.string().optional(),
+  steps: z.array(z.object({
+    stepNumber: z.number(),
+    stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
+    duration: z.string().optional(),
+    distance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+    pace: z.string().optional(),
+    hr: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+  })).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,7 +77,6 @@ interface SessionDialogProps {
   initialData?: Partial<FormValues> | null;
   mode?: 'create' | 'edit' | 'complete';
   onRequestStravaImport?: () => void;
-  onRequestCsvImport?: () => void;
   onSuccess?: (session: TrainingSession) => void;
 }
 
@@ -68,12 +88,13 @@ const SessionDialog = ({
   initialData,
   mode = 'create',
   onRequestStravaImport,
-  onRequestCsvImport,
   onSuccess,
 }: SessionDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isCustomSessionType, setIsCustomSessionType] = useState(false);
+  const [intervalEntryMode, setIntervalEntryMode] = useState<'quick' | 'detailed'>('quick');
+  const tcxFileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,14 +105,26 @@ const SessionDialog = ({
       distance: 0,
       avgPace: '00:00',
       avgHeartRate: 0,
-      intervalStructure: '',
       perceivedExertion: 0,
       comments: '',
+      workoutType: '',
+      repetitionCount: undefined,
+      effortDuration: '',
+      recoveryDuration: '',
+      effortDistance: undefined,
+      recoveryDistance: undefined,
+      targetEffortPace: '',
+      targetEffortHR: undefined,
+      targetRecoveryPace: '',
+      actualEffortPace: '',
+      actualEffortHR: undefined,
+      actualRecoveryPace: '',
+      steps: [],
     },
   });
 
   useEffect(() => {
-    const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné', 'Autre'];
+    const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné'];
 
     if (session && mode === 'complete' && initialData) {
       const { sessionType: importedType, date, comments: importedComments, perceivedExertion: importedRPE, ...importedFields } = initialData;
@@ -103,7 +136,6 @@ const SessionDialog = ({
       form.reset({
         date: sessionDate,
         sessionType: session.sessionType,
-        intervalStructure: session.intervalStructure || '',
         perceivedExertion,
         comments: session.comments || '',
         duration: '00:00:00',
@@ -140,9 +172,29 @@ const SessionDialog = ({
         distance,
         avgPace,
         avgHeartRate,
-        intervalStructure: session.intervalStructure || '',
         perceivedExertion,
         comments: session.comments || '',
+        
+        workoutType: session.intervalDetails?.workoutType || '',
+        repetitionCount: session.intervalDetails?.repetitionCount || undefined,
+        effortDuration: session.intervalDetails?.effortDuration || '',
+        recoveryDuration: session.intervalDetails?.recoveryDuration || '',
+        effortDistance: session.intervalDetails?.effortDistance || undefined,
+        recoveryDistance: session.intervalDetails?.recoveryDistance || undefined,
+        targetEffortPace: session.intervalDetails?.targetEffortPace || '',
+        targetEffortHR: session.intervalDetails?.targetEffortHR || undefined,
+        targetRecoveryPace: session.intervalDetails?.targetRecoveryPace || '',
+        actualEffortPace: session.intervalDetails?.actualEffortPace || '',
+        actualEffortHR: session.intervalDetails?.actualEffortHR || undefined,
+        actualRecoveryPace: session.intervalDetails?.actualRecoveryPace || '',
+        steps: session.intervalDetails?.steps?.map(s => ({
+          stepNumber: s.stepNumber,
+          stepType: s.stepType,
+          duration: s.duration || undefined,
+          distance: s.distance || undefined,
+          pace: s.pace || undefined,
+          hr: s.hr || undefined,
+        })) || [],
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
@@ -154,8 +206,7 @@ const SessionDialog = ({
         distance: 0,
         avgPace: '00:00',
         avgHeartRate: 0,
-        intervalStructure: '',
-        perceivedExertion: 0,
+          perceivedExertion: 0,
         comments: '',
         ...importedFields,
       });
@@ -168,27 +219,152 @@ const SessionDialog = ({
         distance: 0,
         avgPace: '00:00',
         avgHeartRate: 0,
-        intervalStructure: '',
-        perceivedExertion: 0,
+          perceivedExertion: 0,
         comments: '',
       });
       setIsCustomSessionType(false);
     }
   }, [session, initialData, mode, form]);
 
+  const handleTCXImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const activity = parseTCXFile(text);
+
+      if (!activity) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de lire le fichier TCX',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Fill basic fields
+      const formData = tcxActivityToFormData(activity);
+      form.setValue('date', formData.date);
+      form.setValue('duration', formData.duration);
+      form.setValue('distance', formData.distance);
+      form.setValue('avgPace', formData.avgPace);
+      form.setValue('avgHeartRate', formData.avgHeartRate);
+
+      const intervalStructure = detectIntervalStructure(activity.laps);
+
+      if (intervalStructure.isInterval) {
+        form.setValue('sessionType', 'Fractionné');
+        form.setValue('repetitionCount', intervalStructure.repetitionCount || undefined);
+        form.setValue('effortDuration', intervalStructure.effortDuration || '');
+        form.setValue('recoveryDuration', intervalStructure.recoveryDuration || '');
+        form.setValue('effortDistance', intervalStructure.effortDistance || undefined);
+        form.setValue('recoveryDistance', undefined);
+        form.setValue('steps', intervalStructure.steps.map(step => ({
+          ...step,
+          duration: step.duration || undefined,
+          distance: step.distance || undefined,
+          pace: step.pace || undefined,
+          hr: step.hr ?? undefined,
+        })));
+
+        if (intervalStructure.actualEffortPace) {
+          form.setValue('actualEffortPace', intervalStructure.actualEffortPace);
+        }
+        if (intervalStructure.actualEffortHR) {
+          form.setValue('actualEffortHR', intervalStructure.actualEffortHR);
+        }
+        if (intervalStructure.actualRecoveryPace) {
+          form.setValue('actualRecoveryPace', intervalStructure.actualRecoveryPace);
+        }
+
+        setIntervalEntryMode('detailed');
+
+        toast({
+          title: 'Fractionné détecté',
+          description: `${intervalStructure.repetitionCount} répétitions détectées. Les étapes ont été pré-remplies en mode détaillé.`,
+        });
+      } else {
+        toast({
+          title: 'Séance importée',
+          description: 'Les données de base ont été importées depuis le fichier TCX.',
+        });
+      }
+
+      // Reset file input
+      if (tcxFileInputRef.current) {
+        tcxFileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error importing TCX:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de l\'import du fichier TCX',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const transformIntervalData = (values: FormValues): IntervalDetails | null => {
+    if (values.sessionType !== 'Fractionné') return null;
+
+    const hasIntervalData =
+      values.workoutType ||
+      values.repetitionCount ||
+      values.targetEffortPace ||
+      values.targetEffortHR ||
+      values.actualEffortPace ||
+      values.targetEffortHR ||
+      values.actualEffortPace ||
+      values.actualEffortHR ||
+      values.targetRecoveryPace ||
+      values.actualRecoveryPace ||
+      values.recoveryDistance;
+
+    if (!hasIntervalData) return null;
+
+    return {
+      workoutType: values.workoutType || null,
+      repetitionCount: values.repetitionCount ?? null,
+      effortDuration: values.effortDuration || null,
+      recoveryDuration: values.recoveryDuration || null,
+      effortDistance: values.effortDistance ?? null,
+      recoveryDistance: values.recoveryDistance ?? null,
+      targetEffortPace: values.targetEffortPace || null,
+      targetEffortHR: values.targetEffortHR ?? null,
+      targetRecoveryPace: values.targetRecoveryPace || null,
+      actualEffortPace: values.actualEffortPace || null,
+      actualEffortHR: values.actualEffortHR ?? null,
+      actualRecoveryPace: values.actualRecoveryPace || null,
+      steps:
+        intervalEntryMode === 'detailed' && values.steps
+          ? values.steps.map((step) => ({
+              stepNumber: step.stepNumber,
+              stepType: step.stepType,
+              duration: step.duration || null,
+              distance: step.distance || null,
+              pace: step.pace || null,
+              hr: step.hr || null,
+            }))
+          : [],
+      entryMode: intervalEntryMode,
+    };
+  };
+
   const onUpdate = async (values: FormValues) => {
     if (!session) return;
 
     setLoading(true);
     try {
+      const intervalDetails = transformIntervalData(values);
       const sessionData: TrainingSessionPayload = {
         date: values.date,
         sessionType: values.sessionType,
         duration: values.duration,
-        distance: values.distance,
+        distance: values.distance ?? null,
         avgPace: values.avgPace,
-        avgHeartRate: values.avgHeartRate,
-        intervalStructure: values.sessionType === 'Fractionné' ? values.intervalStructure : '',
+        avgHeartRate: values.avgHeartRate ?? null,
+        intervalDetails,
         perceivedExertion: values.perceivedExertion,
         comments: values.comments,
       };
@@ -225,14 +401,15 @@ const SessionDialog = ({
 
     setLoading(true);
     try {
+      const intervalDetails = transformIntervalData(values);
       const sessionData: TrainingSessionPayload = {
         date: values.date,
         sessionType: values.sessionType,
         duration: values.duration,
-        distance: values.distance,
+        distance: values.distance ?? null,
         avgPace: values.avgPace,
-        avgHeartRate: values.avgHeartRate,
-        intervalStructure: values.sessionType === 'Fractionné' ? values.intervalStructure : '',
+        avgHeartRate: values.avgHeartRate ?? null,
+        intervalDetails,
         perceivedExertion: values.perceivedExertion,
         comments: values.comments,
       };
@@ -309,8 +486,7 @@ const SessionDialog = ({
                   distance: 0,
                   avgPace: '00:00',
                   avgHeartRate: 0,
-                  intervalStructure: '',
-                  perceivedExertion: 0,
+                              perceivedExertion: 0,
                   comments: '',
                 });
                 setIsCustomSessionType(false);
@@ -322,43 +498,38 @@ const SessionDialog = ({
             </Button>
           </div>
         </DialogHeader>
-        {(mode === 'create' || mode === 'complete') && (onRequestStravaImport || onRequestCsvImport) && (
+        {(mode === 'create' || mode === 'complete') && onRequestStravaImport && (
           <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
             <div className="flex flex-col gap-3">
               <div>
                 <p className="font-medium">Importer une séance</p>
                 <p className="text-sm text-muted-foreground">
-                  Pré-remplissez votre séance automatiquement depuis une source externe.
+                  Pré-remplissez votre séance automatiquement depuis Strava.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {onRequestStravaImport && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="gradient-orange"
-                    onClick={onRequestStravaImport}
-                  >
-                    <Watch className="mr-2 h-4 w-4" />
-                    Strava
-                  </Button>
-                )}
-                {onRequestCsvImport && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={onRequestCsvImport}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Fichier CSV
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="gradient-orange"
+                  onClick={onRequestStravaImport}
+                >
+                  <Watch className="mr-2 h-4 w-4" />
+                  Strava
+                </Button>
               </div>
             </div>
           </div>
         )}
+        <input
+          ref={tcxFileInputRef}
+          type="file"
+          accept=".tcx"
+          className="hidden"
+          onChange={handleTCXImport}
+        />
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <FormField
               control={form.control}
               name="date"
@@ -401,9 +572,6 @@ const SessionDialog = ({
                             field.onChange('');
                           } else {
                             field.onChange(value);
-                            if (value !== 'Fractionné') {
-                              form.setValue('intervalStructure', '');
-                            }
                           }
                         }}
                         value={field.value}
@@ -417,7 +585,6 @@ const SessionDialog = ({
                           <SelectItem value="Footing">Footing</SelectItem>
                           <SelectItem value="Sortie longue">Sortie longue</SelectItem>
                           <SelectItem value="Fractionné">Fractionné</SelectItem>
-                          <SelectItem value="Autre">Autre</SelectItem>
                           <SelectItem value="custom">Personnalisé...</SelectItem>
                         </SelectContent>
                       </Select>
@@ -481,22 +648,32 @@ const SessionDialog = ({
               />
             </div>
             {form.watch('sessionType') === 'Fractionné' && (
-              <FormField
-                control={form.control}
-                name="intervalStructure"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Structure du fractionné</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: 8x1'/1', TEMPO: 3x4'/2', 10x400m/1'30"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <div className="flex items-center justify-between rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Importer depuis un fichier TCX
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => tcxFileInputRef.current?.click()}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Charger TCX
+                  </Button>
+                </div>
+                <IntervalFields
+                  control={form.control}
+                  entryMode={intervalEntryMode}
+                  onEntryModeChange={setIntervalEntryMode}
+                  setValue={form.setValue}
+                  watch={form.watch}
+                />
+              </>
             )}
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -519,18 +696,23 @@ const SessionDialog = ({
                   <FormItem>
                     <FormLabel>Distance (km)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01" 
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="10.5"
                         {...field}
+                        value={field.value ?? ''}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === '' || value === '-') {
+                          if (value === '') {
+                            field.onChange(null);
+                          } else if (value === '-') {
+                            // Allow '-' for partial input, but don't parse as number yet
                             field.onChange(value);
                           } else {
                             const numValue = parseFloat(value);
                             if (!isNaN(numValue)) {
-                              // Arrondir à 2 décimales
+                              // Round to 2 decimal places
                               const rounded = Math.round(numValue * 100) / 100;
                               field.onChange(rounded);
                             }
@@ -549,11 +731,7 @@ const SessionDialog = ({
                 name="avgPace"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      {form.watch('sessionType') === 'Fractionné'
-                        ? 'Allure cible (min/km)'
-                        : 'Allure moyenne (min/km)'}
-                    </FormLabel>
+                    <FormLabel>Allure moy (min/km)</FormLabel>
                     <FormControl>
                       <Input placeholder="05:30" {...field} />
                     </FormControl>
@@ -566,19 +744,14 @@ const SessionDialog = ({
                 name="avgHeartRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      {form.watch('sessionType') === 'Fractionné'
-                        ? 'FC cible (bpm)'
-                        : 'FC moyenne (bpm)'}
-                    </FormLabel>
+                    <FormLabel>FC moy (bpm)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
+                        placeholder="145"
                         {...field}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          field.onChange(value === '' ? 0 : parseInt(value));
-                        }}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value === '' ? null : parseInt(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />

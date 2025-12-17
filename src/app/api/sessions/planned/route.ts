@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/database';
 import { logger } from '@/lib/infrastructure/logger';
+import { Prisma } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       targetHeartRateZone,
       targetHeartRateBpm,
       targetRPE,
-      intervalStructure,
+      intervalDetails,
       plannedDate,
       recommendationId,
       comments,
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
         targetHeartRateZone,
         targetHeartRateBpm,
         targetRPE,
-        intervalStructure,
+        intervalDetails: intervalDetails || Prisma.JsonNull,
         plannedDate: plannedDate ? new Date(plannedDate) : null,
         recommendationId,
         comments: comments || '',

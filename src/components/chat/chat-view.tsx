@@ -108,7 +108,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
           targetHeartRateZone: session.target_hr_zone || session.target_hr,
           targetHeartRateBpm: session.target_hr_bpm,
           targetRPE: session.target_rpe,
-          intervalStructure: session.interval_structure,
+          intervalDetails: session.interval_details || null,
           recommendationId: session.recommendation_id,
           comments,
         }),

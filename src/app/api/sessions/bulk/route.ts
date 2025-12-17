@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
@@ -31,14 +32,18 @@ export async function POST(request: NextRequest) {
     );
 
     const result = await prisma.training_sessions.createMany({
-      data: validatedSessions.map((session) => ({
-        ...session,
-        date: new Date(session.date),
-        sessionNumber: 1,
-        week: 1,
-        userId,
-        status: 'completed',
-      })),
+      data: validatedSessions.map((session) => {
+        const { intervalDetails, ...sessionData } = session;
+        return {
+          ...sessionData,
+          intervalDetails: intervalDetails || Prisma.JsonNull,
+          date: new Date(session.date),
+          sessionNumber: 1,
+          week: 1,
+          userId,
+          status: 'completed',
+        };
+      }),
     });
 
     await recalculateSessionNumbers(userId);

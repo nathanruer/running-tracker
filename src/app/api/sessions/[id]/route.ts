@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
@@ -40,11 +41,17 @@ export async function PUT(
         : { date: new Date(updates.date) }
       : {};
 
+    const { intervalDetails, ...restUpdates } = updates;
+    const intervalDetailsUpdate = intervalDetails !== undefined
+      ? { intervalDetails: intervalDetails || Prisma.JsonNull }
+      : {};
+
     const updated = await prisma.training_sessions.update({
       where: { id: params.id },
       data: {
-        ...updates,
+        ...restUpdates,
         ...dateUpdate,
+        ...intervalDetailsUpdate,
       },
     });
 

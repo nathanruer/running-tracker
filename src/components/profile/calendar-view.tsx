@@ -217,11 +217,6 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                       <CardTitle className="text-2xl mb-2">
                         {session.sessionType}
                       </CardTitle>
-                      {session.intervalStructure && (
-                        <p className="text-base text-muted-foreground font-medium">
-                          {session.intervalStructure}
-                        </p>
-                      )}
                     </div>
                     <span className={`text-sm px-3 py-1.5 rounded-full font-semibold whitespace-nowrap ${
                       session.type === 'completed'

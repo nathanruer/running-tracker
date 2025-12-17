@@ -24,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { parseIntervalStructure } from '@/lib/utils';
 
 interface CsvImportDialogProps {
   open: boolean;
@@ -41,9 +42,9 @@ interface ParsedSession {
   distance: number;
   avgPace: string;
   avgHeartRate: number;
-  intervalStructure?: string;
   perceivedExertion?: number;
   comments: string;
+  intervalDetails?: any;
 }
 
 export function CsvImportDialog({
@@ -102,19 +103,6 @@ export function CsvImportDialog({
     return '00:00';
   };
 
-  const extractIntervalStructure = (allureStr: string): string => {
-    if (!allureStr || !allureStr.includes('x')) {
-      return '';
-    }
-    
-    const intervalMatch = allureStr.match(/([A-Z]*:?\s*\d+x[\d'\/]+|TEMPO:\s*\d+x[\d'\/]+)/i);
-    if (intervalMatch) {
-      return intervalMatch[1].trim();
-    }
-    
-    return '';
-  };
-
   const parseNumber = (numStr: string): number => {
     if (!numStr || numStr.trim() === '') return 0;
     const cleaned = numStr.replace(',', '.');
@@ -164,6 +152,65 @@ export function CsvImportDialog({
     setSortColumn(null);
     setSortDirection(null);
 
+    if (file.type === 'application/json' || file.name.endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const data = JSON.parse(content);
+          
+          const sessionsArray = Array.isArray(data) ? data : [data];
+          
+          const parsedSessions: ParsedSession[] = sessionsArray.map((row: any) => {
+            const dateStr = row.date || row.Date || '';
+            const sessionType = (row.sessionType || row.type || row['Type de séance'] || '').trim();
+            const duration = parseDuration(row.duration || row.duree || row['Durée'] || '00:00:00');
+            const distance = parseNumber(String(row.distance || row.distance_km || row['Distance (km)'] || '0'));
+            
+            const allureRaw = row.avgPace || row.allure_min_km || row['Allure (min/km)'] || '00:00';
+            const avgPace = parseAllure(allureRaw);
+            
+            const avgHeartRate = Math.round(parseNumber(String(row.avgHeartRate || row.fc_moyenne_bpm || row['FC moyenne (bpm)'] || '0')));
+            const perceivedExertion = row.perceivedExertion || row.rpe ? Math.round(parseNumber(String(row.perceivedExertion || row.rpe || 0))) : undefined;
+            const comments = (row.comments || row.commentaires || '').trim();
+
+            let intervalDetails = row.intervalDetails || row.details_intervalle || null;
+
+            if (!intervalDetails && row.structure_intervalle) {
+              intervalDetails = parseIntervalStructure(row.structure_intervalle);
+            }
+
+            return {
+              date: parseDate(dateStr),
+              sessionType,
+              duration,
+              distance,
+              avgPace,
+              avgHeartRate,
+              perceivedExertion,
+              comments,
+              intervalDetails
+            };
+          }).filter(session => session.date && session.sessionType);
+
+          if (parsedSessions.length === 0) {
+            setError('Aucune séance valide trouvée dans le fichier JSON.');
+          } else {
+            setPreview(parsedSessions);
+            setSelectedIndices(new Set(parsedSessions.map((_, i) => i)));
+          }
+        } catch (err) {
+          console.error(err);
+          setError('Erreur lors de la lecture du fichier JSON.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+      return;
+    }
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -180,14 +227,15 @@ export function CsvImportDialog({
             
             const allureRaw = columnMap.has('avgPace') ? row[columnMap.get('avgPace')!] || '00:00' : '00:00';
             const avgPace = parseAllure(allureRaw);
-            
-            let intervalStructure = '';
+
+            let intervalDetails = null;
             if (columnMap.has('intervalStructure')) {
-              intervalStructure = (row[columnMap.get('intervalStructure')!] || '').trim();
-            } else if (sessionType === 'Fractionné') {
-              intervalStructure = extractIntervalStructure(allureRaw);
+              const structureStr = (row[columnMap.get('intervalStructure')!] || '').trim();
+              if (structureStr) {
+                intervalDetails = parseIntervalStructure(structureStr);
+              }
             }
-            
+
             const avgHeartRate = columnMap.has('avgHeartRate') ? Math.round(parseNumber(row[columnMap.get('avgHeartRate')!] || '0')) : 0;
             const perceivedExertion = columnMap.has('perceivedExertion') ? Math.round(parseNumber(row[columnMap.get('perceivedExertion')!] || '0')) : undefined;
             const comments = columnMap.has('comments') ? (row[columnMap.get('comments')!] || '').trim() : '';
@@ -199,9 +247,9 @@ export function CsvImportDialog({
               distance,
               avgPace,
               avgHeartRate,
-              intervalStructure,
               perceivedExertion,
               comments,
+              intervalDetails
             };
           }).filter(session => session.date && session.sessionType);
 
@@ -351,11 +399,11 @@ export function CsvImportDialog({
     }}>
       <DialogContent className={`max-h-xl overflow-hidden ${preview.length === 0 ? 'sm:max-w-2xl' : 'sm:max-w-6xl'}`}>
         <DialogHeader>
-          <DialogTitle>Importer des séances depuis CSV</DialogTitle>
+          <DialogTitle>Importer des séances (CSV ou JSON)</DialogTitle>
           <DialogDescription>
             {mode === 'complete'
-              ? 'Importez les données d\'une séance depuis un fichier CSV'
-              : 'Importez plusieurs séances en une seule fois depuis un fichier CSV ou Excel (exporté en CSV)'}
+              ? "Importez les données d'une séance depuis un fichier CSV ou JSON"
+              : 'Importez plusieurs séances en une seule fois depuis un fichier CSV, Excel (exporté en CSV) ou JSON'}
           </DialogDescription>
         </DialogHeader>
 
@@ -371,7 +419,7 @@ export function CsvImportDialog({
             <div className="flex flex-col items-center gap-4 py-8">
               <FileSpreadsheet className="h-16 w-16 text-muted-foreground" />
               <div className="text-center">
-                <p className="font-medium mb-2">Sélectionnez un fichier CSV</p>
+                <p className="font-medium mb-2">Sélectionnez un fichier CSV ou JSON</p>
                 <p className="text-xs text-muted-foreground mb-2">
                   <strong>Colonnes attendues :</strong> Date, Séance, Durée, Distance (km), Allure (min/km), FC moyenne, RPE, Commentaires
                 </p>
@@ -390,7 +438,7 @@ export function CsvImportDialog({
               <input
                 id="csv-upload"
                 type="file"
-                accept=".csv,.txt"
+                accept=".csv,.txt,.json"
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -419,7 +467,7 @@ export function CsvImportDialog({
                   <input
                     id="csv-upload-replace"
                     type="file"
-                    accept=".csv,.txt"
+                    accept=".csv,.txt,.json"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -509,11 +557,6 @@ export function CsvImportDialog({
                           <TableCell className="text-center">
                             <div className="flex flex-col items-center">
                               <span>{session.sessionType}</span>
-                              {session.intervalStructure && (
-                                <span className="text-xs text-gradient">
-                                  {session.intervalStructure}
-                                </span>
-                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-center">{session.duration}</TableCell>

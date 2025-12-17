@@ -20,7 +20,7 @@ model training_sessions {
   comments          String   @default("")
   createdAt         DateTime @default(now())
   userId            String
-  intervalStructure String?
+  intervalDetails   Json?
   perceivedExertion Int?     @default(0)
   status            String   @default("completed")
   plannedDate       DateTime?

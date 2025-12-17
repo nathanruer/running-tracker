@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/components/session-dialog';
 import { StravaImportDialog } from '@/components/strava-import-dialog';
-import { CsvImportDialog } from '@/components/csv-import-dialog';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SessionsTable } from '@/components/dashboard/sessions-table';
 import { Button } from '@/components/ui/button';
@@ -42,10 +41,8 @@ const DashboardPage = () => {
   const [editingSession, setEditingSession] =
     useState<TrainingSession | null>(null);
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
-  const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isImportingCsv, setIsImportingCsv] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -264,45 +261,6 @@ const DashboardPage = () => {
     setIsStravaDialogOpen(true);
   };
 
-  const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
-    if (getDialogMode() === 'complete') {
-      if (sessions.length > 0) {
-        setImportedData(sessions[0]);
-        setIsCsvDialogOpen(false);
-        setIsDialogOpen(true);
-      }
-      return;
-    }
-
-    setIsImportingCsv(true);
-    try {
-      await bulkImportSessions(sessions);
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
-
-      setIsCsvDialogOpen(false);
-      setIsDialogOpen(false);
-
-      setEditingSession(null);
-      setImportedData(null);
-
-      toast({
-        title: 'Import réussi',
-        description: `${sessions.length} séance(s) importée(s) avec succès.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Erreur lors de l\'import',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsImportingCsv(false);
-    }
-  };
 
   if (!user) {
     return null;
@@ -363,17 +321,6 @@ const DashboardPage = () => {
         initialData={importedData}
         mode={getDialogMode()}
         onRequestStravaImport={handleRequestStravaImport}
-        onRequestCsvImport={() => {
-          setIsCsvDialogOpen(true);
-        }}
-      />
-
-      <CsvImportDialog
-        open={isCsvDialogOpen}
-        onOpenChange={setIsCsvDialogOpen}
-        onImport={handleCsvImport}
-        isImporting={isImportingCsv}
-        mode={getDialogMode()}
       />
 
       <StravaImportDialog

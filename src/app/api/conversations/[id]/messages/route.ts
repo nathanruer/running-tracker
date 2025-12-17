@@ -44,7 +44,7 @@ export async function POST(
           date: true,
           perceivedExertion: true,
           comments: true,
-          intervalStructure: true,
+          intervalDetails: true,
           status: true,
           week: true
         }
@@ -64,7 +64,6 @@ export async function POST(
       date: s.date ? s.date.toISOString().split('T')[0] : '',
       avgPace: s.avgPace || '',
       duration: s.duration || '',
-      intervalStructure: s.intervalStructure || '',
       comments: s.comments || '',
       avgHeartRate: s.avgHeartRate || 0,
       perceivedExertion: s.perceivedExertion || 0,
