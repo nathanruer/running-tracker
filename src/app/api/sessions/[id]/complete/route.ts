@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/database';
 import { logger } from '@/lib/infrastructure/logger';
+import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 
 export async function PATCH(
   request: NextRequest,
@@ -60,6 +61,10 @@ export async function PATCH(
     });
 
     logger.info({ sessionId: id }, 'Planned session completed');
+
+    recalculateSessionNumbers(userId).catch(err => 
+      logger.error({ error: err, userId }, 'Failed to recalculate session numbers')
+    );
 
     return NextResponse.json(completedSession);
   } catch (error) {

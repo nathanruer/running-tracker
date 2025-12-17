@@ -57,6 +57,7 @@ interface SessionDialogProps {
   mode?: 'create' | 'edit' | 'complete';
   onRequestStravaImport?: () => void;
   onRequestCsvImport?: () => void;
+  onSuccess?: (session: TrainingSession) => void;
 }
 
 const SessionDialog = ({
@@ -68,6 +69,7 @@ const SessionDialog = ({
   mode = 'create',
   onRequestStravaImport,
   onRequestCsvImport,
+  onSuccess,
 }: SessionDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -191,11 +193,13 @@ const SessionDialog = ({
         comments: values.comments,
       };
 
-      await updateSession(session.id, sessionData);
+      const updatedSession = await updateSession(session.id, sessionData);
+      
       toast({
         title: 'Séance modifiée',
         description: 'La séance a été mise à jour avec succès.',
       });
+      if (onSuccess) onSuccess(updatedSession);
       onClose();
       form.reset();
     } catch (error) {
@@ -233,6 +237,8 @@ const SessionDialog = ({
         comments: values.comments,
       };
 
+      let resultSession: TrainingSession;
+
       if (mode === 'complete' && session) {
         const response = await fetch(`/api/sessions/${session.id}/complete`, {
           method: 'PATCH',
@@ -240,28 +246,33 @@ const SessionDialog = ({
           body: JSON.stringify(sessionData),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Erreur lors de l\'enregistrement de la séance');
+          throw new Error(data.error || 'Erreur lors de l\'enregistrement de la séance');
         }
 
+        resultSession = data;
+        
         toast({
           title: 'Séance enregistrée',
           description: 'La séance a été enregistrée avec succès.',
         });
       } else if (mode === 'edit' && session) {
-        await updateSession(session.id, sessionData);
+        resultSession = await updateSession(session.id, sessionData);
         toast({
           title: 'Séance modifiée',
           description: 'La séance a été mise à jour avec succès.',
         });
       } else {
-        await addSession(sessionData);
+        resultSession = await addSession(sessionData);
         toast({
           title: 'Séance ajoutée',
           description: 'La séance a été enregistrée avec succès.',
         });
       }
+      
+      if (onSuccess) onSuccess(resultSession);
       onClose();
       form.reset();
     } catch (error) {

@@ -1,6 +1,80 @@
 import { prisma } from '@/lib/database';
+import { Prisma } from '@prisma/client';
 
-function getCalendarWeek(date: Date): { year: number; week: number } {
+export async function recalculateSessionNumbers(userId: string): Promise<void> {
+  const sessions = await prisma.training_sessions.findMany({
+    where: { userId },
+    orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, date: true, status: true, sessionNumber: true },
+  });
+
+  if (sessions.length === 0) return;
+
+  const sessionsWithDates = sessions.filter(s => s.date !== null);
+  const plannedWithoutDates = sessions.filter(s => s.status === 'planned' && s.date === null);
+
+  const updates: { id: string; sessionNumber: number; week: number | null }[] = [];
+  let globalSessionNumber = 1;
+
+  const weekMap = new Map<string, typeof sessions>();
+  
+  for (const session of sessionsWithDates) {
+    const weekKey = getWeekKey(session.date!);
+    if (!weekMap.has(weekKey)) {
+      weekMap.set(weekKey, []);
+    }
+    weekMap.get(weekKey)!.push(session);
+  }
+
+  const sortedWeeks = Array.from(weekMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+  for (let weekIndex = 0; weekIndex < sortedWeeks.length; weekIndex++) {
+    const [, weekSessions] = sortedWeeks[weekIndex];
+    const trainingWeek = weekIndex + 1;
+
+    weekSessions.sort((a, b) => a.date!.getTime() - b.date!.getTime());
+
+    for (const session of weekSessions) {
+      updates.push({
+        id: session.id,
+        sessionNumber: globalSessionNumber,
+        week: trainingWeek,
+      });
+      globalSessionNumber++;
+    }
+  }
+
+  for (const session of plannedWithoutDates) {
+    updates.push({
+      id: session.id,
+      sessionNumber: globalSessionNumber,
+      week: null,
+    });
+    globalSessionNumber++;
+  }
+
+  if (updates.length === 0) return;
+
+  const sessionNumberCases = updates
+    .map(u => `WHEN id = '${u.id}' THEN ${u.sessionNumber}`)
+    .join(' ');
+  
+  const weekCases = updates
+    .map(u => `WHEN id = '${u.id}' THEN ${u.week === null ? 'NULL' : u.week}`)
+    .join(' ');
+  
+  const ids = updates.map(u => `'${u.id}'`).join(',');
+
+  await prisma.$executeRaw`
+    UPDATE training_sessions 
+    SET 
+      "sessionNumber" = CASE ${Prisma.raw(sessionNumberCases)} END,
+      week = CASE ${Prisma.raw(weekCases)} END
+    WHERE id IN (${Prisma.raw(ids)})
+  `;
+}
+
+function getWeekKey(date: Date): string {
   const d = new Date(date);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -10,105 +84,5 @@ function getCalendarWeek(date: Date): { year: number; week: number } {
   const yearStart = new Date(monday.getFullYear(), 0, 1);
   const weekNumber = Math.ceil((((monday.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   
-  return { year: monday.getFullYear(), week: weekNumber };
-}
-
-export async function recalculateSessionNumbers(userId: string): Promise<void> {
-  const sessions = await prisma.training_sessions.findMany({
-    where: { userId },
-    orderBy: { date: 'asc' },
-  });
-
-  const completedSessions = sessions.filter(s => s.date !== null && s.status === 'completed');
-  const plannedSessions = sessions.filter(s => s.status === 'planned');
-
-  if (completedSessions.length === 0 && plannedSessions.length === 0) {
-    return;
-  }
-
-  const updates: any[] = [];
-  let globalSessionNumber = 1;
-
-  type SessionWithDate = typeof sessions[0];
-  const weekMap = new Map<string, SessionWithDate[]>();
-
-  if (completedSessions.length > 0) {
-    const sessionsWithWeek = completedSessions.map(session => ({
-      ...session,
-      calendarWeek: getCalendarWeek(session.date!),
-    }));
-
-    for (const session of sessionsWithWeek) {
-      const weekKey = `${session.calendarWeek.year}-W${session.calendarWeek.week}`;
-      if (!weekMap.has(weekKey)) {
-        weekMap.set(weekKey, []);
-      }
-      weekMap.get(weekKey)!.push(session);
-    }
-  }
-
-  const plannedSessionsWithDates = plannedSessions.filter(s => s.date !== null);
-  if (plannedSessionsWithDates.length > 0) {
-    for (const session of plannedSessionsWithDates) {
-      const calendarWeek = getCalendarWeek(session.date!);
-      const weekKey = `${calendarWeek.year}-W${calendarWeek.week}`;
-      if (!weekMap.has(weekKey)) {
-        weekMap.set(weekKey, []);
-      }
-      weekMap.get(weekKey)!.push(session);
-    }
-  }
-
-  const sortedWeeks = Array.from(weekMap.entries()).sort((a, b) => {
-    const [yearA, weekA] = a[0].split('-W').map(Number);
-    const [yearB, weekB] = b[0].split('-W').map(Number);
-    return yearA !== yearB ? yearA - yearB : weekA - weekB;
-  });
-
-  const weekKeyToTrainingWeek = new Map<string, number>();
-  sortedWeeks.forEach(([weekKey], index) => {
-    weekKeyToTrainingWeek.set(weekKey, index + 1);
-  });
-
-  for (let weekIndex = 0; weekIndex < sortedWeeks.length; weekIndex++) {
-    const [weekKey, weekSessions] = sortedWeeks[weekIndex];
-    const trainingWeek = weekIndex + 1;
-
-    weekSessions.sort((a, b) => a.date!.getTime() - b.date!.getTime());
-
-    for (const session of weekSessions) {
-      updates.push(
-        prisma.training_sessions.update({
-          where: { id: session.id },
-          data: {
-            sessionNumber: globalSessionNumber,
-            week: trainingWeek,
-          },
-        })
-      );
-      globalSessionNumber++;
-    }
-  }
-
-  const plannedSessionsWithoutDates = plannedSessions.filter(s => s.date === null);
-  if (plannedSessionsWithoutDates.length > 0) {
-    const sortedPlannedSessions = plannedSessionsWithoutDates.sort((a, b) => a.sessionNumber - b.sessionNumber);
-
-    for (const session of sortedPlannedSessions) {
-      updates.push(
-        prisma.training_sessions.update({
-          where: { id: session.id },
-          data: {
-            sessionNumber: globalSessionNumber,
-            week: null, // Reset week to null for sessions without dates
-          },
-        })
-      );
-      globalSessionNumber++;
-    }
-  }
-
-  if (updates.length > 0) {
-    await prisma.$transaction(updates);
-  }
+  return `${monday.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
 }

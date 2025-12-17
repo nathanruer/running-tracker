@@ -26,30 +26,30 @@ export async function POST(request: NextRequest) {
       comments,
     } = body;
 
-    const allSessions = await prisma.training_sessions.findMany({
-      where: { userId },
-      select: { sessionNumber: true },
-      orderBy: { sessionNumber: 'desc' },
-    });
+    const [sessionStats, firstSession] = await Promise.all([
+      prisma.training_sessions.aggregate({
+        where: { userId },
+        _max: { sessionNumber: true },
+      }),
+      plannedDate
+        ? prisma.training_sessions.findFirst({
+            where: { userId, date: { not: null } },
+            orderBy: { date: 'asc' },
+            select: { date: true },
+          })
+        : null,
+    ]);
 
-    const nextSessionNumber = allSessions.length > 0
-      ? allSessions[0].sessionNumber + 1
-      : 1;
+    const nextSessionNumber = (sessionStats._max.sessionNumber ?? 0) + 1;
 
     let week: number | null = null;
-    if (plannedDate) {
+    if (plannedDate && firstSession?.date) {
       const baseDate = new Date(plannedDate);
-      const firstSession = await prisma.training_sessions.findFirst({
-        where: { userId },
-        orderBy: { date: 'asc' },
-      });
-
+      const diffTime = Math.abs(baseDate.getTime() - firstSession.date.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      week = Math.floor(diffDays / 7) + 1;
+    } else if (plannedDate) {
       week = 1;
-      if (firstSession && firstSession.date) {
-        const diffTime = Math.abs(baseDate.getTime() - firstSession.date.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        week = Math.floor(diffDays / 7) + 1;
-      }
     }
 
     const plannedSession = await prisma.training_sessions.create({

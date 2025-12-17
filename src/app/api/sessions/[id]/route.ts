@@ -40,7 +40,7 @@ export async function PUT(
         : { date: new Date(updates.date) }
       : {};
 
-    await prisma.training_sessions.update({
+    const updated = await prisma.training_sessions.update({
       where: { id: params.id },
       data: {
         ...updates,
@@ -49,12 +49,10 @@ export async function PUT(
     });
 
     if (updates.date !== undefined) {
-      await recalculateSessionNumbers(userId);
+      recalculateSessionNumbers(userId).catch(err => 
+        logger.error({ error: err, userId }, 'Failed to recalculate session numbers after update')
+      );
     }
-
-    const updated = await prisma.training_sessions.findUnique({
-      where: { id: params.id },
-    });
 
     return NextResponse.json({ session: updated });
   } catch (error) {
@@ -93,7 +91,9 @@ export async function DELETE(
 
   await prisma.training_sessions.delete({ where: { id: params.id } });
   
-  await recalculateSessionNumbers(userId);
+  recalculateSessionNumbers(userId).catch(err => 
+    logger.error({ error: err, userId }, 'Failed to recalculate session numbers after delete')
+  );
   
   return NextResponse.json({ message: 'Séance supprimée' });
 }

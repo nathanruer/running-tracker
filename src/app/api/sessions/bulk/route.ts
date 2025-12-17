@@ -30,26 +30,23 @@ export async function POST(request: NextRequest) {
       sessionSchema.parse(session)
     );
 
-    const createdSessions = await Promise.all(
-      validatedSessions.map((session) =>
-        prisma.training_sessions.create({
-          data: {
-            ...session,
-            date: new Date(session.date),
-            sessionNumber: 1,
-            week: 1,
-            userId,
-          },
-        })
-      )
-    );
+    const result = await prisma.training_sessions.createMany({
+      data: validatedSessions.map((session) => ({
+        ...session,
+        date: new Date(session.date),
+        sessionNumber: 1,
+        week: 1,
+        userId,
+        status: 'completed',
+      })),
+    });
 
     await recalculateSessionNumbers(userId);
 
     return NextResponse.json(
       {
-        message: `${createdSessions.length} séance(s) importée(s) avec succès`,
-        count: createdSessions.length,
+        message: `${result.count} séance(s) importée(s) avec succès`,
+        count: result.count,
       },
       { status: 201 }
     );

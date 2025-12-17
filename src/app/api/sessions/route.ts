@@ -55,24 +55,28 @@ export async function POST(request: NextRequest) {
   try {
     const payload = sessionSchema.parse(await request.json());
 
+    const stats = await prisma.training_sessions.aggregate({
+      where: { userId },
+      _max: { sessionNumber: true },
+    });
+    const nextNumber = (stats._max.sessionNumber ?? 0) + 1;
+
     const session = await prisma.training_sessions.create({
       data: {
         ...payload,
         date: new Date(payload.date),
-        sessionNumber: 1,
+        sessionNumber: nextNumber,
         week: 1,
         userId,
         status: 'completed',
       },
     });
 
-    await recalculateSessionNumbers(userId);
+    recalculateSessionNumbers(userId).catch(err => 
+      logger.error({ error: err, userId }, 'Failed to recalculate session numbers')
+    );
 
-    const updatedSession = await prisma.training_sessions.findUnique({
-      where: { id: session.id },
-    });
-
-    return NextResponse.json({ session: updatedSession }, { status: 201 });
+    return NextResponse.json({ session }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
