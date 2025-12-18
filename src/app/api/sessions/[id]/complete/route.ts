@@ -62,11 +62,13 @@ export async function PATCH(
 
     logger.info({ sessionId: id }, 'Planned session completed');
 
-    recalculateSessionNumbers(userId).catch(err => 
-      logger.error({ error: err, userId }, 'Failed to recalculate session numbers')
-    );
+    await recalculateSessionNumbers(userId);
 
-    return NextResponse.json(completedSession);
+    const refreshed = await prisma.training_sessions.findUnique({
+      where: { id }
+    });
+    
+    return NextResponse.json(refreshed || completedSession);
   } catch (error) {
     logger.error({ error }, 'Failed to complete planned session');
     return NextResponse.json(

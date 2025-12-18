@@ -56,9 +56,12 @@ export async function PUT(
     });
 
     if (updates.date !== undefined) {
-      recalculateSessionNumbers(userId).catch(err => 
-        logger.error({ error: err, userId }, 'Failed to recalculate session numbers after update')
-      );
+      await recalculateSessionNumbers(userId);
+      // Récupérer la séance rafraîchie avec les nouveaux calculs
+      const refreshed = await prisma.training_sessions.findUnique({
+        where: { id: params.id }
+      });
+      return NextResponse.json({ session: refreshed || updated });
     }
 
     return NextResponse.json({ session: updated });
@@ -98,9 +101,7 @@ export async function DELETE(
 
   await prisma.training_sessions.delete({ where: { id: params.id } });
   
-  recalculateSessionNumbers(userId).catch(err => 
-    logger.error({ error: err, userId }, 'Failed to recalculate session numbers after delete')
-  );
+  await recalculateSessionNumbers(userId);
   
   return NextResponse.json({ message: 'Séance supprimée' });
 }

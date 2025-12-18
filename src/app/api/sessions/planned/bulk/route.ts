@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           targetDistance: session.targetDistance,
           targetPace: session.targetPace,
           targetHeartRateZone: session.targetHeartRateZone,
-          targetHeartRateBpm: session.targetHeartRateBpm,
+          targetHeartRateBpm: session.targetHeartRateBpm?.toString(),
           targetRPE: session.targetRPE,
           intervalDetails: session.intervalDetails ? session.intervalDetails : Prisma.JsonNull,
           plannedDate: session.plannedDate ? new Date(session.plannedDate) : null,

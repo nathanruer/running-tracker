@@ -162,11 +162,11 @@ export function SessionsTable({
   };
 
   const toggleSelectAll = () => {
-    const completedSessions = getSortedSessions().filter(s => s.status === 'completed' && s.date);
-    if (selectedSessions.size === completedSessions.length) {
+    const allVisibleSessions = getSortedSessions();
+    if (selectedSessions.size === allVisibleSessions.length) {
       setSelectedSessions(new Set());
     } else {
-      setSelectedSessions(new Set(completedSessions.map(s => s.id)));
+      setSelectedSessions(new Set(allVisibleSessions.map(s => s.id)));
     }
   };
 
@@ -188,8 +188,8 @@ export function SessionsTable({
     }
   };
 
-  const completedSessionsCount = getSortedSessions().filter(s => s.status === 'completed' && s.date).length;
-  const allSelected = selectedSessions.size > 0 && selectedSessions.size === completedSessionsCount;
+  const allVisibleSessionsCount = getSortedSessions().length;
+  const allSelected = selectedSessions.size > 0 && selectedSessions.size === allVisibleSessionsCount;
 
   return (
     <>
@@ -365,7 +365,9 @@ export function SessionsTable({
                       session={session}
                       onEdit={onEdit}
                       onDelete={onDelete}
-                      showCheckbox={false}
+                      showCheckbox={true}
+                      isSelected={selectedSessions.has(session.id)}
+                      onToggleSelect={() => toggleSessionSelection(session.id)}
                     />
                   ) : (
                     <CompletedSessionRow

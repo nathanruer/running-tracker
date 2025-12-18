@@ -1,106 +1,239 @@
-import { CheckCircle, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { CheckCircle, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
+import { IntervalDetailsView } from './interval-details-view';
 
 interface PlannedSessionRowProps {
   session: TrainingSession;
   onEdit: (session: TrainingSession) => void;
   onDelete: (id: string) => void;
   showCheckbox?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export function PlannedSessionRow({ session, onEdit, onDelete, showCheckbox = false }: PlannedSessionRowProps) {
+export function PlannedSessionRow({ 
+  session, 
+  onEdit, 
+  onDelete, 
+  showCheckbox = false,
+  isSelected = false,
+  onToggleSelect
+}: PlannedSessionRowProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const hasIntervalDetails = session.sessionType === 'Fractionné' && session.intervalDetails;
+
+  const getSessionTotals = () => {
+    if (hasIntervalDetails && session.intervalDetails?.steps?.length) {
+      let totalSeconds = 0;
+      let totalDistance = 0;
+      let totalWeightedHR = 0;
+      let hrSeconds = 0;
+
+      session.intervalDetails.steps.forEach(step => {
+        const [m, s] = (step.duration || '0:00').split(':').map(Number);
+        const durationSec = (m * 60) + (s || 0);
+        
+        totalSeconds += durationSec;
+        totalDistance += step.distance || 0;
+        
+        if (step.hr && durationSec > 0) {
+          totalWeightedHR += step.hr * durationSec;
+          hrSeconds += durationSec;
+        }
+      });
+
+      return {
+        duration: totalSeconds / 60,
+        distance: totalDistance,
+        avgHR: hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null,
+        isCalculated: true
+      };
+    }
+
+    return {
+      duration: session.targetDuration || 0,
+      distance: session.targetDistance || 0,
+      avgHR: session.targetHeartRateBpm || session.targetHeartRateZone || null,
+      isCalculated: false
+    };
+  };
+
+  const totals = getSessionTotals();
+
+  const calculateGlobalPace = () => {
+    if (hasIntervalDetails && session.intervalDetails?.steps?.length) {
+      let totalWeightedPaceSec = 0;
+      let paceDistance = 0;
+      let totalDistance = 0;
+      let totalSeconds = 0;
+
+      session.intervalDetails.steps.forEach(step => {
+        const [m, s] = (step.duration || '0:00').split(':').map(Number);
+        const durationSec = (m * 60) + (s || 0);
+        
+        const paceStr = step.pace || '';
+        const paceParts = paceStr.split(':').map(Number);
+        const stepPaceSec = (paceParts.length === 2 && !isNaN(paceParts[0]) && !isNaN(paceParts[1]))
+          ? paceParts[0] * 60 + paceParts[1]
+          : null;
+
+        if (durationSec > 0) {
+          totalSeconds += durationSec;
+          const dist = step.distance || 0;
+          totalDistance += dist;
+          
+          if (stepPaceSec && dist > 0) {
+            totalWeightedPaceSec += stepPaceSec * dist;
+            paceDistance += dist;
+          }
+        }
+      });
+
+      const avgPaceSec = paceDistance > 0 
+        ? totalWeightedPaceSec / paceDistance 
+        : (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
+
+      if (avgPaceSec) {
+        const mins = Math.floor(avgPaceSec / 60);
+        const secs = Math.round(avgPaceSec % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+    }
+
+    if (totals.duration > 0 && totals.distance > 0) {
+      const totalSeconds = totals.duration * 60;
+      const secondsPerKm = totalSeconds / totals.distance;
+      const mins = Math.floor(secondsPerKm / 60);
+      const secs = Math.round(secondsPerKm % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return session.targetPace || '-';
+  };
+
+  const globalPace = calculateGlobalPace();
+  const globalHR = totals.avgHR;
+  const displayDuration = totals.duration;
+  const displayDistance = totals.distance;
+
   return (
-    <TableRow
-      className="border-b-2 border-dashed border-muted-foreground/30 bg-muted/20 text-muted-foreground italic hover:bg-muted/20"
-    >
-      {showCheckbox && (
-        <TableCell className="w-12"></TableCell>
-      )}
-      <TableCell className="font-medium text-center">
-        <div className="flex flex-col items-center gap-1">
-          {session.sessionNumber}
-        </div>
-      </TableCell>
-      <TableCell className="text-center">{session.week ?? '-'}</TableCell>
-      <TableCell className="text-center">
-        {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : (
-          <span className="text-sm">À planifier</span>
-        )}
-      </TableCell>
-      <TableCell className="text-center">
-        <div className="flex flex-col gap-0.5 items-center">
-          <span>{session.sessionType}</span>
-          {session.intervalDetails && (
-            <span className="text-xs text-gradient">
-              {generateIntervalStructure(session.intervalDetails)}
-            </span>
+    <>
+      <TableRow
+        className={`text-muted-foreground/70 italic transition-colors ${
+          hasIntervalDetails
+            ? isOpen
+              ? 'bg-muted/20 border-b-0 hover:bg-muted/20 cursor-pointer'
+              : 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30 hover:bg-muted/10 cursor-pointer'
+            : 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30 hover:bg-muted/10'
+        }`}
+        onClick={hasIntervalDetails ? () => setIsOpen(!isOpen) : undefined}
+      >
+        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+          {showCheckbox && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onToggleSelect}
+              className="border-muted-foreground/50 data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground"
+              aria-label={`Sélectionner la séance ${session.sessionNumber}`}
+            />
           )}
-        </div>
-      </TableCell>
-      <TableCell className="text-center">
-        {session.targetDuration ? (
-          <span>
-            ~{Math.floor(session.targetDuration / 60).toString().padStart(2, '0')}:{(session.targetDuration % 60).toString().padStart(2, '0')}:00
-          </span>
-        ) : '-'}
-      </TableCell>
-      <TableCell className="text-center">
-        {session.targetDistance ? (
-          <span>
-            ~{session.targetDistance} km
-          </span>
-        ) : '-'}
-      </TableCell>
-      <TableCell className="text-center">
-        {session.targetPace ? (
-          <span>
-            ~{session.targetPace}
-          </span>
-        ) : '-'}
-      </TableCell>
-      <TableCell className="text-center">
-        {session.targetHeartRateBpm || session.targetHeartRateZone ? (
-          <span>
-            {session.targetHeartRateBpm || session.targetHeartRateZone} bpm
-          </span>
-        ) : '-'}
-      </TableCell>
-      <TableCell className="text-center">
-        {session.targetRPE ? (
-          <span>
-            {session.targetRPE}/10
-          </span>
-        ) : (
-          <span>-</span>
-        )}
-      </TableCell>
-      <TableCell>
-        <p className="whitespace-normal break-words text-sm">
-          {session.comments}
-        </p>
-      </TableCell>
-      <TableCell>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(session)}
-          >
-            <CheckCircle className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(session.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+        <TableCell className="font-medium text-center">
+          {session.sessionNumber}
+        </TableCell>
+        <TableCell className="text-center">{session.week ?? '-'}</TableCell>
+        <TableCell className="text-center">
+          {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : (
+            <span className="text-muted-foreground/60">À planifier</span>
+          )}
+        </TableCell>
+        <TableCell className="text-center">
+          <div className="flex flex-col gap-0.5 items-center">
+            <div className="flex items-center gap-1">
+              <span>{session.sessionType}</span>
+              {hasIntervalDetails && (
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                    isOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              )}
+            </div>
+            {(session.intervalDetails?.workoutType || session.intervalDetails) && (
+              <span className="text-xs text-gradient font-medium">
+                {session.intervalDetails?.workoutType || generateIntervalStructure(session.intervalDetails)}
+              </span>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="text-center">
+          {displayDuration > 0 ? (
+            <span>
+              {Math.floor(displayDuration / 60).toString().padStart(2, '0')}:{(Math.round(displayDuration % 60)).toString().padStart(2, '0')}:00
+            </span>
+          ) : '-'}
+        </TableCell>
+        <TableCell className="text-center">
+          {displayDistance > 0 ? (
+            <span>
+              {displayDistance.toFixed(2)} km
+            </span>
+          ) : '-'}
+        </TableCell>
+        <TableCell className="text-center font-semibold">
+          {globalPace}
+        </TableCell>
+        <TableCell className="text-center font-semibold">
+          {typeof globalHR === 'number' ? `${globalHR} bpm` : globalHR}
+        </TableCell>
+        <TableCell className="text-center">
+          {session.targetRPE ? (
+            <span className="text-muted-foreground/80">
+              {session.targetRPE}/10
+            </span>
+          ) : '-'}
+        </TableCell>
+        <TableCell>
+          <p className="whitespace-normal break-words text-sm text-muted-foreground/70">
+            {session.comments}
+          </p>
+        </TableCell>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(session)}
+            >
+              <CheckCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(session.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+
+      {hasIntervalDetails && isOpen && (
+        <TableRow className="hover:bg-transparent">
+          <TableCell colSpan={12} className="bg-muted/20 border-b-2 border-dashed border-muted-foreground/30 p-2 italic text-muted-foreground/70">
+            <div className="opacity-80 grayscale-[0.3]">
+              <IntervalDetailsView
+                intervalDetails={session.intervalDetails!}
+                isPlanned={true}
+              />
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
   );
 }

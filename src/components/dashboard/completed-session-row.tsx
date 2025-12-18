@@ -40,16 +40,16 @@ export function CompletedSessionRow({
         }
         onClick={hasIntervalDetails ? () => setIsOpen(!isOpen) : undefined}
       >
-        {showCheckbox && (
-          <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+          {showCheckbox && (
             <Checkbox
               checked={isSelected}
               onCheckedChange={onToggleSelect}
               className="border-muted-foreground/50 data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground"
               aria-label={`Sélectionner la séance ${session.sessionNumber}`}
             />
-          </TableCell>
-        )}
+          )}
+        </TableCell>
         <TableCell className="font-medium text-center">
           {session.sessionNumber}
         </TableCell>

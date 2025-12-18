@@ -9,6 +9,7 @@ import { Target, ListChecks, Timer } from 'lucide-react';
 
 interface IntervalDetailsViewProps {
   intervalDetails: IntervalDetails;
+  isPlanned?: boolean;
 }
 
 const paceToSeconds = (pace: string | null): number | null => {
@@ -27,6 +28,7 @@ const secondsToPace = (totalSeconds: number | null): string => {
 
 export function IntervalDetailsView({
   intervalDetails,
+  isPlanned = false,
 }: IntervalDetailsViewProps) {
   const [filter, setFilter] = useState<'all' | 'effort' | 'recovery'>('all');
 
@@ -43,28 +45,39 @@ export function IntervalDetailsView({
 
   const calculateWeightedAverages = (items: IntervalStep[]) => {
     let totalDistance = 0;
-    let totalSecondsForPace = 0;
-    let hrSum = 0;
-    let hrCount = 0;
+    let totalSeconds = 0;
+    let totalWeightedHR = 0;
+    let hrSeconds = 0;
+    let totalWeightedPaceSec = 0;
+    let paceDistance = 0;
 
     items.forEach(step => {
-      const paceSec = paceToSeconds(step.pace);
-      if (step.distance && step.distance > 0 && paceSec && paceSec > 0) {
-        totalDistance += step.distance;
-        totalSecondsForPace += paceSec * step.distance;
-      } else if (paceSec && paceSec > 0) {
-        // Fallback for steps without distance: assume 1 unit for simple average 
-        // but try to avoid this for weighted accuracy
-      }
+      const [m, s] = (step.duration || '0:00').split(':').map(Number);
+      const durationSec = (m * 60) + (s || 0);
+      const stepPaceSec = paceToSeconds(step.pace);
       
-      if (step.hr) {
-        hrSum += step.hr;
-        hrCount++;
+      if (durationSec > 0) {
+        totalSeconds += durationSec;
+        const dist = step.distance || 0;
+        totalDistance += dist;
+        
+        if (stepPaceSec && dist > 0) {
+          totalWeightedPaceSec += stepPaceSec * dist;
+          paceDistance += dist;
+        }
+        
+        if (step.hr) {
+          totalWeightedHR += step.hr * durationSec;
+          hrSeconds += durationSec;
+        }
       }
     });
 
-    const avgPaceSec = totalDistance > 0 ? totalSecondsForPace / totalDistance : null;
-    const avgHR = hrCount > 0 ? Math.round(hrSum / hrCount) : null;
+    const avgPaceSec = paceDistance > 0 
+      ? totalWeightedPaceSec / paceDistance 
+      : (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
+      
+    const avgHR = hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null;
 
     return { 
       avgPace: secondsToPace(avgPaceSec), 
@@ -104,7 +117,7 @@ export function IntervalDetailsView({
                 {displayStructure}
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{targetEffortPace || '-'}</span>
+                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(paceToSeconds(targetEffortPace)) || '-'}</span>
                 {targetEffortHR ? <span className="ml-1.5 opacity-40">|</span> : ''}
                 {targetEffortHR ? <span className="ml-1.5 font-bold text-orange-400/80">{targetEffortHR} bpm</span> : ''}
               </span>
@@ -115,7 +128,7 @@ export function IntervalDetailsView({
         <div className="flex items-center gap-6 self-end md:self-auto">
           <div className="flex flex-col items-end">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-              Moy. Réelle ({filter === 'all' ? 'Totale' : filter === 'effort' ? 'Efforts' : 'Récups'})
+              {isPlanned ? 'Moy. Prévue' : 'Moy. Réelle'} ({filter === 'all' ? 'Totale' : filter === 'effort' ? 'Efforts' : 'Récups'})
             </span>
             <div className="flex items-baseline gap-2 text-xl font-black font-mono text-foreground tracking-tighter">
               {averages.avgPace}

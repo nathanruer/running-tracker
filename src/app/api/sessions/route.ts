@@ -75,11 +75,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    recalculateSessionNumbers(userId).catch(err => 
-      logger.error({ error: err, userId }, 'Failed to recalculate session numbers')
-    );
+    await recalculateSessionNumbers(userId);
 
-    return NextResponse.json({ session }, { status: 201 });
+    const refreshedSession = await prisma.training_sessions.findUnique({
+      where: { id: session.id }
+    });
+
+    return NextResponse.json({ session: refreshedSession || session }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
