@@ -271,8 +271,15 @@ const DashboardPage = () => {
     }
   };
 
+  const openNewSession = () => {
+    setEditingSession(null);
+    setImportedData(null);
+    setIsDialogOpen(true);
+  };
+
   const handleEdit = (session: TrainingSession) => {
     setEditingSession(session);
+    setImportedData(null);
     setIsDialogOpen(true);
   };
 
@@ -322,16 +329,11 @@ const DashboardPage = () => {
     queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
   };
 
-  const handleDialogClose = async () => {
+  const handleDialogClose = () => {
     setIsDialogOpen(false);
-    setImportedData(null);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
-    if (!open) {
-      setEditingSession(null);
-      setImportedData(null);
-    }
     setIsDialogOpen(open);
   };
 
@@ -402,10 +404,7 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
-        <DashboardHeader onNewSession={() => {
-          setEditingSession(null);
-          setIsDialogOpen(true);
-        }} />
+        <DashboardHeader onNewSession={openNewSession} />
 
         {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
           <SessionsTable
@@ -423,10 +422,7 @@ const DashboardPage = () => {
         ) : (
           <div className="rounded-lg border border-border/50 bg-card p-12 text-center text-muted-foreground">
             <p className="mb-4">Aucune séance enregistrée</p>
-            <Button onClick={() => {
-              setEditingSession(null);
-              setIsDialogOpen(true);
-            }} variant="outline">
+            <Button onClick={openNewSession} variant="outline">
               Ajouter votre première séance
             </Button>
           </div>

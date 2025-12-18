@@ -146,7 +146,7 @@ export function IntervalDetailsView({
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-muted/30 border-b border-border/40 text-muted-foreground/50 uppercase tracking-tighter">
-                  <th className="py-2.5 px-4 text-left font-bold w-16">Lap</th>
+                  <th className="py-2.5 px-4 text-left font-bold w-16">Intervalle</th>
                   <th className="py-2.5 px-4 text-center font-bold">Durée</th>
                   <th className="py-2.5 px-4 text-center font-bold">Distance</th>
                   <th className="py-2.5 px-4 text-center font-bold">Allure</th>
