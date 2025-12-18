@@ -104,7 +104,7 @@ describe('SessionDialog', () => {
 
     fireEvent.change(screen.getByLabelText(/Allure/i), { target: { value: '06:00' } });
 
-    fireEvent.change(screen.getByLabelText(/FC moyenne/i), { target: { value: '140' } });
+    fireEvent.change(screen.getByLabelText(/FC moy/i), { target: { value: '140' } });
 
     fireEvent.click(screen.getByText('Enregistrer'));
 

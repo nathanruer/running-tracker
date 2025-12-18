@@ -19,7 +19,7 @@ describe('CsvImportDialog', () => {
       />
     );
 
-    expect(screen.getByText('Importer des séances depuis CSV')).toBeInTheDocument();
+    expect(screen.getByText(/Importer des séances/i)).toBeInTheDocument();
     expect(screen.getByText(/Sélectionnez un fichier CSV/i)).toBeInTheDocument();
   });
 

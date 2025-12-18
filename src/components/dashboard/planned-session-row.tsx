@@ -101,7 +101,7 @@ export function PlannedSessionRow({
       if (avgPaceSec) {
         const mins = Math.floor(avgPaceSec / 60);
         const secs = Math.round(avgPaceSec % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        return `~${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       }
     }
 
@@ -110,13 +110,16 @@ export function PlannedSessionRow({
       const secondsPerKm = totalSeconds / totals.distance;
       const mins = Math.floor(secondsPerKm / 60);
       const secs = Math.round(secondsPerKm % 60);
-      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `~${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
-    return session.targetPace || '-';
+    return session.targetPace ? `~${session.targetPace}` : '-';
   };
 
   const globalPace = calculateGlobalPace();
-  const globalHR = totals.avgHR;
+  const globalHRDisplay = totals.avgHR 
+    ? `~${totals.avgHR} bpm`
+    : '-';
+
   const displayDuration = totals.duration;
   const displayDistance = totals.distance;
 
@@ -173,22 +176,22 @@ export function PlannedSessionRow({
         <TableCell className="text-center">
           {displayDuration > 0 ? (
             <span>
-              {Math.floor(displayDuration / 60).toString().padStart(2, '0')}:{(Math.round(displayDuration % 60)).toString().padStart(2, '0')}:00
+              {`~${Math.floor(displayDuration / 60).toString().padStart(2, '0')}:${(Math.round(displayDuration % 60)).toString().padStart(2, '0')}:00`}
             </span>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center">
           {displayDistance > 0 ? (
             <span>
-              {displayDistance.toFixed(2)} km
+              {`~${displayDistance.toFixed(2)} km`}
             </span>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center font-semibold">
           {globalPace}
         </TableCell>
-        <TableCell className="text-center font-semibold">
-          {typeof globalHR === 'number' ? `${globalHR} bpm` : globalHR}
+        <TableCell className="text-center font-semibold text-m">
+          {globalHRDisplay}
         </TableCell>
         <TableCell className="text-center">
           {session.targetRPE ? (

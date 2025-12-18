@@ -23,7 +23,7 @@ describe('CompletedSessionRow', () => {
     avgPace: '5:42',
     avgHeartRate: 145,
     perceivedExertion: 6,
-    intervalStructure: null,
+    intervalDetails: null,
     comments: 'Bonne séance de récupération',
     userId: 'user1',
     status: 'completed',
@@ -62,7 +62,10 @@ describe('CompletedSessionRow', () => {
     const sessionWithIntervals = {
       ...mockSession,
       sessionType: 'Fractionné',
-      intervalStructure: '10x400m',
+      intervalDetails: {
+        workoutType: '10x400m',
+        steps: []
+      } as any,
     };
 
     render(

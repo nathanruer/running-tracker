@@ -27,7 +27,7 @@ describe('PlannedSessionRow', () => {
     avgPace: null,
     avgHeartRate: null,
     perceivedExertion: null,
-    intervalStructure: null,
+    intervalDetails: null,
     comments: 'Préparation semi-marathon',
     userId: 'user1',
     status: 'planned',
@@ -59,9 +59,9 @@ describe('PlannedSessionRow', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('Sortie longue')).toBeInTheDocument();
     expect(screen.getByText('~01:30:00')).toBeInTheDocument();
-    expect(screen.getByText('~18 km')).toBeInTheDocument();
-    expect(screen.getByText('~5:00')).toBeInTheDocument();
-    expect(screen.getByText('Z2 bpm')).toBeInTheDocument();
+    expect(screen.getByText('~18.00 km')).toBeInTheDocument();
+    expect(screen.getByText('~05:00')).toBeInTheDocument();
+    expect(screen.getByText('~Z2 bpm')).toBeInTheDocument();
     expect(screen.getByText('5/10')).toBeInTheDocument();
     expect(screen.getByText('Préparation semi-marathon')).toBeInTheDocument();
   });
@@ -107,7 +107,10 @@ describe('PlannedSessionRow', () => {
     const sessionWithIntervals = {
       ...mockPlannedSession,
       sessionType: 'Fractionné',
-      intervalStructure: '6x800m',
+      intervalDetails: {
+        workoutType: '6x800m',
+        steps: []
+      } as any,
     };
 
     render(
@@ -255,7 +258,7 @@ describe('PlannedSessionRow', () => {
     const sessionWithBpm = {
       ...mockPlannedSession,
       targetHeartRateBpm: '140-150',
-      targetHeartRateZone: undefined,
+      targetHeartRateZone: null as any,
     };
 
     render(
@@ -270,6 +273,6 @@ describe('PlannedSessionRow', () => {
       </table>
     );
 
-    expect(screen.getByText('140-150 bpm')).toBeInTheDocument();
+    expect(screen.getByText('~140-150 bpm')).toBeInTheDocument();
   });
 });

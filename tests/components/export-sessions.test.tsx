@@ -26,7 +26,7 @@ describe('ExportSessions', () => {
         allSessions={[]}
       />
     );
-    expect(screen.getByText('Exporter')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Exporter tout/i })).toBeInTheDocument();
   });
 
   it('shows dropdown menu with export options', () => {
