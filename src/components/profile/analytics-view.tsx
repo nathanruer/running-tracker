@@ -385,11 +385,11 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                     borderRadius: '8px',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  formatter={(value: number, name: string) => {
-                    if (name === 'km') {
-                      return [`${value} km`, 'Distance'];
+                  formatter={(value: number | undefined, name?: string) => {
+                    if (value === undefined || name === 'km') {
+                      return [`${value ?? 0} km`, 'Distance'];
                     }
-                    return [value, name];
+                    return [value ?? 0, name ?? ''];
                   }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length > 0) {

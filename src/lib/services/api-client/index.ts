@@ -3,6 +3,7 @@ export {
   loginUser,
   logoutUser,
   getCurrentUser,
+  disconnectStrava,
 } from './auth';
 
 export {

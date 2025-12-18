@@ -48,9 +48,22 @@ const DashboardPage = () => {
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isImportingCsv, setIsImportingCsv] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
+  const router = useRouter();
+  const [isImportingCsv, setIsImportingCsv] = useState(false);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const success = searchParams.get('success');
+
+    if (success === 'strava_connected') {
+      toast({
+        title: 'Succès',
+        description: 'Votre compte Strava a été connecté avec succès!',
+      });
+      router.replace('/dashboard', { scroll: false });
+    }
+  }, [toast, router]);
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user'],

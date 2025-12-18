@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     if (error || !code) {
       return NextResponse.redirect(
-        new URL('/dashboard?error=strava_auth_failed', request.url)
+        new URL('/error/strava?error=strava_auth_failed', request.url)
       );
     }
 
@@ -49,6 +49,15 @@ export async function GET(request: NextRequest) {
         statusText: tokenResponse.statusText,
         error: errorData,
       }, 'Strava token exchange failed');
+      
+      if (tokenResponse.status === 429 || 
+          (errorData.errors && errorData.errors.some((e: { code: string }) => e.code === 'Rate Limit Exceeded')) ||
+          (errorData.message && errorData.message.includes('rate limit'))) {
+        return NextResponse.redirect(
+          new URL('/error/strava?error=strava_api_limit', request.url)
+        );
+      }
+      
       throw new Error('Échec de l\'échange de code');
     }
 
@@ -87,7 +96,20 @@ export async function GET(request: NextRequest) {
         }, 'Strava account already linked to a different user');
         
         return NextResponse.redirect(
-          new URL('/dashboard?error=strava_already_linked', request.url)
+          new URL('/error/strava?error=strava_already_linked', request.url)
+        );
+      }
+
+      // Vérifier si l'utilisateur actuel a déjà un compte Strava lié
+      if (currentUser.stravaId) {
+        logger.error({
+          userId: currentUser.id,
+          currentStravaId: currentUser.stravaId,
+          newStravaId: athlete.id.toString(),
+        }, 'User already has a Strava account linked');
+        
+        return NextResponse.redirect(
+          new URL('/error/strava?error=strava_already_linked', request.url)
         );
       }
 
@@ -148,7 +170,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ error }, 'Strava OAuth callback failed');
     return NextResponse.redirect(
-      new URL('/dashboard?error=strava_auth_failed', request.url)
+      new URL('/error/strava?error=strava_auth_failed', request.url)
     );
   }
 }

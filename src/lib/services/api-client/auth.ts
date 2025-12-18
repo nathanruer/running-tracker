@@ -39,3 +39,17 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
 }
+
+export async function disconnectStrava(): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const data = await apiRequest<{
+    success: boolean;
+    message: string;
+  }>('/api/auth/strava/disconnect', {
+    method: 'POST',
+  });
+
+  return data;
+}

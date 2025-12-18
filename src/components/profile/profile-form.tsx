@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { updateUser } from '@/lib/services/api-client';
+import { updateUser, disconnectStrava } from '@/lib/services/api-client';
 import { type User } from '@/lib/types';
 
 const profileSchema = z.object({

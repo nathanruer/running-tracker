@@ -10,6 +10,7 @@ import { ProfileForm } from '@/components/profile/profile-form';
 import { TrainingZonesTable } from '@/components/profile/training-zones-table';
 import { AnalyticsView } from '@/components/profile/analytics-view';
 import { CalendarView } from '@/components/profile/calendar-view';
+import { StravaAccountCard } from '@/components/profile/strava-account-card';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser, logoutUser, getSessions } from '@/lib/services/api-client';
 
@@ -216,7 +217,10 @@ export default function ProfilePage() {
 
         {activeView === 'profile' && (
           <div className="grid gap-8 md:grid-cols-3 items-start">
-            <ProfileForm user={user} />
+            <div className="space-y-6">
+              <ProfileForm user={user} />
+              <StravaAccountCard stravaId={user.stravaId} />
+            </div>
             <TrainingZonesTable
               maxHeartRate={user.maxHeartRate ?? undefined}
               vma={user.vma ?? undefined}
