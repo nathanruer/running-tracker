@@ -80,13 +80,29 @@ export function CompletedSessionRow({
           {session.duration}
         </TableCell>
         <TableCell className="text-center">
-          {session.distance ? `${session.distance.toFixed(2)} km` : '0 km'}
+          {session.distance ? (
+            <>
+              {session.distance.toFixed(2)} <span className="text-xs text-muted-foreground">km</span>
+            </>
+          ) : (
+            <>
+              0 <span className="text-xs text-muted-foreground">km</span>
+            </>
+          )}
         </TableCell>
         <TableCell className="text-center">
-          {session.avgPace} mn/km
+          {session.avgPace} <span className="text-xs text-muted-foreground">mn/km</span>
         </TableCell>
         <TableCell className="text-center">
-          {session.avgHeartRate ? `${session.avgHeartRate} bpm` : '0 bpm'}
+          {session.avgHeartRate ? (
+            <>
+              {session.avgHeartRate} <span className="text-xs text-muted-foreground">bpm</span>
+            </>
+          ) : (
+            <>
+              0 <span className="text-xs text-muted-foreground">bpm</span>
+            </>
+          )}
         </TableCell>
         <TableCell className="text-center">
           {session.perceivedExertion ? (

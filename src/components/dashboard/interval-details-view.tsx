@@ -174,7 +174,9 @@ export function IntervalDetailsView({
               {averages.avgHR ? (
                 <>
                   <span className="text-sm font-normal opacity-30 ml-1">|</span>
-                  <span className="text-xs font-bold text-orange-400/80 ml-1">{averages.avgHR} bpm</span>
+                  <span className="text-xs font-bold text-orange-400/80 ml-1">
+                    {averages.avgHR} <span className="text-xs text-muted-foreground">bpm</span>
+                  </span>
                 </>
               ) : ''}
             </div>
@@ -226,13 +228,21 @@ export function IntervalDetailsView({
                       {step.duration === '00:00' ? '-' : (step.duration || '-')}
                     </td>
                     <td className="py-2 px-4 text-center font-mono">
-                      {step.distance && step.distance > 0 ? `${step.distance.toFixed(2)} km` : '-'}
+                      {step.distance && step.distance > 0 ? (
+                        <>
+                          {step.distance.toFixed(2)} <span className="text-xs text-muted-foreground">km</span>
+                        </>
+                      ) : '-'}
                     </td>
                     <td className="py-2 px-4 text-center font-mono font-bold text-foreground underline decoration-violet-500/20 underline-offset-4">
-                      {formatPace(step.pace)} mn/km
+                      {formatPace(step.pace)} <span className="text-xs text-muted-foreground">mn/km</span>
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
-                      {step.hr ? `${step.hr} bpm` : '-'}
+                      {step.hr ? (
+                        <>
+                          {step.hr} <span className="text-xs text-muted-foreground">bpm</span>
+                        </>
+                      ) : '-'}
                     </td>
                   </tr>
                 ))}

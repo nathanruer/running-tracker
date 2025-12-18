@@ -182,16 +182,24 @@ export function PlannedSessionRow({
         </TableCell>
         <TableCell className="text-center">
           {displayDistance > 0 ? (
-            <span>
-              {`~${displayDistance.toFixed(2)} km`}
-            </span>
+            <>
+              ~{displayDistance.toFixed(2)} <span className="text-xs">km</span>
+            </>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center font-semibold">
-          {globalPace !== '-' ? `${globalPace} mn/km` : '-'}
+          {globalPace !== '-' ? (
+            <>
+              {globalPace} <span className="text-xs">mn/km</span>
+            </>
+          ) : '-'}
         </TableCell>
         <TableCell className="text-center font-semibold text-m">
-          {globalHRDisplay !== '-' ? `${globalHRDisplay} bpm` : '-'}
+          {globalHRDisplay !== '-' ? (
+            <>
+              {globalHRDisplay} <span className="text-xs">bpm</span>
+            </>
+          ) : '-'}
         </TableCell>
         <TableCell className="text-center">
           {session.targetRPE ? (

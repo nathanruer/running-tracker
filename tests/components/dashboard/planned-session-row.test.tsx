@@ -70,11 +70,14 @@ describe('PlannedSessionRow', () => {
       </table>
     );
 
-    expect(screen.getByText('~05:16 mn/km')).toBeDefined();
+    expect(screen.getByText('~05:16')).toBeDefined();
+    expect(screen.getByText('mn/km')).toBeDefined();
     
-    expect(screen.getByText(/~170 bpm/)).toBeDefined();
+    expect(screen.getByText(/170/)).toBeDefined();
+    expect(screen.getByText('bpm')).toBeDefined();
     
-    expect(screen.getByText('~8.47 km')).toBeDefined();
+    expect(screen.getByText('~8.47')).toBeDefined();
+    expect(screen.getByText('km')).toBeDefined();
   });
 
   it('devrait utiliser les valeurs cibles si les étapes sont absentes', () => {
@@ -91,8 +94,9 @@ describe('PlannedSessionRow', () => {
       </table>
     );
 
-    expect(screen.getByText(/~10.00 km/)).toBeDefined();
-    expect(screen.getByText(/~01:00:00/)).toBeDefined();
-    expect(screen.getByText(/~06:00/)).toBeDefined();
+    expect(screen.getByText(/10.00/)).toBeDefined();
+    expect(screen.getByText('km')).toBeDefined();
+    expect(screen.getByText(/01:00:00/)).toBeDefined();
+    expect(screen.getByText(/06:00/)).toBeDefined();
   });
 });

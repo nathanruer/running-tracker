@@ -51,9 +51,12 @@ describe('CompletedSessionRow', () => {
     expect(screen.getByText('15/01/2024')).toBeInTheDocument();
     expect(screen.getByText('Footing')).toBeInTheDocument();
     expect(screen.getByText('1:00:00')).toBeInTheDocument();
-    expect(screen.getByText('10.50 km')).toBeInTheDocument();
-    expect(screen.getByText('5:42 mn/km')).toBeInTheDocument();
-    expect(screen.getByText('145 bpm')).toBeInTheDocument();
+    expect(screen.getByText('10.50')).toBeInTheDocument();
+    expect(screen.getByText('km')).toBeInTheDocument();
+    expect(screen.getByText('5:42')).toBeInTheDocument();
+    expect(screen.getByText('mn/km')).toBeInTheDocument();
+    expect(screen.getByText('145')).toBeInTheDocument();
+    expect(screen.getByText('bpm')).toBeInTheDocument();
     expect(screen.getByText('6/10')).toBeInTheDocument();
     expect(screen.getByText('Bonne séance de récupération')).toBeInTheDocument();
   });

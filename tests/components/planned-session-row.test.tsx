@@ -59,9 +59,12 @@ describe('PlannedSessionRow', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('Sortie longue')).toBeInTheDocument();
     expect(screen.getByText('~01:30:00')).toBeInTheDocument();
-    expect(screen.getByText('~18.00 km')).toBeInTheDocument();
-    expect(screen.getByText('~05:00 mn/km')).toBeInTheDocument();
-    expect(screen.getByText('~Z2 bpm')).toBeInTheDocument();
+    expect(screen.getByText('~18.00')).toBeInTheDocument();
+    expect(screen.getByText('km')).toBeInTheDocument();
+    expect(screen.getByText('~05:00')).toBeInTheDocument();
+    expect(screen.getByText('mn/km')).toBeInTheDocument();
+    expect(screen.getByText('~Z2')).toBeInTheDocument();
+    expect(screen.getByText('bpm')).toBeInTheDocument();
     expect(screen.getByText('5/10')).toBeInTheDocument();
     expect(screen.getByText('Préparation semi-marathon')).toBeInTheDocument();
   });
@@ -284,6 +287,7 @@ describe('PlannedSessionRow', () => {
       </table>
     );
 
-    expect(screen.getByText('~140-150 bpm')).toBeInTheDocument();
+    expect(screen.getByText('~140-150')).toBeInTheDocument();
+    expect(screen.getByText('bpm')).toBeInTheDocument();
   });
 });
