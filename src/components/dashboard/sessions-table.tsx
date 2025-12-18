@@ -288,7 +288,7 @@ export function SessionsTable({
                     <span className={sortColumn === 'duration' ? 'text-foreground' : ''}>Durée</span>
                   </button>
                 </TableHead>
-                <TableHead className="w-20 text-center">
+                <TableHead className="w-24 text-center">
                   <button
                     onClick={() => handleSort('distance')}
                     className="flex items-center justify-center hover:text-foreground transition-colors w-full"
