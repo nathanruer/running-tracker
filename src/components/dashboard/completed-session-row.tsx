@@ -135,7 +135,7 @@ export function CompletedSessionRow({
 
       {hasIntervalDetails && isOpen && (
         <TableRow className="hover:bg-transparent">
-          <TableCell colSpan={11} className="bg-muted/50 p-2">
+          <TableCell colSpan={12} className="bg-muted/50 p-2">
             <IntervalDetailsView
               intervalDetails={session.intervalDetails!}
             />
