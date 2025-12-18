@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { IntervalDetailsView } from '@/components/dashboard/interval-details-view';
 
 interface CalendarViewProps {
   sessions: TrainingSession[];
@@ -198,7 +199,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-br from-violet-500/5 to-purple-500/5">
             <DialogTitle className="text-3xl font-bold">
               {selectedDate && capitalize(format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr }))}
@@ -314,9 +315,25 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                   )}
 
                   {session.comments && (
-                    <div className="mt-4 p-4 rounded-lg bg-muted/40">
-                      <p className="text-sm text-muted-foreground font-medium mb-3">Commentaires</p>
-                      <p className="text-base leading-relaxed italic text-muted-foreground">"{session.comments}"</p>
+                    <div className="mt-4 p-4 rounded-lg bg-muted/40 text-muted-foreground">
+                      <p className="text-sm font-medium mb-3 uppercase tracking-wider opacity-70">Commentaires</p>
+                      <p className="text-base leading-relaxed italic">"{session.comments}"</p>
+                    </div>
+                  )}
+
+                  {session.sessionType === 'Fractionné' && session.intervalDetails && (
+                    <div className={`mt-6 pt-6 border-t border-border/30 ${
+                      session.type === 'planned' ? 'opacity-80 grayscale-[0.3]' : ''
+                    }`}>
+                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">
+                        Détail des intervalles
+                      </p>
+                      <div className={session.type === 'planned' ? 'italic' : ''}>
+                        <IntervalDetailsView 
+                          intervalDetails={session.intervalDetails} 
+                          isPlanned={session.type === 'planned'} 
+                        />
+                      </div>
                     </div>
                   )}
                 </CardContent>
