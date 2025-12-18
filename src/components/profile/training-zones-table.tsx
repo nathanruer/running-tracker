@@ -40,7 +40,7 @@ export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProp
   return (
     <Card className="md:col-span-2">
       <CardHeader>
-        <CardTitle>Zones d'entraînement</CardTitle>
+        <CardTitle>Zones d&apos;entraînement</CardTitle>
         <CardDescription>
           Calculées sur la base de votre FC Max ({maxHeartRate || '--'} bpm) et VMA ({vma || '--'} km/h).
         </CardDescription>

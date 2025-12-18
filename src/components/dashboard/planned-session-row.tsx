@@ -116,8 +116,8 @@ export function PlannedSessionRow({
   };
 
   const globalPace = calculateGlobalPace();
-  const globalHRDisplay = totals.avgHR 
-    ? `~${totals.avgHR} bpm`
+  const globalHRDisplay = totals.avgHR
+    ? `~${totals.avgHR}`
     : '-';
 
   const displayDuration = totals.duration;
@@ -188,10 +188,10 @@ export function PlannedSessionRow({
           ) : '-'}
         </TableCell>
         <TableCell className="text-center font-semibold">
-          {globalPace}
+          {globalPace !== '-' ? `${globalPace} mn/km` : '-'}
         </TableCell>
         <TableCell className="text-center font-semibold text-m">
-          {globalHRDisplay}
+          {globalHRDisplay !== '-' ? `${globalHRDisplay} bpm` : '-'}
         </TableCell>
         <TableCell className="text-center">
           {session.targetRPE ? (

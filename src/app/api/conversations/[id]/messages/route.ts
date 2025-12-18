@@ -11,8 +11,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let id: string | undefined;
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    id = resolvedParams.id;
     const userId = getUserIdFromRequest(request);
 
     if (!userId) {
@@ -114,10 +116,13 @@ export async function POST(
       nextSessionNumber,
     });
 
-    const messages: any[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: contextMessage },
-      ...optimizedHistory.messages,
+    const messages: Groq.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: contextMessage },
+      ...optimizedHistory.messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+      })),
     ];
 
     let completion;
@@ -131,8 +136,9 @@ export async function POST(
         max_tokens: 2500,
         response_format: { type: "json_object" },
       });
-    } catch (error: any) {
-      if (error?.status === 429 || error?.message?.includes('Rate limit')) {
+    } catch (error: unknown) {
+      const err = error as { status?: number; message?: string };
+      if (err?.status === 429 || err?.message?.includes('Rate limit')) {
         logger.warn({ model: 'llama-3.3-70b-versatile', error }, 'Rate limit reached, trying fallback model');
 
         try {
@@ -144,8 +150,9 @@ export async function POST(
             max_tokens: 2500,
             response_format: { type: "json_object" },
           });
-        } catch (fallbackError: any) {
-          if (fallbackError?.status === 429 || fallbackError?.message?.includes('Rate limit')) {
+        } catch (fallbackError: unknown) {
+          const fallbackErr = fallbackError as { status?: number; message?: string };
+          if (fallbackErr?.status === 429 || fallbackErr?.message?.includes('Rate limit')) {
             logger.warn({ error: fallbackError }, 'All models rate limited');
             const errorMessage = await prisma.chat_messages.create({
               data: {
@@ -192,7 +199,7 @@ export async function POST(
     }
 
     if (response.responseType === 'recommendations' && response.recommended_sessions) {
-      response.recommended_sessions = response.recommended_sessions.map((session: any, idx: number) => {
+      response.recommended_sessions = response.recommended_sessions.map((session: Record<string, unknown>, idx: number) => {
         const recommendationId = randomUUID();
 
         if (!session.target_pace_min_km || typeof session.target_pace_min_km !== 'string') {
@@ -205,6 +212,10 @@ export async function POST(
         const paceMin = parseInt(paceMatch[1], 10);
         const paceSec = parseInt(paceMatch[2], 10);
         const paceDecimal = paceMin + (paceSec / 60);
+
+        if (typeof session.duration_min !== 'number' || typeof session.estimated_distance_km !== 'number') {
+          return { ...session, recommendation_id: recommendationId };
+        }
 
         const expectedDistance = session.duration_min / paceDecimal;
         const currentDistance = session.estimated_distance_km;
@@ -253,7 +264,6 @@ export async function POST(
       response,
     });
   } catch (error) {
-    const { id } = await params;
     logger.error({ error, conversationId: id }, 'Failed to add message to conversation');
     return NextResponse.json(
       { error: 'Erreur lors de l\'ajout du message', details: error instanceof Error ? error.message : 'Erreur inconnue' },

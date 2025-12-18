@@ -4,8 +4,8 @@ import { CompletedSessionRow } from '@/components/dashboard/completed-session-ro
 import { type TrainingSession } from '@/lib/types';
 
 vi.mock('@/components/ui/table', () => ({
-  TableRow: ({ children, className }: any) => <tr className={className}>{children}</tr>,
-  TableCell: ({ children, className }: any) => <td className={className}>{children}</td>,
+  TableRow: ({ children, className }: { children: React.ReactNode; className?: string }) => <tr className={className}>{children}</tr>,
+  TableCell: ({ children, className }: { children: React.ReactNode; className?: string }) => <td className={className}>{children}</td>,
 }));
 
 describe('CompletedSessionRow', () => {
@@ -52,20 +52,31 @@ describe('CompletedSessionRow', () => {
     expect(screen.getByText('Footing')).toBeInTheDocument();
     expect(screen.getByText('1:00:00')).toBeInTheDocument();
     expect(screen.getByText('10.50 km')).toBeInTheDocument();
-    expect(screen.getByText('5:42')).toBeInTheDocument();
+    expect(screen.getByText('5:42 mn/km')).toBeInTheDocument();
     expect(screen.getByText('145 bpm')).toBeInTheDocument();
     expect(screen.getByText('6/10')).toBeInTheDocument();
     expect(screen.getByText('Bonne séance de récupération')).toBeInTheDocument();
   });
 
   it('displays interval structure when present', () => {
-    const sessionWithIntervals = {
+    const sessionWithIntervals: TrainingSession = {
       ...mockSession,
       sessionType: 'Fractionné',
       intervalDetails: {
         workoutType: '10x400m',
-        steps: []
-      } as any,
+        steps: [],
+        repetitionCount: null,
+        effortDuration: null,
+        recoveryDuration: null,
+        effortDistance: null,
+        recoveryDistance: null,
+        targetEffortPace: null,
+        targetEffortHR: null,
+        targetRecoveryPace: null,
+        actualEffortPace: null,
+        actualEffortHR: null,
+        actualRecoveryPace: null,
+      },
     };
 
     render(

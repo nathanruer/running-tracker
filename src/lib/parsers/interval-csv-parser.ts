@@ -57,18 +57,41 @@ function durationToMinutes(duration: string): number {
 function normalizeDuration(duration: string): string | null {
   if (!duration || duration === '--') return null;
 
-  const parts = duration.split(':');
+  const cleanDuration = duration.split('.')[0];
+  const parts = cleanDuration.split(':');
 
   if (parts.length === 2) {
-    return duration;
+    const minutes = parseInt(parts[0]);
+    const seconds = parseInt(parts[1]);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   if (parts.length === 3) {
     const hours = parseInt(parts[0]);
     const minutes = parseInt(parts[1]);
-    const seconds = parts[2];
+    const seconds = parseInt(parts[2]);
     const totalMinutes = hours * 60 + minutes;
-    return `${totalMinutes.toString().padStart(2, '0')}:${seconds}`;
+    return `${totalMinutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  return null;
+}
+
+function normalizePace(pace: string | null): string | null {
+  if (!pace || pace === '--') return null;
+
+  const cleanPace = pace.split('.')[0].trim();
+  const parts = cleanPace.split(':');
+
+  if (parts.length === 2) {
+    const minutes = parseInt(parts[0]);
+    const seconds = parseInt(parts[1]);
+
+    if (isNaN(minutes) || isNaN(seconds) || seconds < 0 || seconds > 59) {
+      return null;
+    }
+
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   return null;
@@ -145,7 +168,8 @@ export function parseIntervalCSV(csvContent: string): IntervalCSVParseResult | n
     const durationStr = row[durationCol] || '';
     const distanceStr = row[distanceCol] || '';
     const distance = distanceStr ? parseFloat(distanceStr) : null;
-    const pace = row[paceCol] || null;
+    const paceRaw = row[paceCol] || null;
+    const pace = normalizePace(paceRaw);
     const hrStr = row[hrCol] || '';
     const hr = hrStr ? parseInt(hrStr) : null;
 
@@ -207,10 +231,12 @@ export function parseIntervalCSV(csvContent: string): IntervalCSVParseResult | n
   }
 
   const summaryRow = rows[rows.length - 1];
-  const totalDuration = summaryRow[durationCol] || '00:00';
+  const totalDurationRaw = summaryRow[durationCol] || '00:00';
+  const totalDuration = normalizeDuration(totalDurationRaw) || '00:00';
   const totalDistanceStr = summaryRow[distanceCol] || '0';
   const totalDistance = parseFloat(totalDistanceStr);
-  const avgPace = summaryRow[paceCol] || '00:00';
+  const avgPaceRaw = summaryRow[paceCol] || '00:00';
+  const avgPace = normalizePace(avgPaceRaw) || '00:00';
   const avgHRStr = summaryRow[hrCol] || '0';
   const avgHeartRate = parseInt(avgHRStr);
 

@@ -7,10 +7,10 @@ vi.mock('@/lib/services/api-client', () => ({
 }));
 
 vi.mock('@/components/ui/dropdown-menu', () => ({
-  DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
-  DropdownMenuTrigger: ({ children }: any) => <div data-testid="dropdown-trigger">{children}</div>,
-  DropdownMenuContent: ({ children }: any) => <div data-testid="dropdown-content">{children}</div>,
-  DropdownMenuItem: ({ children, onClick }: any) => (
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-trigger">{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-content">{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
     <button data-testid="dropdown-item" onClick={onClick}>
       {children}
     </button>

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
-import { Target, ListChecks, Timer } from 'lucide-react';
+import { Target, ListChecks } from 'lucide-react';
 
 interface IntervalDetailsViewProps {
   intervalDetails: IntervalDetails;
@@ -26,6 +26,16 @@ const secondsToPace = (totalSeconds: number | null): string => {
   return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 };
 
+const formatPace = (pace: string | null): string => {
+  if (!pace) return '-';
+  const parts = pace.split(':');
+  if (parts.length !== 2) return pace;
+  const min = parseInt(parts[0]);
+  const sec = parseInt(parts[1]);
+  if (isNaN(min) || isNaN(sec)) return pace;
+  return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+};
+
 export function IntervalDetailsView({
   intervalDetails,
   isPlanned = false,
@@ -35,6 +45,9 @@ export function IntervalDetailsView({
   const {
     targetEffortPace,
     targetEffortHR,
+    actualEffortPace,
+    actualEffortHR,
+    actualRecoveryPace,
     steps = [],
   } = intervalDetails;
 
@@ -55,17 +68,17 @@ export function IntervalDetailsView({
       const [m, s] = (step.duration || '0:00').split(':').map(Number);
       const durationSec = (m * 60) + (s || 0);
       const stepPaceSec = paceToSeconds(step.pace);
-      
+
       if (durationSec > 0) {
         totalSeconds += durationSec;
         const dist = step.distance || 0;
         totalDistance += dist;
-        
+
         if (stepPaceSec && dist > 0) {
           totalWeightedPaceSec += stepPaceSec * dist;
           paceDistance += dist;
         }
-        
+
         if (step.hr) {
           totalWeightedHR += step.hr * durationSec;
           hrSeconds += durationSec;
@@ -73,20 +86,45 @@ export function IntervalDetailsView({
       }
     });
 
-    const avgPaceSec = paceDistance > 0 
-      ? totalWeightedPaceSec / paceDistance 
+    const avgPaceSec = paceDistance > 0
+      ? totalWeightedPaceSec / paceDistance
       : (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
-      
+
     const avgHR = hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null;
 
-    return { 
-      avgPace: secondsToPace(avgPaceSec), 
+    return {
+      avgPace: secondsToPace(avgPaceSec),
       avgHR,
-      totalDist: totalDistance.toFixed(2)
+      totalDist: totalDistance.toFixed(2),
+      totalTime: secondsToPace(totalSeconds)
     };
   };
 
-  const averages = calculateWeightedAverages(filteredSteps);
+  const getAverages = () => {
+    const calculated = calculateWeightedAverages(filteredSteps);
+
+    if (!isPlanned && filter === 'effort' && actualEffortPace) {
+      return {
+        avgPace: actualEffortPace,
+        avgHR: actualEffortHR || calculated.avgHR,
+        totalDist: calculated.totalDist,
+        totalTime: calculated.totalTime,
+      };
+    }
+
+    if (!isPlanned && filter === 'recovery' && actualRecoveryPace) {
+      return {
+        avgPace: actualRecoveryPace,
+        avgHR: calculated.avgHR,
+        totalDist: calculated.totalDist,
+        totalTime: calculated.totalTime,
+      };
+    }
+
+    return calculated;
+  };
+
+  const averages = getAverages();
 
   const getStepLabel = (step: IntervalStep) => {
     const typeSteps = steps.filter((s) => s.stepType === step.stepType);
@@ -117,7 +155,7 @@ export function IntervalDetailsView({
                 {displayStructure}
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(paceToSeconds(targetEffortPace)) || '-'}</span>
+                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(paceToSeconds(targetEffortPace)) || '-'} min/km</span>
                 {targetEffortHR ? <span className="ml-1.5 opacity-40">|</span> : ''}
                 {targetEffortHR ? <span className="ml-1.5 font-bold text-orange-400/80">{targetEffortHR} bpm</span> : ''}
               </span>
@@ -131,7 +169,8 @@ export function IntervalDetailsView({
               {isPlanned ? 'Moy. Prévue' : 'Moy. Réelle'} ({filter === 'all' ? 'Totale' : filter === 'effort' ? 'Efforts' : 'Récups'})
             </span>
             <div className="flex items-baseline gap-2 text-xl font-black font-mono text-foreground tracking-tighter">
-              {averages.avgPace}
+              <span>{averages.avgPace}</span>
+              <span className="text-xs font-normal text-muted-foreground">mn/km</span>
               {averages.avgHR ? (
                 <>
                   <span className="text-sm font-normal opacity-30 ml-1">|</span>
@@ -143,7 +182,7 @@ export function IntervalDetailsView({
           
           <div className="h-10 w-[1px] bg-border/60" />
 
-          <Tabs value={filter} onValueChange={(v: any) => setFilter(v)} className="w-[180px]">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as 'all' | 'effort' | 'recovery')} className="w-[180px]">
             <TabsList className="grid grid-cols-3 h-9 bg-background/50 border border-border/40 p-1">
               <TabsTrigger value="all" className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-muted/60">Toutes</TabsTrigger>
               <TabsTrigger value="effort" className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-violet-500/10 data-[state=active]:text-violet-500">Effort</TabsTrigger>
@@ -190,14 +229,10 @@ export function IntervalDetailsView({
                       {step.distance && step.distance > 0 ? `${step.distance.toFixed(2)} km` : '-'}
                     </td>
                     <td className="py-2 px-4 text-center font-mono font-bold text-foreground underline decoration-violet-500/20 underline-offset-4">
-                      {step.pace || '-'}
+                      {formatPace(step.pace)} mn/km
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
-                      {step.hr ? (
-                        <span className="flex items-center justify-center gap-1">
-                          {step.hr}
-                        </span>
-                      ) : '-'}
+                      {step.hr ? `${step.hr} bpm` : '-'}
                     </td>
                   </tr>
                 ))}
@@ -214,10 +249,18 @@ export function IntervalDetailsView({
         </CardContent>
       </Card>
       
-      {averages.totalDist !== "0.00" && (
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60 pl-1 uppercase font-bold tracking-widest">
-           <ListChecks className="h-3 w-3" />
-           Distance Totale ({filter === 'all' ? 'Toutes' : filter === 'effort' ? 'Effort' : 'Récupération'}): {averages.totalDist} km
+      {(averages.totalDist !== "0.00" || averages.totalTime !== "-") && (
+        <div className="flex items-center gap-4 text-[10px] text-muted-foreground/60 pl-1 uppercase font-bold tracking-widest">
+           <div className="flex items-center gap-2">
+             <ListChecks className="h-3 w-3" />
+             <span>Totaux ({filter === 'all' ? 'Toutes' : filter === 'effort' ? 'Efforts' : 'Récupérations'}):</span>
+           </div>
+           {averages.totalTime !== "-" && (
+             <span>Temps: {averages.totalTime}</span>
+           )}
+           {averages.totalDist !== "0.00" && (
+             <span>Distance: {averages.totalDist} km</span>
+           )}
         </div>
       )}
     </div>

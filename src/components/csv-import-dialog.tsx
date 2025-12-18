@@ -24,16 +24,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { parseIntervalStructure } from '@/lib/utils';
-
-interface CsvImportDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onImport: (sessions: any[]) => Promise<void>;
-  onCancel?: () => void;
-  isImporting?: boolean;
-  mode?: 'create' | 'edit' | 'complete';
-}
 
 interface ParsedSession {
   date: string;
@@ -44,7 +34,16 @@ interface ParsedSession {
   avgHeartRate: number;
   perceivedExertion?: number;
   comments: string;
-  intervalDetails?: any;
+  intervalDetails?: string | null;
+}
+
+interface CsvImportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImport: (sessions: ParsedSession[]) => Promise<void>;
+  onCancel?: () => void;
+  isImporting?: boolean;
+  mode?: 'create' | 'edit' | 'complete';
 }
 
 export function CsvImportDialog({
@@ -161,23 +160,25 @@ export function CsvImportDialog({
           
           const sessionsArray = Array.isArray(data) ? data : [data];
           
-          const parsedSessions: ParsedSession[] = sessionsArray.map((row: any) => {
-            const dateStr = row.date || row.Date || '';
-            const sessionType = (row.sessionType || row.type || row['Type de séance'] || '').trim();
-            const duration = parseDuration(row.duration || row.duree || row['Durée'] || '00:00:00');
+          const parsedSessions: ParsedSession[] = sessionsArray.map((row: Record<string, unknown>) => {
+            const dateStr = String(row.date || row.Date || '');
+            const sessionType = String(row.sessionType || row.type || row['Type de séance'] || '').trim();
+            const duration = parseDuration(String(row.duration || row.duree || row['Durée'] || '00:00:00'));
             const distance = parseNumber(String(row.distance || row.distance_km || row['Distance (km)'] || '0'));
-            
-            const allureRaw = row.avgPace || row.allure_min_km || row['Allure (min/km)'] || '00:00';
+
+            const allureRaw = String(row.avgPace || row.allure_min_km || row['Allure (min/km)'] || '00:00');
             const avgPace = parseAllure(allureRaw);
-            
+
             const avgHeartRate = Math.round(parseNumber(String(row.avgHeartRate || row.fc_moyenne_bpm || row['FC moyenne (bpm)'] || '0')));
             const perceivedExertion = row.perceivedExertion || row.rpe ? Math.round(parseNumber(String(row.perceivedExertion || row.rpe || 0))) : undefined;
-            const comments = (row.comments || row.commentaires || '').trim();
+            const comments = String(row.comments || row.commentaires || '').trim();
 
-            let intervalDetails = row.intervalDetails || row.details_intervalle || null;
-
-            if (!intervalDetails && row.structure_intervalle) {
-              intervalDetails = parseIntervalStructure(row.structure_intervalle);
+            let intervalDetails: string | null = null;
+            const intervalDetailsRaw = row.intervalDetails || row.details_intervalle || null;
+            if (intervalDetailsRaw) {
+              intervalDetails = typeof intervalDetailsRaw === 'string' ? intervalDetailsRaw : JSON.stringify(intervalDetailsRaw);
+            } else if (row.structure_intervalle) {
+              intervalDetails = String(row.structure_intervalle);
             }
 
             return {
@@ -219,20 +220,20 @@ export function CsvImportDialog({
           const headers = results.meta.fields || [];
           const columnMap = detectColumns(headers);
 
-          const parsedSessions: ParsedSession[] = results.data.map((row: any) => {
+          const parsedSessions: ParsedSession[] = (results.data as Record<string, string>[]).map((row) => {
             const date = columnMap.has('date') ? parseDate(row[columnMap.get('date')!] || '') : '';
             const sessionType = columnMap.has('sessionType') ? (row[columnMap.get('sessionType')!] || '').trim() : '';
             const duration = columnMap.has('duration') ? parseDuration(row[columnMap.get('duration')!] || '00:00:00') : '00:00:00';
             const distance = columnMap.has('distance') ? parseNumber(row[columnMap.get('distance')!] || '0') : 0;
-            
+
             const allureRaw = columnMap.has('avgPace') ? row[columnMap.get('avgPace')!] || '00:00' : '00:00';
             const avgPace = parseAllure(allureRaw);
 
-            let intervalDetails = null;
+            let intervalDetails: string | null = null;
             if (columnMap.has('intervalStructure')) {
               const structureStr = (row[columnMap.get('intervalStructure')!] || '').trim();
               if (structureStr) {
-                intervalDetails = parseIntervalStructure(structureStr);
+                intervalDetails = structureStr;
               }
             }
 
@@ -260,7 +261,7 @@ export function CsvImportDialog({
             setPreview(parsedSessions);
             setSelectedIndices(new Set(parsedSessions.map((_, i) => i)));
           }
-        } catch (err) {
+        } catch {
           setError('Erreur lors de l\'analyse du fichier. Vérifiez le format.');
         } finally {
           setLoading(false);
@@ -334,8 +335,8 @@ export function CsvImportDialog({
     }
 
     const sorted = [...preview].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
 
       switch (sortColumn) {
         case 'date':
@@ -425,7 +426,7 @@ export function CsvImportDialog({
                   <strong>Colonnes attendues :</strong> Date, Séance, Durée, Distance (km), Allure (min/km), FC moyenne, RPE, Commentaires
                 </p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  <strong>Note :</strong> La colonne "Intervalles" est nécessaire uniquement pour les séances de fractionné (ex: 8x1'/1')
+                  <strong>Note :</strong> La colonne &quot;Intervalles&quot; est nécessaire uniquement pour les séances de fractionné (ex: 8x1&apos;/1&apos;)
                 </p>
               </div>
               <label htmlFor="csv-upload">
@@ -538,7 +539,7 @@ export function CsvImportDialog({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getSortedPreview().map((session, index) => {
+                    {getSortedPreview().map((session) => {
                       const originalIndex = preview.findIndex(s => s === session);
                       return (
                         <TableRow 

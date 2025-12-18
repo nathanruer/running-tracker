@@ -22,9 +22,9 @@ export async function apiRequest<T = unknown>(
   const data = await parseBody();
 
   if (!response.ok) {
-    const errorData = data as { error?: string; details?: any } | null;
+    const errorData = data as { error?: string; details?: unknown } | null;
     const message = errorData?.error ?? 'Une erreur est survenue';
-    const error = new Error(message) as Error & { details?: any };
+    const error = new Error(message) as Error & { details?: unknown };
 
     if (errorData?.details) {
       error.details = errorData.details;

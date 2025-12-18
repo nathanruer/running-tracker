@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SessionDialog from '@/components/session-dialog';
 import * as api from '@/lib/services/api-client';
+import { type TrainingSession } from '@/lib/types';
 
 vi.mock('@/lib/services/api-client', () => ({
   addSession: vi.fn(),
@@ -9,7 +10,7 @@ vi.mock('@/lib/services/api-client', () => ({
 }));
 
 vi.mock('@/components/ui/date-picker', () => ({
-  DatePicker: ({ date, onSelect }: any) => (
+  DatePicker: ({ date, onSelect }: { date: Date | string | null; onSelect: (date: Date) => void }) => (
     <input
       data-testid="date-picker"
       value={date ? (typeof date === 'string' ? date : date.toISOString().split('T')[0]) : ''}
@@ -19,7 +20,7 @@ vi.mock('@/components/ui/date-picker', () => ({
 }));
 
 vi.mock('@/components/ui/select', () => ({
-  Select: ({ onValueChange, value, children }: any) => (
+  Select: ({ onValueChange, value, children }: { onValueChange: (v: string) => void; value?: string; children: React.ReactNode }) => (
     <div data-testid="mock-select">
       <select
         data-testid="select-input"
@@ -38,10 +39,10 @@ vi.mock('@/components/ui/select', () => ({
       {children}
     </div>
   ),
-  SelectTrigger: ({ children }: any) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectValue: () => null,
-  SelectContent: ({ children }: any) => <div>{children}</div>,
-  SelectItem: ({ value, children }: any) => <option value={value}>{children}</option>,
+  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => <option value={value}>{children}</option>,
 }));
 
 describe('SessionDialog', () => {
@@ -83,7 +84,7 @@ describe('SessionDialog', () => {
   });
 
   it('submits form with valid data', async () => {
-    (api.addSession as any).mockResolvedValue({ id: '123' });
+    vi.mocked(api.addSession).mockResolvedValue({ id: '123' } as unknown as TrainingSession);
 
     render(
       <SessionDialog

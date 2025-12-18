@@ -9,12 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSessions } from '@/lib/services/api-client';
+import type { AIRecommendedSession } from '@/lib/types';
+
+interface Recommendations {
+  recommended_sessions?: AIRecommendedSession[];
+  [key: string]: unknown;
+}
 
 interface Message {
   id: string;
   role: string;
   content: string;
-  recommendations: any;
+  recommendations: Recommendations | null;
   model?: string;
   createdAt: string;
 }
@@ -54,28 +60,28 @@ export function ChatView({ conversationId }: ChatViewProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const isSessionAlreadyAdded = (recommendedSession: any) => {
+  const isSessionAlreadyAdded = (recommendedSession: AIRecommendedSession) => {
     return allSessions.some(
-      (s: any) => (s.status === 'planned' || s.status === 'completed') && s.recommendationId === recommendedSession.recommendation_id
+      (s) => (s.status === 'planned' || s.status === 'completed') && s.recommendationId === recommendedSession.recommendation_id
     );
   };
 
-  const isSessionCompleted = (recommendedSession: any) => {
+  const isSessionCompleted = (recommendedSession: AIRecommendedSession) => {
     return allSessions.some(
-      (s: any) => s.status === 'completed' && s.recommendationId === recommendedSession.recommendation_id
+      (s) => s.status === 'completed' && s.recommendationId === recommendedSession.recommendation_id
     );
   };
 
-  const getAddedSessionId = (recommendedSession: any) => {
+  const getAddedSessionId = (recommendedSession: AIRecommendedSession) => {
     const session = allSessions.find(
-      (s: any) => s.status === 'planned' && s.recommendationId === recommendedSession.recommendation_id
+      (s) => s.status === 'planned' && s.recommendationId === recommendedSession.recommendation_id
     );
     return session?.id;
   };
 
-  const getCompletedSession = (recommendedSession: any) => {
+  const getCompletedSession = (recommendedSession: AIRecommendedSession) => {
     return allSessions.find(
-      (s: any) => s.status === 'completed' && s.recommendationId === recommendedSession.recommendation_id
+      (s) => s.status === 'completed' && s.recommendationId === recommendedSession.recommendation_id
     );
   };
 
@@ -93,7 +99,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
   });
 
   const acceptSessionMutation = useMutation({
-    mutationFn: async (session: any) => {
+    mutationFn: async (session: AIRecommendedSession) => {
       const recommendationText = session.why_this_session || session.reason || '';
       const comments = recommendationText ? `Séance recommandée : ${recommendationText}` : '';
 
@@ -117,8 +123,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
       if (!response.ok) throw new Error('Erreur lors de l\'ajout de la séance');
       return response.json();
     },
-    onMutate: (session: any) => {
-      setLoadingSessionId(session.recommendation_id);
+    onMutate: (session: AIRecommendedSession) => {
+      setLoadingSessionId(session.recommendation_id ?? null);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions', 'history'] });
@@ -192,7 +198,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
       const previousConversation = queryClient.getQueryData(['conversation', conversationId]);
 
-      queryClient.setQueryData(['conversation', conversationId], (old: any) => {
+      queryClient.setQueryData(['conversation', conversationId], (old: Conversation | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -212,10 +218,10 @@ export function ChatView({ conversationId }: ChatViewProps) {
       return { previousConversation };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['conversation', conversationId], (old: any) => {
+      queryClient.setQueryData(['conversation', conversationId], (old: Conversation | undefined) => {
         if (!old) return old;
-        
-        const messagesWithoutTemp = old.chat_messages.filter((m: any) => !m.id.toString().startsWith('temp-'));
+
+        const messagesWithoutTemp = old.chat_messages.filter((m) => !m.id.toString().startsWith('temp-'));
         
         return {
           ...old,
@@ -302,14 +308,14 @@ export function ChatView({ conversationId }: ChatViewProps) {
                         ? 'Séance recommandée :'
                         : `${message.recommendations.recommended_sessions.length} séances recommandées :`}
                     </p>
-                    {message.recommendations.recommended_sessions.map((session: any, idx: number) => {
+                    {message.recommendations.recommended_sessions.map((session: AIRecommendedSession, idx: number) => {
                       const isAdded = isSessionAlreadyAdded(session);
                       const isCompleted = isSessionCompleted(session);
                       const completedSession = isCompleted ? getCompletedSession(session) : null;
 
-                      const notAddedSessionsBeforeThis = message.recommendations.recommended_sessions
+                      const notAddedSessionsBeforeThis = (message.recommendations?.recommended_sessions ?? [])
                         .slice(0, idx)
-                        .filter((s: any) => !isSessionAlreadyAdded(s))
+                        .filter((s) => !isSessionAlreadyAdded(s))
                         .length;
                       const dynamicSessionNumber = getNextSessionNumber() + notAddedSessionsBeforeThis;
 
@@ -331,7 +337,12 @@ export function ChatView({ conversationId }: ChatViewProps) {
                               {(() => {
                                 const sessionType = session.session_type || session.type;
                                 if (sessionType === 'Fractionné' && session.interval_structure) {
-                                  return `${sessionType}: ${session.interval_structure}`;
+                                  const intervalStr = typeof session.interval_structure === 'string'
+                                    ? session.interval_structure
+                                    : typeof session.interval_structure === 'object'
+                                    ? JSON.stringify(session.interval_structure)
+                                    : String(session.interval_structure);
+                                  return `${sessionType}: ${intervalStr}`;
                                 }
                                 return sessionType;
                               })()}
@@ -362,7 +373,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
                               variant="outline"
                               onClick={() => {
                                 const sessionId = getAddedSessionId(session);
-                                if (sessionId) {
+                                if (sessionId && session.recommendation_id) {
                                   deleteSessionMutation.mutate({
                                     sessionId,
                                     recommendationId: session.recommendation_id

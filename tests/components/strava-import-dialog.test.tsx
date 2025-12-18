@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StravaImportDialog } from '@/components/strava-import-dialog';
 
 vi.mock('@/components/ui/scroll-area', () => ({
-  ScrollArea: ({ children, className }: any) => <div className={className}>{children}</div>,
+  ScrollArea: ({ children, className }: { children: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
 }));
 
 describe('StravaImportDialog', () => {
@@ -16,10 +16,10 @@ describe('StravaImportDialog', () => {
   });
 
   it('renders correctly when open and not connected', async () => {
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       status: 401,
       ok: false,
-    });
+    } as Response);
 
     render(
       <StravaImportDialog
@@ -39,14 +39,16 @@ describe('StravaImportDialog', () => {
   });
 
   it('redirects to authorization url when connect button is clicked', async () => {
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       status: 401,
       ok: false,
-    });
+    } as Response);
 
     const originalLocation = window.location;
-    delete (window as any).location;
-    (window as any).location = { href: '' };
+    // @ts-expect-error - we need to delete location to mock it
+    delete window.location;
+    // @ts-expect-error - we need to assign a mock location
+    window.location = { href: '' } as Location;
 
     render(
       <StravaImportDialog
@@ -64,6 +66,7 @@ describe('StravaImportDialog', () => {
 
     expect(window.location.href).toBe('/api/auth/strava/authorize');
 
-    (window as any).location = originalLocation;
+    // @ts-expect-error - restoring original location
+    window.location = originalLocation;
   });
 });

@@ -52,7 +52,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema) as any,
+    resolver: zodResolver(profileSchema),
     defaultValues: {
       email: user.email,
       weight: user.weight ?? undefined,
@@ -97,7 +97,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       <CardHeader>
         <CardTitle>Informations personnelles</CardTitle>
         <CardDescription> 
-          Mettez à jour vos informations pour calculer vos zones d'entraînement.
+          Mettez à jour vos informations pour calculer vos zones d&apos;entraînement.
         </CardDescription>
       </CardHeader>
       <CardContent>

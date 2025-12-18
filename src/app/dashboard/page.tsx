@@ -33,6 +33,7 @@ import {
   type TrainingSession,
   type TrainingSessionPayload,
 } from '@/lib/types';
+import { parseIntervalStructure } from '@/lib/utils';
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
@@ -44,7 +45,7 @@ const DashboardPage = () => {
     useState<TrainingSession | null>(null);
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
   const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
-  const [importedData, setImportedData] = useState<any>(null);
+  const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImportingCsv, setIsImportingCsv] = useState(false);
@@ -337,8 +338,8 @@ const DashboardPage = () => {
     setIsDialogOpen(open);
   };
 
-  const handleStravaImport = (data: any) => {
-    setImportedData(data);
+  const handleStravaImport = (data: Record<string, unknown>) => {
+    setImportedData(data as TrainingSessionPayload);
     setIsDialogOpen(true);
   };
 
@@ -346,10 +347,31 @@ const DashboardPage = () => {
     setIsStravaDialogOpen(true);
   };
 
-  const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
+  const handleCsvImport = async (sessions: Array<{
+    date: string;
+    sessionType: string;
+    duration: string;
+    distance: number;
+    avgPace: string;
+    avgHeartRate: number;
+    perceivedExertion?: number;
+    comments: string;
+    intervalDetails?: string | null;
+  }>) => {
     if (getDialogMode() === 'complete') {
       if (sessions.length > 0) {
-        setImportedData(sessions[0]);
+        const session = sessions[0];
+        setImportedData({
+          date: session.date,
+          sessionType: session.sessionType,
+          duration: session.duration,
+          distance: session.distance,
+          avgPace: session.avgPace,
+          avgHeartRate: session.avgHeartRate,
+          perceivedExertion: session.perceivedExertion,
+          comments: session.comments,
+          intervalDetails: session.intervalDetails ? parseIntervalStructure(session.intervalDetails) : null,
+        });
         setIsCsvDialogOpen(false);
         setIsDialogOpen(true);
       }
@@ -358,7 +380,18 @@ const DashboardPage = () => {
 
     setIsImportingCsv(true);
     try {
-      await bulkImportSessions(sessions);
+      const convertedSessions = sessions.map(session => ({
+        date: session.date,
+        sessionType: session.sessionType,
+        duration: session.duration,
+        distance: session.distance,
+        avgPace: session.avgPace,
+        avgHeartRate: session.avgHeartRate,
+        perceivedExertion: session.perceivedExertion,
+        comments: session.comments,
+        intervalDetails: session.intervalDetails ? parseIntervalStructure(session.intervalDetails) : null,
+      }));
+      await bulkImportSessions(convertedSessions);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
 
@@ -379,9 +412,9 @@ const DashboardPage = () => {
       if (error instanceof Error) {
         errorMessage = error.message;
 
-        const errorData = (error as any).details;
+        const errorData = (error as Error & { details?: Array<{ path: string; message: string }> }).details;
         if (errorData && Array.isArray(errorData)) {
-          const details = errorData.map((d: any) => `${d.path}: ${d.message}`).join('\n');
+          const details = errorData.map((d) => `${d.path}: ${d.message}`).join('\n');
           console.error('Validation errors:', details);
           errorMessage += '\n' + details;
         }
@@ -448,7 +481,12 @@ const DashboardPage = () => {
         onClose={handleDialogClose}
         onSuccess={handleSessionSuccess}
         session={editingSession}
-        initialData={importedData}
+        initialData={importedData ? {
+          ...importedData,
+          date: importedData.date ?? undefined,
+          duration: importedData.duration ?? undefined,
+          avgPace: importedData.avgPace ?? undefined,
+        } : null}
         mode={getDialogMode()}
         onRequestStravaImport={handleRequestStravaImport}
         onRequestCsvImport={() => {

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       maxHeartRate: true,
       vma: true,
       goal: true,
-    } as any,
+    },
   });
 
   if (!user) {
@@ -46,7 +46,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { email, weight, age, maxHeartRate, vma, goal } = body;
 
-    const updateData: any = {
+    const updateData: {
+      email?: string;
+      weight?: number;
+      age?: number;
+      maxHeartRate?: number;
+      vma?: number;
+      goal?: string;
+    } = {
       email,
       weight: weight !== undefined && weight !== '' ? parseFloat(weight) : undefined,
       age: age !== undefined && age !== '' ? parseInt(age) : undefined,
@@ -69,7 +76,7 @@ export async function PUT(request: NextRequest) {
         maxHeartRate: true,
         vma: true,
         goal: true,
-      } as any,
+      },
     });
 
     return NextResponse.json({ user });

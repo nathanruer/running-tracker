@@ -70,7 +70,7 @@ describe('PlannedSessionRow', () => {
       </table>
     );
 
-    expect(screen.getByText('~05:16')).toBeDefined();
+    expect(screen.getByText('~05:16 mn/km')).toBeDefined();
     
     expect(screen.getByText(/~170 bpm/)).toBeDefined();
     

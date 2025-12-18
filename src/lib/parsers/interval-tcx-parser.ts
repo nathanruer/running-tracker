@@ -23,13 +23,11 @@ export function parseTCXFile(xmlContent: string): TCXActivity | null {
 
     const parserError = xmlDoc.querySelector('parsererror');
     if (parserError) {
-      console.error('XML parsing error:', parserError.textContent);
       return null;
     }
 
     const activity = xmlDoc.querySelector('Activity');
     if (!activity) {
-      console.error('No Activity found in TCX file');
       return null;
     }
 

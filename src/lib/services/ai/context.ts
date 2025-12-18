@@ -1,5 +1,9 @@
-import type { BuildContextParams, Session } from '@/lib/types';
+import type { BuildContextParams, Session, IntervalDetails } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
+
+function isIntervalDetails(value: unknown): value is IntervalDetails {
+  return typeof value === 'object' && value !== null;
+}
 
 function normalizePace(pace?: string): string {
   if (!pace || typeof pace !== 'string') return '00:00';
@@ -68,7 +72,7 @@ export function buildContextMessage({
       if (sessionData.perceivedExertion && sessionData.perceivedExertion > 0) {
         context += `   RPE: ${sessionData.perceivedExertion}/10\n`;
       }
-      if (sessionData.intervalDetails) {
+      if (sessionData.intervalDetails && isIntervalDetails(sessionData.intervalDetails)) {
         const structure = generateIntervalStructure(sessionData.intervalDetails);
         if (structure) {
           context += `   Structure: ${structure}\n`;
@@ -144,7 +148,7 @@ export function buildContextMessage({
         context += `, RPE: ${sessionData.perceivedExertion}/10`;
       }
       context += '\n';
-      if (sessionData.intervalDetails) {
+      if (sessionData.intervalDetails && isIntervalDetails(sessionData.intervalDetails)) {
         const structure = generateIntervalStructure(sessionData.intervalDetails);
         if (structure) {
           context += `   Structure: ${structure}\n`;

@@ -1,5 +1,5 @@
 'use client';
-import { useForm } from 'react-hook-form';
+import { useForm, Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useEffect, useState, useRef } from 'react';
@@ -31,11 +31,36 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { addSession, updateSession } from '@/lib/services/api-client';
-import { type TrainingSessionPayload, type TrainingSession, type IntervalDetails } from '@/lib/types';
+import { type TrainingSessionPayload, type TrainingSession, type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { IntervalFields } from './interval-fields';
 import { parseTCXFile, tcxActivityToFormData, detectIntervalStructure } from '@/lib/parsers/interval-tcx-parser';
 import { parseIntervalCSV } from '@/lib/parsers/interval-csv-parser';
+
+type IntervalFormValues = {
+  workoutType?: string | null;
+  repetitionCount?: number | null;
+  effortDuration?: string | null;
+  effortDistance?: number | null;
+  recoveryDuration?: string | null;
+  recoveryDistance?: number | null;
+  targetEffortPace?: string | null;
+  targetEffortHR?: number | null;
+  actualEffortPace?: string | null;
+  actualEffortHR?: number | null;
+  steps?: IntervalStep[];
+};
+
+// Helper functions to adapt the main form to interval fields
+const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {
+  return control as unknown as Control<IntervalFormValues>;
+};
+const createIntervalSetValue = (setValue: UseFormSetValue<FormValues>): UseFormSetValue<IntervalFormValues> => {
+  return setValue as unknown as UseFormSetValue<IntervalFormValues>;
+};
+const createIntervalWatch = (watch: UseFormWatch<FormValues>): UseFormWatch<IntervalFormValues> => {
+  return watch as unknown as UseFormWatch<IntervalFormValues>;
+};
 
 const formSchema = z.object({
   date: z.string(),
@@ -61,10 +86,10 @@ const formSchema = z.object({
   steps: z.array(z.object({
     stepNumber: z.number(),
     stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-    duration: z.string().optional(),
-    distance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-    pace: z.string().optional(),
-    hr: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
+    duration: z.string().nullable(),
+    distance: z.number().nullable(),
+    pace: z.string().nullable(),
+    hr: z.number().nullable(),
   })).optional(),
 });
 
@@ -131,7 +156,7 @@ const SessionDialog = ({
     const predefinedTypes = ['Footing', 'Sortie longue', 'Fractionné'];
 
     if (session && mode === 'complete' && initialData) {
-      const { sessionType: importedType, date, comments: importedComments, perceivedExertion: importedRPE, ...importedFields } = initialData;
+      const { date, ...importedFields } = initialData;
       const sessionDate = date ? (date.includes('T') ? date.split('T')[0] : date) :
                           (session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0]);
 
@@ -194,15 +219,15 @@ const SessionDialog = ({
         steps: session.intervalDetails?.steps?.map(s => ({
           stepNumber: s.stepNumber,
           stepType: s.stepType,
-          duration: s.duration || undefined,
-          distance: s.distance || undefined,
-          pace: s.pace || undefined,
-          hr: s.hr || undefined,
+          duration: s.duration || null,
+          distance: s.distance ?? null,
+          pace: s.pace || null,
+          hr: s.hr ?? null,
         })) || [],
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
-      const { sessionType, date, ...importedFields } = initialData;
+      const { date, ...importedFields } = initialData;
       form.reset({
         date: date ? (date.includes('T') ? date.split('T')[0] : date) : new Date().toISOString().split('T')[0],
         sessionType: '',
@@ -261,10 +286,10 @@ const SessionDialog = ({
 
         form.setValue('steps', intervalStructure.steps.map(step => ({
           ...step,
-          duration: step.duration || undefined,
-          distance: step.distance || undefined,
-          pace: step.pace || undefined,
-          hr: step.hr ?? undefined,
+          duration: step.duration || null,
+          distance: step.distance ?? null,
+          pace: step.pace || null,
+          hr: step.hr ?? null,
         })));
 
         form.setValue('repetitionCount', intervalStructure.repetitionCount || undefined);
@@ -330,10 +355,10 @@ const SessionDialog = ({
 
       form.setValue('steps', result.steps.map(step => ({
         ...step,
-        duration: step.duration || undefined,
-        distance: step.distance || undefined,
-        pace: step.pace || undefined,
-        hr: step.hr ?? undefined,
+        duration: step.duration || null,
+        distance: step.distance ?? null,
+        pace: step.pace || null,
+        hr: step.hr ?? null,
       })));
 
       form.setValue('repetitionCount', result.repetitionCount || undefined);
@@ -749,11 +774,11 @@ const SessionDialog = ({
                   </div>
                 </div>
                 <IntervalFields
-                  control={form.control}
+                  control={createIntervalControl(form.control)}
                   entryMode={intervalEntryMode}
                   onEntryModeChange={setIntervalEntryMode}
-                  setValue={form.setValue}
-                  watch={form.watch}
+                  setValue={createIntervalSetValue(form.setValue)}
+                  watch={createIntervalWatch(form.watch)}
                 />
               </>
             )}

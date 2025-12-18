@@ -4,7 +4,7 @@ import { getActivities, refreshAccessToken } from '@/lib/services/strava';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { logger } from '@/lib/infrastructure/logger';
 
-async function getValidAccessToken(user: any): Promise<string> {
+async function getValidAccessToken(user: { id: string; stravaAccessToken: string | null; stravaRefreshToken: string | null; stravaTokenExpiresAt: Date | null }): Promise<string> {
   if (!user.stravaAccessToken || !user.stravaRefreshToken) {
     throw new Error('No Strava tokens found');
   }

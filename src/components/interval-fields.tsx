@@ -6,17 +6,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { type IntervalStep } from '@/lib/types';
 
+interface FormValues {
+  intervalDetails?: string | null;
+  workoutType?: string | null;
+  repetitionCount?: number | null;
+  effortDuration?: string | null;
+  effortDistance?: number | null;
+  recoveryDuration?: string | null;
+  recoveryDistance?: number | null;
+  targetEffortPace?: string | null;
+  targetEffortHR?: number | null;
+  actualEffortPace?: string | null;
+  actualEffortHR?: number | null;
+  steps?: IntervalStep[];
+}
+
 interface IntervalFieldsProps {
-  control: Control<any>;
+  control: Control<FormValues>;
   entryMode: 'quick' | 'detailed';
   onEntryModeChange: (mode: 'quick' | 'detailed') => void;
-  setValue: UseFormSetValue<any>;
-  watch: UseFormWatch<any>;
+  setValue: UseFormSetValue<FormValues>;
+  watch: UseFormWatch<FormValues>;
 }
 
 const WORKOUT_TYPES = ['SEUIL', 'VMA', 'TEMPO'];
@@ -190,6 +205,7 @@ export function IntervalFields({
         onEntryModeChange('detailed');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     repetitionCount,
     effortDuration,
@@ -219,7 +235,7 @@ export function IntervalFields({
                       field.onChange(value);
                     }
                   }}
-                  value={WORKOUT_TYPES.includes(field.value) ? field.value : ''}
+                  value={field.value && WORKOUT_TYPES.includes(field.value) ? field.value : ''}
                 >
                   <FormControl>
                     <SelectTrigger>

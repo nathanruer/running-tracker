@@ -89,8 +89,8 @@ export function SessionsTable({
     }
 
     return [...sessions].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number | null;
+      let bValue: string | number | null;
 
       switch (sortColumn) {
         case 'sessionNumber':
@@ -133,6 +133,9 @@ export function SessionsTable({
           return 0;
       }
 
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return sortDirection === 'asc' ? 1 : -1;
+      if (bValue === null) return sortDirection === 'asc' ? -1 : 1;
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -294,7 +297,7 @@ export function SessionsTable({
                     <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Dist.</span>
                   </button>
                 </TableHead>
-                <TableHead className="w-20 text-center">
+                <TableHead className="w-32 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button
                       onClick={() => handleSort('avgPace')}
@@ -305,7 +308,7 @@ export function SessionsTable({
                     </button>
                   </div>
                 </TableHead>
-                <TableHead className="w-14 text-center">
+                <TableHead className="w-20 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button
                       onClick={() => handleSort('avgHeartRate')}

@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { randomUUID } from 'crypto';
 import { buildSystemPrompt, buildContextMessage } from '@/lib/services/ai';
-import type { Session, UserProfile } from '@/lib/types';
+import type { Session, AIRecommendedSession } from '@/lib/types';
 import { logger } from '@/lib/infrastructure/logger';
 
-interface IAResponse {
+interface AIResponse {
   responseType: 'conversation' | 'recommendations';
   message?: string;
   numberOfSessions?: number;
-  recommended_sessions?: any[];
+  recommended_sessions?: AIRecommendedSession[];
   week_summary?: string;
 }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       userProfile,
     });
 
-    const messages: any[] = [
+    const messages: Groq.Chat.ChatCompletionMessageParam[] = [
       {
         role: 'system',
         content: systemPrompt,
@@ -77,8 +77,9 @@ export async function POST(request: NextRequest) {
         max_tokens: 2500,
         response_format: { type: "json_object" },
       });
-    } catch (error: any) {
-      if (error?.status === 429 || error?.message?.includes('Rate limit')) {
+    } catch (error: unknown) {
+      const err = error as { status?: number; message?: string };
+      if (err?.status === 429 || err?.message?.includes('Rate limit')) {
         logger.warn({ error }, 'Groq API rate limit reached');
         return NextResponse.json({
           responseType: 'conversation',
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     const rawJson = cleanedText.slice(firstCurly, lastCurly + 1);
-    let response: IAResponse;
+    let response: AIResponse;
     try {
       response = JSON.parse(rawJson);
     } catch (parseError) {
@@ -161,6 +162,81 @@ export async function POST(request: NextRequest) {
             distanceCorrected: expectedDistance.toFixed(2)
           }, 'Distance calculation incorrect, correcting');
           session.estimated_distance_km = Math.round(expectedDistance * 100) / 100;
+        }
+
+        if (session.interval_details) {
+          try {
+            const intervalDetails = typeof session.interval_details === 'string'
+              ? JSON.parse(session.interval_details)
+              : session.interval_details;
+
+            if (intervalDetails?.steps && Array.isArray(intervalDetails.steps)) {
+              const targetEffortPace = intervalDetails.targetEffortPace;
+              const targetRecoveryPace = intervalDetails.targetRecoveryPace;
+
+              intervalDetails.steps = intervalDetails.steps.map((step) => {
+                const updatedStep = { ...step };
+
+                if (step.stepType === 'effort' && targetEffortPace && step.pace !== targetEffortPace) {
+                  logger.debug({
+                    stepNumber: step.stepNumber,
+                    stepType: step.stepType,
+                    paceAI: step.pace,
+                    paceCorrected: targetEffortPace
+                  }, 'Step pace corrected to match targetEffortPace');
+                  updatedStep.pace = targetEffortPace;
+                }
+
+                if (step.stepType === 'recovery' && targetRecoveryPace && step.pace !== targetRecoveryPace) {
+                  logger.debug({
+                    stepNumber: step.stepNumber,
+                    stepType: step.stepType,
+                    paceAI: step.pace,
+                    paceCorrected: targetRecoveryPace
+                  }, 'Step pace corrected to match targetRecoveryPace');
+                  updatedStep.pace = targetRecoveryPace;
+                }
+
+                if (updatedStep.duration && updatedStep.pace) {
+                  const durationMatch = updatedStep.duration.match(/^(\d+):(\d+)$/);
+                  const stepPaceMatch = updatedStep.pace.match(/^(\d+):(\d+)$/);
+
+                  if (durationMatch && stepPaceMatch) {
+                    const durationMin = parseInt(durationMatch[1], 10);
+                    const durationSec = parseInt(durationMatch[2], 10);
+                    const totalDurationMin = durationMin + (durationSec / 60);
+
+                    const stepPaceMin = parseInt(stepPaceMatch[1], 10);
+                    const stepPaceSec = parseInt(stepPaceMatch[2], 10);
+                    const stepPaceDecimal = stepPaceMin + (stepPaceSec / 60);
+
+                    const correctDistance = totalDurationMin / stepPaceDecimal;
+                    const roundedDistance = Math.round(correctDistance * 100) / 100;
+
+                    if (updatedStep.distance && Math.abs(updatedStep.distance - roundedDistance) > 0.01) {
+                      logger.debug({
+                        stepNumber: updatedStep.stepNumber,
+                        stepType: updatedStep.stepType,
+                        duration: updatedStep.duration,
+                        pace: updatedStep.pace,
+                        distanceAI: updatedStep.distance,
+                        distanceCorrected: roundedDistance
+                      }, 'Step distance corrected');
+                    }
+                    updatedStep.distance = roundedDistance;
+                  }
+                }
+
+                return updatedStep;
+              });
+
+              session.interval_details = typeof session.interval_details === 'string'
+                ? JSON.stringify(intervalDetails)
+                : intervalDetails;
+            }
+          } catch (error) {
+            logger.warn({ error, sessionIndex: idx + 1 }, 'Failed to parse/correct interval_details');
+          }
         }
 
         return { ...session, recommendation_id: recommendationId };

@@ -44,7 +44,7 @@ test.describe('Tableau de bord - Parcours Complexes', () => {
   });
 
   test('Calendrier - Vue élargie et détails', async ({ page }) => {
-    await page.goto('/profile'); // Ou là où se trouve le calendrier
+    await page.goto('/profile');
     
     const calendarSession = page.locator('.bg-violet-500\\/15').first();
     await calendarSession.click();

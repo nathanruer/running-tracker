@@ -25,11 +25,9 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions }: 
     try {
       let sessionsToExport: TrainingSession[];
 
-      // If sessions are selected, only export those
       if (selectedSessions.size > 0) {
         sessionsToExport = allSessions.filter(s => selectedSessions.has(s.id));
       } else {
-        // Otherwise, fetch ALL sessions from the server
         sessionsToExport = await getSessions(undefined, undefined, selectedType);
       }
 
@@ -42,9 +40,9 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions }: 
         'Date',
         'Type de séance',
         'Durée',
-        'Distance (km)',
-        'Allure (min/km)',
-        'FC moyenne (bpm)',
+        'Distance',
+        'Allure',
+        'FC moyenne',
         'RPE',
         'Structure intervalle',
         'Commentaires',
@@ -158,9 +156,9 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions }: 
         'Date',
         'Type de séance',
         'Durée',
-        'Distance (km)',
-        'Allure (min/km)',
-        'FC moyenne (bpm)',
+        'Distance',
+        'Allure',
+        'FC moyenne',
         'RPE',
         'Structure intervalle',
         'Commentaires',

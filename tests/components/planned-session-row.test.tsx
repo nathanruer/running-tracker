@@ -4,12 +4,12 @@ import { PlannedSessionRow } from '@/components/dashboard/planned-session-row';
 import { type TrainingSession } from '@/lib/types';
 
 vi.mock('@/components/ui/table', () => ({
-  TableRow: ({ children, className }: any) => <tr className={className}>{children}</tr>,
-  TableCell: ({ children, className }: any) => <td className={className}>{children}</td>,
+  TableRow: ({ children, className }: { children: React.ReactNode; className?: string }) => <tr className={className}>{children}</tr>,
+  TableCell: ({ children, className }: { children: React.ReactNode; className?: string }) => <td className={className}>{children}</td>,
 }));
 
 vi.mock('@/components/ui/badge', () => ({
-  Badge: ({ children }: any) => <span data-testid="badge">{children}</span>,
+  Badge: ({ children }: { children: React.ReactNode }) => <span data-testid="badge">{children}</span>,
 }));
 
 describe('PlannedSessionRow', () => {
@@ -60,7 +60,7 @@ describe('PlannedSessionRow', () => {
     expect(screen.getByText('Sortie longue')).toBeInTheDocument();
     expect(screen.getByText('~01:30:00')).toBeInTheDocument();
     expect(screen.getByText('~18.00 km')).toBeInTheDocument();
-    expect(screen.getByText('~05:00')).toBeInTheDocument();
+    expect(screen.getByText('~05:00 mn/km')).toBeInTheDocument();
     expect(screen.getByText('~Z2 bpm')).toBeInTheDocument();
     expect(screen.getByText('5/10')).toBeInTheDocument();
     expect(screen.getByText('Préparation semi-marathon')).toBeInTheDocument();
@@ -104,13 +104,24 @@ describe('PlannedSessionRow', () => {
   });
 
   it('displays interval structure when present', () => {
-    const sessionWithIntervals = {
+    const sessionWithIntervals: TrainingSession = {
       ...mockPlannedSession,
       sessionType: 'Fractionné',
       intervalDetails: {
         workoutType: '6x800m',
-        steps: []
-      } as any,
+        steps: [],
+        repetitionCount: null,
+        effortDuration: null,
+        recoveryDuration: null,
+        effortDistance: null,
+        recoveryDistance: null,
+        targetEffortPace: null,
+        targetEffortHR: null,
+        targetRecoveryPace: null,
+        actualEffortPace: null,
+        actualEffortHR: null,
+        actualRecoveryPace: null,
+      },
     };
 
     render(
@@ -258,7 +269,7 @@ describe('PlannedSessionRow', () => {
     const sessionWithBpm = {
       ...mockPlannedSession,
       targetHeartRateBpm: '140-150',
-      targetHeartRateZone: null as any,
+      targetHeartRateZone: null,
     };
 
     render(

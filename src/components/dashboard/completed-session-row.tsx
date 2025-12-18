@@ -80,13 +80,13 @@ export function CompletedSessionRow({
           {session.duration}
         </TableCell>
         <TableCell className="text-center">
-          {`${session.distance?.toFixed(2) || 0} km`}
+          {session.distance ? `${session.distance.toFixed(2)} km` : '0 km'}
         </TableCell>
         <TableCell className="text-center">
-          {session.avgPace}
+          {session.avgPace} mn/km
         </TableCell>
         <TableCell className="text-center">
-          {`${session.avgHeartRate || 0} bpm`}
+          {session.avgHeartRate ? `${session.avgHeartRate} bpm` : '0 bpm'}
         </TableCell>
         <TableCell className="text-center">
           {session.perceivedExertion ? (
@@ -138,6 +138,7 @@ export function CompletedSessionRow({
           <TableCell colSpan={12} className="bg-muted/50 p-2">
             <IntervalDetailsView
               intervalDetails={session.intervalDetails!}
+              isPlanned={false}
             />
           </TableCell>
         </TableRow>

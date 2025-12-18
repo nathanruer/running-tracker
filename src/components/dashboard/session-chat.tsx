@@ -288,7 +288,13 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
                                 </div>
 
                                 {session.interval_structure && (() => {
-                                  const parts = session.interval_structure.split(':');
+                                  const intervalStr = typeof session.interval_structure === 'string'
+                                    ? session.interval_structure
+                                    : typeof session.interval_structure === 'object'
+                                    ? JSON.stringify(session.interval_structure)
+                                    : String(session.interval_structure);
+
+                                  const parts = intervalStr.split(':');
                                   if (parts.length === 2) {
                                     const subtype = parts[0].trim();
                                     const structure = parts[1].trim();
@@ -305,7 +311,7 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
                                   }
                                   return (
                                     <Badge variant="secondary" className="text-xs">
-                                      {session.interval_structure}
+                                      {intervalStr}
                                     </Badge>
                                   );
                                 })()}

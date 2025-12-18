@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CsvImportDialog } from '@/components/csv-import-dialog';
 
 vi.mock('@/components/ui/scroll-area', () => ({
-  ScrollArea: ({ children, className }: any) => <div className={className}>{children}</div>,
+  ScrollArea: ({ children, className }: { children: React.ReactNode; className?: string }) => <div className={className}>{children}</div>,
 }));
 
 describe('CsvImportDialog', () => {

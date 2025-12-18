@@ -12,11 +12,6 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: vi.fn(),
 }));
 
-vi.mock('@/lib/services/api-client', () => ({
-  getCurrentUser: vi.fn(),
-  getSessions: vi.fn(),
-}));
-
 describe('DashboardHeader', () => {
   const mockRouter = { push: vi.fn() };
   const mockQueryClient = { prefetchQuery: vi.fn() };
@@ -24,8 +19,8 @@ describe('DashboardHeader', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useRouter as any).mockReturnValue(mockRouter);
-    (useQueryClient as any).mockReturnValue(mockQueryClient);
+    vi.mocked(useRouter).mockReturnValue(mockRouter as unknown as ReturnType<typeof useRouter>);
+    vi.mocked(useQueryClient).mockReturnValue(mockQueryClient as unknown as ReturnType<typeof useQueryClient>);
   });
 
   it('renders the title', () => {

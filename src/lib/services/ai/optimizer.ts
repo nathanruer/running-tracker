@@ -20,7 +20,7 @@ async function summarizeMessages(messages: ChatMessage[]): Promise<string> {
       keyPoints.push(`Question utilisateur: ${msg.content.substring(0, 100)}`);
     } else if (msg.role === 'assistant') {
       if (msg.recommendations) {
-        const recs = msg.recommendations as any;
+        const recs = msg.recommendations as { responseType?: string; week_summary?: string; message?: string };
         const recType = recs.responseType;
         if (recType === 'recommendations') {
           keyPoints.push(
@@ -42,7 +42,7 @@ async function summarizeMessages(messages: ChatMessage[]): Promise<string> {
 
 export async function getOptimizedConversationHistory(
   conversationId: string,
-  currentUserMessage: string
+  _currentUserMessage: string
 ): Promise<{
   messages: Array<{ role: string; content: string }>;
   tokensSaved: number;

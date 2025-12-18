@@ -57,7 +57,6 @@ export async function PUT(
 
     if (updates.date !== undefined) {
       await recalculateSessionNumbers(userId);
-      // Récupérer la séance rafraîchie avec les nouveaux calculs
       const refreshed = await prisma.training_sessions.findUnique({
         where: { id: params.id }
       });

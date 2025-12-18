@@ -34,7 +34,7 @@ export const logger = globalForLogger.logger || pino(pinoConfig);
 
 if (process.env.NODE_ENV !== 'production') globalForLogger.logger = logger;
 
-export function createLogger(context: Record<string, any>) {
+export function createLogger(context: Record<string, unknown>) {
   return logger.child(context);
 }
 

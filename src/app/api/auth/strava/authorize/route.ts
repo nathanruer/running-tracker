@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserIdFromRequest } from '@/lib/auth';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URI;
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   if (!STRAVA_CLIENT_ID || !REDIRECT_URI) {
     return NextResponse.json(
       { error: 'Configuration Strava manquante' },

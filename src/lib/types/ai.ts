@@ -7,7 +7,27 @@ export interface Session {
   distance: number;
   perceivedExertion?: number;
   comments?: string;
-  intervalDetails?: any;
+  intervalDetails?: unknown;
+}
+
+export interface AIRecommendedSession {
+  recommendation_id?: string;
+  session_type?: string;
+  type?: string;
+  duration_min: number;
+  duration_minutes?: number;
+  estimated_distance_km: number;
+  target_pace_min_km?: string;
+  target_hr_zone?: string;
+  target_hr?: string;
+  target_hr_bpm?: number;
+  target_rpe?: number;
+  interval_structure?: string | null;
+  interval_details?: string | null;
+  why_this_session?: string;
+  reason?: string;
+  session_number?: number;
+  sessionNumber?: number;
 }
 
 export interface UserProfile {
@@ -28,6 +48,6 @@ export interface ChatMessage {
   id: string;
   role: string;
   content: string;
-  recommendations?: any;
+  recommendations?: unknown;
   createdAt: Date;
 }

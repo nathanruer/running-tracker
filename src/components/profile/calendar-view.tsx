@@ -100,7 +100,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Calendrier d'entraînement</CardTitle>
+              <CardTitle>Calendrier d&apos;entraînement</CardTitle>
               <CardDescription>Visualisez votre historique et vos séances programmées</CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -317,7 +317,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                   {session.comments && (
                     <div className="mt-4 p-4 rounded-lg bg-muted/40 text-muted-foreground">
                       <p className="text-sm font-medium mb-3 uppercase tracking-wider opacity-70">Commentaires</p>
-                      <p className="text-base leading-relaxed italic">"{session.comments}"</p>
+                      <p className="text-base leading-relaxed italic">&quot;{session.comments}&quot;</p>
                     </div>
                   )}
 

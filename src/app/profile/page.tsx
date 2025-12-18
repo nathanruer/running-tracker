@@ -55,7 +55,7 @@ export default function ProfilePage() {
         title: 'Déconnexion réussie',
         description: 'À bientôt!',
       });
-    } catch (error) {
+    } catch {
       setIsLoggingOut(false);
       toast({
         title: 'Erreur',

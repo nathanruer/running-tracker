@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const sessionType = searchParams.get('type');
   const status = searchParams.get('status');
 
-  const whereClause: any = { userId };
+  const whereClause: Prisma.training_sessionsWhereInput = { userId };
 
   if (status && status !== 'all') {
     whereClause.status = status;

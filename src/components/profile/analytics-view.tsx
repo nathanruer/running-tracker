@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { TrendingUp, Activity, Calendar } from 'lucide-react';
 import {
   Card,
@@ -28,22 +28,18 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
   const [dateRange, setDateRange] = useState<'2weeks' | '4weeks' | '12weeks' | 'all' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
-  const [customDateError, setCustomDateError] = useState<string>('');
 
-  useEffect(() => {
+  const customDateError = useMemo(() => {
     if (dateRange === 'custom' && customStartDate && customEndDate) {
       const startDate = new Date(customStartDate + 'T00:00:00');
       const endDate = new Date(customEndDate + 'T23:59:59');
       const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysDiff < 14) {
-        setCustomDateError('La plage doit être d\'au moins 2 semaines (14 jours)');
-      } else {
-        setCustomDateError('');
+        return 'La plage doit être d\'au moins 2 semaines (14 jours)';
       }
-    } else {
-      setCustomDateError('');
     }
+    return '';
   }, [dateRange, customStartDate, customEndDate]);
 
   const getFilteredSessions = () => {
@@ -299,7 +295,7 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
               </div>
               <div className="flex items-center gap-2">
                 <ExportWeeklyAnalytics data={stats.chartData} />
-                <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                <Select value={dateRange} onValueChange={(value) => setDateRange(value as '2weeks' | '4weeks' | '12weeks' | 'all' | 'custom')}>
                   <SelectTrigger className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -389,7 +385,7 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
                     borderRadius: '8px',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  formatter={(value: any, name: any) => {
+                  formatter={(value: number, name: string) => {
                     if (name === 'km') {
                       return [`${value} km`, 'Distance'];
                     }

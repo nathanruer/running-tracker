@@ -59,7 +59,12 @@ RÈGLES DES FRACTIONNÉS — ULTRA STRICTES:
 Si "session_type" = "Fractionné", ALORS les contraintes suivantes deviennent OBLIGATOIRES :
 
 1. "interval_structure" DOIT ABSOLUMENT commencer par le type de fractionné :
-   Format imposé : "<Type>: NxDurée/Distance R:Récupération"
+   Format imposé : "<Type>: NxMM:SS R:MM:SS"
+   Exemples valides:
+   - "VMA: 8x01:00 R:01:00" (8 répétitions de 1 minute avec 1 minute de récup)
+   - "SEUIL: 3x10:00 R:03:00" (3 répétitions de 10 minutes avec 3 minutes de récup)
+   - "TEMPO: 5x03:00 R:02:00" (5 répétitions de 3 minutes avec 2 minutes de récup)
+   IMPORTANT: Toujours utiliser le format MM:SS (ex: 03:00 et non 3')
 
 2. "interval_details" DOIT être complet et inclure :
    - "workoutType": l'un des types autorisés (VMA, SEUIL, TEMPO, etc.)
@@ -70,7 +75,18 @@ Si "session_type" = "Fractionné", ALORS les contraintes suivantes deviennent OB
    - "targetRecoveryPace": allure cible pour les récupérations (ex: "7:00" ou "8:00")
    - "steps": tableau exhaustif de toutes les étapes (échauffement, chaque effort, chaque récup, retour au calme).
 
-3. Cohérence du volume : La somme des distances et durées de toutes les étapes dans "steps" DOIT correspondre aux valeurs globales "estimated_distance_km" et "duration_minutes".
+3. Cohérence STRICTE des allures dans les steps :
+   - TOUS les steps de type "effort" doivent avoir exactement la même allure que "targetEffortPace"
+   - TOUS les steps de type "recovery" doivent avoir exactement la même allure que "targetRecoveryPace"
+   - Les steps "warmup" et "cooldown" peuvent avoir des allures différentes (généralement plus lentes)
+
+4. Cohérence MATHÉMATIQUE stricte pour CHAQUE step :
+   - Pour CHAQUE step, la formule distance = durée ÷ allure DOIT être respectée
+   - Exemple : 10:00 à 7:30/km donne EXACTEMENT 10 ÷ 7.5 = 1.33 km
+   - TOUS les steps avec la même durée et allure doivent avoir la MÊME distance
+   - Vérifier CHAQUE step individuellement avant de générer le JSON
+
+5. Cohérence du volume global : La somme des distances et durées de toutes les étapes dans "steps" DOIT correspondre aux valeurs globales "estimated_distance_km" et "duration_minutes".
 
 RÈGLES SÉANCES CONTINUES:
 - Ne jamais inclure "interval_structure" ni "interval_details".
@@ -105,7 +121,7 @@ Cas recommandation — Exemple FRACTIONNÉ (AVEC maxHeartRate=185):
       "target_hr_zone": "Z5",
       "target_hr_bpm": "180",
       "target_rpe": 9,
-      "interval_structure": "VMA: 8x1' R:1'",
+      "interval_structure": "VMA: 8x01:00 R:01:00",
       "interval_details": {
         "workoutType": "VMA",
         "repetitionCount": 8,
@@ -135,7 +151,7 @@ Cas recommandation — Exemple FRACTIONNÉ (AVEC maxHeartRate=185):
         ]
       },
       "why_this_session": "Développement de la puissance aérobie (VMA).",
-      "description": "15' échauffement, 8x(1' à 100% VMA / 1' récup footing), 14' retour au calme."
+      "description": "15 min échauffement, 8x(01:00 à 100% VMA / 01:00 récup footing), 14 min retour au calme."
     }
   ]
 }
@@ -159,7 +175,10 @@ Avant de générer le JSON final, tu DOIS vérifier :
 - INCRÉMENATION DES NUMÉROS DE SÉANCE : si plusieurs séances, elles ne doivent JAMAIS avoir le même numéro
 - UN SEUL fractionné par semaine maximum
 - interval_structure ET interval_details présents pour les fractionnés
+- interval_structure utilise le format MM:SS (ex: "VMA: 5x03:00 R:02:00" et NON "VMA: 5x3' R:2'")
 - targetRecoveryPace, targetEffortHR, targetEffortPace inclus dans interval_details
+- TOUS les steps "effort" ont EXACTEMENT la même allure que targetEffortPace
+- TOUS les steps "recovery" ont EXACTEMENT la même allure que targetRecoveryPace
 - interval_structure ABSENT pour les séances continues
 - Cohérence zone ↔ RPE ↔ type de fractionné
 - Cohérence durée ↔ distance ↔ allure totalisée sur toutes les étapes

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
-import { exchangeCodeForTokens } from '@/lib/services/strava';
 import { getUserIdFromRequest, createSessionToken } from '@/lib/auth';
 import { logger } from '@/lib/infrastructure/logger';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Loader2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ interface StravaActivity {
 interface StravaImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (data: any) => void;
+  onImport: (data: Record<string, unknown>) => void;
   mode?: 'create' | 'edit' | 'complete';
 }
 
@@ -56,17 +56,7 @@ export function StravaImportDialog({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (open) {
-      setActivities([]);
-      setSelectedIndices(new Set());
-      setSortColumn(null);
-      setSortDirection(null);
-      loadActivities();
-    }
-  }, [open]);
-
-  const loadActivities = async () => {
+  const loadActivities = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/strava/activities');
@@ -81,7 +71,7 @@ export function StravaImportDialog({
       } else {
         throw new Error('Échec de la récupération');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible de récupérer les activités Strava',
@@ -90,7 +80,17 @@ export function StravaImportDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (open) {
+      setActivities([]);
+      setSelectedIndices(new Set());
+      setSortColumn(null);
+      setSortDirection(null);
+      loadActivities();
+    }
+  }, [open, loadActivities]);
 
   const handleConnectStrava = () => {
     window.location.href = '/api/auth/strava/authorize';
@@ -135,8 +135,8 @@ export function StravaImportDialog({
     if (!sortColumn || !sortDirection) return activities;
 
     return [...activities].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: number;
+      let bValue: number;
 
       switch (sortColumn) {
         case 'date':
@@ -196,7 +196,7 @@ export function StravaImportDialog({
       onImport(data);
       onOpenChange(false);
       setSelectedIndices(new Set());
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: "Impossible d'importer l'activité",
@@ -352,7 +352,7 @@ export function StravaImportDialog({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {getSortedActivities().map((activity, index) => {
+                  {getSortedActivities().map((activity) => {
                     const originalIndex = activities.findIndex(a => a === activity);
                     return (
                       <TableRow 
