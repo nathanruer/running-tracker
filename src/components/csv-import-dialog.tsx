@@ -166,7 +166,7 @@ export function CsvImportDialog({
             const duration = parseDuration(String(row.duration || row.duree || row['Durée'] || '00:00:00'));
             const distance = parseNumber(String(row.distance || row.distance_km || row['Distance (km)'] || '0'));
 
-            const allureRaw = String(row.avgPace || row.allure_min_km || row['Allure (min/km)'] || '00:00');
+            const allureRaw = String(row.avgPace || row.allure_min_km || row['Allure (mn/km)'] || '00:00');
             const avgPace = parseAllure(allureRaw);
 
             const avgHeartRate = Math.round(parseNumber(String(row.avgHeartRate || row.fc_moyenne_bpm || row['FC moyenne (bpm)'] || '0')));
@@ -423,7 +423,7 @@ export function CsvImportDialog({
               <div className="text-center">
                 <p className="font-medium mb-2">Sélectionnez un fichier CSV ou JSON</p>
                 <p className="text-xs text-muted-foreground mb-2">
-                  <strong>Colonnes attendues :</strong> Date, Séance, Durée, Distance (km), Allure (min/km), FC moyenne, RPE, Commentaires
+                  <strong>Colonnes attendues :</strong> Date, Séance, Durée, Distance (km), Allure (mn/km), FC moyenne, RPE, Commentaires
                 </p>
                 <p className="text-xs text-muted-foreground mb-4">
                   <strong>Note :</strong> La colonne &quot;Intervalles&quot; est nécessaire uniquement pour les séances de fractionné (ex: 8x1&apos;/1&apos;)

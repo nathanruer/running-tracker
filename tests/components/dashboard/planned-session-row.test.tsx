@@ -36,9 +36,6 @@ describe('PlannedSessionRow', () => {
       targetEffortPace: '04:15',
       targetEffortHR: 194,
       targetRecoveryPace: '06:00',
-      actualEffortPace: null,
-      actualEffortHR: null,
-      actualRecoveryPace: null,
       steps: [
         { stepNumber: 1, stepType: 'warmup', duration: '10:00', distance: 1.7, pace: '05:53', hr: 155 },
         { stepNumber: 2, stepType: 'effort', duration: '02:50', distance: 0.67, pace: '04:15', hr: 194 },

@@ -135,9 +135,6 @@ export function detectIntervalStructure(laps: TCXLap[]): {
   effortDuration: string | null;
   recoveryDuration: string | null;
   effortDistance: number | null;
-  actualEffortPace: string | null;
-  actualRecoveryPace: string | null;
-  actualEffortHR: number | null;
   steps: IntervalStep[];
 } {
   if (laps.length < 2) {
@@ -148,9 +145,6 @@ export function detectIntervalStructure(laps: TCXLap[]): {
       effortDuration: null,
       recoveryDuration: null,
       effortDistance: null,
-      actualEffortPace: null,
-      actualRecoveryPace: null,
-      actualEffortHR: null,
       steps: [],
     };
   }
@@ -211,9 +205,6 @@ export function detectIntervalStructure(laps: TCXLap[]): {
           effortDuration: null,
           recoveryDuration: null,
           effortDistance: null,
-          actualEffortPace: null,
-          actualRecoveryPace: null,
-          actualEffortHR: null,
           steps: mergedBlocks.map((block, idx) => toIntervalStep(block, idx + 1, 'effort'))
       };
   }
@@ -279,10 +270,6 @@ export function detectIntervalStructure(laps: TCXLap[]): {
     }
   });
 
-  const actualEffortPace = totalEffortDistance > 0 ? formatPace(totalEffortDistance, totalEffortTime) : null;
-  const actualRecoveryPace = totalRecoveryDistance > 0 ? formatPace(totalRecoveryDistance, totalRecoveryTime) : null;
-  const actualEffortHR = totalEffortHRTime > 0 ? Math.round(weightedEffortHR / totalEffortHRTime) : null;
-
   return {
     isInterval: effortCount >= 1,
     workoutType: null,
@@ -290,9 +277,6 @@ export function detectIntervalStructure(laps: TCXLap[]): {
     effortDuration: avgEffortDuration ? formatDuration(avgEffortDuration) : null,
     recoveryDuration: avgRecoveryDuration ? formatDuration(avgRecoveryDuration) : null,
     effortDistance: avgEffortDistance ? Math.round(avgEffortDistance * 100) / 100 : null,
-    actualEffortPace,
-    actualEffortHR,
-    actualRecoveryPace,
     steps,
   };
 }

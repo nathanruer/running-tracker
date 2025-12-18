@@ -80,9 +80,6 @@ const formSchema = z.object({
   targetEffortPace: z.string().optional(),
   targetEffortHR: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
   targetRecoveryPace: z.string().optional(),
-  actualEffortPace: z.string().optional(),
-  actualEffortHR: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  actualRecoveryPace: z.string().optional(),
   steps: z.array(z.object({
     stepNumber: z.number(),
     stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
@@ -145,9 +142,6 @@ const SessionDialog = ({
       targetEffortPace: '',
       targetEffortHR: undefined,
       targetRecoveryPace: '',
-      actualEffortPace: '',
-      actualEffortHR: undefined,
-      actualRecoveryPace: '',
       steps: [],
     },
   });
@@ -213,9 +207,6 @@ const SessionDialog = ({
         targetEffortPace: session.intervalDetails?.targetEffortPace || '',
         targetEffortHR: session.intervalDetails?.targetEffortHR || undefined,
         targetRecoveryPace: session.intervalDetails?.targetRecoveryPace || '',
-        actualEffortPace: session.intervalDetails?.actualEffortPace || '',
-        actualEffortHR: session.intervalDetails?.actualEffortHR || undefined,
-        actualRecoveryPace: session.intervalDetails?.actualRecoveryPace || '',
         steps: session.intervalDetails?.steps?.map(s => ({
           stepNumber: s.stepNumber,
           stepType: s.stepType,
@@ -298,15 +289,7 @@ const SessionDialog = ({
         form.setValue('effortDistance', intervalStructure.effortDistance || undefined);
         form.setValue('recoveryDistance', undefined);
 
-        if (intervalStructure.actualEffortPace) {
-          form.setValue('actualEffortPace', intervalStructure.actualEffortPace);
-        }
-        if (intervalStructure.actualEffortHR) {
-          form.setValue('actualEffortHR', intervalStructure.actualEffortHR);
-        }
-        if (intervalStructure.actualRecoveryPace) {
-          form.setValue('actualRecoveryPace', intervalStructure.actualRecoveryPace);
-        }
+
 
         setIntervalEntryMode('detailed');
 
@@ -391,12 +374,7 @@ const SessionDialog = ({
       values.repetitionCount ||
       values.targetEffortPace ||
       values.targetEffortHR ||
-      values.actualEffortPace ||
-      values.targetEffortHR ||
-      values.actualEffortPace ||
-      values.actualEffortHR ||
       values.targetRecoveryPace ||
-      values.actualRecoveryPace ||
       values.recoveryDistance;
 
     if (!hasIntervalData) return null;
@@ -411,9 +389,6 @@ const SessionDialog = ({
       targetEffortPace: values.targetEffortPace || null,
       targetEffortHR: values.targetEffortHR ?? null,
       targetRecoveryPace: values.targetRecoveryPace || null,
-      actualEffortPace: values.actualEffortPace || null,
-      actualEffortHR: values.actualEffortHR ?? null,
-      actualRecoveryPace: values.actualRecoveryPace || null,
       steps:
         intervalEntryMode === 'detailed' && values.steps
           ? values.steps.map((step) => ({
@@ -836,7 +811,7 @@ const SessionDialog = ({
                 name="avgPace"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Allure moy (min/km)</FormLabel>
+                    <FormLabel>Allure moy (mn/km)</FormLabel>
                     <FormControl>
                       <Input placeholder="05:30" {...field} />
                     </FormControl>

@@ -76,9 +76,6 @@ describe('CompletedSessionRow', () => {
         targetEffortPace: null,
         targetEffortHR: null,
         targetRecoveryPace: null,
-        actualEffortPace: null,
-        actualEffortHR: null,
-        actualRecoveryPace: null,
       },
     };
 

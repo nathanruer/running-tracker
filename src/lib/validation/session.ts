@@ -20,10 +20,6 @@ export const intervalDetailsSchema = z.object({
   targetEffortHR: z.number().min(0).max(250).nullable(),
   targetRecoveryPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
 
-  actualEffortPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
-  actualEffortHR: z.number().min(0).max(250).nullable(),
-  actualRecoveryPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
-
   steps: z.array(intervalStepSchema),
 }).nullable();
 

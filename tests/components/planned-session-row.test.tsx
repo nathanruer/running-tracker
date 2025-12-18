@@ -121,9 +121,6 @@ describe('PlannedSessionRow', () => {
         targetEffortPace: null,
         targetEffortHR: null,
         targetRecoveryPace: null,
-        actualEffortPace: null,
-        actualEffortHR: null,
-        actualRecoveryPace: null,
       },
     };
 

@@ -270,7 +270,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                             : '--'
                         }
                       </p>
-                      <p className="text-sm text-muted-foreground">min/km</p>
+                      <p className="text-sm text-muted-foreground">mn/km</p>
                     </div>
 
                     <div className="p-4 rounded-lg bg-muted/40">

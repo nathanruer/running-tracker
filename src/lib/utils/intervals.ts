@@ -58,9 +58,6 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       targetEffortPace: null,
       targetEffortHR: null,
       targetRecoveryPace: null,
-      actualEffortPace: null,
-      actualEffortHR: null,
-      actualRecoveryPace: null,
       steps: [],
     };
   }
@@ -78,9 +75,6 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       targetEffortPace: null,
       targetEffortHR: null,
       targetRecoveryPace: null,
-      actualEffortPace: null,
-      actualEffortHR: null,
-      actualRecoveryPace: null,
       steps: [],
     };
   }
@@ -98,9 +92,6 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       targetEffortPace: null,
       targetEffortHR: null,
       targetRecoveryPace: null,
-      actualEffortPace: null,
-      actualEffortHR: null,
-      actualRecoveryPace: null,
       steps: [],
     };
   }

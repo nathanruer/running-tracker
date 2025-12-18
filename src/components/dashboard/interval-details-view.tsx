@@ -45,9 +45,6 @@ export function IntervalDetailsView({
   const {
     targetEffortPace,
     targetEffortHR,
-    actualEffortPace,
-    actualEffortHR,
-    actualRecoveryPace,
     steps = [],
   } = intervalDetails;
 
@@ -102,25 +99,6 @@ export function IntervalDetailsView({
 
   const getAverages = () => {
     const calculated = calculateWeightedAverages(filteredSteps);
-
-    if (!isPlanned && filter === 'effort' && actualEffortPace) {
-      return {
-        avgPace: actualEffortPace,
-        avgHR: actualEffortHR || calculated.avgHR,
-        totalDist: calculated.totalDist,
-        totalTime: calculated.totalTime,
-      };
-    }
-
-    if (!isPlanned && filter === 'recovery' && actualRecoveryPace) {
-      return {
-        avgPace: actualRecoveryPace,
-        avgHR: calculated.avgHR,
-        totalDist: calculated.totalDist,
-        totalTime: calculated.totalTime,
-      };
-    }
-
     return calculated;
   };
 
@@ -155,7 +133,7 @@ export function IntervalDetailsView({
                 {displayStructure}
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(paceToSeconds(targetEffortPace)) || '-'} min/km</span>
+                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(paceToSeconds(targetEffortPace)) || '-'} mn/km</span>
                 {targetEffortHR ? <span className="ml-1.5 opacity-40">|</span> : ''}
                 {targetEffortHR ? <span className="ml-1.5 font-bold text-orange-400/80">{targetEffortHR} bpm</span> : ''}
               </span>

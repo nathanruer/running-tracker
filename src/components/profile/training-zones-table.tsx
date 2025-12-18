@@ -25,7 +25,7 @@ const ZONES = [
 
 const calculatePace = (vma: number, percentage: number): string => {
   const speed = vma * percentage;
-  const pace = 60 / speed; // min/km
+  const pace = 60 / speed; // mn/km
   const minutes = Math.floor(pace);
   const seconds = Math.round((pace - minutes) * 60);
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;

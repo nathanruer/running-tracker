@@ -21,8 +21,6 @@ interface FormValues {
   recoveryDistance?: number | null;
   targetEffortPace?: string | null;
   targetEffortHR?: number | null;
-  actualEffortPace?: string | null;
-  actualEffortHR?: number | null;
   steps?: IntervalStep[];
 }
 
@@ -449,14 +447,14 @@ export function IntervalFields({
       <Collapsible open={showDetails} onOpenChange={setShowDetails}>
         <CollapsibleContent className="space-y-6 pt-2">
           <div className="space-y-4 rounded-md bg-muted/30 p-4">
-            <h4 className="text-sm font-medium text-muted-foreground">Objectifs et résultats</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">Objectifs</h4>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={control}
                 name="targetEffortPace"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Allure cible effort (min/km)</FormLabel>
+                    <FormLabel>Allure cible effort (mn/km)</FormLabel>
                     <FormControl>
                       <Input placeholder="00:00" {...field} value={field.value || ''} />
                     </FormControl>
@@ -485,144 +483,109 @@ export function IntervalFields({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={control}
-                name="actualEffortPace"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Allure réelle effort (min/km)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00:00" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="actualEffortHR"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>FC réelle effort (bpm)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        {...field}
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(e.target.value === '' ? null : parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          {repetitionCount > 0 && (
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-muted-foreground">
-                Étapes ({watch('steps')?.length || 0})
-              </h4>
+            {repetitionCount > 0 && (
               <div className="space-y-4">
-                {(watch('steps') || []).map((step: IntervalStep, index: number) => (
-                  <div key={index} className="rounded-md border border-border/50 p-4 space-y-3 bg-background/50">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm">
-                        {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS]}{' '}
-                        {step.stepType === 'effort' && `${Math.floor(index / 2) + 1}`}
-                      </h4>
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  Étapes ({watch('steps')?.length || 0})
+                </h4>
+                <div className="space-y-4">
+                  {(watch('steps') || []).map((step: IntervalStep, index: number) => (
+                    <div key={index} className="rounded-md border border-border/50 p-4 space-y-3 bg-background/50">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm">
+                          {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS]}{' '}
+                          {step.stepType === 'effort' && `${Math.floor(index / 2) + 1}`}
+                        </h4>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3">
+                        <FormField
+                          control={control}
+                          name={`steps.${index}.duration`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Durée</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="00:00"
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="h-9"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={control}
+                          name={`steps.${index}.distance`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Dist. (km)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) =>
+                                    field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
+                                  }
+                                  className="h-9"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={control}
+                          name={`steps.${index}.pace`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Allure</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="00:00"
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="h-9"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={control}
+                          name={`steps.${index}.hr`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">FC</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder="0"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) =>
+                                    field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
+                                  }
+                                  className="h-9"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
-                      <FormField
-                        control={control}
-                        name={`steps.${index}.duration`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Durée</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="00:00"
-                                {...field}
-                                value={field.value || ''}
-                                className="h-9"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={control}
-                        name={`steps.${index}.distance`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Dist. (km)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="0"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={(e) =>
-                                  field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
-                                }
-                                className="h-9"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={control}
-                        name={`steps.${index}.pace`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Allure</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="00:00"
-                                {...field}
-                                value={field.value || ''}
-                                className="h-9"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={control}
-                        name={`steps.${index}.hr`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">FC</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="0"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={(e) =>
-                                  field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                                }
-                                className="h-9"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </CollapsibleContent>
       </Collapsible>
     </div>

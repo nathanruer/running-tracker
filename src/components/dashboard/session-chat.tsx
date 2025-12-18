@@ -283,7 +283,7 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
                                     • {session.duration_min} min
                                   </span>
                                   <span className="text-sm text-muted-foreground">
-                                    • {session.target_pace_min_km} min/km
+                                    • {session.target_pace_min_km} mn/km
                                   </span>
                                 </div>
 
@@ -322,7 +322,7 @@ export function SessionChat({ sessions: initialSessions, user }: SessionChatProp
 
                                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                   <span>FC cible: {session.target_hr} bpm</span>
-                                  <span>Allure: {session.target_pace_min_km} min/km</span>
+                                  <span>Allure: {session.target_pace_min_km} mn/km</span>
                                 </div>
                               </div>
                             </div>

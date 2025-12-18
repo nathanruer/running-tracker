@@ -19,10 +19,6 @@ export interface IntervalDetails {
   targetEffortHR: number | null;
   targetRecoveryPace: string | null;
 
-  actualEffortPace: string | null;
-  actualEffortHR: number | null;
-  actualRecoveryPace: string | null;
-
   steps: IntervalStep[];
 }
 
