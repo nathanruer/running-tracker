@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { randomUUID } from 'crypto';
 import { buildSystemPrompt, buildContextMessage } from '@/lib/services/ai';
-import type { Session, AIRecommendedSession } from '@/lib/types';
+import type { Session, AIRecommendedSession, IntervalStep } from '@/lib/types';
 import { logger } from '@/lib/infrastructure/logger';
 
 interface AIResponse {
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
               const targetEffortPace = intervalDetails.targetEffortPace;
               const targetRecoveryPace = intervalDetails.targetRecoveryPace;
 
-              intervalDetails.steps = intervalDetails.steps.map((step) => {
+              intervalDetails.steps = intervalDetails.steps.map((step: IntervalStep) => {
                 const updatedStep = { ...step };
 
                 if (step.stepType === 'effort' && targetEffortPace && step.pace !== targetEffortPace) {

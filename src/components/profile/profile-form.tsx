@@ -18,24 +18,32 @@ import { useToast } from '@/hooks/use-toast';
 import { updateUser } from '@/lib/services/api-client';
 import { type User } from '@/lib/types';
 
-const optionalNumber = z
-  .union([z.string(), z.number()])
-  .optional()
-  .transform((val) => {
-    if (val === '' || val === undefined || val === null) return undefined;
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return isNaN(num) ? undefined : num;
-  })
-  .pipe(z.number().positive().optional());
-
 const profileSchema = z.object({
   email: z.string().email('Email invalide'),
-  weight: optionalNumber,
-  age: optionalNumber,
-  maxHeartRate: optionalNumber,
-  vma: optionalNumber,
+  weight: z.union([z.string(), z.number()]).optional(),
+  age: z.union([z.string(), z.number()]).optional(),
+  maxHeartRate: z.union([z.string(), z.number()]).optional(),
+  vma: z.union([z.string(), z.number()]).optional(),
   goal: z.string().optional(),
-});
+}).refine((data) => {
+  if (data.weight !== undefined && typeof data.weight === 'string' && data.weight !== '') {
+    const num = parseFloat(data.weight);
+    if (isNaN(num) || num <= 0) return false;
+  }
+  if (data.age !== undefined && typeof data.age === 'string' && data.age !== '') {
+    const num = parseFloat(data.age);
+    if (isNaN(num) || num <= 0) return false;
+  }
+  if (data.maxHeartRate !== undefined && typeof data.maxHeartRate === 'string' && data.maxHeartRate !== '') {
+    const num = parseFloat(data.maxHeartRate);
+    if (isNaN(num) || num <= 0) return false;
+  }
+  if (data.vma !== undefined && typeof data.vma === 'string' && data.vma !== '') {
+    const num = parseFloat(data.vma);
+    if (isNaN(num) || num <= 0) return false;
+  }
+  return true;
+}, { message: 'Valeur invalide' });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
@@ -84,10 +92,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
   const onSubmit = (data: ProfileFormValues) => {
     mutation.mutate({
       email: data.email,
-      weight: data.weight ?? undefined,
-      age: data.age ?? undefined,
-      maxHeartRate: data.maxHeartRate ?? undefined,
-      vma: data.vma ?? undefined,
+      weight: typeof data.weight === 'string' ? parseFloat(data.weight) : data.weight ?? undefined,
+      age: typeof data.age === 'string' ? parseFloat(data.age) : data.age ?? undefined,
+      maxHeartRate: typeof data.maxHeartRate === 'string' ? parseFloat(data.maxHeartRate) : data.maxHeartRate ?? undefined,
+      vma: typeof data.vma === 'string' ? parseFloat(data.vma) : data.vma ?? undefined,
       goal: data.goal ?? undefined,
     });
   };
