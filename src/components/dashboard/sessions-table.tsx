@@ -267,7 +267,7 @@ export function SessionsTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
+                <TableHead className="w-10">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={toggleSelectAll}
@@ -275,8 +275,8 @@ export function SessionsTable({
                     aria-label="Sélectionner toutes les séances"
                   />
                 </TableHead>
-                <TableHead className="w-12 text-center">#</TableHead>
-                <TableHead className="w-16 text-center">Sem.</TableHead>
+                <TableHead className="w-10 text-center">#</TableHead>
+                <TableHead className="w-14 text-center">Sem.</TableHead>
                 <TableHead className="w-24 text-center">Date</TableHead>
                 <TableHead className="min-w-[112px] text-center">Séance</TableHead>
                 <TableHead className="w-20 text-center">
@@ -319,7 +319,7 @@ export function SessionsTable({
                     </button>
                   </div>
                 </TableHead>
-                <TableHead className="w-14 text-center">
+                <TableHead className="w-12 text-center">
                   <button
                     onClick={() => handleSort('perceivedExertion')}
                     className="flex items-center justify-center w-full hover:text-foreground transition-colors"
@@ -328,8 +328,8 @@ export function SessionsTable({
                     <span className={sortColumn === 'perceivedExertion' ? 'text-foreground' : ''}>RPE</span>
                   </button>
                 </TableHead>
-                <TableHead>Commentaires</TableHead>
-                <TableHead className="w-20 text-center">Actions</TableHead>
+                <TableHead className="min-w-[200px]">Commentaires</TableHead>
+                <TableHead className="w-16 text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
