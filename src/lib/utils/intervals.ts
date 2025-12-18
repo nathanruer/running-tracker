@@ -1,9 +1,5 @@
 import { type IntervalDetails } from '@/lib/types';
 
-/**
- * Generate a text representation of interval structure from intervalDetails
- * Examples: "VMA: 8x5'00 R:2'00", "SEUIL: 4x10'00 R:3'00"
- */
 export function generateIntervalStructure(intervalDetails: IntervalDetails | null | undefined): string {
   if (!intervalDetails) return '';
 
@@ -14,12 +10,10 @@ export function generateIntervalStructure(intervalDetails: IntervalDetails | nul
     recoveryDuration,
   } = intervalDetails;
 
-  // If we have the basic structure info, generate it
   if (workoutType && repetitionCount && effortDuration && recoveryDuration) {
     return `${workoutType}: ${repetitionCount}x${effortDuration} R:${recoveryDuration}`;
   }
 
-  // If we have workoutType and steps, try to extract from steps
   if (workoutType && intervalDetails.steps?.length) {
     const effortSteps = intervalDetails.steps.filter(s => s.stepType === 'effort');
     const recoverySteps = intervalDetails.steps.filter(s => s.stepType === 'recovery');
@@ -40,14 +34,9 @@ export function generateIntervalStructure(intervalDetails: IntervalDetails | nul
     }
   }
 
-  // Fallback: just return workoutType if available
   return workoutType || '';
 }
 
-/**
- * Parse a simple interval structure string into basic intervalDetails
- * Example: "VMA: 8x5'00 R:2'00" -> { workoutType: "VMA", repetitionCount: 8, effortDuration: "05:00", recoveryDuration: "02:00", ... }
- */
 export function parseIntervalStructure(structure: string): IntervalDetails | null {
   if (!structure || !structure.includes('x')) return null;
 
@@ -73,7 +62,6 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       actualEffortHR: null,
       actualRecoveryPace: null,
       steps: [],
-      entryMode: 'quick',
     };
   }
 
@@ -94,7 +82,6 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       actualEffortHR: null,
       actualRecoveryPace: null,
       steps: [],
-      entryMode: 'quick',
     };
   }
 
@@ -115,33 +102,40 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       actualEffortHR: null,
       actualRecoveryPace: null,
       steps: [],
-      entryMode: 'quick',
     };
   }
 
   return null;
 }
 
-/**
- * Normalize duration from formats like "5'00" or "5'" to "05:00"
- */
-function normalizeDuration(duration: string): string {
-  // Remove quotes and apostrophes
-  const cleaned = duration.replace(/['"]/g, '');
+function normalizeDuration(duration: string): string | null {
+  if (!duration || duration.trim() === '') return null;
 
-  // Check if already in MM:SS format
-  if (cleaned.includes(':')) {
-    const parts = cleaned.split(':');
+  const trimmed = duration.trim();
+
+  if (trimmed.includes("'")) {
+    const parts = trimmed.split("'");
     if (parts.length === 2) {
-      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      const min = parts[0].padStart(2, '0');
+      const sec = parts[1].padStart(2, '0');
+      return `${min}:${sec}`;
     }
   }
 
-  // Try to parse as integer minutes
+  if (trimmed.includes(':')) {
+    const parts = trimmed.split(':');
+    if (parts.length === 2) {
+      const min = parts[0].padStart(2, '0');
+      const sec = parts[1].padStart(2, '0');
+      return `${min}:${sec}`;
+    }
+  }
+
+  const cleaned = trimmed.replace(/['"]/g, '');
   const minutes = parseInt(cleaned);
   if (!isNaN(minutes)) {
     return `${minutes.toString().padStart(2, '0')}:00`;
   }
 
-  return cleaned;
+  return null;
 }

@@ -65,6 +65,20 @@ export async function bulkImportSessions(
   return data;
 }
 
+export async function bulkDeleteSessions(
+  ids: string[],
+): Promise<{ count: number; message: string }> {
+  const data = await apiRequest<{ count: number; message: string }>(
+    '/api/sessions/bulk',
+    {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    }
+  );
+
+  return data;
+}
+
 export async function getSessionTypes(): Promise<string[]> {
   const data = await apiRequest<{ types: string[] }>('/api/sessions/types');
   return data.types;

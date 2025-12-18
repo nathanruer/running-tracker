@@ -237,7 +237,8 @@ export function CsvImportDialog({
             }
 
             const avgHeartRate = columnMap.has('avgHeartRate') ? Math.round(parseNumber(row[columnMap.get('avgHeartRate')!] || '0')) : 0;
-            const perceivedExertion = columnMap.has('perceivedExertion') ? Math.round(parseNumber(row[columnMap.get('perceivedExertion')!] || '0')) : undefined;
+            const rpeValue = columnMap.has('perceivedExertion') ? (row[columnMap.get('perceivedExertion')!] || '').trim() : '';
+            const perceivedExertion = rpeValue ? Math.round(parseNumber(rpeValue)) : undefined;
             const comments = columnMap.has('comments') ? (row[columnMap.get('comments')!] || '').trim() : '';
 
             return {
@@ -276,7 +277,7 @@ export function CsvImportDialog({
 
   const handleImport = async () => {
     const selectedSessions = preview.filter((_, i) => selectedIndices.has(i));
-    
+
     if (selectedSessions.length === 0) {
       toast({
         title: 'Aucune séance sélectionnée',

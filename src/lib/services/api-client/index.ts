@@ -11,6 +11,7 @@ export {
   updateSession,
   deleteSession,
   bulkImportSessions,
+  bulkDeleteSessions,
   getSessionTypes,
 } from './sessions';
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/components/session-dialog';
 import { StravaImportDialog } from '@/components/strava-import-dialog';
+import { CsvImportDialog } from '@/components/csv-import-dialog';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SessionsTable } from '@/components/dashboard/sessions-table';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import {
   getSessions,
   getSessionTypes,
   bulkImportSessions,
+  bulkDeleteSessions,
 } from '@/lib/services/api-client';
 import {
   type TrainingSession,
@@ -41,8 +43,11 @@ const DashboardPage = () => {
   const [editingSession, setEditingSession] =
     useState<TrainingSession | null>(null);
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
+  const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isImportingCsv, setIsImportingCsv] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -107,12 +112,16 @@ const DashboardPage = () => {
     ? (allSessionsData || [])
     : (paginatedSessionsData?.pages.flat() || []);
 
+  const isFetchingData = viewMode === 'all' ? allSessionsFetching : paginatedSessionsFetching;
+  
   const initialLoading = userLoading || (
     !sessions.length && (
-      viewMode === 'all' ? allSessionsLoading : paginatedSessionsLoading
+      viewMode === 'all' 
+        ? (allSessionsLoading || allSessionsFetching || isDeleting) 
+        : (paginatedSessionsLoading || paginatedSessionsFetching || isDeleting)
     )
   );
-  const isFetchingData = viewMode === 'all' ? allSessionsFetching : paginatedSessionsFetching;
+  
   const hasMore = viewMode === 'paginated' ? hasNextPage : false;
 
   const loadMoreSessions = () => {
@@ -152,6 +161,8 @@ const DashboardPage = () => {
     const previousAllData = queryClient.getQueryData(['sessions', 'all', selectedType]);
     const previousPaginatedData = queryClient.getQueryData(['sessions', 'paginated', selectedType]);
     
+    await queryClient.cancelQueries({ queryKey: ['sessions'] });
+    
     queryClient.setQueryData(['sessions', 'all', selectedType], (old: TrainingSession[] | undefined) => 
       old?.filter(s => s.id !== id)
     );
@@ -163,8 +174,22 @@ const DashboardPage = () => {
         pages: old.pages.map(page => page.filter(s => s.id !== id)),
       };
     });
+
+    if (selectedType !== 'all') {
+      queryClient.setQueryData(['sessions', 'all', 'all'], (old: TrainingSession[] | undefined) => 
+        old?.filter(s => s.id !== id)
+      );
+      queryClient.setQueryData(['sessions', 'paginated', 'all'], (old: InfiniteData<TrainingSession[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map(page => page.filter(s => s.id !== id)),
+        };
+      });
+    }
     
     setDeletingId(null);
+    setIsDeleting(true);
     toast({
       title: 'Séance supprimée',
       description: 'La séance a été supprimée avec succès.',
@@ -172,7 +197,7 @@ const DashboardPage = () => {
     
     try {
       await deleteSession(id);
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      await queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
     } catch (error) {
       queryClient.setQueryData(['sessions', 'all', selectedType], previousAllData);
@@ -185,6 +210,64 @@ const DashboardPage = () => {
             : 'Erreur lors de la suppression',
         variant: 'destructive',
       });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleBulkDelete = async (ids: string[]) => {
+    const previousAllData = queryClient.getQueryData(['sessions', 'all', selectedType]);
+    const previousPaginatedData = queryClient.getQueryData(['sessions', 'paginated', selectedType]);
+    
+    await queryClient.cancelQueries({ queryKey: ['sessions'] });
+
+    queryClient.setQueryData(['sessions', 'all', selectedType], (old: TrainingSession[] | undefined) => 
+      old?.filter(s => !ids.includes(s.id))
+    );
+    
+    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map(page => page.filter(s => !ids.includes(s.id))),
+      };
+    });
+
+    if (selectedType !== 'all') {
+      queryClient.setQueryData(['sessions', 'all', 'all'], (old: TrainingSession[] | undefined) => 
+        old?.filter(s => !ids.includes(s.id))
+      );
+      queryClient.setQueryData(['sessions', 'paginated', 'all'], (old: InfiniteData<TrainingSession[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map(page => page.filter(s => !ids.includes(s.id))),
+        };
+      });
+    }
+
+    try {
+      setIsDeleting(true);
+      await bulkDeleteSessions(ids);
+      await queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
+      toast({
+        title: 'Séances supprimées',
+        description: `${ids.length} séances ont été supprimées avec succès.`,
+      });
+    } catch (error) {
+      queryClient.setQueryData(['sessions', 'all', selectedType], previousAllData);
+      queryClient.setQueryData(['sessions', 'paginated', selectedType], previousPaginatedData);
+      toast({
+        title: 'Erreur',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Erreur lors de la suppression groupée',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -261,6 +344,56 @@ const DashboardPage = () => {
     setIsStravaDialogOpen(true);
   };
 
+  const handleCsvImport = async (sessions: TrainingSessionPayload[]) => {
+    if (getDialogMode() === 'complete') {
+      if (sessions.length > 0) {
+        setImportedData(sessions[0]);
+        setIsCsvDialogOpen(false);
+        setIsDialogOpen(true);
+      }
+      return;
+    }
+
+    setIsImportingCsv(true);
+    try {
+      await bulkImportSessions(sessions);
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
+
+      setIsCsvDialogOpen(false);
+      setIsDialogOpen(false);
+
+      setEditingSession(null);
+      setImportedData(null);
+
+      toast({
+        title: 'Import réussi',
+        description: `${sessions.length} séance(s) importée(s) avec succès.`,
+      });
+    } catch (error) {
+      console.error('Import error:', error);
+
+      let errorMessage = 'Erreur lors de l\'import';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+
+        const errorData = (error as any).details;
+        if (errorData && Array.isArray(errorData)) {
+          const details = errorData.map((d: any) => `${d.path}: ${d.message}`).join('\n');
+          console.error('Validation errors:', details);
+          errorMessage += '\n' + details;
+        }
+      }
+
+      toast({
+        title: 'Erreur',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImportingCsv(false);
+    }
+  };
 
   if (!user) {
     return null;
@@ -274,7 +407,7 @@ const DashboardPage = () => {
           setIsDialogOpen(true);
         }} />
 
-        {initialLoading || sessions.length > 0 || selectedType !== 'all' ? (
+        {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
           <SessionsTable
             sessions={sessions}
             availableTypes={availableTypes}
@@ -284,6 +417,7 @@ const DashboardPage = () => {
             onViewModeChange={setViewMode}
             onEdit={handleEdit}
             onDelete={setDeletingId}
+            onBulkDelete={handleBulkDelete}
             initialLoading={initialLoading}
           />
         ) : (
@@ -321,6 +455,17 @@ const DashboardPage = () => {
         initialData={importedData}
         mode={getDialogMode()}
         onRequestStravaImport={handleRequestStravaImport}
+        onRequestCsvImport={() => {
+          setIsCsvDialogOpen(true);
+        }}
+      />
+
+      <CsvImportDialog
+        open={isCsvDialogOpen}
+        onOpenChange={setIsCsvDialogOpen}
+        onImport={handleCsvImport}
+        isImporting={isImportingCsv}
+        mode={getDialogMode()}
       />
 
       <StravaImportDialog

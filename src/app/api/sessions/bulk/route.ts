@@ -60,12 +60,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Données invalides',
-          details: error.issues.map((issue) => issue.message),
+          details: error.issues.map((issue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+            code: issue.code,
+          })),
         },
         { status: 400 }
       );
     }
     logger.error({ error, userId }, 'Failed to bulk import sessions');
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const userId = getUserIdFromRequest(request);
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  }
+
+  try {
+    const { ids } = await request.json();
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: 'Le tableau d\'identifiants est requis' },
+        { status: 400 }
+      );
+    }
+
+    const result = await prisma.training_sessions.deleteMany({
+      where: {
+        id: { in: ids },
+        userId: userId,
+      },
+    });
+
+    await recalculateSessionNumbers(userId);
+
+    return NextResponse.json(
+      {
+        message: `${result.count} séance(s) supprimée(s) avec succès`,
+        count: result.count,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    logger.error({ error, userId }, 'Failed to bulk delete sessions');
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

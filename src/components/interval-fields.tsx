@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { type IntervalStep } from '@/lib/types';
 
 interface IntervalFieldsProps {
   control: Control<any>;
@@ -28,7 +29,7 @@ const STEP_TYPE_LABELS = {
 
 export function IntervalFields({
   control,
-  entryMode,
+  entryMode: _entryMode,
   onEntryModeChange,
   setValue,
   watch,
@@ -53,20 +54,65 @@ export function IntervalFields({
   const recoveryDistance = watch('recoveryDistance');
   const steps = watch('steps') || [];
 
-  // Sync summary fields to steps
   useEffect(() => {
     if (repetitionCount > 0) {
-      const expectedStepCount = 1 + repetitionCount * 2 - 1 + 1; // Warmup + (Efforts + Recovs) + Cooldown
-      
+      const hasRealData = steps.some((step: IntervalStep) =>
+        (step.duration && step.duration !== '') ||
+        (step.distance !== null && step.distance !== undefined && step.distance > 0) ||
+        (step.pace && step.pace !== '') ||
+        (step.hr !== null && step.hr !== undefined && step.hr > 0)
+      );
+
+      if (hasRealData) {
+        let newSteps = [...steps];
+        let hasChanges = false;
+
+        newSteps = newSteps.map((step: IntervalStep) => {
+          if (step.stepType === 'effort') {
+            const shouldUpdateDuration = effortDuration !== undefined && effortDuration !== null && effortDuration !== '';
+            const shouldUpdateDistance = effortDistance !== undefined && effortDistance !== null;
+
+            if (shouldUpdateDuration || shouldUpdateDistance) {
+              hasChanges = true;
+              return {
+                ...step,
+                ...(shouldUpdateDuration ? { duration: effortDuration } : {}),
+                ...(shouldUpdateDistance ? { distance: effortDistance } : {}),
+              };
+            }
+          } else if (step.stepType === 'recovery') {
+            const shouldUpdateDuration = recoveryDuration !== undefined && recoveryDuration !== null && recoveryDuration !== '';
+            const shouldUpdateDistance = recoveryDistance !== undefined && recoveryDistance !== null;
+
+            if (shouldUpdateDuration || shouldUpdateDistance) {
+              hasChanges = true;
+              return {
+                ...step,
+                ...(shouldUpdateDuration ? { duration: recoveryDuration } : {}),
+                ...(shouldUpdateDistance ? { distance: recoveryDistance } : {}),
+              };
+            }
+          }
+          return step;
+        });
+
+        if (hasChanges) {
+          setValue('steps', newSteps);
+          onEntryModeChange('detailed');
+        }
+
+        return;
+      }
+
+      const expectedStepCount = 1 + repetitionCount * 2 - 1 + 1;
+
       let newSteps = [...steps];
       let hasChanges = false;
 
-      // 1. Rebuild structure if count mismatch (approximate check for structure change)
       if (steps.length !== expectedStepCount) {
         newSteps = [];
         let stepNumber = 1;
 
-        // Warmup
         newSteps.push({
           stepNumber: stepNumber++,
           stepType: 'warmup',
@@ -76,7 +122,6 @@ export function IntervalFields({
           hr: null,
         });
 
-        // Loop reps
         for (let i = 0; i < repetitionCount; i++) {
           newSteps.push({
             stepNumber: stepNumber++,
@@ -99,7 +144,6 @@ export function IntervalFields({
           }
         }
 
-        // Cooldown
         newSteps.push({
           stepNumber: stepNumber++,
           stepType: 'cooldown',
@@ -108,20 +152,33 @@ export function IntervalFields({
           pace: '',
           hr: null,
         });
-        
+
         hasChanges = true;
       } else {
-        // 2. Update existing steps with new summary values (Preserve Warmup/Cooldown manual edits if any, but sync Effort/Recov)
-        newSteps = newSteps.map((step) => {
+        newSteps = newSteps.map((step: IntervalStep) => {
           if (step.stepType === 'effort') {
-            if (step.duration !== (effortDuration || '') || step.distance !== (effortDistance || null)) {
+            const shouldUpdateDuration = effortDuration !== undefined && effortDuration !== null && effortDuration !== '';
+            const shouldUpdateDistance = effortDistance !== undefined && effortDistance !== null;
+
+            if (shouldUpdateDuration || shouldUpdateDistance) {
               hasChanges = true;
-              return { ...step, duration: effortDuration || '', distance: effortDistance || null };
+              return {
+                ...step,
+                ...(shouldUpdateDuration ? { duration: effortDuration } : {}),
+                ...(shouldUpdateDistance ? { distance: effortDistance } : {}),
+              };
             }
           } else if (step.stepType === 'recovery') {
-            if (step.duration !== (recoveryDuration || '') || step.distance !== (recoveryDistance || null)) {
+            const shouldUpdateDuration = recoveryDuration !== undefined && recoveryDuration !== null && recoveryDuration !== '';
+            const shouldUpdateDistance = recoveryDistance !== undefined && recoveryDistance !== null;
+
+            if (shouldUpdateDuration || shouldUpdateDistance) {
               hasChanges = true;
-              return { ...step, duration: recoveryDuration || '', distance: recoveryDistance || null };
+              return {
+                ...step,
+                ...(shouldUpdateDuration ? { duration: recoveryDuration } : {}),
+                ...(shouldUpdateDistance ? { distance: recoveryDistance } : {}),
+              };
             }
           }
           return step;
@@ -139,16 +196,12 @@ export function IntervalFields({
     effortDistance,
     recoveryDuration,
     recoveryDistance,
-    // Add length to dependency to trigger rebuild when array is cleared externally?
-    // steps.length, // Avoid loop if setValue changes reference but not length?
-    // Including setValue/onEntryModeChange is fine.
     setValue,
     onEntryModeChange,
   ]);
 
   return (
     <div className="space-y-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
-      {/* Configuration de la séance */}
       <div className="grid grid-cols-2 gap-4">
         <FormField
           control={control}
@@ -233,7 +286,6 @@ export function IntervalFields({
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        {/* Effort Configuration */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Effort</Label>
@@ -297,7 +349,6 @@ export function IntervalFields({
           )}
         </div>
 
-        {/* Recovery Configuration */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Récupération</Label>
@@ -362,7 +413,6 @@ export function IntervalFields({
         </div>
       </div>
 
-      {/* Quick mode fields - Valeurs cibles et réelles */}
       <div className="flex justify-start pt-2">
         <Button
           type="button"
@@ -382,7 +432,6 @@ export function IntervalFields({
 
       <Collapsible open={showDetails} onOpenChange={setShowDetails}>
         <CollapsibleContent className="space-y-6 pt-2">
-          {/* Objectifs et résultats */}
           <div className="space-y-4 rounded-md bg-muted/30 p-4">
             <h4 className="text-sm font-medium text-muted-foreground">Objectifs et résultats</h4>
             <div className="grid grid-cols-2 gap-4">
@@ -456,14 +505,13 @@ export function IntervalFields({
             </div>
           </div>
 
-          {/* Détails par étape */}
           {repetitionCount > 0 && (
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground">
                 Étapes ({watch('steps')?.length || 0})
               </h4>
               <div className="space-y-4">
-                {(watch('steps') || []).map((step: any, index: number) => (
+                {(watch('steps') || []).map((step: IntervalStep, index: number) => (
                   <div key={index} className="rounded-md border border-border/50 p-4 space-y-3 bg-background/50">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-sm">

@@ -25,8 +25,6 @@ export const intervalDetailsSchema = z.object({
   actualRecoveryPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
 
   steps: z.array(intervalStepSchema),
-
-  entryMode: z.enum(['quick', 'detailed']).optional(),
 }).nullable();
 
 export const sessionSchema = z.object({

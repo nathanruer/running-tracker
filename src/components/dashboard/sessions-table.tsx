@@ -1,9 +1,20 @@
 import { useState } from 'react';
-import { ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
-import { HelpCircle } from 'lucide-react';
+import { ArrowUpDown, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { PlannedSessionRow } from './planned-session-row';
 import { CompletedSessionRow } from './completed-session-row';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Card,
   CardContent,
@@ -25,12 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { type TrainingSession } from '@/lib/types';
 
 interface SessionsTableProps {
@@ -42,6 +47,7 @@ interface SessionsTableProps {
   onViewModeChange: (mode: 'paginated' | 'all') => void;
   onEdit: (session: TrainingSession) => void;
   onDelete: (id: string) => void;
+  onBulkDelete: (ids: string[]) => Promise<void>;
   initialLoading: boolean;
 }
 
@@ -54,10 +60,14 @@ export function SessionsTable({
   onViewModeChange,
   onEdit,
   onDelete,
+  onBulkDelete,
   initialLoading,
 }: SessionsTableProps) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -139,44 +149,129 @@ export function SessionsTable({
     return <ChevronUp className="mr-2 h-4 w-4 text-foreground" />;
   };
 
+  const toggleSessionSelection = (sessionId: string) => {
+    setSelectedSessions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sessionId)) {
+        newSet.delete(sessionId);
+      } else {
+        newSet.add(sessionId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const completedSessions = getSortedSessions().filter(s => s.status === 'completed' && s.date);
+    if (selectedSessions.size === completedSessions.length) {
+      setSelectedSessions(new Set());
+    } else {
+      setSelectedSessions(new Set(completedSessions.map(s => s.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedSessions(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    setIsDeletingBulk(true);
+    try {
+      await onBulkDelete(Array.from(selectedSessions));
+
+      setSelectedSessions(new Set());
+      setShowBulkDeleteDialog(false);
+    } catch (error) {
+      console.error('Error deleting sessions:', error);
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
+  const completedSessionsCount = getSortedSessions().filter(s => s.status === 'completed' && s.date).length;
+  const allSelected = selectedSessions.size > 0 && selectedSessions.size === completedSessionsCount;
+
   return (
+    <>
     <Card className="border-border/50">
-      <CardHeader className="flex flex-col gap-4 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Select value={selectedType} onValueChange={onTypeChange}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Type de séance" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les types</SelectItem>
-              {availableTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={viewMode}
-            onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Affichage" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="paginated">10 dernières</SelectItem>
-              <SelectItem value="all">Tout afficher</SelectItem>
-            </SelectContent>
-          </Select>
-          <ExportSessions sessions={sessions} />
+      <CardHeader className="flex flex-col gap-4 space-y-0">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select value={selectedType} onValueChange={onTypeChange}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Type de séance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                {availableTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={viewMode}
+              onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Affichage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="paginated">10 dernières</SelectItem>
+                <SelectItem value="all">Tout afficher</SelectItem>
+              </SelectContent>
+            </Select>
+            <ExportSessions
+              selectedType={selectedType}
+              selectedSessions={selectedSessions}
+              allSessions={sessions}
+            />
+          </div>
         </div>
+
+        {selectedSessions.size > 0 && (
+          <div className="mt-2 flex items-center justify-between rounded-md bg-muted/40 border border-border p-2 pl-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-foreground">
+                {selectedSessions.size} séance{selectedSessions.size > 1 ? 's' : ''} sélectionnée{selectedSessions.size > 1 ? 's' : ''}
+              </span>
+              <div className="h-4 w-[1px] bg-border" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearSelection}
+                className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-transparent"
+              >
+                Annuler
+              </Button>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+              className="h-8 px-3 text-xs"
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              Supprimer
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleSelectAll}
+                    className="border-muted-foreground/50 data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground"
+                    aria-label="Sélectionner toutes les séances"
+                  />
+                </TableHead>
                 <TableHead className="w-12 text-center">#</TableHead>
                 <TableHead className="w-16 text-center">Sem.</TableHead>
                 <TableHead className="w-24 text-center">Date</TableHead>
@@ -238,6 +333,7 @@ export function SessionsTable({
               {initialLoading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
+                    <TableCell><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                     <TableCell><div className="h-6 w-8 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                     <TableCell><div className="h-6 w-12 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                     <TableCell><div className="h-6 w-24 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
@@ -262,13 +358,14 @@ export function SessionsTable({
                   </TableRow>
                 ))
               ) : (
-                getSortedSessions().map((session) => 
+                getSortedSessions().map((session) =>
                   session.status === 'planned' ? (
                     <PlannedSessionRow
                       key={session.id}
                       session={session}
                       onEdit={onEdit}
                       onDelete={onDelete}
+                      showCheckbox={false}
                     />
                   ) : (
                     <CompletedSessionRow
@@ -276,6 +373,9 @@ export function SessionsTable({
                       session={session}
                       onEdit={onEdit}
                       onDelete={onDelete}
+                      showCheckbox={true}
+                      isSelected={selectedSessions.has(session.id)}
+                      onToggleSelect={() => toggleSessionSelection(session.id)}
                     />
                   )
                 )
@@ -285,5 +385,28 @@ export function SessionsTable({
         </div>
       </CardContent>
     </Card>
+
+    <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer les séances sélectionnées</AlertDialogTitle>
+          <AlertDialogDescription>
+            Êtes-vous sûr de vouloir supprimer {selectedSessions.size} séance{selectedSessions.size > 1 ? 's' : ''} ?
+            Cette action est irréversible.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeletingBulk}>Annuler</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleBulkDelete}
+            disabled={isDeletingBulk}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isDeletingBulk ? 'Suppression...' : 'Supprimer'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

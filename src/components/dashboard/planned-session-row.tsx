@@ -9,13 +9,17 @@ interface PlannedSessionRowProps {
   session: TrainingSession;
   onEdit: (session: TrainingSession) => void;
   onDelete: (id: string) => void;
+  showCheckbox?: boolean;
 }
 
-export function PlannedSessionRow({ session, onEdit, onDelete }: PlannedSessionRowProps) {
+export function PlannedSessionRow({ session, onEdit, onDelete, showCheckbox = false }: PlannedSessionRowProps) {
   return (
     <TableRow
       className="border-b-2 border-dashed border-muted-foreground/30 bg-muted/20 text-muted-foreground italic hover:bg-muted/20"
     >
+      {showCheckbox && (
+        <TableCell className="w-12"></TableCell>
+      )}
       <TableCell className="font-medium text-center">
         <div className="flex flex-col items-center gap-1">
           {session.sessionNumber}

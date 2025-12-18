@@ -8,7 +8,7 @@ export interface IntervalStep {
 }
 
 export interface IntervalDetails {
-  workoutType: string | null;        
+  workoutType: string | null;
   repetitionCount: number | null;
   effortDuration: string | null;
   recoveryDuration: string | null;
@@ -24,8 +24,6 @@ export interface IntervalDetails {
   actualRecoveryPace: string | null;
 
   steps: IntervalStep[];
-
-  entryMode?: 'quick' | 'detailed';
 }
 
 export interface TrainingSession {

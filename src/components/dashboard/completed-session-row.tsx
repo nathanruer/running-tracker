@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Edit, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { type TrainingSession } from '@/lib/types';
 import { IntervalDetailsView } from './interval-details-view';
@@ -11,9 +12,19 @@ interface CompletedSessionRowProps {
   session: TrainingSession;
   onEdit: (session: TrainingSession) => void;
   onDelete: (id: string) => void;
+  showCheckbox?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export function CompletedSessionRow({ session, onEdit, onDelete }: CompletedSessionRowProps) {
+export function CompletedSessionRow({
+  session,
+  onEdit,
+  onDelete,
+  showCheckbox = false,
+  isSelected = false,
+  onToggleSelect
+}: CompletedSessionRowProps) {
   const [isOpen, setIsOpen] = useState(false);
   const hasIntervalDetails = session.sessionType === 'Fractionné' && session.intervalDetails;
 
@@ -29,6 +40,16 @@ export function CompletedSessionRow({ session, onEdit, onDelete }: CompletedSess
         }
         onClick={hasIntervalDetails ? () => setIsOpen(!isOpen) : undefined}
       >
+        {showCheckbox && (
+          <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onToggleSelect}
+              className="border-muted-foreground/50 data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground"
+              aria-label={`Sélectionner la séance ${session.sessionNumber}`}
+            />
+          </TableCell>
+        )}
         <TableCell className="font-medium text-center">
           {session.sessionNumber}
         </TableCell>

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useEffect, useState, useRef } from 'react';
-import { Watch, RotateCcw, FileText } from 'lucide-react';
+import { Watch, RotateCcw, FileSpreadsheet, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
@@ -34,7 +34,8 @@ import { addSession, updateSession } from '@/lib/services/api-client';
 import { type TrainingSessionPayload, type TrainingSession, type IntervalDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { IntervalFields } from './interval-fields';
-import { parseTCXFile, tcxActivityToFormData, detectIntervalStructure } from '@/lib/parsers/tcx-parser';
+import { parseTCXFile, tcxActivityToFormData, detectIntervalStructure } from '@/lib/parsers/interval-tcx-parser';
+import { parseIntervalCSV } from '@/lib/parsers/interval-csv-parser';
 
 const formSchema = z.object({
   date: z.string(),
@@ -77,6 +78,7 @@ interface SessionDialogProps {
   initialData?: Partial<FormValues> | null;
   mode?: 'create' | 'edit' | 'complete';
   onRequestStravaImport?: () => void;
+  onRequestCsvImport?: () => void;
   onSuccess?: (session: TrainingSession) => void;
 }
 
@@ -88,6 +90,7 @@ const SessionDialog = ({
   initialData,
   mode = 'create',
   onRequestStravaImport,
+  onRequestCsvImport,
   onSuccess,
 }: SessionDialogProps) => {
   const { toast } = useToast();
@@ -95,6 +98,7 @@ const SessionDialog = ({
   const [isCustomSessionType, setIsCustomSessionType] = useState(false);
   const [intervalEntryMode, setIntervalEntryMode] = useState<'quick' | 'detailed'>('quick');
   const tcxFileInputRef = useRef<HTMLInputElement>(null);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -243,7 +247,6 @@ const SessionDialog = ({
         return;
       }
 
-      // Fill basic fields
       const formData = tcxActivityToFormData(activity);
       form.setValue('date', formData.date);
       form.setValue('duration', formData.duration);
@@ -255,11 +258,7 @@ const SessionDialog = ({
 
       if (intervalStructure.isInterval) {
         form.setValue('sessionType', 'Fractionné');
-        form.setValue('repetitionCount', intervalStructure.repetitionCount || undefined);
-        form.setValue('effortDuration', intervalStructure.effortDuration || '');
-        form.setValue('recoveryDuration', intervalStructure.recoveryDuration || '');
-        form.setValue('effortDistance', intervalStructure.effortDistance || undefined);
-        form.setValue('recoveryDistance', undefined);
+
         form.setValue('steps', intervalStructure.steps.map(step => ({
           ...step,
           duration: step.duration || undefined,
@@ -267,6 +266,12 @@ const SessionDialog = ({
           pace: step.pace || undefined,
           hr: step.hr ?? undefined,
         })));
+
+        form.setValue('repetitionCount', intervalStructure.repetitionCount || undefined);
+        form.setValue('effortDuration', intervalStructure.effortDuration || '');
+        form.setValue('recoveryDuration', intervalStructure.recoveryDuration || '');
+        form.setValue('effortDistance', intervalStructure.effortDistance || undefined);
+        form.setValue('recoveryDistance', undefined);
 
         if (intervalStructure.actualEffortPace) {
           form.setValue('actualEffortPace', intervalStructure.actualEffortPace);
@@ -291,7 +296,6 @@ const SessionDialog = ({
         });
       }
 
-      // Reset file input
       if (tcxFileInputRef.current) {
         tcxFileInputRef.current.value = '';
       }
@@ -300,6 +304,55 @@ const SessionDialog = ({
       toast({
         title: 'Erreur',
         description: 'Une erreur est survenue lors de l\'import du fichier TCX',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const result = parseIntervalCSV(text);
+
+      if (!result) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de lire le fichier CSV',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      form.setValue('sessionType', 'Fractionné');
+
+      form.setValue('steps', result.steps.map(step => ({
+        ...step,
+        duration: step.duration || undefined,
+        distance: step.distance || undefined,
+        pace: step.pace || undefined,
+        hr: step.hr ?? undefined,
+      })));
+
+      form.setValue('repetitionCount', result.repetitionCount || undefined);
+
+      setIntervalEntryMode('detailed');
+
+      toast({
+        title: 'Intervalles importés',
+        description: `${result.repetitionCount} répétitions détectées depuis le CSV.`,
+      });
+
+      if (csvFileInputRef.current) {
+        csvFileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de l\'import du fichier CSV',
         variant: 'destructive',
       });
     }
@@ -347,7 +400,6 @@ const SessionDialog = ({
               hr: step.hr || null,
             }))
           : [],
-      entryMode: intervalEntryMode,
     };
   };
 
@@ -498,25 +550,37 @@ const SessionDialog = ({
             </Button>
           </div>
         </DialogHeader>
-        {(mode === 'create' || mode === 'complete') && onRequestStravaImport && (
+        {(mode === 'create' || mode === 'complete') && (onRequestStravaImport || onRequestCsvImport) && (
           <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
             <div className="flex flex-col gap-3">
               <div>
                 <p className="font-medium">Importer une séance</p>
                 <p className="text-sm text-muted-foreground">
-                  Pré-remplissez votre séance automatiquement depuis Strava.
+                  Pré-remplissez votre séance automatiquement depuis une source externe.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="gradient-orange"
-                  onClick={onRequestStravaImport}
-                >
-                  <Watch className="mr-2 h-4 w-4" />
-                  Strava
-                </Button>
+                {onRequestStravaImport && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="gradient-orange"
+                    onClick={onRequestStravaImport}
+                  >
+                    <Watch className="mr-2 h-4 w-4" />
+                    Strava
+                  </Button>
+                )}
+                {onRequestCsvImport && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={onRequestCsvImport}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Fichier CSV/JSON
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -527,6 +591,13 @@ const SessionDialog = ({
           accept=".tcx"
           className="hidden"
           onChange={handleTCXImport}
+        />
+        <input
+          ref={csvFileInputRef}
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={handleCSVImport}
         />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -653,18 +724,29 @@ const SessionDialog = ({
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Importer depuis un fichier TCX
+                      Importer les intervalles
                     </span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => tcxFileInputRef.current?.click()}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Charger TCX
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => tcxFileInputRef.current?.click()}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      TCX
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => csvFileInputRef.current?.click()}
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      CSV
+                    </Button>
+                  </div>
                 </div>
                 <IntervalFields
                   control={form.control}
@@ -707,12 +789,10 @@ const SessionDialog = ({
                           if (value === '') {
                             field.onChange(null);
                           } else if (value === '-') {
-                            // Allow '-' for partial input, but don't parse as number yet
                             field.onChange(value);
                           } else {
                             const numValue = parseFloat(value);
                             if (!isNaN(numValue)) {
-                              // Round to 2 decimal places
                               const rounded = Math.round(numValue * 100) / 100;
                               field.onChange(rounded);
                             }
