@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { type QueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { bulkImportSessions } from '@/lib/services/api-client';
 
 interface StravaActivity {
   id: number;
@@ -39,6 +41,8 @@ interface StravaImportDialogProps {
   onOpenChange: (open: boolean) => void;
   onImport: (data: Record<string, unknown>) => void;
   mode?: 'create' | 'edit' | 'complete';
+  queryClient?: QueryClient;
+  onBulkImportSuccess?: () => void;
 }
 
 export function StravaImportDialog({
@@ -46,6 +50,8 @@ export function StravaImportDialog({
   onOpenChange,
   onImport,
   mode = 'create',
+  queryClient,
+  onBulkImportSuccess,
 }: StravaImportDialogProps) {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -185,21 +191,81 @@ export function StravaImportDialog({
     try {
       const selectedActivities = Array.from(selectedIndices).map(i => activities[i]);
       
-      const activity = selectedActivities[0];
-      const response = await fetch(`/api/strava/activity/${activity.id}`);
+      // For single activity import (mode === 'complete')
+      if (mode === 'complete') {
+        const activity = selectedActivities[0];
+        const response = await fetch(`/api/strava/activity/${activity.id}`);
 
-      if (!response.ok) {
-        throw new Error('Échec de la récupération');
+        if (!response.ok) {
+          throw new Error('Échec de la récupération');
+        }
+
+        const data = await response.json();
+        onImport(data);
+        onOpenChange(false);
+        setSelectedIndices(new Set());
       }
+      else {
+        const activityPromises = selectedActivities.map(async (activity) => {
+          try {
+            const response = await fetch(`/api/strava/activity/${activity.id}`);
+            if (response.ok) {
+              return await response.json();
+            }
+            return null;
+          } catch (error) {
+            console.error(`Failed to fetch activity ${activity.id}:`, error);
+            return null;
+          }
+        });
 
-      const data = await response.json();
-      onImport(data);
-      onOpenChange(false);
-      setSelectedIndices(new Set());
-    } catch {
+        const fetchedActivities = (await Promise.all(activityPromises)).filter(Boolean);
+        
+        if (fetchedActivities.length === 0) {
+          toast({
+            title: 'Erreur',
+            description: "Aucune activité n'a pu être récupérée depuis Strava",
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const sessionsToImport = fetchedActivities.map(activity => ({
+          date: new Date(activity.date).toISOString().split('T')[0],
+          sessionType: '-',
+          duration: activity.duration,
+          distance: activity.distance,
+          avgPace: activity.avgPace,
+          avgHeartRate: activity.avgHeartRate || null,
+          perceivedExertion: null,
+          comments: `-`,
+        }));
+
+        const result = await bulkImportSessions(sessionsToImport);
+
+        toast({
+          title: 'Import réussi',
+          description: `${result.count} séance(s) Strava importée(s) avec succès`,
+        });
+
+        onOpenChange(false);
+        setSelectedIndices(new Set());
+
+        if (queryClient) {
+          queryClient.invalidateQueries({ queryKey: ['sessions'] });
+        }
+
+        if (onBulkImportSuccess) {
+          onBulkImportSuccess();
+        }
+
+        return;
+      }
+    } catch (error) {
+      console.error('Import error:', error);
       toast({
         title: 'Erreur',
-        description: "Impossible d'importer l'activité",
+        description: "Impossible d'importer les activités",
         variant: 'destructive',
       });
     } finally {

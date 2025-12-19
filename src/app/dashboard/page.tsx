@@ -160,9 +160,22 @@ const DashboardPage = () => {
 
   if (showGlobalLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-lg font-medium text-muted-foreground animate-pulse">Chargement de vos performances...</p>
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="mx-auto max-w-7xl">
+          <DashboardHeader />
+          <SessionsTable
+            sessions={[]}
+            availableTypes={[]}
+            selectedType="all"
+            onTypeChange={() => {}}
+            viewMode="paginated"
+            onViewModeChange={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+            onBulkDelete={async () => {}}
+            initialLoading={true}
+          />
+        </div>
       </div>
     );
   }
@@ -520,6 +533,12 @@ const DashboardPage = () => {
         onOpenChange={setIsStravaDialogOpen}
         onImport={handleStravaImport}
         mode={getDialogMode()}
+        queryClient={queryClient}
+        onBulkImportSuccess={() => {
+          setIsDialogOpen(false);
+          setEditingSession(null);
+          setImportedData(null);
+        }}
       />
 
       <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>

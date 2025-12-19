@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { getCurrentUser, getSessions } from '@/lib/services/api-client';
 
 interface DashboardHeaderProps {
-  onNewSession: () => void;
+  onNewSession?: () => void;
 }
 
 export function DashboardHeader({ onNewSession }: DashboardHeaderProps) {
@@ -21,6 +21,7 @@ export function DashboardHeader({ onNewSession }: DashboardHeaderProps) {
         <Button
           onClick={onNewSession}
           className="gradient-violet"
+          disabled={!onNewSession}
         >
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle séance

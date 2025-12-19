@@ -1,4 +1,4 @@
-import { type IntervalDetails } from '@/lib/types';
+import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 
 export function generateIntervalStructure(intervalDetails: IntervalDetails | null | undefined): string {
   if (!intervalDetails) return '';
@@ -129,4 +129,55 @@ function normalizeDuration(duration: string): string | null {
   }
 
   return null;
+}
+
+export function calculateAverageDuration(steps: IntervalStep[]): number {
+  const stepsWithDuration = steps.filter(step => step.stepType !== 'warmup' && step.stepType !== 'cooldown' && step.duration);
+  
+  if (stepsWithDuration.length === 0) return 0;
+  
+  const totalSeconds = stepsWithDuration.reduce((sum, step) => {
+    if (step.duration) {
+      const [min, sec] = step.duration.split(':').map(Number);
+      return sum + min * 60 + sec;
+    }
+    return sum;
+  }, 0);
+  
+  return totalSeconds / stepsWithDuration.length;
+}
+
+export function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+export function autoFillIntervalDurations(
+  steps: IntervalStep[],
+  setFormValue: (name: 'effortDuration' | 'recoveryDuration', value: string) => void
+) {
+  const effortSteps = steps.filter(step => step.stepType === 'effort' && step.duration);
+  const recoverySteps = steps.filter(step => step.stepType === 'recovery' && step.duration);
+
+  if (effortSteps.length > 0) {
+    const avgEffortSeconds = calculateAverageDuration(effortSteps);
+    setFormValue('effortDuration', formatDuration(avgEffortSeconds));
+  }
+
+  if (recoverySteps.length > 0) {
+    const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
+    setFormValue('recoveryDuration', formatDuration(avgRecoverySeconds));
+  }
+}
+
+export function getIntervalImportToastMessage(
+  repetitionCount: number,
+  effortSteps: IntervalStep[],
+  recoverySteps: IntervalStep[]
+): string {
+  const avgEffortSeconds = calculateAverageDuration(effortSteps);
+  const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
+  
+  return `${repetitionCount} répétitions détectées. Durée moyenne effort: ${formatDuration(avgEffortSeconds)}, récupération: ${formatDuration(avgRecoverySeconds)}.`;
 }

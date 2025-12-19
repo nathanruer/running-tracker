@@ -1,7 +1,6 @@
 'use client';
 import { useForm, Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useEffect, useState, useRef } from 'react';
 import { Watch, RotateCcw, FileSpreadsheet, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -31,25 +30,12 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { addSession, updateSession } from '@/lib/services/api-client';
-import { type TrainingSessionPayload, type TrainingSession, type IntervalDetails, type IntervalStep } from '@/lib/types';
+import { type TrainingSessionPayload, type TrainingSession, type IntervalDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { IntervalFields } from './interval-fields';
 import { parseTCXFile, tcxActivityToFormData, detectIntervalStructure } from '@/lib/parsers/interval-tcx-parser';
 import { parseIntervalCSV } from '@/lib/parsers/interval-csv-parser';
-
-type IntervalFormValues = {
-  workoutType?: string | null;
-  repetitionCount?: number | null;
-  effortDuration?: string | null;
-  effortDistance?: number | null;
-  recoveryDuration?: string | null;
-  recoveryDistance?: number | null;
-  targetEffortPace?: string | null;
-  targetEffortHR?: number | null;
-  actualEffortPace?: string | null;
-  actualEffortHR?: number | null;
-  steps?: IntervalStep[];
-};
+import { formSchema, type FormValues, type IntervalFormValues } from '@/lib/validation/session-form';
 
 // Helper functions to adapt the main form to interval fields
 const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {
@@ -62,35 +48,6 @@ const createIntervalWatch = (watch: UseFormWatch<FormValues>): UseFormWatch<Inte
   return watch as unknown as UseFormWatch<IntervalFormValues>;
 };
 
-const formSchema = z.object({
-  date: z.string(),
-  sessionType: z.string().min(1, 'Type de séance requis'),
-  duration: z.string().regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format: HH:MM:SS'),
-  distance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  avgPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format: MM:SS'),
-  avgHeartRate: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  perceivedExertion: z.number().min(0).max(10).nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  comments: z.string(),
-  workoutType: z.string().optional(),
-  repetitionCount: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  effortDuration: z.string().optional(),
-  recoveryDuration: z.string().optional(),
-  effortDistance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  recoveryDistance: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  targetEffortPace: z.string().optional(),
-  targetEffortHR: z.number().nullable().optional().refine((n) => n === null || n === undefined || (typeof n === 'number' && !isNaN(n)), { message: 'Nombre requis' }),
-  targetRecoveryPace: z.string().optional(),
-  steps: z.array(z.object({
-    stepNumber: z.number(),
-    stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-    duration: z.string().nullable(),
-    distance: z.number().nullable(),
-    pace: z.string().nullable(),
-    hr: z.number().nullable(),
-  })).optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 
 interface SessionDialogProps {
   open: boolean;
