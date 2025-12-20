@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import SessionDialog from '@/components/session-dialog';
-import { StravaImportDialog } from '@/components/strava-import-dialog';
-import { CsvImportDialog } from '@/components/csv-import-dialog';
+import SessionDialog from '@/components/session/session-dialog';
+import { StravaImportDialog } from '@/components/import/strava-import-dialog';
+import { CsvImportDialog } from '@/components/import/csv-import-dialog';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SessionsTable } from '@/components/dashboard/sessions-table';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useSessionMutations } from '@/hooks/use-session-mutations';
 import {
-  deleteSession,
   getCurrentUser,
   getSessions,
   getSessionTypes,
   bulkImportSessions,
-  bulkDeleteSessions,
 } from '@/lib/services/api-client';
 import {
   type TrainingSession,
@@ -47,10 +46,12 @@ const DashboardPage = () => {
   const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const [isImportingCsv, setIsImportingCsv] = useState(false);
+
+  const { handleDelete: deleteMutation, handleBulkDelete, handleSessionSuccess, isDeleting } =
+    useSessionMutations(selectedType);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -185,117 +186,8 @@ const DashboardPage = () => {
   }
 
   const handleDelete = async (id: string) => {
-    const previousAllData = queryClient.getQueryData(['sessions', 'all', selectedType]);
-    const previousPaginatedData = queryClient.getQueryData(['sessions', 'paginated', selectedType]);
-    
-    await queryClient.cancelQueries({ queryKey: ['sessions'] });
-    
-    queryClient.setQueryData(['sessions', 'all', selectedType], (old: TrainingSession[] | undefined) => 
-      old?.filter(s => s.id !== id)
-    );
-    
-    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
-      if (!old) return old;
-      return {
-        ...old,
-        pages: old.pages.map(page => page.filter(s => s.id !== id)),
-      };
-    });
-
-    if (selectedType !== 'all') {
-      queryClient.setQueryData(['sessions', 'all', 'all'], (old: TrainingSession[] | undefined) => 
-        old?.filter(s => s.id !== id)
-      );
-      queryClient.setQueryData(['sessions', 'paginated', 'all'], (old: InfiniteData<TrainingSession[]> | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map(page => page.filter(s => s.id !== id)),
-        };
-      });
-    }
-    
     setDeletingId(null);
-    setIsDeleting(true);
-    toast({
-      title: 'Séance supprimée',
-      description: 'La séance a été supprimée avec succès.',
-    });
-    
-    try {
-      await deleteSession(id);
-      await queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
-    } catch (error) {
-      queryClient.setQueryData(['sessions', 'all', selectedType], previousAllData);
-      queryClient.setQueryData(['sessions', 'paginated', selectedType], previousPaginatedData);
-      toast({
-        title: 'Erreur',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Erreur lors de la suppression',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleBulkDelete = async (ids: string[]) => {
-    const previousAllData = queryClient.getQueryData(['sessions', 'all', selectedType]);
-    const previousPaginatedData = queryClient.getQueryData(['sessions', 'paginated', selectedType]);
-    
-    await queryClient.cancelQueries({ queryKey: ['sessions'] });
-
-    queryClient.setQueryData(['sessions', 'all', selectedType], (old: TrainingSession[] | undefined) => 
-      old?.filter(s => !ids.includes(s.id))
-    );
-    
-    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
-      if (!old) return old;
-      return {
-        ...old,
-        pages: old.pages.map(page => page.filter(s => !ids.includes(s.id))),
-      };
-    });
-
-    if (selectedType !== 'all') {
-      queryClient.setQueryData(['sessions', 'all', 'all'], (old: TrainingSession[] | undefined) => 
-        old?.filter(s => !ids.includes(s.id))
-      );
-      queryClient.setQueryData(['sessions', 'paginated', 'all'], (old: InfiniteData<TrainingSession[]> | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map(page => page.filter(s => !ids.includes(s.id))),
-        };
-      });
-    }
-
-    try {
-      setIsDeleting(true);
-      await bulkDeleteSessions(ids);
-      await queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
-      toast({
-        title: 'Séances supprimées',
-        description: `${ids.length} séances ont été supprimées avec succès.`,
-      });
-    } catch (error) {
-      queryClient.setQueryData(['sessions', 'all', selectedType], previousAllData);
-      queryClient.setQueryData(['sessions', 'paginated', selectedType], previousPaginatedData);
-      toast({
-        title: 'Erreur',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Erreur lors de la suppression groupée',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+    await deleteMutation(id);
   };
 
   const openNewSession = () => {
@@ -313,47 +205,6 @@ const DashboardPage = () => {
   const getDialogMode = () => {
     if (!editingSession) return 'create';
     return editingSession.status === 'planned' ? 'complete' : 'edit';
-  };
-
-  const handleSessionSuccess = (savedSession: TrainingSession) => {
-    queryClient.setQueryData(['sessions', 'all', selectedType], (old: TrainingSession[] | undefined) => {
-      if (!old) return [savedSession];
-      
-      const exists = old.find(s => s.id === savedSession.id);
-      if (exists) {
-        return old.map(s => s.id === savedSession.id ? savedSession : s);
-      } else {
-        return [savedSession, ...old].sort((a, b) => {
-          const dateA = a.date ? new Date(a.date).getTime() : 0;
-          const dateB = b.date ? new Date(b.date).getTime() : 0;
-          return dateB - dateA;
-        });
-      }
-    });
-
-    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
-      if (!old) return old;
-      
-      const newPages = old.pages.map(page => {
-        const index = page.findIndex(s => s.id === savedSession.id);
-        if (index !== -1) {
-          const newPage = [...page];
-          newPage[index] = savedSession;
-          return newPage;
-        }
-        return page;
-      });
-
-      const existsInPages = old.pages.some(p => p.some(s => s.id === savedSession.id));
-      if (!existsInPages && newPages.length > 0) {
-        newPages[0] = [savedSession, ...newPages[0]];
-      }
-
-      return { ...old, pages: newPages };
-    });
-
-    queryClient.invalidateQueries({ queryKey: ['sessions'] });
-    queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
   };
 
   const handleDialogClose = () => {

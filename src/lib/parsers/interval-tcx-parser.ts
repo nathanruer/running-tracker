@@ -247,26 +247,27 @@ export function detectIntervalStructure(laps: TCXLap[]): {
   const avgRecoveryDuration = recoveryDurations.length > 0 ? recoveryDurations.reduce((a, b) => a + b, 0) / recoveryDurations.length : null;
   const avgEffortDistance = effortDistances.length > 0 ? effortDistances.reduce((a, b) => a + b, 0) / effortDistances.length : null;
 
-  let totalEffortTime = 0;
-  let totalEffortDistance = 0;
-  let weightedEffortHR = 0;
-  let totalEffortHRTime = 0;
+  // Variables for future analytics (currently unused)
+  let _totalEffortTime = 0;
+  let _totalEffortDistance = 0;
+  let _weightedEffortHR = 0;
+  let _totalEffortHRTime = 0;
 
-  let totalRecoveryTime = 0;
-  let totalRecoveryDistance = 0;
+  let _totalRecoveryTime = 0;
+  let _totalRecoveryDistance = 0;
 
   middleBlocks.forEach((block) => {
     const pace = getLapPace(block);
     if (pace < avgPaceMiddle) {
-      totalEffortTime += block.totalTimeSeconds;
-      totalEffortDistance += block.distanceMeters / 1000;
+      _totalEffortTime += block.totalTimeSeconds;
+      _totalEffortDistance += block.distanceMeters / 1000;
       if (block.averageHeartRate) {
-        weightedEffortHR += block.averageHeartRate * block.totalTimeSeconds;
-        totalEffortHRTime += block.totalTimeSeconds;
+        _weightedEffortHR += block.averageHeartRate * block.totalTimeSeconds;
+        _totalEffortHRTime += block.totalTimeSeconds;
       }
     } else {
-      totalRecoveryTime += block.totalTimeSeconds;
-      totalRecoveryDistance += block.distanceMeters / 1000;
+      _totalRecoveryTime += block.totalTimeSeconds;
+      _totalRecoveryDistance += block.distanceMeters / 1000;
     }
   });
 

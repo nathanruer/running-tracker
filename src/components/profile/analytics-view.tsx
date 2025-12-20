@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { TrendingUp, Activity, Calendar } from 'lucide-react';
 import {
   Card,
@@ -18,6 +18,8 @@ import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { type TrainingSession } from '@/lib/types';
+import { useDateRangeFilter } from '@/hooks/use-date-range-filter';
+import { calculateWeeklyStats } from '@/lib/domain/analytics/weekly-calculator';
 import { ExportWeeklyAnalytics } from './export-weekly-analytics';
 
 interface AnalyticsViewProps {
@@ -25,103 +27,32 @@ interface AnalyticsViewProps {
 }
 
 export function AnalyticsView({ sessions }: AnalyticsViewProps) {
-  const [dateRange, setDateRange] = useState<'2weeks' | '4weeks' | '12weeks' | 'all' | 'custom'>('all');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
+  // Use date range filter hook for completed sessions
+  const completedSessions = useMemo(
+    () => sessions.filter((s) => s.status === 'completed' && s.date),
+    [sessions]
+  );
+  const {
+    dateRange,
+    setDateRange,
+    customStartDate,
+    setCustomStartDate,
+    customEndDate,
+    setCustomEndDate,
+    filteredItems: filteredCompletedSessions,
+    dateError: customDateError,
+  } = useDateRangeFilter(completedSessions, 'all');
 
-  const customDateError = useMemo(() => {
-    if (dateRange === 'custom' && customStartDate && customEndDate) {
-      const startDate = new Date(customStartDate + 'T00:00:00');
-      const endDate = new Date(customEndDate + 'T23:59:59');
-      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff < 14) {
-        return 'La plage doit être d\'au moins 2 semaines (14 jours)';
-      }
-    }
-    return '';
-  }, [dateRange, customStartDate, customEndDate]);
-
-  const getFilteredSessions = () => {
-    const now = new Date();
-    const completedSessions = sessions.filter((s) => s.status === 'completed' && s.date);
-
-    const filtered = completedSessions.filter((session) => {
-      const sessionDate = new Date(session.date!);
-      if (dateRange === '2weeks') {
-        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        return sessionDate >= twoWeeksAgo;
-      } else if (dateRange === '4weeks') {
-        const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
-        return sessionDate >= fourWeeksAgo;
-      } else if (dateRange === '12weeks') {
-        const twelveWeeksAgo = new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000);
-        return sessionDate >= twelveWeeksAgo;
-      } else if (dateRange === 'custom') {
-        if (!customStartDate && !customEndDate) return true;
-
-        const startDate = customStartDate ? new Date(customStartDate + 'T00:00:00') : null;
-        const endDate = customEndDate ? new Date(customEndDate + 'T23:59:59') : null;
-
-        if (startDate && endDate) {
-          const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysDiff < 14) {
-            return false;
-          }
-          return sessionDate >= startDate && sessionDate <= endDate;
-        } else if (startDate) {
-          return sessionDate >= startDate;
-        } else if (endDate) {
-          return sessionDate <= endDate;
-        }
-      }
-      return true;
-    });
-    return filtered;
-  };
-
-  const filteredSessions = getFilteredSessions();
-
-  const calculateStats = () => {
-    if (!filteredSessions || filteredSessions.length === 0) {
-      return {
-        totalKm: 0,
-        totalSessions: 0,
-        averageKmPerWeek: 0,
-        chartData: []
-      };
-    }
-
-    const weeklyKm: Record<number, number> = {};
-    const weeklyPlannedKm: Record<number, number> = {};
-    const weeklyCompletedCount: Record<number, number> = {};
-    const weeklyPlannedCount: Record<number, number> = {};
-    let totalKm = 0;
-
-    filteredSessions.forEach((session) => {
-      const week = session.week;
-      if (week === null) return;
-
-      const distance = session.distance || 0;
-      if (!weeklyKm[week]) {
-        weeklyKm[week] = 0;
-        weeklyCompletedCount[week] = 0;
-      }
-      weeklyKm[week] += distance;
-      weeklyCompletedCount[week]++;
-      totalKm += distance;
-    });
-
-    const now = new Date();
+  // Filter planned sessions manually using the same date range criteria
+  const filteredPlannedSessions = useMemo(() => {
     const plannedSessions = sessions.filter((s) => s.status === 'planned' && s.week !== null);
-    
-    const filteredPlannedSessions = plannedSessions.filter((session) => {
-      if (dateRange === 'all') return true;
 
+    if (dateRange === 'all') return plannedSessions;
+
+    const now = new Date();
+    return plannedSessions.filter((session) => {
       const sessionDate = session.date ? new Date(session.date) : null;
-      if (!sessionDate) {
-        return true;
-      }
+      if (!sessionDate) return true;
 
       if (dateRange === '2weeks') {
         const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -148,79 +79,13 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
       }
       return true;
     });
+  }, [sessions, dateRange, customStartDate, customEndDate]);
 
-    filteredPlannedSessions.forEach((session) => {
-      const week = session.week;
-      if (week === null) return;
-
-      const distance = session.distance || 0;
-      if (!weeklyPlannedKm[week]) {
-        weeklyPlannedKm[week] = 0;
-        weeklyPlannedCount[week] = 0;
-      }
-      weeklyPlannedKm[week] += distance;
-      weeklyPlannedCount[week]++;
-    });
-
-    const weeks = Object.keys(weeklyKm).length;
-    const averageKmPerWeek = weeks > 0 ? totalKm / weeks : 0;
-
-    const allWeeks = new Set([...Object.keys(weeklyKm), ...Object.keys(weeklyPlannedKm)]);
-
-    const chartData = Array.from(allWeeks)
-      .map((week) => {
-        const weekNum = Number(week);
-        const completedKm = weeklyKm[weekNum] || 0;
-        const plannedKm = weeklyPlannedKm[weekNum] || 0;
-
-        return {
-          semaine: `S${week}`,
-          week: weekNum,
-          km: completedKm > 0 ? Number(completedKm.toFixed(1)) : null,
-          plannedKm: Number(plannedKm.toFixed(1)),
-          totalWithPlanned: plannedKm > 0 ? Number((completedKm + plannedKm).toFixed(1)) : null,
-          completedCount: weeklyCompletedCount[weekNum] || 0,
-          plannedCount: weeklyPlannedCount[weekNum] || 0,
-        };
-      })
-      .sort((a, b) => a.week - b.week)
-      .map((data, index, array) => {
-        if (index === 0) {
-          return { ...data, changePercent: null, changePercentWithPlanned: null };
-        }
-
-        let previousKm = null;
-        for (let i = index - 1; i >= 0; i--) {
-          if (array[i].km !== null) {
-            previousKm = array[i].km;
-            break;
-          }
-        }
-
-        const changePercent = data.km !== null && previousKm !== null && previousKm > 0
-          ? ((data.km - previousKm) / previousKm) * 100
-          : null;
-
-        const changePercentWithPlanned = previousKm !== null && previousKm > 0 && data.totalWithPlanned !== null
-          ? ((data.totalWithPlanned - previousKm) / previousKm) * 100
-          : null;
-
-        return {
-          ...data,
-          changePercent: changePercent !== null ? Number(changePercent.toFixed(1)) : null,
-          changePercentWithPlanned: changePercentWithPlanned !== null ? Number(changePercentWithPlanned.toFixed(1)) : null,
-        };
-      });
-
-    return {
-      totalKm,
-      totalSessions: filteredSessions.length,
-      averageKmPerWeek,
-      chartData,
-    };
-  };
-
-  const stats = calculateStats();
+  // Calculate statistics using the utility function
+  const stats = useMemo(
+    () => calculateWeeklyStats(filteredCompletedSessions, filteredPlannedSessions),
+    [filteredCompletedSessions, filteredPlannedSessions]
+  );
 
   return (
     <div className="mb-8">
