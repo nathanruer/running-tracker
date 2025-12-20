@@ -247,30 +247,6 @@ export function detectIntervalStructure(laps: TCXLap[]): {
   const avgRecoveryDuration = recoveryDurations.length > 0 ? recoveryDurations.reduce((a, b) => a + b, 0) / recoveryDurations.length : null;
   const avgEffortDistance = effortDistances.length > 0 ? effortDistances.reduce((a, b) => a + b, 0) / effortDistances.length : null;
 
-  // Variables for future analytics (currently unused)
-  let _totalEffortTime = 0;
-  let _totalEffortDistance = 0;
-  let _weightedEffortHR = 0;
-  let _totalEffortHRTime = 0;
-
-  let _totalRecoveryTime = 0;
-  let _totalRecoveryDistance = 0;
-
-  middleBlocks.forEach((block) => {
-    const pace = getLapPace(block);
-    if (pace < avgPaceMiddle) {
-      _totalEffortTime += block.totalTimeSeconds;
-      _totalEffortDistance += block.distanceMeters / 1000;
-      if (block.averageHeartRate) {
-        _weightedEffortHR += block.averageHeartRate * block.totalTimeSeconds;
-        _totalEffortHRTime += block.totalTimeSeconds;
-      }
-    } else {
-      _totalRecoveryTime += block.totalTimeSeconds;
-      _totalRecoveryDistance += block.distanceMeters / 1000;
-    }
-  });
-
   return {
     isInterval: effortCount >= 1,
     workoutType: null,

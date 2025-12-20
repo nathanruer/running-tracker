@@ -50,9 +50,7 @@ vi.mock('@/hooks/use-table-sort', () => ({
   useTableSort: () => ({
     handleSort: vi.fn(),
     SortIcon: () => null,
-    defaultComparator: (fn: (item: StravaActivity, column: string) => unknown) => {
-      return mockActivities;
-    },
+    defaultComparator: () => mockActivities,
     sortColumn: null,
   }),
 }));

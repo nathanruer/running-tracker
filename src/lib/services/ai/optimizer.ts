@@ -41,8 +41,7 @@ async function summarizeMessages(messages: ChatMessage[]): Promise<string> {
 }
 
 export async function getOptimizedConversationHistory(
-  conversationId: string,
-  _currentUserMessage: string
+  conversationId: string
 ): Promise<{
   messages: Array<{ role: string; content: string }>;
   tokensSaved: number;

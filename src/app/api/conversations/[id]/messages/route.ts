@@ -91,7 +91,7 @@ export async function POST(
       },
     });
 
-    const optimizedHistory = await getOptimizedConversationHistory(id, content);
+    const optimizedHistory = await getOptimizedConversationHistory(id);
 
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(

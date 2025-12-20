@@ -496,7 +496,6 @@ const SessionDialog = ({
                 />
                 <IntervalFields
                   control={createIntervalControl(form.control)}
-                  entryMode={intervalEntryMode}
                   onEntryModeChange={setIntervalEntryMode}
                   setValue={createIntervalSetValue(form.setValue)}
                   watch={createIntervalWatch(form.watch)}

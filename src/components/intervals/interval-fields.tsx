@@ -27,7 +27,6 @@ interface FormValues {
 
 interface IntervalFieldsProps {
   control: Control<FormValues>;
-  entryMode: 'quick' | 'detailed';
   onEntryModeChange: (mode: 'quick' | 'detailed') => void;
   setValue: UseFormSetValue<FormValues>;
   watch: UseFormWatch<FormValues>;
@@ -35,7 +34,6 @@ interface IntervalFieldsProps {
 
 export function IntervalFields({
   control,
-  entryMode: _entryMode,
   onEntryModeChange,
   setValue,
   watch,
