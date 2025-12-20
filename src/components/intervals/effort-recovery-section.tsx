@@ -50,7 +50,7 @@ export function EffortRecoverySection({
               <FormItem>
                 <FormLabel>Durée</FormLabel>
                 <FormControl>
-                  <Input placeholder="00:05:00" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00:00" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -67,7 +67,7 @@ export function EffortRecoverySection({
                   <Input
                     type="number"
                     step="0.01"
-                    placeholder="1.0"
+                    placeholder="0.0"
                     value={(field.value as number) ?? ''}
                     onChange={(e) =>
                       field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))

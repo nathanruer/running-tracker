@@ -61,7 +61,7 @@ export function IntervalStepFields({ stepIndex, control }: IntervalStepFieldsPro
           <FormItem>
             <FormLabel>Durée</FormLabel>
             <FormControl>
-              <Input placeholder="00:05:00" {...field} value={field.value || ''} />
+              <Input placeholder="00:00:00" {...field} value={field.value || ''} />
             </FormControl>
             <FormMessage />
           </FormItem>

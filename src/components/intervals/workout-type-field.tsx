@@ -23,12 +23,9 @@ interface WorkoutTypeFieldProps {
 }
 
 const WORKOUT_TYPES = [
-  'Pyramide',
-  'Progression',
-  'Descente',
-  'Fractionné court',
-  'Fractionné long',
-  'Fartlek',
+  'Tempo',
+  'Seuil',
+  'VMA',
 ];
 
 export function WorkoutTypeField({

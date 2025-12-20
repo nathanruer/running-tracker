@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useToast } from './use-toast';
 
 /**
@@ -31,10 +32,9 @@ export function useApiErrorHandler() {
    * @param error Error object or unknown error
    * @param customMessage Optional custom error message (takes priority if provided)
    */
-  const handleError = (error: unknown, customMessage?: string) => {
+  const handleError = useCallback((error: unknown, customMessage?: string) => {
     let message = 'Une erreur est survenue';
 
-    // Custom message takes priority if provided (and not empty)
     if (customMessage) {
       message = customMessage;
     } else if (error instanceof Error) {
@@ -48,19 +48,19 @@ export function useApiErrorHandler() {
       description: message,
       variant: 'destructive',
     });
-  };
+  }, [toast]);
 
   /**
    * Shows a success toast notification
    * @param title Toast title
    * @param description Toast description
    */
-  const handleSuccess = (title: string, description?: string) => {
+  const handleSuccess = useCallback((title: string, description?: string) => {
     toast({
       title,
       description,
     });
-  };
+  }, [toast]);
 
   /**
    * Wraps an async function with error handling
@@ -69,7 +69,7 @@ export function useApiErrorHandler() {
    * @param errorMessage Optional custom error message
    * @returns Result of the function or undefined on error
    */
-  const wrapAsync = async <T,>(
+  const wrapAsync = useCallback(async <T,>(
     fn: () => Promise<T>,
     errorMessage?: string
   ): Promise<T | undefined> => {
@@ -79,7 +79,7 @@ export function useApiErrorHandler() {
       handleError(error, errorMessage);
       return undefined;
     }
-  };
+  }, [handleError]);
 
   /**
    * Wraps an async function with both error and success handling
@@ -87,7 +87,7 @@ export function useApiErrorHandler() {
    * @param options Success and error messages
    * @returns Result of the function or undefined on error
    */
-  const wrapAsyncWithSuccess = async <T,>(
+  const wrapAsyncWithSuccess = useCallback(async <T,>(
     fn: () => Promise<T>,
     options: {
       successTitle: string;
@@ -103,32 +103,32 @@ export function useApiErrorHandler() {
       handleError(error, options.errorMessage);
       return undefined;
     }
-  };
+  }, [handleError, handleSuccess]);
 
   /**
    * Shows an info toast notification
    * @param title Toast title
    * @param description Toast description
    */
-  const handleInfo = (title: string, description?: string) => {
+  const handleInfo = useCallback((title: string, description?: string) => {
     toast({
       title,
       description,
     });
-  };
+  }, [toast]);
 
   /**
    * Shows a warning toast notification
    * @param title Toast title
    * @param description Toast description
    */
-  const handleWarning = (title: string, description?: string) => {
+  const handleWarning = useCallback((title: string, description?: string) => {
     toast({
       title,
       description,
-      variant: 'destructive', // Using destructive as there's no warning variant
+      variant: 'destructive',
     });
-  };
+  }, [toast]);
 
   return {
     handleError,

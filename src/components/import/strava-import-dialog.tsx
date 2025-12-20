@@ -103,8 +103,21 @@ export function StravaImportDialog({
         onImport(data);
         onOpenChange(false);
         clearSelection();
+      } else if (selectedIndices.size === 1) {
+        // Single activity import - fills session form
+        const activity = selectedActivities[0];
+        const response = await fetch(`/api/strava/activity/${activity.id}`);
+
+        if (!response.ok) {
+          throw new Error('Échec de la récupération');
+        }
+
+        const data = await response.json();
+        onImport(data); // Opens SessionDialog with pre-filled data
+        onOpenChange(false); // Close Strava dialog
+        clearSelection();
       } else {
-        // Bulk import mode
+        // Bulk import mode (multiple activities)
         const activityPromises = selectedActivities.map(async (activity) => {
           try {
             const response = await fetch(`/api/strava/activity/${activity.id}`);
@@ -133,7 +146,7 @@ export function StravaImportDialog({
           avgPace: activity.avgPace,
           avgHeartRate: activity.avgHeartRate || null,
           perceivedExertion: null,
-          comments: `-`,
+          comments: activity.comments || '',
         }));
 
         const result = await bulkImportSessions(sessionsToImport);
