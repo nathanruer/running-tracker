@@ -244,7 +244,7 @@ export function IntervalDetailsView({
              <span>Totaux ({filter === 'all' ? 'Toutes' : filter === 'effort' ? 'Efforts' : 'Récupérations'}):</span>
            </div>
            {averages.totalTime !== "-" && (
-             <span>Temps: {averages.totalTime}</span>
+             <span>Temps: {averages.totalTime} mn</span>
            )}
            {averages.totalDist !== "0.00" && (
              <span>Distance: {averages.totalDist} km</span>

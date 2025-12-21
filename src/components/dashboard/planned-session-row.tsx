@@ -187,14 +187,14 @@ export function PlannedSessionRow({
             </>
           ) : '-'}
         </TableCell>
-        <TableCell className="text-center font-semibold">
+        <TableCell className="text-center">
           {globalPace !== '-' ? (
             <>
               {globalPace} <span className="text-xs">mn/km</span>
             </>
           ) : '-'}
         </TableCell>
-        <TableCell className="text-center font-semibold text-m">
+        <TableCell className="text-center">
           {globalHRDisplay !== '-' ? (
             <>
               {globalHRDisplay} <span className="text-xs">bpm</span>
