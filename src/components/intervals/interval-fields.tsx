@@ -61,11 +61,12 @@ interface SortableIntervalStepProps {
   index: number;
   step: IntervalStep;
   control: Control<FormValues>;
+  watch: UseFormWatch<FormValues>;
   setValue?: UseFormSetValue<FormValues>;
   onRemove: (index: number) => void;
 }
 
-function SortableIntervalStep({ id, index, step, control, setValue, onRemove }: SortableIntervalStepProps) {
+function SortableIntervalStep({ id, index, step, control, watch, setValue, onRemove }: SortableIntervalStepProps) {
   const {
     attributes,
     listeners,
@@ -86,6 +87,11 @@ function SortableIntervalStep({ id, index, step, control, setValue, onRemove }: 
     if (setValue) {
       setValue(`steps.${index}.stepType`, newType);
     }
+  };
+
+  const calculateEffortNumber = (): number => {
+    const currentSteps = watch('steps') || [];
+    return currentSteps.filter((s, i) => s.stepType === 'effort' && i < index).length + 1;
   };
 
   return (
@@ -115,7 +121,7 @@ function SortableIntervalStep({ id, index, step, control, setValue, onRemove }: 
                 className="h-8 px-2 font-medium text-sm hover:bg-muted/50"
               >
                 {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS] || step.stepType}
-                {step.stepType === 'effort' && ` ${Math.ceil((index + 1) / 2)}`}
+                {step.stepType === 'effort' && ` ${calculateEffortNumber()}`}
                 <ChevronDownIcon className="ml-1 h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
@@ -188,13 +194,10 @@ export function IntervalFields({
   const effortDistance = watch('effortDistance');
   const recoveryDuration = watch('recoveryDuration');
   const recoveryDistance = watch('recoveryDistance');
-  // We need to watch steps to get current values for updates
   const currentSteps = watch('steps') || [];
 
   useEffect(() => {
-    // If repetition count changed, regenerate everything
     if (repetitionCount !== prevRepetitionCount.current) {
-      // Only regenerate if we have a valid count
       if (repetitionCount > 0) {
         prevRepetitionCount.current = repetitionCount;
         
@@ -244,14 +247,11 @@ export function IntervalFields({
         replace(newSteps);
         onEntryModeChange('detailed');
       } else {
-        // If repetition count is 0 or invalid, maybe clear steps? 
-        // Or just let it be.
         prevRepetitionCount.current = repetitionCount;
       }
       return;
     }
 
-    // Determine if we should update existing steps values
     let stepsToUpdate = [...currentSteps];
     let hasChanges = false;
     
@@ -303,7 +303,6 @@ export function IntervalFields({
     recoveryDistance,
     replace,
     onEntryModeChange,
-    // currentSteps excluded from deps to avoid loop, but used inside
   ]);
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -325,13 +324,11 @@ export function IntervalFields({
   const handleAddManualInterval = () => {
     onEntryModeChange('detailed');
     
-    // Find the next step number
     const currentSteps = watch('steps') || [];
     const nextStepNumber = currentSteps.length > 0 
       ? Math.max(...currentSteps.map(step => step.stepNumber || 0)) + 1
       : 1;
     
-    // Add a new warmup step by default (can be changed by user)
     const newStep: IntervalStep = {
       stepNumber: nextStepNumber,
       stepType: 'warmup',
@@ -404,7 +401,7 @@ export function IntervalFields({
         />
       </div>
 
-      <div className="flex justify-between items-center pt-2">
+      <div className="flex justify-start pt-2">
         <Button
           type="button"
           variant="ghost"
@@ -418,16 +415,6 @@ export function IntervalFields({
             }`}
           />
           {showDetails ? 'Masquer les détails avancés' : 'Afficher les détails avancés'}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={handleAddManualInterval}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Ajouter un intervalle manuellement
         </Button>
       </div>
 
@@ -470,11 +457,22 @@ export function IntervalFields({
               />
             </div>
 
-            {(repetitionCount > 0 || fields.length > 0) && (
-              <div className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium text-muted-foreground">
                   Étapes ({fields.length})
                 </h4>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleAddManualInterval}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {fields.length > 0 ? (
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -492,6 +490,7 @@ export function IntervalFields({
                           index={index}
                           step={currentSteps[index] || field}
                           control={control}
+                          watch={watch}
                           setValue={setValue}
                           onRemove={handleRemove}
                         />
@@ -499,8 +498,13 @@ export function IntervalFields({
                     </div>
                   </SortableContext>
                 </DndContext>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  <p>Aucun intervalle pour le moment</p>
+                  <p className="mt-1">Cliquez sur le bouton + pour ajouter un intervalle manuellement</p>
+                </div>
+              )}
+            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>

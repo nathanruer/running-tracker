@@ -12,7 +12,7 @@ import { useRef, useState } from 'react';
  * <input
  *   ref={fileInputRef}
  *   type="file"
- *   accept=".tcx"
+ *   accept=".csv"
  *   onChange={handleFile}
  *   className="hidden"
  * />
@@ -49,7 +49,7 @@ export function useFileInput() {
 
   /**
    * Sets the accepted file types
-   * @param accept File types to accept (e.g., ".tcx,.csv")
+   * @param accept File types to accept (e.g., ".csv")
    */
   const setAcceptedTypes = (accept: string) => {
     if (fileInputRef.current) {
@@ -74,9 +74,8 @@ export function useFileInput() {
  * @returns Array of file input utilities
  *
  * @example
- * const [tcxInput, csvInput] = useMultipleFileInputs(2);
+ * const [csvInput] = useMultipleFileInputs(1);
  *
- * <input ref={tcxInput.fileInputRef} type="file" accept=".tcx" />
  * <input ref={csvInput.fileInputRef} type="file" accept=".csv" />
  */
 export function useMultipleFileInputs(count: number) {

@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button';
 import { addSession, updateSession } from '@/lib/services/api-client';
 import type { TrainingSessionPayload, TrainingSession } from '@/lib/types';
 import { IntervalFields } from '@/components/intervals/interval-fields';
-import { parseTCXFile, tcxActivityToFormData, detectIntervalStructure } from '@/lib/parsers/interval-tcx-parser';
 import { parseIntervalCSV } from '@/lib/parsers/interval-csv-parser';
 import { formSchema, type FormValues, type IntervalFormValues } from '@/lib/validation/session-form';
 import { SessionTypeSelector, PREDEFINED_TYPES } from './session-type-selector';
@@ -76,7 +75,7 @@ const SessionDialog = ({
   const [isCustomSessionType, setIsCustomSessionType] = useState(false);
   const [intervalEntryMode, setIntervalEntryMode] = useState<'quick' | 'detailed'>('quick');
 
-  const [tcxInput, csvInput] = useMultipleFileInputs(2);
+  const [csvInput] = useMultipleFileInputs(1);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -202,61 +201,7 @@ const SessionDialog = ({
     }
   }, [session, initialData, mode, form]);
 
-  const handleTCXImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
 
-    try {
-      const text = await file.text();
-      const activity = parseTCXFile(text);
-
-      if (!activity) {
-        handleError(new Error('Impossible de lire le fichier TCX'));
-        return;
-      }
-
-      const formData = tcxActivityToFormData(activity);
-      form.setValue('date', formData.date);
-      form.setValue('duration', formData.duration);
-      form.setValue('distance', formData.distance);
-      form.setValue('avgPace', formData.avgPace);
-      form.setValue('avgHeartRate', formData.avgHeartRate);
-
-      const intervalStructure = detectIntervalStructure(activity.laps);
-
-      if (intervalStructure.isInterval) {
-        form.setValue('sessionType', 'Fractionné');
-
-        form.setValue('steps', intervalStructure.steps.map(step => ({
-          ...step,
-          duration: step.duration || null,
-          distance: step.distance ?? null,
-          pace: step.pace || null,
-          hr: step.hr ?? null,
-        })));
-
-        form.setValue('repetitionCount', intervalStructure.repetitionCount || undefined);
-        form.setValue('effortDuration', intervalStructure.effortDuration || '');
-        form.setValue('recoveryDuration', intervalStructure.recoveryDuration || '');
-        form.setValue('effortDistance', intervalStructure.effortDistance || undefined);
-        form.setValue('recoveryDistance', undefined);
-
-        setIntervalEntryMode('detailed');
-
-        handleSuccess(
-          'Fractionné détecté',
-          `${intervalStructure.repetitionCount} répétitions détectées. Les étapes ont été pré-remplies en mode détaillé.`
-        );
-      } else {
-        handleSuccess('Séance importée', 'Les données de base ont été importées depuis le fichier TCX.');
-      }
-
-      tcxInput.resetFileInput();
-    } catch (error) {
-      console.error('Error importing TCX:', error);
-      handleError(error, 'Une erreur est survenue lors de l\'import du fichier TCX');
-    }
-  };
 
   const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -421,13 +366,7 @@ const SessionDialog = ({
           onStravaClick={onRequestStravaImport}
           onCsvClick={onRequestCsvImport}
         />
-        <input
-          ref={tcxInput.fileInputRef}
-          type="file"
-          accept=".tcx"
-          className="hidden"
-          onChange={handleTCXImport}
-        />
+
         <input
           ref={csvInput.fileInputRef}
           type="file"
@@ -491,7 +430,6 @@ const SessionDialog = ({
             {form.watch('sessionType') === 'Fractionné' && (
               <>
                 <IntervalImportSection
-                  onTcxClick={tcxInput.triggerFileSelect}
                   onCsvClick={csvInput.triggerFileSelect}
                 />
                 <IntervalFields

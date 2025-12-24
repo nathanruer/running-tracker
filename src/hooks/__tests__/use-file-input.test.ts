@@ -15,7 +15,7 @@ describe('useFileInput', () => {
       const { result } = renderHook(() => useFileInput());
       
       const mockInput = {
-        value: 'test-file.tcx',
+        value: 'test-file.csv',
       };
       result.current.fileInputRef.current = mockInput as unknown as HTMLInputElement;
       
@@ -65,7 +65,7 @@ describe('useFileInput', () => {
     it('should return selected file', () => {
       const { result } = renderHook(() => useFileInput());
       
-      const mockFile = new File(['test'], 'test.tcx', { type: 'text/xml' });
+      const mockFile = new File(['test'], 'test.csv', { type: 'text/csv' });
       const mockInput = {
         files: [mockFile],
       };
@@ -108,17 +108,17 @@ describe('useFileInput', () => {
       result.current.fileInputRef.current = mockInput as unknown as HTMLInputElement;
       
       act(() => {
-        result.current.setAcceptedTypes('.tcx,.csv');
+        result.current.setAcceptedTypes('.csv');
       });
       
-      expect(mockInput.accept).toBe('.tcx,.csv');
+      expect(mockInput.accept).toBe('.csv');
     });
 
     it('should handle null ref gracefully', () => {
       const { result } = renderHook(() => useFileInput());
       
       expect(() => {
-        result.current.setAcceptedTypes('.tcx');
+        result.current.setAcceptedTypes('.csv');
       }).not.toThrow();
     });
   });
@@ -155,9 +155,9 @@ describe('useMultipleFileInputs', () => {
       const { result } = renderHook(() => useMultipleFileInputs(2));
       
       const mockInput1 = {
-        value: 'file1.tcx',
+        value: 'file1.csv',
         click: vi.fn(),
-        files: [new File(['test1'], 'test1.tcx')],
+        files: [new File(['test1'], 'test1.csv')],
       };
       
       const mockInput2 = {
