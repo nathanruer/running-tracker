@@ -1,4 +1,4 @@
-import type { AIResponse } from './types';
+import type { AIResponse } from '@/lib/types/ai';
 
 /**
  * Extracts and parses JSON from AI response text

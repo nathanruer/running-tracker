@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
-import { getUserIdFromRequest } from '@/lib/auth';
 import { partialSessionSchema } from '@/lib/validation';
-import { logger } from '@/lib/infrastructure/logger';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { validateAuth, findSessionByIdAndUser, handleNotFound, withErrorHandling } from '@/lib/utils/api-helpers';
 
 export const runtime = 'nodejs';
 
@@ -15,24 +13,21 @@ export async function PUT(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
-  const userId = getUserIdFromRequest(request);
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const authResult = await validateAuth(request);
+  
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  
+  const userId = authResult;
 
-  try {
+  return withErrorHandling(async () => {
     const updates = partialSessionSchema.parse(await request.json());
 
-    const session = await prisma.training_sessions.findFirst({
-      where: { id: params.id, userId },
-    });
+    const session = await findSessionByIdAndUser(params.id, userId);
 
     if (!session) {
-      return NextResponse.json(
-        { error: 'Séance introuvable' },
-        { status: 404 },
-      );
+      return handleNotFound('Séance introuvable');
     }
 
     const dateUpdate = updates.date !== undefined
@@ -64,19 +59,7 @@ export async function PUT(
     }
 
     return NextResponse.json({ session: updated });
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? 'Payload invalide' },
-        { status: 400 },
-      );
-    }
-    logger.error({ error, userId, sessionId: params.id }, 'Failed to update training session');
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
-      { status: 500 },
-    );
-  }
+  }, { userId, sessionId: params.id, operation: 'update' });
 }
 
 export async function DELETE(
@@ -84,18 +67,18 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
-  const userId = getUserIdFromRequest(request);
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  const authResult = await validateAuth(request);
+  
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  
+  const userId = authResult;
 
-  const session = await prisma.training_sessions.findFirst({
-    where: { id: params.id, userId },
-  });
+  const session = await findSessionByIdAndUser(params.id, userId);
 
   if (!session) {
-    return NextResponse.json({ error: 'Séance introuvable' }, { status: 404 });
+    return handleNotFound('Séance introuvable');
   }
 
   await prisma.training_sessions.delete({ where: { id: params.id } });
@@ -104,5 +87,4 @@ export async function DELETE(
   
   return NextResponse.json({ message: 'Séance supprimée' });
 }
-
 

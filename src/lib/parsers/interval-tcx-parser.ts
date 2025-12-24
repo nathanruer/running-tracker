@@ -224,9 +224,10 @@ export function detectIntervalStructure(laps: TCXLap[]): {
   const recoveryDurations: number[] = [];
   const effortDistances: number[] = [];
 
-  middleBlocks.forEach((block) => {
+  middleBlocks.forEach((block, index) => {
       const blockPace = getLapPace(block);
       const isEffort = blockPace < avgPaceMiddle;
+      const isLastBlock = index === middleBlocks.length - 1;
 
       if (isEffort) {
           steps.push(toIntervalStep(block, stepNumber++, 'effort'));
@@ -234,6 +235,11 @@ export function detectIntervalStructure(laps: TCXLap[]): {
           effortDurations.push(block.totalTimeSeconds);
           effortDistances.push(block.distanceMeters / 1000);
       } else {
+          // If this is the last block and we have a cooldown, skip this recovery step
+          // as it is likely a transition into the cooldown phase
+          if (isLastBlock && hasCooldown) {
+              return;
+          }
           steps.push(toIntervalStep(block, stepNumber++, 'recovery'));
           recoveryDurations.push(block.totalTimeSeconds);
       }

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/infrastructure/logger';
-import type { AIResponse, AIRecommendedSession } from './types';
+import type { AIResponse, AIRecommendedSession } from '@/lib/types/ai';
 
 /**
  * Validates and fixes AI-generated training recommendations

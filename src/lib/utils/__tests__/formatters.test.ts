@@ -8,6 +8,7 @@ import {
   parseDuration,
   formatNumber,
   formatHeartRate,
+  normalizePaceDisplay,
 } from '../formatters';
 
 describe('formatters', () => {
@@ -187,6 +188,35 @@ describe('formatters', () => {
     it('should return -- for 0 or negative values', () => {
       expect(formatHeartRate(0)).toBe('--');
       expect(formatHeartRate(-5)).toBe('--');
+    });
+  });
+
+  describe('normalizePaceDisplay', () => {
+    it('should add leading zeros to minutes', () => {
+      expect(normalizePaceDisplay('5:00')).toBe('05:00');
+      expect(normalizePaceDisplay('7:30')).toBe('07:30');
+      expect(normalizePaceDisplay('9:45')).toBe('09:45');
+    });
+
+    it('should keep already formatted paces unchanged', () => {
+      expect(normalizePaceDisplay('05:00')).toBe('05:00');
+      expect(normalizePaceDisplay('07:30')).toBe('07:30');
+      expect(normalizePaceDisplay('12:00')).toBe('12:00');
+    });
+
+    it('should add leading zeros to seconds too', () => {
+      expect(normalizePaceDisplay('5:5')).toBe('05:05');
+      expect(normalizePaceDisplay('7:0')).toBe('07:00');
+    });
+
+    it('should return null for null or undefined input', () => {
+      expect(normalizePaceDisplay(null)).toBeNull();
+      expect(normalizePaceDisplay(undefined)).toBeNull();
+    });
+
+    it('should return original string for invalid formats', () => {
+      expect(normalizePaceDisplay('invalid')).toBe('invalid');
+      expect(normalizePaceDisplay('5:00:00')).toBe('5:00:00');
     });
   });
 });

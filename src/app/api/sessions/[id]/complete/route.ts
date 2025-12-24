@@ -1,31 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserIdFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/database';
 import { logger } from '@/lib/infrastructure/logger';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { validateAuth, findSessionByIdAndUser, handleNotFound, withErrorHandling } from '@/lib/utils/api-helpers';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    const userId = getUserIdFromRequest(request);
+  const { id } = await params;
+  const authResult = await validateAuth(request);
+  
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
+  
+  const userId = authResult;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
-
-    const session = await prisma.training_sessions.findUnique({
-      where: { id },
-    });
+  return withErrorHandling(async () => {
+    const session = await findSessionByIdAndUser(id, userId);
 
     if (!session) {
-      return NextResponse.json({ error: 'Séance non trouvée' }, { status: 404 });
-    }
-
-    if (session.userId !== userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      return handleNotFound('Séance non trouvée');
     }
 
     if (session.status !== 'planned') {
@@ -69,11 +65,5 @@ export async function PATCH(
     });
     
     return NextResponse.json(refreshed || completedSession);
-  } catch (error) {
-    logger.error({ error }, 'Failed to complete planned session');
-    return NextResponse.json(
-      { error: 'Erreur lors de la complétion de la séance' },
-      { status: 500 }
-    );
-  }
+  }, { sessionId: id, userId, operation: 'complete' });
 }

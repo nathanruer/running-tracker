@@ -5,6 +5,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
+import { normalizePaceDisplay } from '@/lib/utils/formatters';
 import { IntervalDetailsView } from './interval-details-view';
 
 interface PlannedSessionRowProps {
@@ -105,14 +106,8 @@ export function PlannedSessionRow({
       }
     }
 
-    if (totals.duration > 0 && totals.distance > 0) {
-      const totalSeconds = totals.duration * 60;
-      const secondsPerKm = totalSeconds / totals.distance;
-      const mins = Math.floor(secondsPerKm / 60);
-      const secs = Math.round(secondsPerKm % 60);
-      return `~${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return session.targetPace ? `~${session.targetPace}` : '-';
+    const normalizedPace = normalizePaceDisplay(session.targetPace);
+    return normalizedPace ? `~${normalizedPace}` : '-';
   };
 
   const globalPace = calculateGlobalPace();

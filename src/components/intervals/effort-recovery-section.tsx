@@ -33,6 +33,8 @@ export function EffortRecoverySection({
   const distanceField = `${fieldPrefix}Distance` as keyof IntervalFormValues;
   const paceField = `target${fieldPrefix.charAt(0).toUpperCase() + fieldPrefix.slice(1)}Pace` as keyof IntervalFormValues;
   const hrField = `target${fieldPrefix.charAt(0).toUpperCase() + fieldPrefix.slice(1)}HR` as keyof IntervalFormValues;
+  
+  const hasExtraFields = showPace || showHeartRate;
 
   return (
     <div className="space-y-3">
@@ -41,13 +43,13 @@ export function EffortRecoverySection({
         <ModeToggleButton mode={mode} onChange={onModeChange} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${hasExtraFields ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {mode === 'duration' ? (
           <FormField
             control={control}
             name={durationField}
             render={({ field }) => (
-              <FormItem>
+              <FormItem className={hasExtraFields ? "" : "w-full"}>
                 <FormLabel>Durée</FormLabel>
                 <FormControl>
                   <Input placeholder="00:00:00" value={(field.value as string) || ''} onChange={field.onChange} />
@@ -61,7 +63,7 @@ export function EffortRecoverySection({
             control={control}
             name={distanceField}
             render={({ field }) => (
-              <FormItem>
+              <FormItem className={hasExtraFields ? "" : "w-full"}>
                 <FormLabel>Distance (km)</FormLabel>
                 <FormControl>
                   <Input

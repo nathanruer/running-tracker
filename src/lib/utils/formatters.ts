@@ -139,3 +139,20 @@ export function formatNumber(num: number, decimals: number = 0): string {
 export function formatHeartRate(bpm: number): string {
   return bpm > 0 ? `${Math.round(bpm)} bpm` : '--';
 }
+
+/**
+ * Normalizes a pace string to ensure consistent MM:SS format with leading zeros
+ * @param pace - Pace string (may be 5:00, 05:00, etc.)
+ * @returns Normalized pace string (MM:SS with leading zeros)
+ * @example normalizePaceDisplay("5:00") // "05:00"
+ */
+export function normalizePaceDisplay(pace: string | null | undefined): string | null {
+  if (!pace) return null;
+  
+  const parts = pace.split(':');
+  if (parts.length !== 2) return pace;
+  
+  const minutes = parts[0].padStart(2, '0');
+  const seconds = parts[1].padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}

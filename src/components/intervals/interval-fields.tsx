@@ -1,16 +1,32 @@
 'use client';
 
-import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import { Control, UseFormWatch, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ChevronDown, GripVertical, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { type IntervalStep } from '@/lib/types';
 import { WorkoutTypeField, WORKOUT_TYPES } from './workout-type-field';
 import { EffortRecoverySection } from './effort-recovery-section';
 import { STEP_TYPE_LABELS } from './interval-step-fields';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface FormValues {
   intervalDetails?: string | null;
@@ -22,28 +38,187 @@ interface FormValues {
   recoveryDistance?: number | null;
   targetEffortPace?: string | null;
   targetEffortHR?: number | null;
+  targetRecoveryPace?: string | null;
+  targetRecoveryHR?: number | null;
   steps?: IntervalStep[];
 }
 
 interface IntervalFieldsProps {
   control: Control<FormValues>;
   onEntryModeChange: (mode: 'quick' | 'detailed') => void;
-  setValue: UseFormSetValue<FormValues>;
   watch: UseFormWatch<FormValues>;
+}
+
+interface SortableIntervalStepProps {
+  id: string;
+  index: number;
+  step: IntervalStep;
+  control: Control<FormValues>;
+  onRemove: (index: number) => void;
+}
+
+function SortableIntervalStep({ id, index, step, control, onRemove }: SortableIntervalStepProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 0,
+    position: isDragging ? 'relative' as const : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-md border border-border/50 p-4 space-y-3 bg-background/50 ${isDragging ? 'shadow-lg ring-2 ring-primary/20 bg-background' : ''}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 cursor-grab active:cursor-grabbing text-muted-foreground hover:bg-muted"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </Button>
+          <h4 className="font-medium text-sm">
+            {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS] || step.stepType}{' '}
+            {step.stepType === 'effort' && `${Math.ceil((index + 1) / 2)}`}
+          </h4>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemove(index)}
+          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="grid grid-cols-4 gap-3 pl-8">
+        <FormField
+          control={control}
+          name={`steps.${index}.duration`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Durée</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="00:00"
+                  {...field}
+                  value={field.value || ''}
+                  className="h-9"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`steps.${index}.distance`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Dist. (km)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
+                  }
+                  className="h-9"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`steps.${index}.pace`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">Allure</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="00:00"
+                  {...field}
+                  value={field.value || ''}
+                  className="h-9"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`steps.${index}.hr`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs">FC</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
+                  }
+                  className="h-9"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function IntervalFields({
   control,
   onEntryModeChange,
-  setValue,
   watch,
 }: IntervalFieldsProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [isCustomType, setIsCustomType] = useState(false);
   const [effortMode, setEffortMode] = useState<'time' | 'distance'>('time');
   const [recoveryMode, setRecoveryMode] = useState<'time' | 'distance'>('time');
+  
+  const { fields, replace, move, remove } = useFieldArray({
+    control,
+    name: 'steps',
+  });
+
   const repetitionCount = watch('repetitionCount') || 0;
   const currentWorkoutType = watch('workoutType');
+  const prevRepetitionCount = useRef(repetitionCount);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (currentWorkoutType && !WORKOUT_TYPES.includes(currentWorkoutType)) {
@@ -56,65 +231,17 @@ export function IntervalFields({
   const effortDistance = watch('effortDistance');
   const recoveryDuration = watch('recoveryDuration');
   const recoveryDistance = watch('recoveryDistance');
-  const steps = watch('steps') || [];
+  // We need to watch steps to get current values for updates
+  const currentSteps = watch('steps') || [];
 
   useEffect(() => {
-    if (repetitionCount > 0) {
-      const hasRealData = steps.some((step: IntervalStep) =>
-        (step.duration && step.duration !== '') ||
-        (step.distance !== null && step.distance !== undefined && step.distance > 0) ||
-        (step.pace && step.pace !== '') ||
-        (step.hr !== null && step.hr !== undefined && step.hr > 0)
-      );
-
-      if (hasRealData) {
-        let newSteps = [...steps];
-        let hasChanges = false;
-
-        newSteps = newSteps.map((step: IntervalStep) => {
-          if (step.stepType === 'effort') {
-            const shouldUpdateDuration = effortDuration !== undefined && effortDuration !== null && effortDuration !== '';
-            const shouldUpdateDistance = effortDistance !== undefined && effortDistance !== null;
-
-            if (shouldUpdateDuration || shouldUpdateDistance) {
-              hasChanges = true;
-              return {
-                ...step,
-                ...(shouldUpdateDuration ? { duration: effortDuration } : {}),
-                ...(shouldUpdateDistance ? { distance: effortDistance } : {}),
-              };
-            }
-          } else if (step.stepType === 'recovery') {
-            const shouldUpdateDuration = recoveryDuration !== undefined && recoveryDuration !== null && recoveryDuration !== '';
-            const shouldUpdateDistance = recoveryDistance !== undefined && recoveryDistance !== null;
-
-            if (shouldUpdateDuration || shouldUpdateDistance) {
-              hasChanges = true;
-              return {
-                ...step,
-                ...(shouldUpdateDuration ? { duration: recoveryDuration } : {}),
-                ...(shouldUpdateDistance ? { distance: recoveryDistance } : {}),
-              };
-            }
-          }
-          return step;
-        });
-
-        if (hasChanges) {
-          setValue('steps', newSteps);
-          onEntryModeChange('detailed');
-        }
-
-        return;
-      }
-
-      const expectedStepCount = 1 + repetitionCount * 2 - 1 + 1;
-
-      let newSteps = [...steps];
-      let hasChanges = false;
-
-      if (steps.length !== expectedStepCount) {
-        newSteps = [];
+    // If repetition count changed, regenerate everything
+    if (repetitionCount !== prevRepetitionCount.current) {
+      // Only regenerate if we have a valid count
+      if (repetitionCount > 0) {
+        prevRepetitionCount.current = repetitionCount;
+        
+        const newSteps: IntervalStep[] = [];
         let stepNumber = 1;
 
         newSteps.push({
@@ -156,44 +283,60 @@ export function IntervalFields({
           pace: '',
           hr: null,
         });
-
-        hasChanges = true;
-      } else {
-        newSteps = newSteps.map((step: IntervalStep) => {
-          if (step.stepType === 'effort') {
-            const shouldUpdateDuration = effortDuration !== undefined && effortDuration !== null && effortDuration !== '';
-            const shouldUpdateDistance = effortDistance !== undefined && effortDistance !== null;
-
-            if (shouldUpdateDuration || shouldUpdateDistance) {
-              hasChanges = true;
-              return {
-                ...step,
-                ...(shouldUpdateDuration ? { duration: effortDuration } : {}),
-                ...(shouldUpdateDistance ? { distance: effortDistance } : {}),
-              };
-            }
-          } else if (step.stepType === 'recovery') {
-            const shouldUpdateDuration = recoveryDuration !== undefined && recoveryDuration !== null && recoveryDuration !== '';
-            const shouldUpdateDistance = recoveryDistance !== undefined && recoveryDistance !== null;
-
-            if (shouldUpdateDuration || shouldUpdateDistance) {
-              hasChanges = true;
-              return {
-                ...step,
-                ...(shouldUpdateDuration ? { duration: recoveryDuration } : {}),
-                ...(shouldUpdateDistance ? { distance: recoveryDistance } : {}),
-              };
-            }
-          }
-          return step;
-        });
-      }
-
-      if (hasChanges) {
-        setValue('steps', newSteps);
+        
+        replace(newSteps);
         onEntryModeChange('detailed');
+      } else {
+        // If repetition count is 0 or invalid, maybe clear steps? 
+        // Or just let it be.
+        prevRepetitionCount.current = repetitionCount;
       }
+      return;
     }
+
+    // Determine if we should update existing steps values
+    let stepsToUpdate = [...currentSteps];
+    let hasChanges = false;
+    
+    stepsToUpdate = stepsToUpdate.map((step: IntervalStep) => {
+      const updatedStep = { ...step };
+      let changed = false;
+
+      if (step.stepType === 'effort') {
+        const shouldUpdateDuration = effortDuration !== undefined && effortDuration !== null && effortDuration !== '';
+        const shouldUpdateDistance = effortDistance !== undefined && effortDistance !== null;
+
+        if (shouldUpdateDuration && step.duration !== effortDuration) {
+           updatedStep.duration = effortDuration;
+           changed = true;
+        }
+        if (shouldUpdateDistance && step.distance !== effortDistance) {
+           updatedStep.distance = effortDistance;
+           changed = true;
+        }
+      } else if (step.stepType === 'recovery') {
+        const shouldUpdateDuration = recoveryDuration !== undefined && recoveryDuration !== null && recoveryDuration !== '';
+        const shouldUpdateDistance = recoveryDistance !== undefined && recoveryDistance !== null;
+
+        if (shouldUpdateDuration && step.duration !== recoveryDuration) {
+           updatedStep.duration = recoveryDuration;
+           changed = true;
+        }
+        if (shouldUpdateDistance && step.distance !== recoveryDistance) {
+           updatedStep.distance = recoveryDistance;
+           changed = true;
+        }
+      }
+      
+      if (changed) hasChanges = true;
+      return updatedStep;
+    });
+
+    if (hasChanges) {
+      replace(stepsToUpdate);
+      onEntryModeChange('detailed');
+    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     repetitionCount,
@@ -201,9 +344,26 @@ export function IntervalFields({
     effortDistance,
     recoveryDuration,
     recoveryDistance,
-    setValue,
+    replace,
     onEntryModeChange,
+    // currentSteps excluded from deps to avoid loop, but used inside
   ]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      onEntryModeChange('detailed');
+      const oldIndex = fields.findIndex((f) => f.id === active.id);
+      const newIndex = fields.findIndex((f) => f.id === over.id);
+      move(oldIndex, newIndex);
+    }
+  };
+
+  const handleRemove = (index: number) => {
+    onEntryModeChange('detailed');
+    remove(index);
+  };
 
   return (
     <div className="space-y-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
@@ -321,106 +481,34 @@ export function IntervalFields({
               />
             </div>
 
-            {repetitionCount > 0 && (
+            {(repetitionCount > 0 || fields.length > 0) && (
               <div className="space-y-4">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  Étapes ({watch('steps')?.length || 0})
+                  Étapes ({fields.length})
                 </h4>
-                <div className="space-y-4">
-                  {(watch('steps') || []).map((step: IntervalStep, index: number) => (
-                    <div key={index} className="rounded-md border border-border/50 p-4 space-y-3 bg-background/50">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm">
-                          {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS]}{' '}
-                          {step.stepType === 'effort' && `${Math.floor(index / 2) + 1}`}
-                        </h4>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3">
-                        <FormField
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={fields}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {fields.map((field, index) => (
+                        <SortableIntervalStep
+                          key={field.id}
+                          id={field.id}
+                          index={index}
+                          step={currentSteps[index] || field}
                           control={control}
-                          name={`steps.${index}.duration`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Durée</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="00:00"
-                                  {...field}
-                                  value={field.value || ''}
-                                  className="h-9"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          onRemove={handleRemove}
                         />
-                        <FormField
-                          control={control}
-                          name={`steps.${index}.distance`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Dist. (km)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="0"
-                                  {...field}
-                                  value={field.value ?? ''}
-                                  onChange={(e) =>
-                                    field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
-                                  }
-                                  className="h-9"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={control}
-                          name={`steps.${index}.pace`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Allure</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="00:00"
-                                  {...field}
-                                  value={field.value || ''}
-                                  className="h-9"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={control}
-                          name={`steps.${index}.hr`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">FC</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  placeholder="0"
-                                  {...field}
-                                  value={field.value ?? ''}
-                                  onChange={(e) =>
-                                    field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                                  }
-                                  className="h-9"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               </div>
             )}
           </div>
