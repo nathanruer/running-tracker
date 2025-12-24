@@ -1,16 +1,16 @@
 'use client';
 
-import { Control, UseFormWatch, useFieldArray } from 'react-hook-form';
+import { Control, UseFormWatch, UseFormSetValue, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
-import { ChevronDown, GripVertical, Trash2 } from 'lucide-react';
+import { ChevronDown, GripVertical, Trash2, Plus, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { type IntervalStep } from '@/lib/types';
 import { WorkoutTypeField, WORKOUT_TYPES } from './workout-type-field';
 import { EffortRecoverySection } from './effort-recovery-section';
-import { STEP_TYPE_LABELS } from './interval-step-fields';
+import { STEP_TYPE_LABELS, IntervalStepFields } from './interval-step-fields';
 import {
   DndContext,
   closestCenter,
@@ -27,6 +27,12 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface FormValues {
   intervalDetails?: string | null;
@@ -47,6 +53,7 @@ interface IntervalFieldsProps {
   control: Control<FormValues>;
   onEntryModeChange: (mode: 'quick' | 'detailed') => void;
   watch: UseFormWatch<FormValues>;
+  setValue?: UseFormSetValue<FormValues>;
 }
 
 interface SortableIntervalStepProps {
@@ -54,10 +61,11 @@ interface SortableIntervalStepProps {
   index: number;
   step: IntervalStep;
   control: Control<FormValues>;
+  setValue?: UseFormSetValue<FormValues>;
   onRemove: (index: number) => void;
 }
 
-function SortableIntervalStep({ id, index, step, control, onRemove }: SortableIntervalStepProps) {
+function SortableIntervalStep({ id, index, step, control, setValue, onRemove }: SortableIntervalStepProps) {
   const {
     attributes,
     listeners,
@@ -72,6 +80,12 @@ function SortableIntervalStep({ id, index, step, control, onRemove }: SortableIn
     transition,
     zIndex: isDragging ? 1 : 0,
     position: isDragging ? 'relative' as const : undefined,
+  };
+
+  const handleTypeChange = (newType: 'warmup' | 'effort' | 'recovery' | 'cooldown') => {
+    if (setValue) {
+      setValue(`steps.${index}.stepType`, newType);
+    }
   };
 
   return (
@@ -92,10 +106,34 @@ function SortableIntervalStep({ id, index, step, control, onRemove }: SortableIn
           >
             <GripVertical className="h-4 w-4" />
           </Button>
-          <h4 className="font-medium text-sm">
-            {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS] || step.stepType}{' '}
-            {step.stepType === 'effort' && `${Math.ceil((index + 1) / 2)}`}
-          </h4>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 font-medium text-sm hover:bg-muted/50"
+              >
+                {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS] || step.stepType}
+                {step.stepType === 'effort' && ` ${Math.ceil((index + 1) / 2)}`}
+                <ChevronDownIcon className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => handleTypeChange('warmup')}>
+                {STEP_TYPE_LABELS.warmup}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleTypeChange('effort')}>
+                {STEP_TYPE_LABELS.effort}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleTypeChange('recovery')}>
+                {STEP_TYPE_LABELS.recovery}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleTypeChange('cooldown')}>
+                {STEP_TYPE_LABELS.cooldown}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <Button
           type="button"
@@ -107,89 +145,7 @@ function SortableIntervalStep({ id, index, step, control, onRemove }: SortableIn
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      <div className="grid grid-cols-4 gap-3 pl-8">
-        <FormField
-          control={control}
-          name={`steps.${index}.duration`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs">Durée</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="00:00"
-                  {...field}
-                  value={field.value || ''}
-                  className="h-9"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name={`steps.${index}.distance`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs">Dist. (km)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0"
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) =>
-                    field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
-                  }
-                  className="h-9"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name={`steps.${index}.pace`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs">Allure</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="00:00"
-                  {...field}
-                  value={field.value || ''}
-                  className="h-9"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name={`steps.${index}.hr`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs">FC</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) =>
-                    field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                  }
-                  className="h-9"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      <IntervalStepFields stepIndex={index} control={control} setValue={setValue} />
     </div>
   );
 }
@@ -198,13 +154,14 @@ export function IntervalFields({
   control,
   onEntryModeChange,
   watch,
+  setValue,
 }: IntervalFieldsProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [isCustomType, setIsCustomType] = useState(false);
   const [effortMode, setEffortMode] = useState<'time' | 'distance'>('time');
   const [recoveryMode, setRecoveryMode] = useState<'time' | 'distance'>('time');
   
-  const { fields, replace, move, remove } = useFieldArray({
+  const { fields, replace, move, remove, append } = useFieldArray({
     control,
     name: 'steps',
   });
@@ -365,6 +322,28 @@ export function IntervalFields({
     remove(index);
   };
 
+  const handleAddManualInterval = () => {
+    onEntryModeChange('detailed');
+    
+    // Find the next step number
+    const currentSteps = watch('steps') || [];
+    const nextStepNumber = currentSteps.length > 0 
+      ? Math.max(...currentSteps.map(step => step.stepNumber || 0)) + 1
+      : 1;
+    
+    // Add a new warmup step by default (can be changed by user)
+    const newStep: IntervalStep = {
+      stepNumber: nextStepNumber,
+      stepType: 'warmup',
+      duration: '',
+      distance: null,
+      pace: '',
+      hr: null,
+    };
+    
+    append(newStep);
+  };
+
   return (
     <div className="space-y-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
       <div className="grid grid-cols-2 gap-4">
@@ -425,7 +404,7 @@ export function IntervalFields({
         />
       </div>
 
-      <div className="flex justify-start pt-2">
+      <div className="flex justify-between items-center pt-2">
         <Button
           type="button"
           variant="ghost"
@@ -439,6 +418,16 @@ export function IntervalFields({
             }`}
           />
           {showDetails ? 'Masquer les détails avancés' : 'Afficher les détails avancés'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleAddManualInterval}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Ajouter un intervalle manuellement
         </Button>
       </div>
 
@@ -503,6 +492,7 @@ export function IntervalFields({
                           index={index}
                           step={currentSteps[index] || field}
                           control={control}
+                          setValue={setValue}
                           onRemove={handleRemove}
                         />
                       ))}

@@ -1,4 +1,4 @@
-import { Control } from 'react-hook-form';
+import { Control, UseFormSetValue } from 'react-hook-form';
 import {
   FormControl,
   FormField,
@@ -7,18 +7,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { type IntervalFormValues } from '@/lib/validation/session-form';
 
 interface IntervalStepFieldsProps {
   stepIndex: number;
   control: Control<IntervalFormValues>;
+  setValue?: UseFormSetValue<IntervalFormValues>;
 }
 
 const STEP_TYPE_LABELS: Record<string, string> = {
@@ -30,38 +24,20 @@ const STEP_TYPE_LABELS: Record<string, string> = {
 
 export function IntervalStepFields({ stepIndex, control }: IntervalStepFieldsProps) {
   return (
-    <div className="grid grid-cols-4 gap-3">
-      <FormField
-        control={control}
-        name={`steps.${stepIndex}.stepType`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Type</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="warmup">{STEP_TYPE_LABELS.warmup}</SelectItem>
-                <SelectItem value="effort">{STEP_TYPE_LABELS.effort}</SelectItem>
-                <SelectItem value="recovery">{STEP_TYPE_LABELS.recovery}</SelectItem>
-                <SelectItem value="cooldown">{STEP_TYPE_LABELS.cooldown}</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="grid grid-cols-3 gap-3">
       <FormField
         control={control}
         name={`steps.${stepIndex}.duration`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Durée</FormLabel>
+            <FormLabel className="text-xs">Durée</FormLabel>
             <FormControl>
-              <Input placeholder="00:00:00" {...field} value={field.value || ''} />
+              <Input
+                placeholder="00:00"
+                {...field}
+                value={field.value || ''}
+                className="h-9"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -72,9 +48,14 @@ export function IntervalStepFields({ stepIndex, control }: IntervalStepFieldsPro
         name={`steps.${stepIndex}.pace`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Allure</FormLabel>
+            <FormLabel className="text-xs">Allure</FormLabel>
             <FormControl>
-              <Input placeholder="05:30" {...field} value={field.value || ''} />
+              <Input
+                placeholder="00:00"
+                {...field}
+                value={field.value || ''}
+                className="h-9"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -85,16 +66,17 @@ export function IntervalStepFields({ stepIndex, control }: IntervalStepFieldsPro
         name={`steps.${stepIndex}.hr`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>FC</FormLabel>
+            <FormLabel className="text-xs">FC</FormLabel>
             <FormControl>
               <Input
                 type="number"
-                placeholder="160"
+                placeholder="0"
                 {...field}
                 value={field.value ?? ''}
                 onChange={(e) =>
                   field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
                 }
+                className="h-9"
               />
             </FormControl>
             <FormMessage />
