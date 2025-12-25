@@ -152,6 +152,10 @@ const DashboardPage = () => {
     }
   }, [user, userLoading, router]);
 
+  if (!user && !userLoading) {
+    return null;
+  }
+
   useEffect(() => {
     if (selectedType !== 'all' && availableTypes.length > 0 && !availableTypes.includes(selectedType)) {
       setSelectedType('all');

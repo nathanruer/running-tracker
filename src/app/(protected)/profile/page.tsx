@@ -57,15 +57,13 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
+      
+      queryClient.setQueryData(['user'], null);
       queryClient.clear();
 
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.replace('/');
-
-      toast({
-        title: 'Déconnexion réussie',
-        description: 'À bientôt!',
-      });
+      window.location.href = '/';
+      
+      fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
     } catch {
       setIsLoggingOut(false);
       setShowLogoutDialog(false);
@@ -76,6 +74,14 @@ export default function ProfilePage() {
       });
     }
   };
+
+  if (isLoggingOut) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
