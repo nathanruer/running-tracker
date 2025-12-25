@@ -3,23 +3,35 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LogOut, User as UserIcon, BarChart3, Calendar } from 'lucide-react';
+import { User as UserIcon, BarChart3, Calendar, LogOut, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ProfileForm } from '@/components/profile/profile-form';
 import { TrainingZonesTable } from '@/components/profile/training-zones-table';
 import { AnalyticsView } from '@/components/profile/analytics-view';
 import { CalendarView } from '@/components/profile/calendar-view';
 import { StravaAccountCard } from '@/components/profile/strava-account-card';
+import { getCurrentUser, getSessions } from '@/lib/services/api-client';
 import { useToast } from '@/hooks/use-toast';
-import { getCurrentUser, logoutUser, getSessions } from '@/lib/services/api-client';
 
 export default function ProfilePage() {
-  const queryClient = useQueryClient();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [activeView, setActiveView] = useState<'profile' | 'analytics' | 'calendar'>('profile');
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: user, isLoading: loading } = useQuery({
     queryKey: ['user'],
@@ -45,11 +57,9 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-
       queryClient.clear();
 
-      await logoutUser();
-
+      await fetch('/api/auth/logout', { method: 'POST' });
       router.replace('/');
 
       toast({
@@ -58,6 +68,7 @@ export default function ProfilePage() {
       });
     } catch {
       setIsLoggingOut(false);
+      setShowLogoutDialog(false);
       toast({
         title: 'Erreur',
         description: 'Erreur lors de la déconnexion',
@@ -66,36 +77,14 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoggingOut) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-lg font-medium text-muted-foreground animate-pulse">
-          Déconnexion...
-        </p>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-3xl font-bold text-gradient">Mon Profil</h1>
-            </div>
-            <Button variant="destructive" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
-            </Button>
-          </div>
+      <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+        <div className="mx-auto max-w-[90rem]">
+          <h1 className="text-4xl font-bold text-gradient mb-8 md:hidden">Mon Profil</h1>
 
-          <div className="mb-8">
-            <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-full sm:w-fit overflow-x-auto">
               <Button
                 variant={activeView === 'profile' ? 'default' : 'ghost'}
                 onClick={() => setActiveView('profile')}
@@ -121,6 +110,15 @@ export default function ProfilePage() {
                 Calendrier
               </Button>
             </div>
+
+            <Button
+              variant="ghost"
+              onClick={() => setShowLogoutDialog(true)}
+              className="hidden md:flex shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Se déconnecter
+            </Button>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3 items-start">
@@ -153,6 +151,19 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          <Card className="md:hidden mt-8 border-border/50 bg-card">
+            <CardContent className="p-6">
+              <Button
+                onClick={() => setShowLogoutDialog(true)}
+                variant="destructive"
+                className="w-full"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Se déconnecter
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -163,23 +174,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-3xl font-bold text-gradient">Mon Profil</h1>
-          </div>
-          <Button variant="destructive" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Déconnexion
-          </Button>
-        </div>
+    <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+      <div className="mx-auto max-w-[90rem]">
+        <h1 className="text-4xl font-bold text-gradient mb-8 md:hidden">Mon Profil</h1>
 
-        <div className="mb-8">
-          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg w-full sm:w-fit overflow-x-auto">
             <Button
               variant={activeView === 'profile' ? 'default' : 'ghost'}
               onClick={() => setActiveView('profile')}
@@ -205,6 +205,15 @@ export default function ProfilePage() {
               Calendrier
             </Button>
           </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => setShowLogoutDialog(true)}
+            className="hidden md:flex shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Se déconnecter
+          </Button>
         </div>
 
         {activeView === 'analytics' && (
@@ -216,18 +225,61 @@ export default function ProfilePage() {
         )}
 
         {activeView === 'profile' && (
-          <div className="grid gap-8 md:grid-cols-3 items-start">
-            <div className="space-y-6">
-              <ProfileForm user={user} />
-              <StravaAccountCard stravaId={user.stravaId} />
+          <>
+            <div className="grid gap-8 md:grid-cols-3 items-start">
+              <div className="space-y-6">
+                <ProfileForm user={user} />
+                <StravaAccountCard stravaId={user.stravaId} />
+              </div>
+              <TrainingZonesTable
+                maxHeartRate={user.maxHeartRate ?? undefined}
+                vma={user.vma ?? undefined}
+              />
             </div>
-            <TrainingZonesTable
-              maxHeartRate={user.maxHeartRate ?? undefined}
-              vma={user.vma ?? undefined}
-            />
-          </div>
+
+            <Card className="md:hidden mt-8 border-border/50 bg-card">
+              <CardContent className="p-6">
+                <Button
+                  onClick={() => setShowLogoutDialog(true)}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Se déconnecter
+                </Button>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Déconnexion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir vous déconnecter ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoggingOut}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Déconnexion...
+                </>
+              ) : (
+                'Se déconnecter'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

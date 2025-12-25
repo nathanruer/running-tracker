@@ -43,7 +43,6 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
     dateError: customDateError,
   } = useDateRangeFilter(completedSessions, 'all');
 
-  // Filter planned sessions manually using the same date range criteria
   const filteredPlannedSessions = useMemo(() => {
     const plannedSessions = sessions.filter((s) => s.status === 'planned' && s.week !== null);
 
@@ -81,7 +80,6 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
     });
   }, [sessions, dateRange, customStartDate, customEndDate]);
 
-  // Calculate statistics using the utility function
   const stats = useMemo(
     () => calculateWeeklyStats(filteredCompletedSessions, filteredPlannedSessions),
     [filteredCompletedSessions, filteredPlannedSessions]
@@ -151,17 +149,17 @@ export function AnalyticsView({ sessions }: AnalyticsViewProps) {
       <Card className="border-border/50">
         <CardHeader>
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Évolution hebdomadaire</CardTitle>
                 <CardDescription>
                   Kilomètres parcourus par semaine
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <ExportWeeklyAnalytics data={stats.chartData} />
                 <Select value={dateRange} onValueChange={(value) => setDateRange(value as '2weeks' | '4weeks' | '12weeks' | 'all' | 'custom')}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

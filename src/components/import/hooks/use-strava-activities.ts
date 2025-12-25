@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useApiErrorHandler } from './use-api-error-handler';
+import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 
 export interface StravaActivity {
   id: number;

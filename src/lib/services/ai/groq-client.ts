@@ -1,7 +1,7 @@
 import Groq from 'groq-sdk';
 
 export const GROQ_MODEL = 'openai/gpt-oss-120b';
-export const GROQ_MAX_TOKENS = 2500;
+export const GROQ_MAX_TOKENS = 12000;
 export const GROQ_TEMPERATURE = 0.7;
 
 /**

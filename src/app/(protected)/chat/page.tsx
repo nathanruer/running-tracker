@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ArrowLeft, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { ChatSidebar } from '@/components/chat/chat-sidebar';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
@@ -21,25 +20,29 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
-    if (conversations.length > 0) {
+    if (conversations.length > 0 && window.innerWidth >= 768) {
       router.push(`/chat/${conversations[0].id}`);
     }
   }, [conversations, router]);
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-gradient">Bob - ton coach IA</h1>
-        </div>
+    <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+      <div className="mx-auto max-w-[90rem]">
+        <h1 className="text-4xl font-bold text-gradient mb-8 md:hidden">Coach IA</h1>
 
-        <div className="flex h-[calc(100vh-12rem)] gap-4">
+        <div className="md:hidden">
           <ChatSidebar
             selectedConversationId={null}
             onSelectConversation={(id) => router.push(`/chat/${id}`)}
+            isMobile={true}
+          />
+        </div>
+
+        <div className="hidden md:flex h-[calc(100vh-12rem)] gap-4">
+          <ChatSidebar
+            selectedConversationId={null}
+            onSelectConversation={(id) => router.push(`/chat/${id}`)}
+            isMobile={false}
           />
 
           <Card className="flex-1 flex items-center justify-center">

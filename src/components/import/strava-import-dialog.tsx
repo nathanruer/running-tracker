@@ -23,7 +23,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { bulkImportSessions } from '@/lib/services/api-client';
-import { useStravaActivities, type StravaActivity } from '@/hooks/use-strava-activities';
+import { useStravaActivities, type StravaActivity } from './hooks/use-strava-activities';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';

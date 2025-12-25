@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { deleteSession, bulkDeleteSessions } from '@/lib/services/api-client';
-import { useApiErrorHandler } from './use-api-error-handler';
+import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import type { TrainingSession } from '@/lib/types';
 
 /**

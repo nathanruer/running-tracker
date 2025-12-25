@@ -13,20 +13,18 @@ export function IntervalImportSection({
       <div className="flex items-center gap-2">
         <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
-          Importer les intervalles
+          Importer les intervalles depuis CSV
         </span>
       </div>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onCsvClick}
-        >
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          CSV
-        </Button>
-      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={onCsvClick}
+      >
+        <FileSpreadsheet className="mr-2 h-4 w-4" />
+        Importer CSV
+      </Button>
     </div>
   );
 }

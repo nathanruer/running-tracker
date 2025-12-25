@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpDown, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { ArrowUpDown, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { PlannedSessionRow } from './planned-session-row';
 import { CompletedSessionRow } from './completed-session-row';
@@ -48,6 +48,7 @@ interface SessionsTableProps {
   onEdit: (session: TrainingSession) => void;
   onDelete: (id: string) => void;
   onBulkDelete: (ids: string[]) => Promise<void>;
+  onNewSession?: () => void;
   initialLoading: boolean;
 }
 
@@ -61,6 +62,7 @@ export function SessionsTable({
   onEdit,
   onDelete,
   onBulkDelete,
+  onNewSession,
   initialLoading,
 }: SessionsTableProps) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -198,40 +200,51 @@ export function SessionsTable({
     <>
     <Card className="border-border/50">
       <CardHeader className="flex flex-col gap-4 space-y-0">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Select value={selectedType} onValueChange={onTypeChange}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Type de séance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                {availableTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={viewMode}
-              onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
+          {onNewSession && (
+            <Button
+              onClick={onNewSession}
+              className="gradient-violet shrink-0 h-10 w-10 p-0 md:w-auto md:h-10 md:px-4 md:py-2"
+              title="Nouvelle séance"
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Affichage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="paginated">10 dernières</SelectItem>
-                <SelectItem value="all">Tout afficher</SelectItem>
-              </SelectContent>
-            </Select>
-            <ExportSessions
-              selectedType={selectedType}
-              selectedSessions={selectedSessions}
-              allSessions={sessions}
-            />
-          </div>
+              <Plus className="h-5 w-5 md:mr-2" />
+              <span className="hidden md:inline">Ajouter une séance</span>
+            </Button>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Select value={selectedType} onValueChange={onTypeChange}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Type de séance" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              {availableTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={viewMode}
+            onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Affichage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="paginated">10 dernières</SelectItem>
+              <SelectItem value="all">Tout afficher</SelectItem>
+            </SelectContent>
+          </Select>
+          <ExportSessions
+            selectedType={selectedType}
+            selectedSessions={selectedSessions}
+            allSessions={sessions}
+          />
         </div>
 
         {selectedSessions.size > 0 && (
@@ -328,7 +341,7 @@ export function SessionsTable({
                     <span className={sortColumn === 'perceivedExertion' ? 'text-foreground' : ''}>RPE</span>
                   </button>
                 </TableHead>
-                <TableHead className="min-w-[200px]">Commentaires</TableHead>
+                <TableHead className="min-w-[250px] xl:min-w-[350px] 2xl:min-w-[450px]">Commentaires</TableHead>
                 <TableHead className="w-16 text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>

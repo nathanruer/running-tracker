@@ -71,9 +71,15 @@
     @apply border-border;
   }
 
+  html,
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
+    overscroll-behavior: none;
+  }
+
+  html {
+    scrollbar-gutter: stable;
   }
 }
 
@@ -95,7 +101,6 @@
 }
 
 @layer base {
-  /* Scrollbars custom pour Chrome, Edge, Safari */
   .scrollbar-custom::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -116,7 +121,6 @@
     background-color: hsl(var(--primary-foreground));
   }
 
-  /* Scrollbar pour Firefox */
   .scrollbar-custom {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--secondary)) hsl(var(--background));

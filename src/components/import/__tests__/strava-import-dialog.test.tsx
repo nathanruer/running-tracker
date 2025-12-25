@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { StravaImportDialog } from '../strava-import-dialog';
 import { QueryClient } from '@tanstack/react-query';
-import type { StravaActivity } from '@/hooks/use-strava-activities';
+import type { StravaActivity } from '../hooks/use-strava-activities';
 
 const mockHandleError = vi.fn();
 const mockHandleSuccess = vi.fn();
@@ -42,7 +42,7 @@ const mockActivities: StravaActivity[] = [
 
 const mockUseStravaActivities = vi.fn();
 
-vi.mock('@/hooks/use-strava-activities', () => ({
+vi.mock('../hooks/use-strava-activities', () => ({
   useStravaActivities: (open: boolean) => mockUseStravaActivities(open),
 }));
 

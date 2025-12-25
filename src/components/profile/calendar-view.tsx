@@ -98,12 +98,12 @@ export function CalendarView({ sessions }: CalendarViewProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Calendrier d&apos;entraînement</CardTitle>
               <CardDescription>Visualisez votre historique et vos séances programmées</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="icon"
@@ -112,7 +112,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium min-w-[140px] text-center">
+              <span className="text-sm font-medium flex-1 sm:flex-none sm:min-w-[140px] text-center">
                 {format(currentMonth, 'MMMM yyyy', { locale: fr })}
               </span>
               <Button

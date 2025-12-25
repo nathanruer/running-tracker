@@ -19,7 +19,7 @@ vi.mock('@tanstack/react-query', () => ({
   InfiniteData: vi.fn(),
 }));
 
-vi.mock('../use-api-error-handler', () => ({
+vi.mock('@/hooks/use-api-error-handler', () => ({
   useApiErrorHandler: () => ({
     handleError: mockHandleError,
     handleSuccess: mockHandleSuccess,

@@ -35,9 +35,10 @@ interface Conversation {
 interface ChatSidebarProps {
   selectedConversationId: string | null;
   onSelectConversation: (id: string) => void;
+  isMobile?: boolean;
 }
 
-export function ChatSidebar({ selectedConversationId, onSelectConversation }: ChatSidebarProps) {
+export function ChatSidebar({ selectedConversationId, onSelectConversation, isMobile = false }: ChatSidebarProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -172,7 +173,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation }: Ch
 
   return (
     <>
-      <Card className="w-80 h-full flex flex-col p-4">
+      <Card className={`${isMobile ? 'w-full border-0 shadow-none' : 'w-80'} h-full flex flex-col p-4`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Conversations</h2>
           <Button
@@ -222,7 +223,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation }: Ch
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="opacity-0 group-hover:opacity-100"
+                    className={isMobile ? '' : 'opacity-0 group-hover:opacity-100'}
                   >
                     <MoreVertical className="h-4 w-4" />
                   </Button>

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import SessionDialog from '@/components/session/session-dialog';
 import { StravaImportDialog } from '@/components/import/strava-import-dialog';
 import { CsvImportDialog } from '@/components/import/csv-import-dialog';
-import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SessionsTable } from '@/components/dashboard/sessions-table';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSessionMutations } from '@/hooks/use-session-mutations';
+import { useSessionMutations } from '@/components/dashboard/hooks/use-session-mutations';
 import {
   getCurrentUser,
   getSessions,
@@ -161,9 +160,10 @@ const DashboardPage = () => {
 
   if (showGlobalLoading) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="mx-auto max-w-7xl">
-          <DashboardHeader />
+      <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+        <div className="mx-auto max-w-[90rem]">
+          <h1 className="text-4xl font-bold text-gradient mb-6 md:hidden">Dashboard</h1>
+
           <SessionsTable
             sessions={[]}
             availableTypes={[]}
@@ -312,9 +312,9 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        <DashboardHeader onNewSession={openNewSession} />
+    <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+      <div className="mx-auto max-w-[90rem]">
+        <h1 className="text-4xl font-bold text-gradient mb-6 md:hidden">Dashboard</h1>
 
         {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
           <SessionsTable
@@ -327,6 +327,7 @@ const DashboardPage = () => {
             onEdit={handleEdit}
             onDelete={setDeletingId}
             onBulkDelete={handleBulkDelete}
+            onNewSession={openNewSession}
             initialLoading={initialLoading}
           />
         ) : (

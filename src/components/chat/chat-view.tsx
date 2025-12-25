@@ -273,7 +273,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
   return (
     <Card className="h-full flex flex-col">
       <div className="border-b p-4">
-        <h2 className="text-lg font-semibold">{conversation?.title || 'Chargement...'}</h2>
+        <h2 className="text-lg font-semibold truncate">{conversation?.title || 'Chargement...'}</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
