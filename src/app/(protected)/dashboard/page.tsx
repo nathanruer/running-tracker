@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import SessionDialog from '@/components/session/session-dialog';
-import { StravaImportDialog } from '@/components/import/strava-import-dialog';
-import { CsvImportDialog } from '@/components/import/csv-import-dialog';
-import { SessionsTable } from '@/components/dashboard/sessions-table';
+import SessionDialog from '@/features/sessions/components/session-dialog';
+import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
+import { CsvImportDialog } from '@/features/import/components/csv-import-dialog';
+import { SessionsTable } from '@/features/dashboard/components/sessions-table';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSessionMutations } from '@/components/dashboard/hooks/use-session-mutations';
+import { useSessionMutations } from '@/features/sessions/hooks/use-session-mutations';
 import {
   getCurrentUser,
   getSessions,

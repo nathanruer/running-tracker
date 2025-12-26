@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ChatSidebar } from '@/components/chat/chat-sidebar';
+import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 

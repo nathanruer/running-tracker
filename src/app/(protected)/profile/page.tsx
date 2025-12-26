@@ -17,11 +17,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ProfileForm } from '@/components/profile/profile-form';
-import { TrainingZonesTable } from '@/components/profile/training-zones-table';
-import { AnalyticsView } from '@/components/profile/analytics-view';
-import { CalendarView } from '@/components/profile/calendar-view';
-import { StravaAccountCard } from '@/components/profile/strava-account-card';
+import { ProfileForm } from '@/features/profile/components/profile-form';
+import { TrainingZonesTable } from '@/features/profile/components/training-zones-table';
+import { AnalyticsView } from '@/features/profile/components/analytics-view';
+import { CalendarView } from '@/features/profile/components/calendar-view';
+import { StravaAccountCard } from '@/features/profile/components/strava-account-card';
 import { getCurrentUser, getSessions } from '@/lib/services/api-client';
 import { useToast } from '@/hooks/use-toast';
 

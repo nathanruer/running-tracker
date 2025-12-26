@@ -62,8 +62,8 @@ describe('api-helpers', () => {
           received: 'number',
           path: ['field'],
           message: 'Expected string, received number',
-        },
-      ]);
+        } as unknown,
+      ] as never);
 
       const result = handleZodError(zodError);
 
@@ -79,15 +79,15 @@ describe('api-helpers', () => {
           received: 'number',
           path: ['field1'],
           message: 'Error 1',
-        },
+        } as unknown,
         {
           code: 'invalid_type',
           expected: 'number',
           received: 'string',
           path: ['field2'],
           message: 'Error 2',
-        },
-      ]);
+        } as unknown,
+      ] as never);
 
       const result = handleZodError(zodError);
       const json = await result.json();
@@ -146,8 +146,8 @@ describe('api-helpers', () => {
           received: 'number',
           path: ['field'],
           message: 'Invalid',
-        },
-      ]);
+        } as unknown,
+      ] as never);
       const fn = vi.fn().mockRejectedValue(zodError);
       const context = { userId: 'user123' };
 

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import LoginCard from '@/components/login-card';
+import LoginCard from '@/features/auth/components/login-card';
 import { SESSION_COOKIE_NAME, verifySessionToken } from '@/lib/auth';
 
 export default async function HomePage() {

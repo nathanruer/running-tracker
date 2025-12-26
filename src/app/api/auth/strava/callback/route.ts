@@ -100,7 +100,6 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Vérifier si l'utilisateur actuel a déjà un compte Strava lié
       if (currentUser.stravaId) {
         logger.error({
           userId: currentUser.id,

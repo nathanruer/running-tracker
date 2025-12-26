@@ -6,7 +6,7 @@ import {
   parseNumber,
   detectColumns,
 } from './csv-import-helpers';
-import type { ParsedSession } from '@/components/import/csv-preview-table';
+import type { ParsedSession } from '@/features/import/components/csv-preview-table';
 
 export interface ParseResult {
   sessions: ParsedSession[];

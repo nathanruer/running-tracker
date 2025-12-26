@@ -10,8 +10,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ChatSidebar } from '@/components/chat/chat-sidebar';
-import { ChatView } from '@/components/chat/chat-view';
+import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
+import { ChatView } from '@/features/chat/components/chat-view';
 
 export default function ChatPage() {
   const router = useRouter();
