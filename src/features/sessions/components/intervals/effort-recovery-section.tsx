@@ -52,7 +52,7 @@ export function EffortRecoverySection({
               <FormItem className={hasExtraFields ? "" : "w-full"}>
                 <FormLabel>Durée</FormLabel>
                 <FormControl>
-                  <Input placeholder="00:00:00" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -69,7 +69,7 @@ export function EffortRecoverySection({
                   <Input
                     type="number"
                     step="0.01"
-                    placeholder="0.0"
+                    placeholder="0"
                     value={(field.value as number) ?? ''}
                     onChange={(e) =>
                       field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
@@ -90,7 +90,7 @@ export function EffortRecoverySection({
               <FormItem>
                 <FormLabel>Allure cible</FormLabel>
                 <FormControl>
-                  <Input placeholder="05:30" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -108,7 +108,7 @@ export function EffortRecoverySection({
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder="160"
+                    placeholder="0"
                     value={(field.value as number) ?? ''}
                     onChange={(e) =>
                       field.onChange(e.target.value === '' ? null : parseInt(e.target.value))

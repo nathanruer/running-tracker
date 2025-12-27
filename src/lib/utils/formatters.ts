@@ -1,26 +1,33 @@
+import { formatDurationSmart as formatDurationSmartUtil, parseDurationToSeconds } from './duration';
+
 /**
- * Formats a duration in seconds to HH:MM:SS format
+ * Formats a duration in seconds to smart format (MM:SS or HH:MM:SS)
+ * Uses MM:SS for durations < 1 hour, HH:MM:SS for >= 1 hour
  * @param seconds - Duration in seconds
- * @returns Formatted duration string (HH:MM:SS)
- * @example formatDuration(3661) // "01:01:01"
+ * @returns Formatted duration string
+ * @example formatDuration(2910) // "48:30" (< 1 hour)
+ * @example formatDuration(5400) // "01:30:00" (>= 1 hour)
+ * @deprecated Use formatDurationSmart from duration.ts for explicit smart formatting
  */
 export function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return formatDurationSmartUtil(seconds);
 }
 
 /**
- * Formats a duration in seconds to MM:SS format (without hours)
- * Useful for shorter intervals or when hours are not needed
+ * Formats a duration in seconds to MM:SS format
  * @param seconds - Duration in seconds
  * @returns Formatted duration string (MM:SS)
  * @example formatDurationShort(125) // "02:05"
+ * @deprecated Use formatDurationSmart from duration.ts which intelligently chooses format
  */
 export function formatDurationShort(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
+  if (seconds < 0 || !isFinite(seconds)) {
+    return '00:00';
+  }
+
+  const roundedSeconds = Math.round(seconds);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const secs = roundedSeconds % 60;
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -98,22 +105,14 @@ export function formatDate(
 /**
  * Parses a duration string (HH:MM:SS or MM:SS) to seconds
  * @param duration - Duration string
- * @returns Duration in seconds
+ * @returns Duration in seconds (returns 0 if invalid)
  * @example parseDuration("01:30:00") // 5400
  * @example parseDuration("05:30") // 330
+ * @deprecated Use parseDurationToSeconds from duration.ts which returns null for invalid input
  */
 export function parseDuration(duration: string): number {
-  const parts = duration.split(':').map(Number);
-
-  if (parts.length === 3) {
-    // HH:MM:SS
-    return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  } else if (parts.length === 2) {
-    // MM:SS
-    return parts[0] * 60 + parts[1];
-  }
-
-  return 0;
+  const result = parseDurationToSeconds(duration);
+  return result ?? 0;
 }
 
 /**

@@ -1,6 +1,7 @@
 import * as z from 'zod';
+import { validateDurationInput, validatePaceInput } from '@/lib/utils/duration';
 
-const nullableNumberRefinement = (n: unknown) => 
+const nullableNumberRefinement = (n: unknown) =>
   n === null || n === undefined || (typeof n === 'number' && !isNaN(n));
 
 const numberRefinement = { message: 'Nombre requis' };
@@ -8,31 +9,58 @@ const numberRefinement = { message: 'Nombre requis' };
 const intervalStepSchema = z.object({
   stepNumber: z.number(),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-  duration: z.string().nullable(),
+  duration: z.string().nullable().refine(
+    (val) => val === null || val === '' || validateDurationInput(val),
+    { message: 'Format: MM:SS ou HH:MM:SS' }
+  ),
   distance: z.number().nullable(),
-  pace: z.string().nullable(),
+  pace: z.string().nullable().refine(
+    (val) => val === null || val === '' || validatePaceInput(val),
+    { message: 'Format: MM:SS' }
+  ),
   hr: z.number().nullable(),
 });
 
 const formSchema = z.object({
   date: z.string(),
   sessionType: z.string().min(1, 'Type de séance requis'),
-  duration: z.string().regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format: HH:MM:SS'),
+  duration: z.string().refine(
+    (val) => val === '' || validateDurationInput(val),
+    { message: 'Format: MM:SS ou HH:MM:SS' }
+  ),
   distance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  avgPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format: MM:SS'),
+  avgPace: z.string().refine(
+    (val) => val === '' || validatePaceInput(val),
+    { message: 'Format: MM:SS' }
+  ),
   avgHeartRate: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  perceivedExertion: z.number().min(0).max(10).nullable().optional().refine(nullableNumberRefinement, numberRefinement),
+  perceivedExertion: z.number().nullable().optional().refine(
+    (val) => val === null || val === undefined || (typeof val === 'number' && val >= 0 && val <= 10),
+    { message: 'Entre 0 et 10' }
+  ),
   comments: z.string(),
   // Interval fields
   workoutType: z.string().optional(),
   repetitionCount: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  effortDuration: z.string().optional(),
-  recoveryDuration: z.string().optional(),
+  effortDuration: z.string().optional().refine(
+    (val) => !val || val === '' || validateDurationInput(val),
+    { message: 'Format: MM:SS ou HH:MM:SS' }
+  ),
+  recoveryDuration: z.string().optional().refine(
+    (val) => !val || val === '' || validateDurationInput(val),
+    { message: 'Format: MM:SS ou HH:MM:SS' }
+  ),
   effortDistance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
   recoveryDistance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  targetEffortPace: z.string().optional(),
+  targetEffortPace: z.string().optional().refine(
+    (val) => !val || val === '' || validatePaceInput(val),
+    { message: 'Format: MM:SS' }
+  ),
   targetEffortHR: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  targetRecoveryPace: z.string().optional(),
+  targetRecoveryPace: z.string().optional().refine(
+    (val) => !val || val === '' || validatePaceInput(val),
+    { message: 'Format: MM:SS' }
+  ),
   steps: z.array(intervalStepSchema).optional(),
 });
 

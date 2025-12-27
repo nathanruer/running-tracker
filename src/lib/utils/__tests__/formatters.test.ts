@@ -13,17 +13,25 @@ import {
 
 describe('formatters', () => {
   describe('formatDuration', () => {
-    it('should format duration in seconds to HH:MM:SS', () => {
-      expect(formatDuration(0)).toBe('00:00:00');
-      expect(formatDuration(61)).toBe('00:01:01');
+    it('should format duration intelligently (MM:SS for < 1h, HH:MM:SS for >= 1h)', () => {
+      // Durations < 1 hour: MM:SS format
+      expect(formatDuration(0)).toBe('00:00');
+      expect(formatDuration(61)).toBe('01:01');
+      expect(formatDuration(3599)).toBe('59:59');
+
+      // Durations >= 1 hour: HH:MM:SS format
+      expect(formatDuration(3600)).toBe('01:00:00');
       expect(formatDuration(3661)).toBe('01:01:01');
       expect(formatDuration(7200)).toBe('02:00:00');
       expect(formatDuration(86399)).toBe('23:59:59');
     });
 
     it('should pad single digits with zeros', () => {
-      expect(formatDuration(5)).toBe('00:00:05');
-      expect(formatDuration(65)).toBe('00:01:05');
+      // < 1 hour: MM:SS format
+      expect(formatDuration(5)).toBe('00:05');
+      expect(formatDuration(65)).toBe('01:05');
+
+      // >= 1 hour: HH:MM:SS format
       expect(formatDuration(3605)).toBe('01:00:05');
     });
   });

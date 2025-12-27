@@ -31,66 +31,68 @@ export function useIntervalSync({ watch, replace, onEntryModeChange }: UseInterv
   const prevRepetitionCount = useRef(repetitionCount);
 
   useEffect(() => {
-    // Handle repetition count changes - regenerate all steps
     if (repetitionCount !== prevRepetitionCount.current) {
       if (repetitionCount > 0) {
         prevRepetitionCount.current = repetitionCount;
 
-        const newSteps: IntervalStep[] = [];
-        let stepNumber = 1;
+        const hasDetailedData = currentSteps.some(
+          (step: IntervalStep) =>
+            (step.pace && step.pace !== '') || (step.hr !== null && step.hr !== undefined)
+        );
 
-        // Add warmup
-        newSteps.push({
-          stepNumber: stepNumber++,
-          stepType: 'warmup',
-          duration: '',
-          distance: null,
-          pace: '',
-          hr: null,
-        });
+        if (!hasDetailedData) {
+          const newSteps: IntervalStep[] = [];
+          let stepNumber = 1;
 
-        // Add effort/recovery pairs
-        for (let i = 0; i < repetitionCount; i++) {
           newSteps.push({
             stepNumber: stepNumber++,
-            stepType: 'effort',
-            duration: effortDuration || '',
-            distance: effortDistance || null,
+            stepType: 'warmup',
+            duration: '',
+            distance: null,
             pace: '',
             hr: null,
           });
 
-          if (i < repetitionCount - 1) {
+          for (let i = 0; i < repetitionCount; i++) {
             newSteps.push({
               stepNumber: stepNumber++,
-              stepType: 'recovery',
-              duration: recoveryDuration || '',
-              distance: recoveryDistance || null,
+              stepType: 'effort',
+              duration: effortDuration || '',
+              distance: effortDistance || null,
               pace: '',
               hr: null,
             });
+
+            if (i < repetitionCount - 1) {
+              newSteps.push({
+                stepNumber: stepNumber++,
+                stepType: 'recovery',
+                duration: recoveryDuration || '',
+                distance: recoveryDistance || null,
+                pace: '',
+                hr: null,
+              });
+            }
           }
+
+          newSteps.push({
+            stepNumber: stepNumber++,
+            stepType: 'cooldown',
+            duration: '',
+            distance: null,
+            pace: '',
+            hr: null,
+          });
+
+          replace(newSteps);
+          onEntryModeChange('detailed');
         }
-
-        // Add cooldown
-        newSteps.push({
-          stepNumber: stepNumber++,
-          stepType: 'cooldown',
-          duration: '',
-          distance: null,
-          pace: '',
-          hr: null,
-        });
-
-        replace(newSteps);
-        onEntryModeChange('detailed');
       } else {
         prevRepetitionCount.current = repetitionCount;
       }
       return;
     }
 
-    // Handle effort/recovery value changes - update existing steps
     let stepsToUpdate = [...currentSteps];
     let hasChanges = false;
 

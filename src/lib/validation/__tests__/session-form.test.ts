@@ -82,7 +82,7 @@ describe('session-form validation', () => {
       const invalidData = {
         date: '2024-01-15',
         sessionType: 'Endurance',
-        duration: '90:00', // Invalid: should be HH:MM:SS
+        duration: '12:60', // Invalid: seconds >= 60
         distance: 15.5,
         avgPace: '05:30',
         avgHeartRate: 145,
@@ -93,12 +93,20 @@ describe('session-form validation', () => {
       const result = formSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Format: HH:MM:SS');
+        expect(result.error.issues[0].message).toBe('Format: MM:SS ou HH:MM:SS');
       }
     });
 
     it('should accept valid duration formats', () => {
-      const durations = ['0:30:00', '1:15:30', '10:05:45', '00:00:01'];
+      const durations = [
+        '0:30:00',
+        '1:15:30',
+        '10:05:45',
+        '00:00:01',
+        '48:30',
+        '90:00',
+        '5:30',
+      ];
 
       durations.forEach(duration => {
         const data = {

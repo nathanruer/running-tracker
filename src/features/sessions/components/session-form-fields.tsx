@@ -25,7 +25,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormItem>
               <FormLabel>Durée (HH:MM:SS)</FormLabel>
               <FormControl>
-                <Input placeholder="01:30:00" {...field} />
+                <Input placeholder="00:00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -41,7 +41,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
                 <Input
                   type="number"
                   step="0.01"
-                  placeholder="10.5"
+                  placeholder="0"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => {
@@ -73,7 +73,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormItem>
               <FormLabel>Allure moy (mn/km)</FormLabel>
               <FormControl>
-                <Input placeholder="05:30" {...field} />
+                <Input placeholder="00:00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,7 +88,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
               <FormControl>
                 <Input
                   type="number"
-                  placeholder="145"
+                  placeholder="0"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) =>

@@ -27,11 +27,11 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       sessionType: '',
-      duration: '00:00:00',
-      distance: 0,
-      avgPace: '00:00',
-      avgHeartRate: 0,
-      perceivedExertion: 0,
+      duration: '',
+      distance: null,
+      avgPace: '',
+      avgHeartRate: null,
+      perceivedExertion: null,
       comments: '',
       workoutType: '',
       repetitionCount: undefined,
@@ -61,10 +61,10 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         sessionType: session.sessionType,
         perceivedExertion,
         comments: session.comments || '',
-        duration: '00:00:00',
-        distance: 0,
-        avgPace: '00:00',
-        avgHeartRate: 0,
+        duration: '',
+        distance: null,
+        avgPace: '',
+        avgHeartRate: null,
         ...importedFields,
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
@@ -122,11 +122,11 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       form.reset({
         date: date ? (date.includes('T') ? date.split('T')[0] : date) : new Date().toISOString().split('T')[0],
         sessionType: '',
-        duration: '00:00:00',
-        distance: 0,
-        avgPace: '00:00',
-        avgHeartRate: 0,
-        perceivedExertion: 0,
+        duration: '',
+        distance: null,
+        avgPace: '',
+        avgHeartRate: null,
+        perceivedExertion: null,
         comments: '',
         ...importedFields,
       });
@@ -135,11 +135,11 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       form.reset({
         date: new Date().toISOString().split('T')[0],
         sessionType: '',
-        duration: '00:00:00',
-        distance: 0,
-        avgPace: '00:00',
-        avgHeartRate: 0,
-        perceivedExertion: 0,
+        duration: '',
+        distance: null,
+        avgPace: '',
+        avgHeartRate: null,
+        perceivedExertion: null,
         comments: '',
       });
       setIsCustomSessionType(false);
@@ -237,11 +237,11 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     form.reset({
       date: new Date().toISOString().split('T')[0],
       sessionType: '',
-      duration: '00:00:00',
-      distance: 0,
-      avgPace: '00:00',
-      avgHeartRate: 0,
-      perceivedExertion: 0,
+      duration: '',
+      distance: null,
+      avgPace: '',
+      avgHeartRate: null,
+      perceivedExertion: null,
       comments: '',
     });
     setIsCustomSessionType(false);

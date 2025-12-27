@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/infrastructure/logger';
 import type { AIResponse, AIRecommendedSession } from '@/lib/types/ai';
+import { parseDurationToSeconds, validatePaceInput } from '@/lib/utils/duration';
 
 /**
  * Validates and fixes AI-generated training recommendations
@@ -32,15 +33,24 @@ export function validateAndFixRecommendations(response: AIResponse): AIResponse 
         return { ...session, recommendation_id: recommendationId };
       }
 
-      // Parse pace (format: "MM:SS")
-      const match = session.target_pace_min_km.match(/^(\d+):(\d+)$/);
-      if (!match) {
+      // Validate and parse pace (format: "MM:SS")
+      if (!validatePaceInput(session.target_pace_min_km)) {
+        logger.warn(
+          {
+            sessionIndex: idx + 1,
+            invalidPace: session.target_pace_min_km,
+          },
+          'Format d\'allure invalide dans la réponse IA'
+        );
         return { ...session, recommendation_id: recommendationId };
       }
 
       // Calculate expected distance based on pace and duration
-      const paceMinutesPerKm =
-        parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
+      const paceSeconds = parseDurationToSeconds(session.target_pace_min_km);
+      if (paceSeconds === null) {
+        return { ...session, recommendation_id: recommendationId };
+      }
+      const paceMinutesPerKm = paceSeconds / 60;
       const expectedDistance = session.duration_min / paceMinutesPerKm;
 
       // Check if AI's distance estimate is significantly off
