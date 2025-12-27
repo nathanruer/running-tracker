@@ -4,8 +4,12 @@ import { CompletedSessionRow } from '@/features/dashboard/components/completed-s
 import { type TrainingSession } from '@/lib/types';
 
 vi.mock('@/components/ui/table', () => ({
-  TableRow: ({ children, className }: { children: React.ReactNode; className?: string }) => <tr className={className}>{children}</tr>,
-  TableCell: ({ children, className }: { children: React.ReactNode; className?: string }) => <td className={className}>{children}</td>,
+  TableRow: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <tr className={className}>{children}</tr>
+  ),
+  TableCell: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <td className={className}>{children}</td>
+  ),
 }));
 
 describe('CompletedSessionRow', () => {
@@ -33,218 +37,134 @@ describe('CompletedSessionRow', () => {
     vi.clearAllMocks();
   });
 
-  it('renders session data correctly', () => {
-    render(
+  const renderRow = (session: TrainingSession = mockSession) => {
+    return render(
       <table>
         <tbody>
-          <CompletedSessionRow
-            session={mockSession}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
+          <CompletedSessionRow session={session} onEdit={mockOnEdit} onDelete={mockOnDelete} />
         </tbody>
       </table>
     );
+  };
 
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText('15/01/2024')).toBeInTheDocument();
-    expect(screen.getByText('Footing')).toBeInTheDocument();
-    expect(screen.getByText('1:00:00')).toBeInTheDocument();
-    expect(screen.getByText('10.50')).toBeInTheDocument();
-    expect(screen.getByText('km')).toBeInTheDocument();
-    expect(screen.getByText('5:42')).toBeInTheDocument();
-    expect(screen.getByText('mn/km')).toBeInTheDocument();
-    expect(screen.getByText('145')).toBeInTheDocument();
-    expect(screen.getByText('bpm')).toBeInTheDocument();
-    expect(screen.getByText('6/10')).toBeInTheDocument();
-    expect(screen.getByText('Bonne séance de récupération')).toBeInTheDocument();
+  describe('Data rendering', () => {
+    it('renders all session data correctly', () => {
+      renderRow();
+
+      // Basic session info
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('15/01/2024')).toBeInTheDocument();
+      expect(screen.getByText('Footing')).toBeInTheDocument();
+
+      // Metrics
+      expect(screen.getByText('1:00:00')).toBeInTheDocument();
+      expect(screen.getByText('10.50')).toBeInTheDocument();
+      expect(screen.getByText('km')).toBeInTheDocument();
+      expect(screen.getByText('5:42')).toBeInTheDocument();
+      expect(screen.getByText('mn/km')).toBeInTheDocument();
+      expect(screen.getByText('145')).toBeInTheDocument();
+      expect(screen.getByText('bpm')).toBeInTheDocument();
+      expect(screen.getByText('6/10')).toBeInTheDocument();
+      expect(screen.getByText('Bonne séance de récupération')).toBeInTheDocument();
+    });
+
+    it('displays interval structure when present', () => {
+      const sessionWithIntervals: TrainingSession = {
+        ...mockSession,
+        sessionType: 'Fractionné',
+        intervalDetails: {
+          workoutType: '10x400m',
+          steps: [],
+          repetitionCount: null,
+          effortDuration: null,
+          recoveryDuration: null,
+          effortDistance: null,
+          recoveryDistance: null,
+          targetEffortPace: null,
+          targetEffortHR: null,
+          targetRecoveryPace: null,
+        },
+      };
+
+      renderRow(sessionWithIntervals);
+
+      expect(screen.getByText('Fractionné')).toBeInTheDocument();
+      expect(screen.getByText('10x400m')).toBeInTheDocument();
+    });
   });
 
-  it('displays interval structure when present', () => {
-    const sessionWithIntervals: TrainingSession = {
-      ...mockSession,
-      sessionType: 'Fractionné',
-      intervalDetails: {
-        workoutType: '10x400m',
-        steps: [],
-        repetitionCount: null,
-        effortDuration: null,
-        recoveryDuration: null,
-        effortDistance: null,
-        recoveryDistance: null,
-        targetEffortPace: null,
-        targetEffortHR: null,
-        targetRecoveryPace: null,
-      },
-    };
+  describe('RPE coloring', () => {
+    it('applies correct colors based on RPE value', () => {
+      // Low RPE (1-3) - green
+      const { rerender: rerenderLow } = renderRow({ ...mockSession, perceivedExertion: 2 });
+      expect(screen.getByText('2/10')).toHaveClass('text-green-500');
 
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionWithIntervals}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
+      // Medium RPE (4-6) - yellow
+      rerenderLow(
+        <table>
+          <tbody>
+            <CompletedSessionRow
+              session={{ ...mockSession, perceivedExertion: 5 }}
+              onEdit={mockOnEdit}
+              onDelete={mockOnDelete}
+            />
+          </tbody>
+        </table>
+      );
+      expect(screen.getByText('5/10')).toHaveClass('text-yellow-500');
 
-    expect(screen.getByText('Fractionné')).toBeInTheDocument();
-    expect(screen.getByText('10x400m')).toBeInTheDocument();
+      // High RPE (7-10) - red, bold
+      rerenderLow(
+        <table>
+          <tbody>
+            <CompletedSessionRow
+              session={{ ...mockSession, perceivedExertion: 10 }}
+              onEdit={mockOnEdit}
+              onDelete={mockOnDelete}
+            />
+          </tbody>
+        </table>
+      );
+      const highRPE = screen.getByText('10/10');
+      expect(highRPE).toHaveClass('text-red-500');
+      expect(highRPE).toHaveClass('font-bold');
+    });
   });
 
-  it('displays dash when perceivedExertion is null', () => {
-    const sessionWithoutRPE = {
-      ...mockSession,
-      perceivedExertion: null,
-    };
+  describe('Edge cases', () => {
+    it('handles null values gracefully', () => {
+      // Null RPE
+      renderRow({ ...mockSession, perceivedExertion: null });
+      expect(screen.getByText('-')).toBeInTheDocument();
 
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionWithoutRPE}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
+      // Null week
+      renderRow({ ...mockSession, week: null });
+      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
 
-    expect(screen.getByText('-')).toBeInTheDocument();
+      // Null date
+      renderRow({ ...mockSession, date: null });
+      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    });
   });
 
-  it('applies correct color for low RPE (green)', () => {
-    const sessionLowRPE = { ...mockSession, perceivedExertion: 2 };
+  describe('Actions', () => {
+    it('calls onEdit when edit button is clicked', () => {
+      renderRow();
 
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionLowRPE}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
+      const buttons = screen.getAllByRole('button');
+      fireEvent.click(buttons[0]);
 
-    const rpeElement = screen.getByText('2/10');
-    expect(rpeElement).toHaveClass('text-green-500');
-  });
+      expect(mockOnEdit).toHaveBeenCalledWith(mockSession);
+    });
 
-  it('applies correct color for medium RPE (yellow)', () => {
-    const sessionMediumRPE = { ...mockSession, perceivedExertion: 5 };
+    it('calls onDelete when delete button is clicked', () => {
+      renderRow();
 
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionMediumRPE}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
+      const buttons = screen.getAllByRole('button');
+      fireEvent.click(buttons[1]);
 
-    const rpeElement = screen.getByText('5/10');
-    expect(rpeElement).toHaveClass('text-yellow-500');
-  });
-
-  it('applies correct color for high RPE (red)', () => {
-    const sessionHighRPE = { ...mockSession, perceivedExertion: 10 };
-
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionHighRPE}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
-
-    const rpeElement = screen.getByText('10/10');
-    expect(rpeElement).toHaveClass('text-red-500');
-    expect(rpeElement).toHaveClass('font-bold');
-  });
-
-  it('calls onEdit when edit button is clicked', () => {
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={mockSession}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
-
-    const buttons = screen.getAllByRole('button');
-    fireEvent.click(buttons[0]);
-
-    expect(mockOnEdit).toHaveBeenCalledWith(mockSession);
-  });
-
-  it('calls onDelete when delete button is clicked', () => {
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={mockSession}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
-
-    const buttons = screen.getAllByRole('button');
-    fireEvent.click(buttons[1]);
-
-    expect(mockOnDelete).toHaveBeenCalledWith('1');
-  });
-
-  it('handles null week', () => {
-    const sessionNoWeek = { ...mockSession, week: null };
-
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionNoWeek}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
-
-    expect(screen.getAllByText('-').length).toBeGreaterThan(0);
-  });
-
-  it('handles null date', () => {
-    const sessionNoDate = { ...mockSession, date: null };
-
-    render(
-      <table>
-        <tbody>
-          <CompletedSessionRow
-            session={sessionNoDate}
-            onEdit={mockOnEdit}
-            onDelete={mockOnDelete}
-          />
-        </tbody>
-      </table>
-    );
-
-    expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+      expect(mockOnDelete).toHaveBeenCalledWith('1');
+    });
   });
 });

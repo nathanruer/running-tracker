@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { getActivities, refreshAccessToken } from '@/lib/services/strava';
-import { getUserIdFromRequest } from '@/lib/auth';
-import { logger } from '@/lib/infrastructure/logger';
+import { handleGetRequest } from '@/lib/services/api-handlers';
 
 async function getValidAccessToken(user: { id: string; stravaAccessToken: string | null; stravaRefreshToken: string | null; stravaTokenExpiresAt: Date | null }): Promise<string> {
   if (!user.stravaAccessToken || !user.stravaRefreshToken) {
@@ -32,48 +31,37 @@ async function getValidAccessToken(user: { id: string; stravaAccessToken: string
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    const userId = getUserIdFromRequest(request);
+  return handleGetRequest(
+    request,
+    async (userId) => {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+      });
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Utilisateur non trouvé' },
+          { status: 404 }
+        );
+      }
+
+      if (!user.stravaId) {
+        return NextResponse.json(
+          { error: 'Compte Strava non connecté' },
+          { status: 400 }
+        );
+      }
+
+      const accessToken = await getValidAccessToken(user);
+
+      const activities = await getActivities(accessToken, 30);
+
+      const runningActivities = activities.filter(
+        (activity) => activity.type === 'Run'
       );
-    }
 
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Utilisateur non trouvé' },
-        { status: 404 }
-      );
-    }
-
-    if (!user.stravaId) {
-      return NextResponse.json(
-        { error: 'Compte Strava non connecté' },
-        { status: 400 }
-      );
-    }
-
-    const accessToken = await getValidAccessToken(user);
-
-    const activities = await getActivities(accessToken, 30);
-
-    const runningActivities = activities.filter(
-      (activity) => activity.type === 'Run'
-    );
-
-    return NextResponse.json({ activities: runningActivities });
-  } catch (error) {
-    logger.error({ error }, 'Failed to fetch Strava activities');
-    return NextResponse.json(
-      { error: 'Impossible de récupérer les activités Strava' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({ activities: runningActivities });
+    },
+    { logContext: 'get-strava-activities' }
+  );
 }

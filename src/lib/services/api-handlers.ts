@@ -34,10 +34,10 @@ export interface ApiHandlerOptions {
  *   );
  * }
  */
-export async function handleApiRequest<T = unknown, R = unknown>(
+export async function handleApiRequest<T = unknown>(
   request: NextRequest,
   schema: ZodSchema<T> | null,
-  handler: (data: T, userId: string) => Promise<NextResponse<R>>,
+  handler: (data: T, userId: string) => Promise<NextResponse>,
   options: ApiHandlerOptions = {}
 ): Promise<NextResponse> {
   const {
@@ -135,9 +135,9 @@ export function handleApiError(error: unknown, context: string = 'api-error'): N
  *   });
  * }
  */
-export async function handleGetRequest<R = unknown>(
+export async function handleGetRequest(
   request: NextRequest,
-  handler: (userId: string, request: NextRequest) => Promise<NextResponse<R>>,
+  handler: (userId: string, request: NextRequest) => Promise<NextResponse>,
   options: ApiHandlerOptions = {}
 ): Promise<NextResponse> {
   const {
@@ -167,9 +167,9 @@ export async function handleGetRequest<R = unknown>(
  * @param options Handler options
  * @returns NextResponse
  */
-export async function handleDeleteRequest<R = unknown>(
+export async function handleDeleteRequest(
   request: NextRequest,
-  handler: (userId: string) => Promise<NextResponse<R>>,
+  handler: (userId: string) => Promise<NextResponse>,
   options: ApiHandlerOptions = {}
 ): Promise<NextResponse> {
   const {

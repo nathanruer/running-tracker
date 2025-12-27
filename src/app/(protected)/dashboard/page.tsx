@@ -20,12 +20,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSessionMutations } from '@/features/sessions/hooks/use-session-mutations';
+import { useEntityMutations } from '@/hooks/use-entity-mutations';
 import {
   getCurrentUser,
   getSessions,
   getSessionTypes,
   bulkImportSessions,
+  deleteSession,
+  bulkDeleteSessions,
 } from '@/lib/services/api-client';
 import {
   type TrainingSession,
@@ -49,8 +51,24 @@ const DashboardPage = () => {
   const router = useRouter();
   const [isImportingCsv, setIsImportingCsv] = useState(false);
 
-  const { handleDelete: deleteMutation, handleBulkDelete, handleSessionSuccess, isDeleting } =
-    useSessionMutations(selectedType);
+  const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } =
+    useEntityMutations<TrainingSession>({
+      baseQueryKey: 'sessions',
+      filterType: selectedType,
+      deleteEntity: deleteSession,
+      bulkDeleteEntities: async (ids: string[]) => {
+        await bulkDeleteSessions(ids);
+      },
+      relatedQueryKeys: ['sessionTypes'],
+      messages: {
+        deleteSuccess: 'Séance supprimée',
+        deleteSuccessDescription: 'La séance a été supprimée avec succès.',
+        bulkDeleteSuccessTitle: 'Séances supprimées',
+        bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} ${count > 1 ? 'ont' : 'a'} été supprimée${count > 1 ? 's' : ''} avec succès.`,
+        deleteError: 'Erreur lors de la suppression',
+        bulkDeleteError: 'Erreur lors de la suppression groupée',
+      },
+    });
 
   useEffect(() => {
     const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -361,7 +379,7 @@ const DashboardPage = () => {
         open={isDialogOpen}
         onOpenChange={handleDialogOpenChange}
         onClose={handleDialogClose}
-        onSuccess={handleSessionSuccess}
+        onSuccess={handleEntitySuccess}
         session={editingSession}
         initialData={importedData ? {
           ...importedData,

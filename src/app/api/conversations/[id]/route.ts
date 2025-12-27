@@ -1,114 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserIdFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/database';
+import { handleGetRequest, handleApiRequest, handleDeleteRequest } from '@/lib/services/api-handlers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    const userId = getUserIdFromRequest(request);
+  const params = await props.params;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
-
-    const conversation = await prisma.chat_conversations.findFirst({
-      where: {
-        id,
-        userId,
-      },
-      include: {
-        chat_messages: {
-          orderBy: { createdAt: 'asc' },
+  return handleGetRequest(
+    request,
+    async (userId) => {
+      const conversation = await prisma.chat_conversations.findFirst({
+        where: {
+          id: params.id,
+          userId,
         },
-      },
-    });
+        include: {
+          chat_messages: {
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      });
 
-    if (!conversation) {
-      return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
-    }
+      if (!conversation) {
+        return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+      }
 
-    return NextResponse.json(conversation);
-  } catch (error) {
-    console.error('Erreur lors de la récupération de la conversation:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors de la récupération de la conversation' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json(conversation);
+    },
+    { logContext: 'get-conversation' }
+  );
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    const userId = getUserIdFromRequest(request);
+  const params = await props.params;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
+  return handleApiRequest(
+    request,
+    null,
+    async (_data, userId) => {
+      const { title } = await request.json();
 
-    const { title } = await request.json();
+      if (!title || typeof title !== 'string') {
+        return NextResponse.json({ error: 'Titre invalide' }, { status: 400 });
+      }
 
-    if (!title || typeof title !== 'string') {
-      return NextResponse.json({ error: 'Titre invalide' }, { status: 400 });
-    }
+      const conversation = await prisma.chat_conversations.updateMany({
+        where: {
+          id: params.id,
+          userId,
+        },
+        data: { title },
+      });
 
-    const conversation = await prisma.chat_conversations.updateMany({
-      where: {
-        id,
-        userId,
-      },
-      data: { title },
-    });
+      if (conversation.count === 0) {
+        return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+      }
 
-    if (conversation.count === 0) {
-      return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de la conversation:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors de la mise à jour de la conversation' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({ success: true });
+    },
+    { logContext: 'update-conversation' }
+  );
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  props: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    const userId = getUserIdFromRequest(request);
+  const params = await props.params;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
+  return handleDeleteRequest(
+    request,
+    async (userId) => {
+      const conversation = await prisma.chat_conversations.deleteMany({
+        where: {
+          id: params.id,
+          userId,
+        },
+      });
 
-    const conversation = await prisma.chat_conversations.deleteMany({
-      where: {
-        id,
-        userId,
-      },
-    });
+      if (conversation.count === 0) {
+        return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+      }
 
-    if (conversation.count === 0) {
-      return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Erreur lors de la suppression de la conversation:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors de la suppression de la conversation' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({ success: true });
+    },
+    { logContext: 'delete-conversation' }
+  );
 }

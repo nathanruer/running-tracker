@@ -1,63 +1,45 @@
-import { NextResponse } from 'next/server';
-import { NextRequest } from 'next/server';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
-import { logger } from '@/lib/infrastructure/logger';
+import { handleApiRequest } from '@/lib/services/api-handlers';
 
 export async function POST(request: NextRequest) {
-  try {
-    const userId = getUserIdFromRequest(request);
+  return handleApiRequest(
+    request,
+    null,
+    async (_data, userId) => {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+      });
 
-    if (!userId) {
-      logger.warn('Unauthorized attempt to disconnect Strava');
-      return NextResponse.json(
-        { error: 'Non autorisé' },
-        { status: 401 }
-      );
-    }
-
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      logger.warn({ userId }, 'User not found when trying to disconnect Strava');
-      return NextResponse.json(
-        { error: 'Utilisateur non trouvé' },
-        { status: 404 }
-      );
-    }
-
-    if (!user.stravaId) {
-      logger.warn({ userId }, 'User tried to disconnect Strava but has no Strava account linked');
-      return NextResponse.json(
-        { error: 'Aucun compte Strava n\'est actuellement lié' },
-        { status: 400 }
-      );
-    }
-
-    await prisma.users.update({
-      where: { id: userId },
-      data: {
-        stravaId: null,
-        stravaAccessToken: null,
-        stravaRefreshToken: null,
-        stravaTokenExpiresAt: null,
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Utilisateur non trouvé' },
+          { status: 404 }
+        );
       }
-    });
 
-    logger.info({ userId }, 'Successfully disconnected Strava account');
+      if (!user.stravaId) {
+        return NextResponse.json(
+          { error: 'Aucun compte Strava n\'est actuellement lié' },
+          { status: 400 }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Compte Strava déconnecté avec succès'
-    });
+      await prisma.users.update({
+        where: { id: userId },
+        data: {
+          stravaId: null,
+          stravaAccessToken: null,
+          stravaRefreshToken: null,
+          stravaTokenExpiresAt: null,
+        }
+      });
 
-  } catch (error) {
-    logger.error({ error }, 'Failed to disconnect Strava account');
-    return NextResponse.json(
-      { error: 'Une erreur est survenue lors de la déconnexion de Strava' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({
+        success: true,
+        message: 'Compte Strava déconnecté avec succès'
+      });
+    },
+    { logContext: 'disconnect-strava' }
+  );
 }

@@ -4,7 +4,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/database';
 import { partialSessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
-import { validateAuth, findSessionByIdAndUser, handleNotFound, withErrorHandling } from '@/lib/utils/api-helpers';
+import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
+import { handleApiRequest } from '@/lib/services/api-handlers';
 
 export const runtime = 'nodejs';
 
@@ -13,53 +14,52 @@ export async function PUT(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
-  const authResult = await validateAuth(request);
-  
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  
-  const userId = authResult;
 
-  return withErrorHandling(async () => {
-    const updates = partialSessionSchema.parse(await request.json());
+  return handleApiRequest(
+    request,
+    partialSessionSchema,
+    async (updates, userId) => {
+      const session = await findSessionByIdAndUser(params.id, userId);
 
-    const session = await findSessionByIdAndUser(params.id, userId);
+      if (!session) {
+        return NextResponse.json(
+          { error: 'Séance introuvable' },
+          { status: 404 }
+        );
+      }
 
-    if (!session) {
-      return handleNotFound('Séance introuvable');
-    }
+      const dateUpdate = updates.date !== undefined
+        ? updates.date === ''
+          ? { date: null }
+          : { date: new Date(updates.date) }
+        : {};
 
-    const dateUpdate = updates.date !== undefined
-      ? updates.date === ''
-        ? { date: null }
-        : { date: new Date(updates.date) }
-      : {};
+      const { intervalDetails, ...restUpdates } = updates;
+      const intervalDetailsUpdate = intervalDetails !== undefined
+        ? { intervalDetails: intervalDetails || Prisma.JsonNull }
+        : {};
 
-    const { intervalDetails, ...restUpdates } = updates;
-    const intervalDetailsUpdate = intervalDetails !== undefined
-      ? { intervalDetails: intervalDetails || Prisma.JsonNull }
-      : {};
-
-    const updated = await prisma.training_sessions.update({
-      where: { id: params.id },
-      data: {
-        ...restUpdates,
-        ...dateUpdate,
-        ...intervalDetailsUpdate,
-      },
-    });
-
-    if (updates.date !== undefined) {
-      await recalculateSessionNumbers(userId);
-      const refreshed = await prisma.training_sessions.findUnique({
-        where: { id: params.id }
+      const updated = await prisma.training_sessions.update({
+        where: { id: params.id },
+        data: {
+          ...restUpdates,
+          ...dateUpdate,
+          ...intervalDetailsUpdate,
+        },
       });
-      return NextResponse.json({ session: refreshed || updated });
-    }
 
-    return NextResponse.json({ session: updated });
-  }, { userId, sessionId: params.id, operation: 'update' });
+      if (updates.date !== undefined) {
+        await recalculateSessionNumbers(userId);
+        const refreshed = await prisma.training_sessions.findUnique({
+          where: { id: params.id }
+        });
+        return NextResponse.json({ session: refreshed || updated });
+      }
+
+      return NextResponse.json({ session: updated });
+    },
+    { logContext: 'update-session' }
+  );
 }
 
 export async function DELETE(
@@ -67,24 +67,27 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params;
-  const authResult = await validateAuth(request);
-  
-  if (authResult instanceof NextResponse) {
-    return authResult;
-  }
-  
-  const userId = authResult;
 
-  const session = await findSessionByIdAndUser(params.id, userId);
+  return handleApiRequest(
+    request,
+    null,
+    async (_data, userId) => {
+      const session = await findSessionByIdAndUser(params.id, userId);
 
-  if (!session) {
-    return handleNotFound('Séance introuvable');
-  }
+      if (!session) {
+        return NextResponse.json(
+          { error: 'Séance introuvable' },
+          { status: 404 }
+        );
+      }
 
-  await prisma.training_sessions.delete({ where: { id: params.id } });
-  
-  await recalculateSessionNumbers(userId);
-  
-  return NextResponse.json({ message: 'Séance supprimée' });
+      await prisma.training_sessions.delete({ where: { id: params.id } });
+
+      await recalculateSessionNumbers(userId);
+
+      return NextResponse.json({ message: 'Séance supprimée' });
+    },
+    { logContext: 'delete-session' }
+  );
 }
 

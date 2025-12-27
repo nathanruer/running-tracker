@@ -1,120 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
-import { getUserIdFromRequest } from '@/lib/auth';
 import { sessionSchema } from '@/lib/validation';
-import { logger } from '@/lib/infrastructure/logger';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { handleApiRequest } from '@/lib/services/api-handlers';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
+  return handleApiRequest(
+    request,
+    null,
+    async (_data, userId) => {
+      const { sessions } = await request.json();
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        return NextResponse.json(
+          { error: 'Le tableau de séances est requis' },
+          { status: 400 }
+        );
+      }
 
-  try {
-    const { sessions } = await request.json();
-
-    if (!Array.isArray(sessions) || sessions.length === 0) {
-      return NextResponse.json(
-        { error: 'Le tableau de séances est requis' },
-        { status: 400 }
+      const validatedSessions = sessions.map((session) =>
+        sessionSchema.parse(session)
       );
-    }
 
-    const validatedSessions = sessions.map((session) =>
-      sessionSchema.parse(session)
-    );
+      const result = await prisma.training_sessions.createMany({
+        data: validatedSessions.map((session) => {
+          const { intervalDetails, ...sessionData } = session;
+          return {
+            ...sessionData,
+            intervalDetails: intervalDetails || Prisma.JsonNull,
+            date: new Date(session.date),
+            sessionNumber: 1,
+            week: 1,
+            userId,
+            status: 'completed',
+          };
+        }),
+      });
 
-    const result = await prisma.training_sessions.createMany({
-      data: validatedSessions.map((session) => {
-        const { intervalDetails, ...sessionData } = session;
-        return {
-          ...sessionData,
-          intervalDetails: intervalDetails || Prisma.JsonNull,
-          date: new Date(session.date),
-          sessionNumber: 1,
-          week: 1,
-          userId,
-          status: 'completed',
-        };
-      }),
-    });
+      await recalculateSessionNumbers(userId);
 
-    await recalculateSessionNumbers(userId);
-
-    return NextResponse.json(
-      {
-        message: `${result.count} séance(s) importée(s) avec succès`,
-        count: result.count,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof ZodError) {
       return NextResponse.json(
         {
-          error: 'Données invalides',
-          details: error.issues.map((issue) => ({
-            path: issue.path.join('.'),
-            message: issue.message,
-            code: issue.code,
-          })),
+          message: `${result.count} séance(s) importée(s) avec succès`,
+          count: result.count,
         },
-        { status: 400 }
+        { status: 201 }
       );
-    }
-    logger.error({ error, userId }, 'Failed to bulk import sessions');
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
-      { status: 500 }
-    );
-  }
+    },
+    { logContext: 'bulk-import-sessions' }
+  );
 }
 
 export async function DELETE(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
+  return handleApiRequest(
+    request,
+    null,
+    async (_data, userId) => {
+      const { ids } = await request.json();
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return NextResponse.json(
+          { error: 'Le tableau d\'identifiants est requis' },
+          { status: 400 }
+        );
+      }
 
-  try {
-    const { ids } = await request.json();
+      const result = await prisma.training_sessions.deleteMany({
+        where: {
+          id: { in: ids },
+          userId: userId,
+        },
+      });
 
-    if (!Array.isArray(ids) || ids.length === 0) {
+      await recalculateSessionNumbers(userId);
+
       return NextResponse.json(
-        { error: 'Le tableau d\'identifiants est requis' },
-        { status: 400 }
+        {
+          message: `${result.count} séance(s) supprimée(s) avec succès`,
+          count: result.count,
+        },
+        { status: 200 }
       );
-    }
-
-    const result = await prisma.training_sessions.deleteMany({
-      where: {
-        id: { in: ids },
-        userId: userId,
-      },
-    });
-
-    await recalculateSessionNumbers(userId);
-
-    return NextResponse.json(
-      {
-        message: `${result.count} séance(s) supprimée(s) avec succès`,
-        count: result.count,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    logger.error({ error, userId }, 'Failed to bulk delete sessions');
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
-      { status: 500 }
-    );
-  }
+    },
+    { logContext: 'bulk-delete-sessions' }
+  );
 }
