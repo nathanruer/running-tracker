@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useStravaActivities } from '../use-strava-activities';
 
@@ -237,8 +237,9 @@ describe('useStravaActivities', () => {
 
     expect(result.current.loading).toBe(false);
 
-    // Manually load activities
-    await result.current.loadActivities();
+    await act(async () => {
+      await result.current.loadActivities();
+    });
 
     await waitFor(() => {
       expect(result.current.isConnected).toBe(true);

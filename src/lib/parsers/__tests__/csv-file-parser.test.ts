@@ -200,7 +200,7 @@ describe('csv-file-parser', () => {
     });
 
     it('should return error for invalid JSON', async () => {
-      const invalidJson = '{ invalid json }';
+      const invalidJson = '{"invalid": "json"'; // Missing closing brace - invalid JSON
 
       const blob = new Blob([invalidJson], { type: 'application/json' });
       const file = new File([blob], 'test.json', { type: 'application/json' });
