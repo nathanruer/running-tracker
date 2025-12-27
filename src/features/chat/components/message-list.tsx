@@ -36,7 +36,6 @@ interface MessageListProps {
 
 export function MessageList({
   messages,
-  isLoading,
   isSending,
   loadingSessionId,
   allSessions,
@@ -51,12 +50,6 @@ export function MessageList({
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {isLoading && messages.length === 0 && (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      )}
-
       {messages.map((message) => (
         <div key={message.id}>
           {message.role === 'user' && (

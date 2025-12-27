@@ -82,14 +82,18 @@ export function SessionsTable({
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
             {onNewSession && (
-              <Button
-                onClick={onNewSession}
-                className="gradient-violet shrink-0"
-                title="Nouvelle séance"
-              >
-                <Plus />
-                <span className="hidden md:inline">Ajouter une séance</span>
-              </Button>
+              initialLoading ? (
+                <div className="h-10 w-10 md:w-[168px] animate-pulse rounded-md bg-muted shrink-0" />
+              ) : (
+                <Button
+                  onClick={onNewSession}
+                  className="gradient-violet shrink-0"
+                  title="Nouvelle séance"
+                >
+                  <Plus />
+                  <span className="hidden md:inline">Ajouter une séance</span>
+                </Button>
+              )
             )}
           </div>
 

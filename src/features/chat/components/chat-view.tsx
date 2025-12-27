@@ -44,7 +44,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: conversation, isLoading } = useQuery({
+  const { data: conversation } = useQuery({
     queryKey: ['conversation', conversationId],
     queryFn: async () => {
       if (!conversationId) return null;
@@ -86,12 +86,12 @@ export function ChatView({ conversationId }: ChatViewProps) {
   return (
     <Card className="h-full flex flex-col">
       <div className="border-b p-4">
-        <h2 className="text-lg font-semibold truncate">{conversation?.title || 'Chargement...'}</h2>
+        <h2 className="text-lg font-semibold truncate">{conversation?.title}</h2>
       </div>
 
       <MessageList
         messages={conversation?.chat_messages || []}
-        isLoading={isLoading}
+        isLoading={false}
         isSending={isSending}
         loadingSessionId={loadingSessionId}
         allSessions={allSessions}

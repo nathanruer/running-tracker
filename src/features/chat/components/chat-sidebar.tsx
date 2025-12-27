@@ -30,9 +30,10 @@ interface ChatSidebarProps {
   selectedConversationId: string | null;
   onSelectConversation: (id: string) => void;
   isMobile?: boolean;
+  disableCreate?: boolean;
 }
 
-export function ChatSidebar({ selectedConversationId, onSelectConversation, isMobile = false }: ChatSidebarProps) {
+export function ChatSidebar({ selectedConversationId, onSelectConversation, isMobile = false, disableCreate = false }: ChatSidebarProps) {
   const queryClient = useQueryClient();
 
   const { data: conversations = [], isLoading } = useQuery({
@@ -92,17 +93,13 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
           <Button
             size="sm"
             onClick={() => createConversation()}
-            disabled={isCreating}
+            disabled={isCreating || disableCreate}
           >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2">
-          {isLoading && conversations.length === 0 && (
-            <div className="text-center text-muted-foreground py-4">Chargement...</div>
-          )}
-
           {!isLoading && conversations.length === 0 && (
             <div className="text-center text-muted-foreground py-8">
               <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />

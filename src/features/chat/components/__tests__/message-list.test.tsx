@@ -44,20 +44,11 @@ describe('MessageList', () => {
   });
 
   describe('Loading states', () => {
-    it('should display loading spinner when loading and no messages', () => {
-      const { container } = render(<MessageList {...defaultProps} isLoading={true} />);
-
-      // Loader2 icon is rendered as an svg
-      const spinner = container.querySelector('svg');
-      expect(spinner).toBeInTheDocument();
-      expect(spinner).toHaveClass('animate-spin');
-    });
-
-    it('should not display loading spinner when messages exist', () => {
+    it('should render messages when provided', () => {
       const { container } = render(
         <MessageList
           {...defaultProps}
-          isLoading={true}
+          isLoading={false}
           messages={[
             {
               id: '1',
@@ -70,9 +61,8 @@ describe('MessageList', () => {
         />
       );
 
-      // When messages exist, the loading spinner should not be displayed
-      const spinners = container.querySelectorAll('svg.animate-spin');
-      expect(spinners.length).toBe(0);
+      const userMessage = container.querySelector('.bg-primary');
+      expect(userMessage).toBeInTheDocument();
     });
 
     it('should display sending indicator when isSending is true', () => {
