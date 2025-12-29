@@ -23,8 +23,8 @@ interface WorkoutTypeFieldProps {
 }
 
 const WORKOUT_TYPES = [
-  'Tempo',
-  'Seuil',
+  'TEMPO',
+  'SEUIL',
   'VMA',
 ];
 

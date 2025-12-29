@@ -28,6 +28,7 @@ interface IntervalFieldsProps {
   onEntryModeChange: (mode: 'quick' | 'detailed') => void;
   watch: UseFormWatch<FormValues>;
   setValue?: UseFormSetValue<FormValues>;
+  disableAutoRegeneration?: boolean;
 }
 
 export function IntervalFields({
@@ -35,6 +36,7 @@ export function IntervalFields({
   onEntryModeChange,
   watch,
   setValue,
+  disableAutoRegeneration = false,
 }: IntervalFieldsProps) {
   const { fields, replace, move, remove, append } = useFieldArray({
     control,
@@ -43,7 +45,6 @@ export function IntervalFields({
 
   const currentWorkoutType = watch('workoutType');
 
-  // Derive initial custom type state from current workout type
   const derivedIsCustomType = useMemo(
     () => Boolean(currentWorkoutType && !WORKOUT_TYPES.includes(currentWorkoutType)),
     [currentWorkoutType]
@@ -51,8 +52,7 @@ export function IntervalFields({
 
   const [isCustomType, setIsCustomType] = useState(derivedIsCustomType);
 
-  // Sync repetition count and effort/recovery values with steps
-  useIntervalSync({ watch, replace, onEntryModeChange });
+  useIntervalSync({ watch, replace, onEntryModeChange, disableAutoRegeneration });
 
   return (
     <div className="space-y-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">

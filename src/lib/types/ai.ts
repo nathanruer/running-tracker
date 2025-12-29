@@ -1,3 +1,5 @@
+import type { IntervalDetails } from './session';
+
 export interface Session {
   date: string;
   sessionType: string;
@@ -23,7 +25,7 @@ export interface AIRecommendedSession {
   target_hr_bpm?: number;
   target_rpe?: number;
   interval_structure?: string | null;
-  interval_details?: string | null;
+  interval_details?: IntervalDetails | null;
   why_this_session?: string;
   reason?: string;
   session_number?: number;

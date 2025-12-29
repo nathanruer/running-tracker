@@ -162,6 +162,7 @@ const SessionDialog = ({
                   onEntryModeChange={setIntervalEntryMode}
                   setValue={createIntervalSetValue(form.setValue)}
                   watch={createIntervalWatch(form.watch)}
+                  disableAutoRegeneration={mode === 'edit' && session?.status === 'completed'}
                 />
               </>
             )}
