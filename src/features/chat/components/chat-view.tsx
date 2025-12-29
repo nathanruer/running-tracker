@@ -1,22 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, Loader2, MessageCircle } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { getSessions } from '@/lib/services/api-client';
 import { useChatMutations } from '../hooks/use-chat-mutations';
+import { useConversationCreation } from '../hooks/use-conversation-creation';
 import { MessageList } from './message-list';
 import type { AIRecommendedSession } from '@/lib/types';
 
-interface Recommendations {
+export interface Recommendations {
   recommended_sessions?: AIRecommendedSession[];
   [key: string]: unknown;
 }
 
-interface Message {
+export interface Message {
   id: string;
   role: string;
   content: string;
@@ -25,7 +26,7 @@ interface Message {
   createdAt: string;
 }
 
-interface Conversation {
+export interface Conversation {
   id: string;
   title: string;
   chat_messages: Message[];
@@ -37,6 +38,9 @@ interface ChatViewProps {
 
 export function ChatView({ conversationId }: ChatViewProps) {
   const [input, setInput] = useState('');
+
+  const { optimisticMessages, isWaitingForResponse, createConversationWithMessage } =
+    useConversationCreation({ conversationId });
 
   const { data: allSessions = [] } = useQuery({
     queryKey: ['sessions', 'history'],
@@ -65,19 +69,106 @@ export function ChatView({ conversationId }: ChatViewProps) {
     loadingSessionId,
   } = useChatMutations(conversationId);
 
-  const handleSendMessage = () => {
-    if (!input.trim() || !conversationId) return;
-    sendMessage(input.trim());
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = input.trim();
     setInput('');
+
+    if (!conversationId) {
+      await createConversationWithMessage(userMessage);
+      return;
+    }
+
+    sendMessage(userMessage);
   };
 
   if (!conversationId) {
+    if (optimisticMessages.length === 0) {
+      return (
+        <Card className="h-full flex flex-col items-center justify-center p-8">
+          <div className="w-full max-w-2xl space-y-8">
+            <div className="text-center text-muted-foreground">
+              <h3 className="text-2xl font-medium mb-3">Quelle est votre demande aujourd&apos;hui ?</h3>
+              <p className="text-sm">Posez une question ou demandez des conseils d&apos;entraînement</p>
+            </div>
+
+            <div className="relative">
+              <Input
+                placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                disabled={isWaitingForResponse}
+                className="pr-12"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={isWaitingForResponse || !input.trim()}
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              >
+                {isWaitingForResponse ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      );
+    }
+
     return (
-      <Card className="h-full flex items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
-          <h3 className="text-lg font-medium mb-2">Aucune conversation sélectionnée</h3>
-          <p className="text-sm">Sélectionnez une conversation ou créez-en une nouvelle</p>
+      <Card className="h-full flex flex-col">
+        <div className="border-b p-4">
+          <h2 className="text-lg font-semibold truncate">Nouvelle conversation</h2>
+        </div>
+
+        <MessageList
+          messages={optimisticMessages}
+          isLoading={false}
+          isSending={isWaitingForResponse}
+          loadingSessionId={null}
+          allSessions={allSessions}
+          onAcceptSession={() => {}}
+          onDeleteSession={() => {}}
+        />
+
+        <div className="border-t p-4">
+          <div className="relative">
+            <Input
+              placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              disabled={isWaitingForResponse}
+              className="pr-12"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={isWaitingForResponse || !input.trim()}
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+            >
+              {isWaitingForResponse ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </Card>
     );
@@ -100,7 +191,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
       />
 
       <div className="border-t p-4">
-        <div className="flex gap-2">
+        <div className="relative">
           <Input
             placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
             value={input}
@@ -112,12 +203,13 @@ export function ChatView({ conversationId }: ChatViewProps) {
               }
             }}
             disabled={isSending}
-            className="flex-1"
+            className="pr-12"
           />
           <Button
             onClick={handleSendMessage}
             disabled={isSending || !input.trim()}
-            className="shrink-0"
+            size="icon"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

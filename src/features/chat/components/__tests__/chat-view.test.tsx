@@ -23,6 +23,7 @@ const mockSendMessage = vi.fn((message: string) => {
 });
 const mockAcceptSession = vi.fn();
 const mockDeleteSession = vi.fn();
+const mockReplace = vi.fn();
 
 let mockIsSending = false;
 
@@ -30,6 +31,13 @@ vi.mock('../../hooks/use-chat-mutations');
 
 vi.mock('@/lib/services/api-client', () => ({
   getSessions: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+    push: vi.fn(),
+  }),
 }));
 
 const createWrapper = () => {
@@ -68,8 +76,13 @@ describe('ChatView', () => {
     it('should display empty state when no conversation is selected', () => {
       render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Aucune conversation sélectionnée')).toBeInTheDocument();
-      expect(screen.getByText('Sélectionnez une conversation ou créez-en une nouvelle')).toBeInTheDocument();
+      // Should show centered welcome message
+      expect(screen.getByText('Quelle est votre demande aujourd\'hui ?')).toBeInTheDocument();
+      expect(screen.getByText('Posez une question ou demandez des conseils d\'entraînement')).toBeInTheDocument();
+
+      // Should have input and send button ready (centered)
+      expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+      expect(screen.getByRole('button')).toBeInTheDocument();
     });
   });
 

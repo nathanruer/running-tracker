@@ -1,1 +1,16 @@
+#!/usr/bin/env sh
+set -e
+
+echo "TypeScript check..."
+npm run typecheck
+
+echo "Linting..."
+npm run lint
+
+echo "Tests..."
 npm test -- --run
+
+echo "Build..."
+npm run build
+
+echo "All checks passed!"
