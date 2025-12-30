@@ -13,7 +13,7 @@ vi.mock('../csv-import-helpers', () => ({
     if (!str || str === '') return '';
     return str;
   }),
-  parseDuration: vi.fn((str: string) => str || '00:00:00'),
+  normalizeCsvDuration: vi.fn((str: string) => str || '00:00:00'),
   parsePace: vi.fn((str: string) => str || '00:00'),
   parseNumber: vi.fn((str: string) => parseFloat(str) || 0),
   detectColumns: vi.fn((headers: string[]) => {
@@ -165,13 +165,11 @@ describe('csv-file-parser', () => {
           duration: '01:30:00',
         },
         {
-          // Missing date
           sessionType: 'Interval',
           duration: '01:00:00',
         },
         {
           date: '2024-01-16',
-          // Missing sessionType
           duration: '01:00:00',
         },
       ]);
@@ -187,7 +185,7 @@ describe('csv-file-parser', () => {
 
     it('should return error when no valid sessions found', async () => {
       const jsonContent = JSON.stringify([
-        { duration: '01:00:00' }, // Missing date and type
+        { duration: '01:00:00' },
       ]);
 
       const blob = new Blob([jsonContent], { type: 'application/json' });
@@ -200,7 +198,7 @@ describe('csv-file-parser', () => {
     });
 
     it('should return error for invalid JSON', async () => {
-      const invalidJson = '{"invalid": "json"'; // Missing closing brace - invalid JSON
+      const invalidJson = '{"invalid": "json"';
 
       const blob = new Blob([invalidJson], { type: 'application/json' });
       const file = new File([blob], 'test.json', { type: 'application/json' });
@@ -247,7 +245,6 @@ describe('csv-file-parser', () => {
         {
           Date: '2024-01-15',
           'Type': 'Endurance',
-          // Missing other columns
         },
       ];
 

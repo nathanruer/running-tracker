@@ -4,14 +4,8 @@
  *
  * @param input - Duration string in MM:SS or HH:MM:SS format
  * @returns Duration in seconds, or null if invalid
- *
- * @example
- * parseDurationToSeconds("48:30")      // 2910 (48 minutes, 30 seconds)
- * parseDurationToSeconds("00:48:30")   // 2910 (same as above)
- * parseDurationToSeconds("01:30:00")   // 5400 (1 hour, 30 minutes)
- * parseDurationToSeconds("invalid")    // null
  */
-export function parseDurationToSeconds(input: string): number | null {
+export function parseDuration(input: string | null | undefined): number | null {
   if (!input || typeof input !== 'string') {
     return null;
   }
@@ -19,26 +13,21 @@ export function parseDurationToSeconds(input: string): number | null {
   const trimmed = input.trim();
   const parts = trimmed.split(':').map(part => parseInt(part, 10));
 
-  // Validate all parts are valid numbers
   if (parts.some(part => isNaN(part) || part < 0)) {
     return null;
   }
 
   if (parts.length === 2) {
-    // MM:SS format
     const [minutes, seconds] = parts;
 
-    // Validate seconds are < 60
     if (seconds >= 60) {
       return null;
     }
 
     return minutes * 60 + seconds;
   } else if (parts.length === 3) {
-    // HH:MM:SS format
     const [hours, minutes, seconds] = parts;
 
-    // Validate minutes and seconds are < 60
     if (minutes >= 60 || seconds >= 60) {
       return null;
     }
@@ -57,11 +46,12 @@ export function parseDurationToSeconds(input: string): number | null {
  * @returns Formatted duration string
  *
  * @example
- * formatDurationSmart(2910)   // "48:30" (< 1 hour)
- * formatDurationSmart(5400)   // "01:30:00" (>= 1 hour)
- * formatDurationSmart(125)    // "02:05"
+ * formatDuration(2910)   // "48:30" (< 1 hour)
+ * formatDuration(5400)   // "01:30:00" (>= 1 hour)
+ * formatDuration(3605)   // "01:00:05" (>= 1 hour)
+ * formatDuration(125)    // "02:05"
  */
-export function formatDurationSmart(seconds: number): string {
+export function formatDuration(seconds: number): string {
   if (seconds < 0 || !isFinite(seconds)) {
     return '00:00';
   }
@@ -69,12 +59,10 @@ export function formatDurationSmart(seconds: number): string {
   const roundedSeconds = Math.round(seconds);
 
   if (roundedSeconds < 3600) {
-    // Less than 1 hour: use MM:SS format
     const minutes = Math.floor(roundedSeconds / 60);
     const secs = roundedSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   } else {
-    // 1 hour or more: use HH:MM:SS format
     const hours = Math.floor(roundedSeconds / 3600);
     const minutes = Math.floor((roundedSeconds % 3600) / 60);
     const secs = roundedSeconds % 60;
@@ -98,7 +86,7 @@ export function formatDurationSmart(seconds: number): string {
  * validateDurationInput("invalid")    // false
  */
 export function validateDurationInput(input: string): boolean {
-  return parseDurationToSeconds(input) !== null;
+  return parseDuration(input) !== null;
 }
 
 /**
@@ -115,13 +103,13 @@ export function validateDurationInput(input: string): boolean {
  * normalizeDurationFormat("5:5")      // "05:05" (padded)
  */
 export function normalizeDurationFormat(input: string): string | null {
-  const seconds = parseDurationToSeconds(input);
+  const seconds = parseDuration(input);
 
   if (seconds === null) {
     return null;
   }
 
-  return formatDurationSmart(seconds);
+  return formatDuration(seconds);
 }
 
 /**
@@ -145,19 +133,16 @@ export function validatePaceInput(input: string): boolean {
   const trimmed = input.trim();
   const parts = trimmed.split(':').map(part => parseInt(part, 10));
 
-  // Pace should be MM:SS format (2 parts only)
   if (parts.length !== 2) {
     return false;
   }
 
   const [minutes, seconds] = parts;
 
-  // Validate all parts are valid numbers
   if (isNaN(minutes) || isNaN(seconds)) {
     return false;
   }
 
-  // Validate values are >= 0 and seconds < 60
   if (minutes < 0 || seconds < 0 || seconds >= 60) {
     return false;
   }

@@ -1,9 +1,9 @@
 export { cn } from './cn';
+export { formatDuration, parseDuration } from './duration';
 export { 
   generateIntervalStructure, 
   parseIntervalStructure,
   calculateAverageDuration,
-  formatDuration,
   autoFillIntervalDurations,
   getIntervalImportToastMessage
 } from './intervals';

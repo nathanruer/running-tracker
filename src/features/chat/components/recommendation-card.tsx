@@ -2,7 +2,7 @@ import { Check, Trash2, Clock, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
-import { formatDuration } from '@/lib/utils/chat/formatters';
+import { formatDurationChat } from '@/lib/utils/chat/formatters';
 
 interface RecommendationCardProps {
   session: AIRecommendedSession;
@@ -90,7 +90,7 @@ export function RecommendationCard({
         <span className="font-semibold">{session.estimated_distance_km} km</span>
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {formatDuration(session.duration_minutes || session.duration_min)}
+          {formatDurationChat(session.duration_minutes || session.duration_min)}
         </span>
         <span className="flex items-center gap-1">
           <Activity className="h-3 w-3" />

@@ -19,7 +19,7 @@ export function parseDate(dateStr: string): string {
   return '';
 }
 
-export function parseDuration(durationStr: string): string {
+export function normalizeCsvDuration(durationStr: string): string {
   const parts = durationStr.split(':');
   if (parts.length === 3) {
     return durationStr;

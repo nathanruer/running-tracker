@@ -1,7 +1,7 @@
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 
 /**
- * Vérifie si une séance recommandée a déjà été ajoutée (planifiée ou complétée)
+ * Checks if a recommended session has already been added (planned or completed)
  */
 export function isSessionAlreadyAdded(
   recommendedSession: AIRecommendedSession,
@@ -14,7 +14,7 @@ export function isSessionAlreadyAdded(
 }
 
 /**
- * Vérifie si une séance recommandée a été complétée
+ * Checks if a recommended session has been completed
  */
 export function isSessionCompleted(
   recommendedSession: AIRecommendedSession,
@@ -27,7 +27,7 @@ export function isSessionCompleted(
 }
 
 /**
- * Récupère l'ID d'une séance planifiée à partir d'une recommandation
+ * Retrieves the ID of a planned session from a recommendation
  */
 export function getAddedSessionId(
   recommendedSession: AIRecommendedSession,
@@ -41,7 +41,7 @@ export function getAddedSessionId(
 }
 
 /**
- * Récupère une séance complétée à partir d'une recommandation
+ * Retrieves a completed session from a recommendation
  */
 export function getCompletedSession(
   recommendedSession: AIRecommendedSession,
@@ -54,7 +54,7 @@ export function getCompletedSession(
 }
 
 /**
- * Calcule le prochain numéro de séance disponible
+ * Calculates the next available session number
  */
 export function getNextSessionNumber(allSessions: TrainingSession[]): number {
   if (allSessions.length === 0) return 1;

@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/infrastructure/logger';
 import type { AIResponse, AIRecommendedSession } from '@/lib/types/ai';
-import { parseDurationToSeconds, validatePaceInput } from '@/lib/utils/duration';
+import { parseDuration, validatePaceInput } from '@/lib/utils/duration';
+
 
 /**
  * Validates and fixes AI-generated training recommendations
@@ -24,7 +25,6 @@ export function validateAndFixRecommendations(response: AIResponse): AIResponse 
     (session: AIRecommendedSession, idx: number) => {
       const recommendationId = randomUUID();
 
-      // Validate session has required fields with correct types
       if (
         typeof session.target_pace_min_km !== 'string' ||
         typeof session.duration_min !== 'number' ||
@@ -33,7 +33,6 @@ export function validateAndFixRecommendations(response: AIResponse): AIResponse 
         return { ...session, recommendation_id: recommendationId };
       }
 
-      // Validate and parse pace (format: "MM:SS")
       if (!validatePaceInput(session.target_pace_min_km)) {
         logger.warn(
           {
@@ -45,20 +44,17 @@ export function validateAndFixRecommendations(response: AIResponse): AIResponse 
         return { ...session, recommendation_id: recommendationId };
       }
 
-      // Calculate expected distance based on pace and duration
-      const paceSeconds = parseDurationToSeconds(session.target_pace_min_km);
+      const paceSeconds = parseDuration(session.target_pace_min_km);
       if (paceSeconds === null) {
         return { ...session, recommendation_id: recommendationId };
       }
       const paceMinutesPerKm = paceSeconds / 60;
       const expectedDistance = session.duration_min / paceMinutesPerKm;
 
-      // Check if AI's distance estimate is significantly off
       const diff =
         Math.abs(session.estimated_distance_km - expectedDistance) /
         expectedDistance;
 
-      // If difference > 5%, correct it and log warning
       if (diff > 0.05) {
         logger.warn(
           {

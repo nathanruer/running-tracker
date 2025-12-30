@@ -27,7 +27,10 @@ import { useStravaActivities, type StravaActivity } from '../hooks/use-strava-ac
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
-import { formatDuration, formatPace } from '@/lib/utils/formatters';
+import { formatDuration } from '@/lib/utils/duration';
+import { formatPace } from '@/lib/utils/formatters';
+
+
 
 interface StravaImportDialogProps {
   open: boolean;

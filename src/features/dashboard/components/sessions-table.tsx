@@ -140,10 +140,10 @@ export function SessionsTable({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="table-auto">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10">
+                  <TableHead className="whitespace-nowrap">
                     <Checkbox
                       checked={isAllSelected}
                       onCheckedChange={toggleSelectAll}
@@ -151,11 +151,11 @@ export function SessionsTable({
                       aria-label="Sélectionner toutes les séances"
                     />
                   </TableHead>
-                  <TableHead className="w-10 text-center">#</TableHead>
-                  <TableHead className="w-14 text-center">Sem.</TableHead>
-                  <TableHead className="w-24 text-center">Date</TableHead>
-                  <TableHead className="min-w-[112px] text-center">Séance</TableHead>
-                  <TableHead className="w-20 text-center">
+                  <TableHead className="whitespace-nowrap text-center">#</TableHead>
+                  <TableHead className="whitespace-nowrap text-center">Sem.</TableHead>
+                  <TableHead className="whitespace-nowrap text-center">Date</TableHead>
+                  <TableHead className="whitespace-nowrap text-center">Séance</TableHead>
+                  <TableHead className="whitespace-nowrap text-center">
                     <button
                       onClick={() => handleSort('duration')}
                       className="flex items-center justify-center hover:text-foreground transition-colors w-full"
@@ -164,7 +164,7 @@ export function SessionsTable({
                       <span className={sortColumn === 'duration' ? 'text-foreground' : ''}>Durée</span>
                     </button>
                   </TableHead>
-                  <TableHead className="w-24 text-center">
+                  <TableHead className="whitespace-nowrap text-center">
                     <button
                       onClick={() => handleSort('distance')}
                       className="flex items-center justify-center hover:text-foreground transition-colors w-full"
@@ -173,7 +173,7 @@ export function SessionsTable({
                       <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Dist.</span>
                     </button>
                   </TableHead>
-                  <TableHead className="w-32 text-center">
+                  <TableHead className="whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleSort('avgPace')}
@@ -184,7 +184,7 @@ export function SessionsTable({
                       </button>
                     </div>
                   </TableHead>
-                  <TableHead className="w-20 text-center">
+                  <TableHead className="whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => handleSort('avgHeartRate')}
@@ -195,7 +195,7 @@ export function SessionsTable({
                       </button>
                     </div>
                   </TableHead>
-                  <TableHead className="w-12 text-center">
+                  <TableHead className="whitespace-nowrap text-center">
                     <button
                       onClick={() => handleSort('perceivedExertion')}
                       className="flex items-center justify-center w-full hover:text-foreground transition-colors"
@@ -204,8 +204,8 @@ export function SessionsTable({
                       <span className={sortColumn === 'perceivedExertion' ? 'text-foreground' : ''}>RPE</span>
                     </button>
                   </TableHead>
-                  <TableHead className="min-w-[250px] xl:min-w-[350px] 2xl:min-w-[450px]">Commentaires</TableHead>
-                  <TableHead className="w-16 text-center">Actions</TableHead>
+                  <TableHead className="max-w-[40ch]">Commentaires</TableHead>
+                  <TableHead className="whitespace-nowrap text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

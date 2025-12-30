@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import {
   parseDate,
-  parseDuration,
+  normalizeCsvDuration,
   parsePace,
   parseNumber,
   detectColumns,
@@ -44,7 +44,7 @@ export async function parseJsonFile(file: File): Promise<ParseResult> {
             const sessionType = String(
               row.sessionType || row.type || row['Type de séance'] || ''
             ).trim();
-            const duration = parseDuration(
+            const duration = normalizeCsvDuration(
               String(row.duration || row.duree || row['Durée'] || '00:00:00')
             );
             const distance = parseNumber(
@@ -152,7 +152,7 @@ export async function parseCsvFile(file: File): Promise<ParseResult> {
                 ? (row[columnMap.get('sessionType')!] || '').trim()
                 : '';
               const duration = columnMap.has('duration')
-                ? parseDuration(row[columnMap.get('duration')!] || '00:00:00')
+                ? normalizeCsvDuration(row[columnMap.get('duration')!] || '00:00:00')
                 : '00:00:00';
               const distance = columnMap.has('distance')
                 ? parseNumber(row[columnMap.get('distance')!] || '0')

@@ -7,6 +7,7 @@ import { type TrainingSession } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
 import { normalizePaceDisplay } from '@/lib/utils/formatters';
 import { IntervalDetailsView } from './interval-details-view';
+import { CommentCell } from './comment-cell';
 
 interface PlannedSessionRowProps {
   session: TrainingSession;
@@ -140,16 +141,16 @@ export function PlannedSessionRow({
             />
           )}
         </TableCell>
-        <TableCell className="font-medium text-center">
+        <TableCell className="font-medium text-center whitespace-nowrap">
           {session.sessionNumber}
         </TableCell>
-        <TableCell className="text-center">{session.week ?? '-'}</TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">{session.week ?? '-'}</TableCell>
+        <TableCell className="text-center whitespace-nowrap">
           {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : (
             <span className="text-muted-foreground/60">À planifier</span>
           )}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           <div className="flex flex-col gap-0.5 items-center">
             <div className="flex items-center gap-1">
               <span>{session.sessionType}</span>
@@ -168,46 +169,42 @@ export function PlannedSessionRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {displayDuration > 0 ? (
             <span>
               {`~${Math.floor(displayDuration / 60).toString().padStart(2, '0')}:${(Math.round(displayDuration % 60)).toString().padStart(2, '0')}:00`}
             </span>
           ) : '-'}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {displayDistance > 0 ? (
             <>
               ~{displayDistance.toFixed(2)} <span className="text-xs">km</span>
             </>
           ) : '-'}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {globalPace !== '-' ? (
             <>
               {globalPace} <span className="text-xs">mn/km</span>
             </>
           ) : '-'}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {globalHRDisplay !== '-' ? (
             <>
               {globalHRDisplay} <span className="text-xs">bpm</span>
             </>
           ) : '-'}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {session.targetRPE ? (
             <span className="text-muted-foreground/80">
               {session.targetRPE}/10
             </span>
           ) : '-'}
         </TableCell>
-        <TableCell>
-          <p className="whitespace-normal break-words text-sm text-muted-foreground/70">
-            {session.comments}
-          </p>
-        </TableCell>
+        <CommentCell comment={session.comments} className="text-muted-foreground/70" />
         <TableCell onClick={(e) => e.stopPropagation()}>
           <div className="flex gap-2">
             <Button

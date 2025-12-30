@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { type TrainingSession } from '@/lib/types';
 import { IntervalDetailsView } from './interval-details-view';
+import { CommentCell } from './comment-cell';
 
 interface CompletedSessionRowProps {
   session: TrainingSession;
@@ -50,14 +51,14 @@ export function CompletedSessionRow({
             />
           )}
         </TableCell>
-        <TableCell className="font-medium text-center">
+        <TableCell className="font-medium text-center whitespace-nowrap">
           {session.sessionNumber}
         </TableCell>
-        <TableCell className="text-center">{session.week ?? '-'}</TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">{session.week ?? '-'}</TableCell>
+        <TableCell className="text-center whitespace-nowrap">
           {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : '-'}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           <div className="flex flex-col gap-0.5 items-center">
             <div className="flex items-center gap-1">
               <span>{session.sessionType}</span>
@@ -76,10 +77,10 @@ export function CompletedSessionRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {session.duration}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {session.distance ? (
             <>
               {session.distance.toFixed(2)} <span className="text-xs text-muted-foreground">km</span>
@@ -90,10 +91,10 @@ export function CompletedSessionRow({
             </>
           )}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {session.avgPace} <span className="text-xs text-muted-foreground">mn/km</span>
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {session.avgHeartRate ? (
             <>
               {session.avgHeartRate} <span className="text-xs text-muted-foreground">bpm</span>
@@ -104,7 +105,7 @@ export function CompletedSessionRow({
             </>
           )}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="text-center whitespace-nowrap">
           {session.perceivedExertion ? (
             <span className={
               session.perceivedExertion <= 3 ? 'text-green-500' :
@@ -118,11 +119,7 @@ export function CompletedSessionRow({
             <span className="text-muted-foreground">-</span>
           )}
         </TableCell>
-        <TableCell>
-          <p className="whitespace-normal break-words text-sm text-muted-foreground">
-            {session.comments}
-          </p>
-        </TableCell>
+        <CommentCell comment={session.comments} />
         <TableCell>
           <div className="flex gap-2">
             <Button

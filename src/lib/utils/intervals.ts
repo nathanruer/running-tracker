@@ -1,4 +1,5 @@
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
+import { parseDuration } from './duration';
 
 export interface IntervalFormValues {
   sessionType: string;
@@ -196,12 +197,10 @@ export function transformIntervalData(
   values: IntervalFormValues,
   entryMode: 'quick' | 'detailed' = 'quick'
 ): IntervalDetails | null {
-  // Only process if session type is interval training
   if (values.sessionType !== 'Fractionné') {
     return null;
   }
 
-  // Check if there's any interval data
   const hasIntervalDataValue =
     values.workoutType ||
     values.repetitionCount ||
@@ -357,24 +356,23 @@ export function calculateAverageDuration(steps: IntervalStep[]): number {
   if (stepsWithDuration.length === 0) return 0;
 
   const totalSeconds = stepsWithDuration.reduce((sum, step) => {
-    if (step.duration) {
-      const [min, sec] = step.duration.split(':').map(Number);
-      return sum + min * 60 + sec;
-    }
-    return sum;
+    const seconds = parseDuration(step.duration);
+    return sum + (seconds || 0);
   }, 0);
 
   return totalSeconds / stepsWithDuration.length;
 }
 
 /**
- * Formats duration in seconds to MM:SS
+ * Formats duration in seconds to MM:SS (even for > 1h)
+ * Used specifically for interval steps where MM:SS is expected
  * @param seconds Duration in seconds
  * @returns Formatted duration string (MM:SS)
  */
-export function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
+export function formatDurationMMSS(seconds: number): string {
+  const roundedSeconds = Math.round(seconds);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const secs = roundedSeconds % 60;
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -396,12 +394,12 @@ export function autoFillIntervalDurations(
 
   if (effortSteps.length > 0) {
     const avgEffortSeconds = calculateAverageDuration(effortSteps);
-    setFormValue('effortDuration', formatDuration(avgEffortSeconds));
+    setFormValue('effortDuration', formatDurationMMSS(avgEffortSeconds));
   }
 
   if (recoverySteps.length > 0) {
     const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
-    setFormValue('recoveryDuration', formatDuration(avgRecoverySeconds));
+    setFormValue('recoveryDuration', formatDurationMMSS(avgRecoverySeconds));
   }
 }
 
@@ -420,5 +418,5 @@ export function getIntervalImportToastMessage(
   const avgEffortSeconds = calculateAverageDuration(effortSteps);
   const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
 
-  return `${repetitionCount} répétitions détectées. Durée moyenne effort: ${formatDuration(avgEffortSeconds)}, récupération: ${formatDuration(avgRecoverySeconds)}.`;
+  return `${repetitionCount} répétitions détectées. Durée moyenne effort: ${formatDurationMMSS(avgEffortSeconds)}, récupération: ${formatDurationMMSS(avgRecoverySeconds)}.`;
 }

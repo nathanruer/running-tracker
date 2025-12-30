@@ -1,60 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
-  formatDuration,
-  formatDurationShort,
   formatPace,
   formatDistance,
   formatDate,
-  parseDuration,
   formatNumber,
   formatHeartRate,
   normalizePaceDisplay,
+  extractHeartRateValue,
 } from '../formatters';
 
 describe('formatters', () => {
-  describe('formatDuration', () => {
-    it('should format duration intelligently (MM:SS for < 1h, HH:MM:SS for >= 1h)', () => {
-      // Durations < 1 hour: MM:SS format
-      expect(formatDuration(0)).toBe('00:00');
-      expect(formatDuration(61)).toBe('01:01');
-      expect(formatDuration(3599)).toBe('59:59');
-
-      // Durations >= 1 hour: HH:MM:SS format
-      expect(formatDuration(3600)).toBe('01:00:00');
-      expect(formatDuration(3661)).toBe('01:01:01');
-      expect(formatDuration(7200)).toBe('02:00:00');
-      expect(formatDuration(86399)).toBe('23:59:59');
-    });
-
-    it('should pad single digits with zeros', () => {
-      // < 1 hour: MM:SS format
-      expect(formatDuration(5)).toBe('00:05');
-      expect(formatDuration(65)).toBe('01:05');
-
-      // >= 1 hour: HH:MM:SS format
-      expect(formatDuration(3605)).toBe('01:00:05');
-    });
-  });
-
-  describe('formatDurationShort', () => {
-    it('should format duration in seconds to MM:SS', () => {
-      expect(formatDurationShort(0)).toBe('00:00');
-      expect(formatDurationShort(125)).toBe('02:05');
-      expect(formatDurationShort(600)).toBe('10:00');
-      expect(formatDurationShort(59)).toBe('00:59');
-    });
-
-    it('should round seconds to nearest integer', () => {
-      expect(formatDurationShort(125.4)).toBe('02:05');
-      expect(formatDurationShort(125.6)).toBe('02:06');
-    });
-
-    it('should handle large values (hours converted to minutes)', () => {
-      expect(formatDurationShort(3600)).toBe('60:00');
-      expect(formatDurationShort(7325)).toBe('122:05');
-    });
-  });
-
   describe('formatPace', () => {
     it('should calculate and format pace correctly', () => {
       // 5km in 25 minutes (1500 seconds) = 5:00 min/km
@@ -135,41 +90,13 @@ describe('formatters', () => {
     });
   });
 
-  describe('parseDuration', () => {
-    it('should parse HH:MM:SS format to seconds', () => {
-      expect(parseDuration('01:30:00')).toBe(5400);
-      expect(parseDuration('00:05:30')).toBe(330);
-      expect(parseDuration('02:15:45')).toBe(8145);
-    });
-
-    it('should parse MM:SS format to seconds', () => {
-      expect(parseDuration('05:30')).toBe(330);
-      expect(parseDuration('00:45')).toBe(45);
-      expect(parseDuration('12:00')).toBe(720);
-    });
-
-    it('should return 0 for invalid formats', () => {
-      expect(parseDuration('invalid')).toBe(0);
-      expect(parseDuration('')).toBe(0);
-      expect(parseDuration('5')).toBe(0);
-    });
-
-    it('should be inverse of formatDuration', () => {
-      const seconds = 3661;
-      const formatted = formatDuration(seconds);
-      expect(parseDuration(formatted)).toBe(seconds);
-    });
-  });
-
   describe('formatNumber', () => {
     it('should format numbers with French thousand separators', () => {
-      // French locale uses narrow no-break space (\u202f) as thousand separator
       expect(formatNumber(1234)).toBe('1\u202f234');
       expect(formatNumber(1234567)).toBe('1\u202f234\u202f567');
     });
 
     it('should format numbers with specified decimals', () => {
-      // French locale uses comma as decimal separator and narrow no-break space as thousand separator
       expect(formatNumber(1234.56, 2)).toBe('1\u202f234,56');
       expect(formatNumber(1234.567, 1)).toBe('1\u202f234,6');
       expect(formatNumber(1234, 2)).toBe('1\u202f234,00');
@@ -227,4 +154,26 @@ describe('formatters', () => {
       expect(normalizePaceDisplay('5:00:00')).toBe('5:00:00');
     });
   });
+
+  describe('extractHeartRateValue', () => {
+    it('should return number when input is number', () => {
+      expect(extractHeartRateValue(150)).toBe(150);
+    });
+
+    it('should parse string to number', () => {
+      expect(extractHeartRateValue('150')).toBe(150);
+      expect(extractHeartRateValue('150.5')).toBe(150.5);
+    });
+
+    it('should return null for invalid strings', () => {
+      expect(extractHeartRateValue('invalid')).toBeNull();
+      expect(extractHeartRateValue('')).toBeNull();
+    });
+
+    it('should return null for null or undefined', () => {
+      expect(extractHeartRateValue(null)).toBeNull();
+      expect(extractHeartRateValue(undefined)).toBeNull();
+    });
+  });
 });
+

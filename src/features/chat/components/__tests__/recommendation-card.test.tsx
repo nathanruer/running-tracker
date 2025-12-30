@@ -4,7 +4,7 @@ import { RecommendationCard } from '../recommendation-card';
 import type { AIRecommendedSession } from '@/lib/types';
 
 vi.mock('@/lib/utils/chat/formatters', () => ({
-  formatDuration: vi.fn((minutes) => `${minutes} min`),
+  formatDurationChat: vi.fn((minutes) => `${minutes} min`),
 }));
 
 describe('RecommendationCard', () => {
@@ -240,7 +240,7 @@ describe('RecommendationCard', () => {
     });
 
     it('should handle duration_min when duration_minutes is absent', async () => {
-      const { formatDuration } = await import('@/lib/utils/chat/formatters');
+      const { formatDurationChat } = await import('@/lib/utils/chat/formatters');
 
       render(
         <RecommendationCard
@@ -253,7 +253,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(formatDuration).toHaveBeenCalledWith(60);
+      expect(formatDurationChat).toHaveBeenCalledWith(60);
     });
 
     it('should display target_hr_zone when target_hr_bpm is absent', () => {

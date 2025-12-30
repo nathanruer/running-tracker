@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseDate,
-  parseDuration,
+  normalizeCsvDuration,
   parsePace,
   parseNumber,
   detectColumns,
@@ -44,28 +44,28 @@ describe('csv-import-helpers', () => {
     });
   });
 
-  describe('parseDuration', () => {
+  describe('normalizeCsvDuration', () => {
     it('should return HH:MM:SS as-is', () => {
-      expect(parseDuration('01:30:00')).toBe('01:30:00');
-      expect(parseDuration('00:45:30')).toBe('00:45:30');
-      expect(parseDuration('10:15:45')).toBe('10:15:45');
+      expect(normalizeCsvDuration('01:30:00')).toBe('01:30:00');
+      expect(normalizeCsvDuration('00:45:30')).toBe('00:45:30');
+      expect(normalizeCsvDuration('10:15:45')).toBe('10:15:45');
     });
 
     it('should convert MM:SS to 00:MM:SS', () => {
-      expect(parseDuration('30:00')).toBe('00:30:00');
-      expect(parseDuration('45:30')).toBe('00:45:30');
-      expect(parseDuration('05:15')).toBe('00:05:15');
+      expect(normalizeCsvDuration('30:00')).toBe('00:30:00');
+      expect(normalizeCsvDuration('45:30')).toBe('00:45:30');
+      expect(normalizeCsvDuration('05:15')).toBe('00:05:15');
     });
 
     it('should return default for invalid format', () => {
-      expect(parseDuration('invalid')).toBe('00:00:00');
-      expect(parseDuration('30')).toBe('00:00:00');
-      expect(parseDuration('')).toBe('00:00:00');
+      expect(normalizeCsvDuration('invalid')).toBe('00:00:00');
+      expect(normalizeCsvDuration('30')).toBe('00:00:00');
+      expect(normalizeCsvDuration('')).toBe('00:00:00');
     });
 
     it('should handle edge cases', () => {
-      expect(parseDuration('0:0:0')).toBe('0:0:0');
-      expect(parseDuration('100:59:59')).toBe('100:59:59');
+      expect(normalizeCsvDuration('0:0:0')).toBe('0:0:0');
+      expect(normalizeCsvDuration('100:59:59')).toBe('100:59:59');
     });
   });
 

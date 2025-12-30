@@ -1,114 +1,114 @@
 import { describe, it, expect } from 'vitest';
 import {
-  parseDurationToSeconds,
-  formatDurationSmart,
+  parseDuration,
+  formatDuration,
   validateDurationInput,
   normalizeDurationFormat,
   validatePaceInput,
   normalizePaceFormat,
 } from '../duration';
 
-describe('parseDurationToSeconds', () => {
+describe('parseDuration', () => {
   describe('MM:SS format', () => {
     it('should parse valid MM:SS format', () => {
-      expect(parseDurationToSeconds('48:30')).toBe(2910); // 48 * 60 + 30
-      expect(parseDurationToSeconds('05:30')).toBe(330); // 5 * 60 + 30
-      expect(parseDurationToSeconds('00:30')).toBe(30);
-      expect(parseDurationToSeconds('120:00')).toBe(7200); // 120 minutes
+      expect(parseDuration('48:30')).toBe(2910); // 48 * 60 + 30
+      expect(parseDuration('05:30')).toBe(330); // 5 * 60 + 30
+      expect(parseDuration('00:30')).toBe(30);
+      expect(parseDuration('120:00')).toBe(7200); // 120 minutes
     });
 
     it('should handle single digit parts', () => {
-      expect(parseDurationToSeconds('5:5')).toBe(305); // 5 * 60 + 5
-      expect(parseDurationToSeconds('0:30')).toBe(30);
+      expect(parseDuration('5:5')).toBe(305); // 5 * 60 + 5
+      expect(parseDuration('0:30')).toBe(30);
     });
   });
 
   describe('HH:MM:SS format', () => {
     it('should parse valid HH:MM:SS format', () => {
-      expect(parseDurationToSeconds('00:48:30')).toBe(2910); // 48 * 60 + 30
-      expect(parseDurationToSeconds('01:30:00')).toBe(5400); // 1 * 3600 + 30 * 60
-      expect(parseDurationToSeconds('02:15:45')).toBe(8145); // 2 * 3600 + 15 * 60 + 45
+      expect(parseDuration('00:48:30')).toBe(2910); // 48 * 60 + 30
+      expect(parseDuration('01:30:00')).toBe(5400); // 1 * 3600 + 30 * 60
+      expect(parseDuration('02:15:45')).toBe(8145); // 2 * 3600 + 15 * 60 + 45
     });
 
     it('should handle single digit parts', () => {
-      expect(parseDurationToSeconds('1:5:5')).toBe(3905); // 1 * 3600 + 5 * 60 + 5
+      expect(parseDuration('1:5:5')).toBe(3905); // 1 * 3600 + 5 * 60 + 5
     });
   });
 
   describe('Invalid inputs', () => {
     it('should return null for invalid formats', () => {
-      expect(parseDurationToSeconds('invalid')).toBe(null);
-      expect(parseDurationToSeconds('12')).toBe(null);
-      expect(parseDurationToSeconds('12:34:56:78')).toBe(null);
-      expect(parseDurationToSeconds('')).toBe(null);
+      expect(parseDuration('invalid')).toBe(null);
+      expect(parseDuration('12')).toBe(null);
+      expect(parseDuration('12:34:56:78')).toBe(null);
+      expect(parseDuration('')).toBe(null);
     });
 
     it('should return null for invalid values', () => {
-      expect(parseDurationToSeconds('12:60')).toBe(null);
-      expect(parseDurationToSeconds('00:12:60')).toBe(null);
-      expect(parseDurationToSeconds('00:60:00')).toBe(null);
-      expect(parseDurationToSeconds('-5:30')).toBe(null);
+      expect(parseDuration('12:60')).toBe(null);
+      expect(parseDuration('00:12:60')).toBe(null);
+      expect(parseDuration('00:60:00')).toBe(null);
+      expect(parseDuration('-5:30')).toBe(null);
     });
 
     it('should return null for non-numeric parts', () => {
-      expect(parseDurationToSeconds('abc:def')).toBe(null);
-      expect(parseDurationToSeconds('12:ab')).toBe(null);
-      expect(parseDurationToSeconds('ab:12:34')).toBe(null);
+      expect(parseDuration('abc:def')).toBe(null);
+      expect(parseDuration('12:ab')).toBe(null);
+      expect(parseDuration('ab:12:34')).toBe(null);
     });
 
     it('should handle edge cases', () => {
-      expect(parseDurationToSeconds(null as unknown as string)).toBe(null);
-      expect(parseDurationToSeconds(undefined as unknown as string)).toBe(null);
-      expect(parseDurationToSeconds(123 as unknown as string)).toBe(null);
+      expect(parseDuration(null as unknown as string)).toBe(null);
+      expect(parseDuration(undefined as unknown as string)).toBe(null);
+      expect(parseDuration(123 as unknown as string)).toBe(null);
     });
   });
 });
 
-describe('formatDurationSmart', () => {
+describe('formatDuration', () => {
   describe('Durations < 1 hour (use MM:SS)', () => {
     it('should format short durations as MM:SS', () => {
-      expect(formatDurationSmart(2910)).toBe('48:30');
-      expect(formatDurationSmart(330)).toBe('05:30');
-      expect(formatDurationSmart(30)).toBe('00:30');
-      expect(formatDurationSmart(3599)).toBe('59:59');
+      expect(formatDuration(2910)).toBe('48:30');
+      expect(formatDuration(330)).toBe('05:30');
+      expect(formatDuration(30)).toBe('00:30');
+      expect(formatDuration(3599)).toBe('59:59');
     });
 
     it('should pad with zeros', () => {
-      expect(formatDurationSmart(305)).toBe('05:05');
-      expect(formatDurationSmart(5)).toBe('00:05');
+      expect(formatDuration(305)).toBe('05:05');
+      expect(formatDuration(5)).toBe('00:05');
     });
   });
 
   describe('Durations >= 1 hour (use HH:MM:SS)', () => {
     it('should format long durations as HH:MM:SS', () => {
-      expect(formatDurationSmart(3600)).toBe('01:00:00');
-      expect(formatDurationSmart(5400)).toBe('01:30:00');
-      expect(formatDurationSmart(8145)).toBe('02:15:45');
+      expect(formatDuration(3600)).toBe('01:00:00');
+      expect(formatDuration(5400)).toBe('01:30:00');
+      expect(formatDuration(8145)).toBe('02:15:45');
     });
 
     it('should pad with zeros', () => {
-      expect(formatDurationSmart(3605)).toBe('01:00:05');
-      expect(formatDurationSmart(3665)).toBe('01:01:05');
+      expect(formatDuration(3605)).toBe('01:00:05');
+      expect(formatDuration(3665)).toBe('01:01:05');
     });
   });
 
   describe('Edge cases', () => {
     it('should handle zero', () => {
-      expect(formatDurationSmart(0)).toBe('00:00');
+      expect(formatDuration(0)).toBe('00:00');
     });
 
     it('should handle negative numbers', () => {
-      expect(formatDurationSmart(-100)).toBe('00:00');
+      expect(formatDuration(-100)).toBe('00:00');
     });
 
     it('should handle infinity', () => {
-      expect(formatDurationSmart(Infinity)).toBe('00:00');
-      expect(formatDurationSmart(-Infinity)).toBe('00:00');
+      expect(formatDuration(Infinity)).toBe('00:00');
+      expect(formatDuration(-Infinity)).toBe('00:00');
     });
 
     it('should round decimal seconds', () => {
-      expect(formatDurationSmart(125.6)).toBe('02:06');
-      expect(formatDurationSmart(125.4)).toBe('02:05');
+      expect(formatDuration(125.6)).toBe('02:06');
+      expect(formatDuration(125.4)).toBe('02:05');
     });
   });
 });

@@ -1,36 +1,3 @@
-import { formatDurationSmart as formatDurationSmartUtil, parseDurationToSeconds } from './duration';
-
-/**
- * Formats a duration in seconds to smart format (MM:SS or HH:MM:SS)
- * Uses MM:SS for durations < 1 hour, HH:MM:SS for >= 1 hour
- * @param seconds - Duration in seconds
- * @returns Formatted duration string
- * @example formatDuration(2910) // "48:30" (< 1 hour)
- * @example formatDuration(5400) // "01:30:00" (>= 1 hour)
- * @deprecated Use formatDurationSmart from duration.ts for explicit smart formatting
- */
-export function formatDuration(seconds: number): string {
-  return formatDurationSmartUtil(seconds);
-}
-
-/**
- * Formats a duration in seconds to MM:SS format
- * @param seconds - Duration in seconds
- * @returns Formatted duration string (MM:SS)
- * @example formatDurationShort(125) // "02:05"
- * @deprecated Use formatDurationSmart from duration.ts which intelligently chooses format
- */
-export function formatDurationShort(seconds: number): string {
-  if (seconds < 0 || !isFinite(seconds)) {
-    return '00:00';
-  }
-
-  const roundedSeconds = Math.round(seconds);
-  const minutes = Math.floor(roundedSeconds / 60);
-  const secs = roundedSeconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
 /**
  * Calculates and formats pace (min/km) from distance and time
  * @param distanceMeters - Distance in meters
@@ -103,19 +70,6 @@ export function formatDate(
 }
 
 /**
- * Parses a duration string (HH:MM:SS or MM:SS) to seconds
- * @param duration - Duration string
- * @returns Duration in seconds (returns 0 if invalid)
- * @example parseDuration("01:30:00") // 5400
- * @example parseDuration("05:30") // 330
- * @deprecated Use parseDurationToSeconds from duration.ts which returns null for invalid input
- */
-export function parseDuration(duration: string): number {
-  const result = parseDurationToSeconds(duration);
-  return result ?? 0;
-}
-
-/**
  * Formats a number with thousand separators
  * @param num - Number to format
  * @param decimals - Number of decimal places
@@ -155,3 +109,18 @@ export function normalizePaceDisplay(pace: string | null | undefined): string | 
   const seconds = parts[1].padStart(2, '0');
   return `${minutes}:${seconds}`;
 }
+
+/**
+ * Extracts numeric value from heart rate (handles both number and string)
+ * Used for heart rate comparisons and storage.
+ */
+export function extractHeartRateValue(hr: number | string | null | undefined): number | null {
+  if (hr === null || hr === undefined) return null;
+  if (typeof hr === 'number') return hr;
+  if (typeof hr === 'string') {
+    const parsed = parseFloat(hr);
+    return isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+

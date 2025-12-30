@@ -39,13 +39,18 @@ const mockSessions: TrainingSession[] = [
     week: 2,
     date: '2024-01-05',
     sessionType: 'Récupération',
-    duration: '00:20:00',
-    distance: 3,
-    avgPace: '06:30',
-    avgHeartRate: 130,
-    perceivedExertion: 3,
+    duration: null,
+    distance: null,
+    avgPace: null,
+    avgHeartRate: null,
+    perceivedExertion: null,
     comments: 'Easy',
     status: 'planned',
+    targetDuration: 20,
+    targetDistance: 3,
+    targetPace: '06:30',
+    targetHeartRateBpm: '130',
+    targetRPE: 3,
   } as TrainingSession,
 ];
 
@@ -87,7 +92,6 @@ describe('SessionsTable', () => {
   it('should render loading skeleton when initialLoading is true', () => {
     render(<SessionsTable {...defaultProps} initialLoading={true} />);
 
-    // Should render 5 skeleton rows
     const skeletons = screen.getAllByRole('row').filter(row => {
       const cells = within(row).queryAllByRole('cell');
       return cells.length > 0 && cells[0].querySelector('.animate-pulse');
@@ -129,7 +133,6 @@ describe('SessionsTable', () => {
 
     await user.click(firstSessionCheckbox);
 
-    // Selection bar should appear
     expect(screen.getByText('1 séance sélectionnée')).toBeInTheDocument();
   });
 
@@ -205,11 +208,9 @@ describe('SessionsTable', () => {
     const durationHeader = screen.getByRole('button', { name: /durée/i });
     await user.click(durationHeader);
 
-    // Check that sessions are sorted (first session should be the 45min one)
     const rows = screen.getAllByRole('row');
-    const dataRows = rows.slice(1); // Skip header row
+    const dataRows = rows.slice(1);
 
-    // The first data row should contain "00:45:00" after sorting descending
     expect(within(dataRows[0]).getByText('00:45:00')).toBeInTheDocument();
   });
 
@@ -222,20 +223,16 @@ describe('SessionsTable', () => {
     // First click - descending (longest first)
     await user.click(durationHeader);
     let rows = screen.getAllByRole('row');
-    // Should show 45min session first
     expect(within(rows[1]).getByText('00:45:00')).toBeInTheDocument();
 
     // Second click - ascending (shortest first)
     await user.click(durationHeader);
     rows = screen.getAllByRole('row');
-    // Should show the session with shortest duration first (20min)
-    // This is the planned session, check by session type "Récupération"
     expect(within(rows[1]).getByText('Récupération')).toBeInTheDocument();
 
     // Third click - no sort (back to original order)
     await user.click(durationHeader);
     rows = screen.getAllByRole('row');
-    // Should show first session in original order (Endurance, 30min)
     expect(within(rows[1]).getByText('00:30:00')).toBeInTheDocument();
   });
 
@@ -256,22 +253,18 @@ describe('SessionsTable', () => {
 
     expect(screen.getByText('Historique des séances')).toBeInTheDocument();
 
-    // Should have header row but no data rows
     const rows = screen.getAllByRole('row');
-    expect(rows.length).toBe(1); // Only header row
+    expect(rows.length).toBe(1);
   });
 
   it('should show correct session types in table', () => {
     render(<SessionsTable {...defaultProps} />);
 
-    // Check session types are displayed
     expect(screen.getByText('Endurance')).toBeInTheDocument();
     expect(screen.getByText('Fractionné')).toBeInTheDocument();
     expect(screen.getByText('Récupération')).toBeInTheDocument();
 
-    // Check that all 3 sessions are rendered (3 data rows)
     const rows = screen.getAllByRole('row');
-    // Should have 1 header row + 3 data rows = 4 total
     expect(rows.length).toBe(4);
   });
 });
