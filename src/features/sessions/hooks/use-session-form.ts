@@ -7,6 +7,7 @@ import { formSchema, type FormValues } from '@/lib/validation/session-form';
 import { PREDEFINED_TYPES } from '@/features/sessions/components/session-type-selector';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
+import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';
 
 interface UseSessionFormProps {
   mode: 'create' | 'edit' | 'complete';
@@ -25,7 +26,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayISO(),
       sessionType: '',
       duration: '',
       distance: null,
@@ -51,8 +52,8 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
     if (session && mode === 'complete' && initialData) {
       const { date, ...importedFields } = initialData;
-      const sessionDate = date ? (date.includes('T') ? date.split('T')[0] : date) :
-                          (session.date ? session.date.split('T')[0] : new Date().toISOString().split('T')[0]);
+      const sessionDate = date ? extractDatePart(date) :
+                          (session.date ? extractDatePart(session.date) : getTodayISO());
 
       const perceivedExertion = session.targetRPE || 0;
 
@@ -69,7 +70,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (session && (mode === 'edit' || mode === 'complete')) {
-      const sessionDate = session.date ? session.date.split('T')[0] : '';
+      const sessionDate = session.date ? extractDatePart(session.date) : '';
 
       const isPlanned = session.status === 'planned';
       const duration = isPlanned && session.targetDuration
@@ -120,7 +121,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     } else if (initialData) {
       const { date, ...importedFields } = initialData;
       form.reset({
-        date: date ? (date.includes('T') ? date.split('T')[0] : date) : new Date().toISOString().split('T')[0],
+        date: date ? extractDatePart(date) : getTodayISO(),
         sessionType: '',
         duration: '',
         distance: null,
@@ -133,7 +134,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       setIsCustomSessionType(false);
     } else {
       form.reset({
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayISO(),
         sessionType: '',
         duration: '',
         distance: null,
@@ -235,7 +236,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
   const resetForm = () => {
     form.reset({
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayISO(),
       sessionType: '',
       duration: '',
       distance: null,

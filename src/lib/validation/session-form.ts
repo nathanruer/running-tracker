@@ -39,7 +39,6 @@ const formSchema = z.object({
     { message: 'Entre 0 et 10' }
   ),
   comments: z.string(),
-  // Interval fields
   workoutType: z.string().optional(),
   repetitionCount: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
   effortDuration: z.string().optional().refine(

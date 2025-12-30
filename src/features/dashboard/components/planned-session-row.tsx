@@ -5,7 +5,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
-import { normalizePaceDisplay } from '@/lib/utils/formatters';
+import { normalizePaceFormat } from '@/lib/utils/duration';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
 
@@ -107,7 +107,7 @@ export function PlannedSessionRow({
       }
     }
 
-    const normalizedPace = normalizePaceDisplay(session.targetPace);
+    const normalizedPace = normalizePaceFormat(session.targetPace || '');
     return normalizedPace ? `~${normalizedPace}` : '-';
   };
 

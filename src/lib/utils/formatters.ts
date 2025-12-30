@@ -70,6 +70,50 @@ export function formatDate(
 }
 
 /**
+ * Formats a date to ISO format (YYYY-MM-DD) without time component
+ * Useful for date inputs and API payloads
+ *
+ * @param date - Date object or ISO string
+ * @returns Date string in YYYY-MM-DD format
+ *
+ * @example
+ * formatDateToISO(new Date('2024-01-15')) // '2024-01-15'
+ * formatDateToISO('2024-01-15T10:30:00Z') // '2024-01-15'
+ */
+export function formatDateToISO(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toISOString().split('T')[0];
+}
+
+/**
+ * Returns today's date in ISO format (YYYY-MM-DD)
+ * Convenience function for form defaults
+ *
+ * @returns Today's date in YYYY-MM-DD format
+ *
+ * @example
+ * getTodayISO() // '2024-01-15'
+ */
+export function getTodayISO(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Extracts date part from a date string that may or may not contain time
+ * Handles both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:MM:SS' formats
+ *
+ * @param dateString - Date string
+ * @returns Date in YYYY-MM-DD format
+ *
+ * @example
+ * extractDatePart('2024-01-15T10:30:00') // '2024-01-15'
+ * extractDatePart('2024-01-15') // '2024-01-15'
+ */
+export function extractDatePart(dateString: string): string {
+  return dateString.includes('T') ? dateString.split('T')[0] : dateString;
+}
+
+/**
  * Formats a number with thousand separators
  * @param num - Number to format
  * @param decimals - Number of decimal places
@@ -94,23 +138,6 @@ export function formatHeartRate(bpm: number): string {
 }
 
 /**
- * Normalizes a pace string to ensure consistent MM:SS format with leading zeros
- * @param pace - Pace string (may be 5:00, 05:00, etc.)
- * @returns Normalized pace string (MM:SS with leading zeros)
- * @example normalizePaceDisplay("5:00") // "05:00"
- */
-export function normalizePaceDisplay(pace: string | null | undefined): string | null {
-  if (!pace) return null;
-  
-  const parts = pace.split(':');
-  if (parts.length !== 2) return pace;
-  
-  const minutes = parts[0].padStart(2, '0');
-  const seconds = parts[1].padStart(2, '0');
-  return `${minutes}:${seconds}`;
-}
-
-/**
  * Extracts numeric value from heart rate (handles both number and string)
  * Used for heart rate comparisons and storage.
  */
@@ -123,4 +150,3 @@ export function extractHeartRateValue(hr: number | string | null | undefined): n
   }
   return null;
 }
-

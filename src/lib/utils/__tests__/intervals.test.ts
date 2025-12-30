@@ -7,7 +7,7 @@ import {
   validateIntervalData,
   getDefaultIntervalValues,
   calculateAverageDuration,
-  formatDurationMMSS,
+  formatDurationAlwaysMMSS,
   autoFillIntervalDurations,
   getIntervalImportToastMessage,
   type IntervalFormValues,
@@ -546,16 +546,16 @@ describe('interval-transformers', () => {
     });
   });
 
-  describe('formatDurationMMSS', () => {
+  describe('formatDurationAlwaysMMSS', () => {
     it('should format seconds to MM:SS', () => {
-      expect(formatDurationMMSS(0)).toBe('00:00');
-      expect(formatDurationMMSS(125)).toBe('02:05');
-      expect(formatDurationMMSS(600)).toBe('10:00');
+      expect(formatDurationAlwaysMMSS(0)).toBe('00:00');
+      expect(formatDurationAlwaysMMSS(125)).toBe('02:05');
+      expect(formatDurationAlwaysMMSS(600)).toBe('10:00');
     });
 
     it('should round seconds', () => {
-      expect(formatDurationMMSS(125.4)).toBe('02:05');
-      expect(formatDurationMMSS(125.6)).toBe('02:06');
+      expect(formatDurationAlwaysMMSS(125.4)).toBe('02:05');
+      expect(formatDurationAlwaysMMSS(125.6)).toBe('02:06');
     });
   });
 

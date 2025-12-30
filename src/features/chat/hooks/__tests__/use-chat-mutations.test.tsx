@@ -121,6 +121,8 @@ describe('useChatMutations', () => {
 
       expect(fetch).toHaveBeenCalledWith('/api/sessions/session-1', {
         method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
       });
     });
   });
@@ -149,6 +151,7 @@ describe('useChatMutations', () => {
 
       expect(fetch).toHaveBeenCalledWith('/api/conversations/conv-1/messages', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: 'Hello' }),
       });

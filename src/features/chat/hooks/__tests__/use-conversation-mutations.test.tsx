@@ -49,6 +49,7 @@ describe('useConversationMutations', () => {
 
       expect(fetch).toHaveBeenCalledWith('/api/conversations', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Nouvelle conversation' }),
       });
@@ -78,6 +79,7 @@ describe('useConversationMutations', () => {
 
       expect(fetch).toHaveBeenCalledWith('/api/conversations/conv-1', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'New Title' }),
       });
@@ -149,6 +151,8 @@ describe('useConversationMutations', () => {
 
       expect(fetch).toHaveBeenCalledWith('/api/conversations/conv-1', {
         method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
       });
 
       expect(onConversationDeleted).toHaveBeenCalledWith('conv-1');

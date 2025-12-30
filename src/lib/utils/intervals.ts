@@ -1,5 +1,5 @@
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
-import { parseDuration } from './duration';
+import { parseDuration, normalizeDurationToMMSS } from './duration';
 
 export interface IntervalFormValues {
   sessionType: string;
@@ -89,8 +89,8 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
     return {
       workoutType: workoutType.toUpperCase(),
       repetitionCount: parseInt(reps),
-      effortDuration: normalizeDuration(effort),
-      recoveryDuration: normalizeDuration(recovery),
+      effortDuration: normalizeDurationToMMSS(effort),
+      recoveryDuration: normalizeDurationToMMSS(recovery),
       effortDistance: null,
       recoveryDistance: null,
       targetEffortPace: null,
@@ -106,8 +106,8 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
     return {
       workoutType: null,
       repetitionCount: parseInt(reps),
-      effortDuration: normalizeDuration(effort),
-      recoveryDuration: normalizeDuration(recovery),
+      effortDuration: normalizeDurationToMMSS(effort),
+      recoveryDuration: normalizeDurationToMMSS(recovery),
       effortDistance: null,
       recoveryDistance: null,
       targetEffortPace: null,
@@ -123,7 +123,7 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
     return {
       workoutType: workoutType.toUpperCase(),
       repetitionCount: parseInt(reps),
-      effortDuration: normalizeDuration(effort),
+      effortDuration: normalizeDurationToMMSS(effort),
       recoveryDuration: null,
       effortDistance: null,
       recoveryDistance: null,
@@ -132,44 +132,6 @@ export function parseIntervalStructure(structure: string): IntervalDetails | nul
       targetRecoveryPace: null,
       steps: [],
     };
-  }
-
-  return null;
-}
-
-/**
- * Normalizes duration strings to MM:SS format
- * @param duration Duration string in various formats (5'00, 05:00, 5, etc.)
- * @returns Normalized duration string (MM:SS) or null
- * @private
- */
-function normalizeDuration(duration: string): string | null {
-  if (!duration || duration.trim() === '') return null;
-
-  const trimmed = duration.trim();
-
-  if (trimmed.includes("'")) {
-    const parts = trimmed.split("'");
-    if (parts.length === 2) {
-      const min = parts[0].padStart(2, '0');
-      const sec = parts[1].padStart(2, '0');
-      return `${min}:${sec}`;
-    }
-  }
-
-  if (trimmed.includes(':')) {
-    const parts = trimmed.split(':');
-    if (parts.length === 2) {
-      const min = parts[0].padStart(2, '0');
-      const sec = parts[1].padStart(2, '0');
-      return `${min}:${sec}`;
-    }
-  }
-
-  const cleaned = trimmed.replace(/['"]/g, '');
-  const minutes = parseInt(cleaned);
-  if (!isNaN(minutes)) {
-    return `${minutes.toString().padStart(2, '0')}:00`;
   }
 
   return null;
@@ -364,12 +326,17 @@ export function calculateAverageDuration(steps: IntervalStep[]): number {
 }
 
 /**
- * Formats duration in seconds to MM:SS (even for > 1h)
+ * Formats duration in seconds to MM:SS (even for >= 1h)
  * Used specifically for interval steps where MM:SS is expected
+ * 
  * @param seconds Duration in seconds
- * @returns Formatted duration string (MM:SS)
+ * @returns Formatted duration string always in MM:SS format
+ * 
+ * @example
+ * formatDurationAlwaysMMSS(125)   // "02:05"
+ * formatDurationAlwaysMMSS(3700)  // "61:40" (> 1h but still MM:SS)
  */
-export function formatDurationMMSS(seconds: number): string {
+export function formatDurationAlwaysMMSS(seconds: number): string {
   const roundedSeconds = Math.round(seconds);
   const minutes = Math.floor(roundedSeconds / 60);
   const secs = roundedSeconds % 60;
@@ -394,12 +361,12 @@ export function autoFillIntervalDurations(
 
   if (effortSteps.length > 0) {
     const avgEffortSeconds = calculateAverageDuration(effortSteps);
-    setFormValue('effortDuration', formatDurationMMSS(avgEffortSeconds));
+    setFormValue('effortDuration', formatDurationAlwaysMMSS(avgEffortSeconds));
   }
 
   if (recoverySteps.length > 0) {
     const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
-    setFormValue('recoveryDuration', formatDurationMMSS(avgRecoverySeconds));
+    setFormValue('recoveryDuration', formatDurationAlwaysMMSS(avgRecoverySeconds));
   }
 }
 
@@ -418,5 +385,5 @@ export function getIntervalImportToastMessage(
   const avgEffortSeconds = calculateAverageDuration(effortSteps);
   const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
 
-  return `${repetitionCount} répétitions détectées. Durée moyenne effort: ${formatDurationMMSS(avgEffortSeconds)}, récupération: ${formatDurationMMSS(avgRecoverySeconds)}.`;
+  return `${repetitionCount} répétitions détectées. Durée moyenne effort: ${formatDurationAlwaysMMSS(avgEffortSeconds)}, récupération: ${formatDurationAlwaysMMSS(avgRecoverySeconds)}.`;
 }

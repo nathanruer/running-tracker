@@ -171,3 +171,103 @@ export function normalizePaceFormat(input: string): string | null {
 
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
+
+/**
+ * Normalizes various duration formats to MM:SS format
+ * Handles multiple input formats:
+ * - Apostrophe notation: "5'00", "45'30"
+ * - Colon notation: "5:00", "05:00"
+ * - HH:MM:SS format: "01:30:00" (converts to MM:SS when convertHoursToMinutes is true)
+ * - Plain numbers: "5" (interpreted as minutes)
+ *
+ * @param input - Duration string in various formats
+ * @param options - Configuration options
+ * @param options.convertHoursToMinutes - If true, converts HH:MM:SS to MM:SS by adding hours to minutes (default: false)
+ * @returns Normalized duration string in MM:SS format, or null if invalid
+ *
+ * @example
+ * normalizeDurationToMMSS("5'00")                               // "05:00"
+ * normalizeDurationToMMSS("5:00")                               // "05:00"
+ * normalizeDurationToMMSS("05:00")                              // "05:00"
+ * normalizeDurationToMMSS("5")                                  // "05:00"
+ * normalizeDurationToMMSS("01:30:00", { convertHoursToMinutes: true })  // "90:00"
+ * normalizeDurationToMMSS("01:30:00", { convertHoursToMinutes: false }) // null (HH:MM:SS not allowed)
+ */
+export function normalizeDurationToMMSS(
+  input: string,
+  options?: { convertHoursToMinutes?: boolean }
+): string | null {
+  if (!input || typeof input !== 'string') {
+    return null;
+  }
+
+  const trimmed = input.trim();
+
+  // Handle apostrophe notation (e.g., "5'00")
+  if (trimmed.includes("'")) {
+    const parts = trimmed.split("'");
+    if (parts.length === 2) {
+      const min = parseInt(parts[0], 10);
+      const sec = parseInt(parts[1], 10);
+
+      if (isNaN(min) || isNaN(sec) || min < 0 || sec < 0 || sec >= 60) {
+        return null;
+      }
+
+      return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+  }
+
+  // Handle colon notation (MM:SS or HH:MM:SS)
+  if (trimmed.includes(':')) {
+    // Remove any decimal seconds (e.g., "05:30.5" → "05:30")
+    const cleanDuration = trimmed.split('.')[0];
+    const parts = cleanDuration.split(':').map(part => parseInt(part, 10));
+
+    // Validate all parts are numbers
+    if (parts.some(part => isNaN(part) || part < 0)) {
+      return null;
+    }
+
+    // MM:SS format
+    if (parts.length === 2) {
+      const [minutes, seconds] = parts;
+
+      if (seconds >= 60) {
+        return null;
+      }
+
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // HH:MM:SS format
+    if (parts.length === 3) {
+      const [hours, minutes, seconds] = parts;
+
+      if (minutes >= 60 || seconds >= 60) {
+        return null;
+      }
+
+      if (options?.convertHoursToMinutes) {
+        // Convert hours to minutes (e.g., "01:30:00" → "90:00")
+        const totalMinutes = hours * 60 + minutes;
+        return `${totalMinutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      } else {
+        // HH:MM:SS not allowed without conversion
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  // Handle plain numbers (interpreted as minutes)
+  const cleaned = trimmed.replace(/['"]/g, '');
+  const minutes = parseInt(cleaned, 10);
+
+  if (!isNaN(minutes) && minutes >= 0) {
+    return `${minutes.toString().padStart(2, '0')}:00`;
+  }
+
+  return null;
+}

@@ -1,4 +1,5 @@
 import type { NormalizedSession } from './types';
+import { formatDateToISO } from '@/lib/utils/formatters';
 
 /**
  * Normalizes training sessions data for AI processing
@@ -10,7 +11,7 @@ import type { NormalizedSession } from './types';
 export function normalizeSessions(sessions: Record<string, unknown>[]): NormalizedSession[] {
   return sessions.map((s) => ({
     ...s,
-    date: s.date && s.date instanceof Date ? s.date.toISOString().split('T')[0] : '',
+    date: s.date && s.date instanceof Date ? formatDateToISO(s.date) : '',
     sessionType: (s.sessionType as string) || '',
     avgPace: (s.avgPace as string) || '',
     duration: (s.duration as string) || '',

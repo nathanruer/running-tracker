@@ -1,4 +1,5 @@
 import type { StravaActivity } from '@/lib/types';
+import { formatDateToISO } from '@/lib/utils/formatters';
 
 export function formatStravaActivity(activity: StravaActivity) {
   const hours = Math.floor(activity.moving_time / 3600);
@@ -20,7 +21,7 @@ export function formatStravaActivity(activity: StravaActivity) {
   const activityDate = new Date(activity.start_date_local);
 
   return {
-    date: activityDate.toISOString().split('T')[0],
+    date: formatDateToISO(activityDate),
     sessionType: '',
     duration,
     distance,

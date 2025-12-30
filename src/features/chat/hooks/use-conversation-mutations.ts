@@ -1,16 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-
-interface Conversation {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  _count: {
-    chat_messages: number;
-  };
-}
+import {
+  createConversation as apiCreateConversation,
+  renameConversation as apiRenameConversation,
+  deleteConversation as apiDeleteConversation,
+  type Conversation,
+} from '@/lib/services/api-client';
 
 interface UseConversationMutationsProps {
   onConversationCreated?: (id: string) => void;
@@ -24,21 +20,12 @@ export function useConversationMutations({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Dialog state for renaming
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [selectedForRename, setSelectedForRename] = useState<Conversation | null>(null);
   const [newTitle, setNewTitle] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Nouvelle conversation' }),
-      });
-      if (!response.ok) throw new Error('Erreur lors de la création');
-      return response.json();
-    },
+    mutationFn: () => apiCreateConversation(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       onConversationCreated?.(data.id);
@@ -57,16 +44,9 @@ export function useConversationMutations({
   });
 
   const renameMutation = useMutation({
-    mutationFn: async ({ id, title }: { id: string; title: string }) => {
-      const response = await fetch(`/api/conversations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-      if (!response.ok) throw new Error('Erreur lors du renommage');
-      return response.json();
-    },
-    onSuccess: (data, variables) => {
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      apiRenameConversation(id, title),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['conversation', variables.id] });
       setRenameDialogOpen(false);
@@ -87,13 +67,7 @@ export function useConversationMutations({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/conversations/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Erreur lors de la suppression');
-      return response.json();
-    },
+    mutationFn: (id: string) => apiDeleteConversation(id),
     onSuccess: async (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['conversation', deletedId] });

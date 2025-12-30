@@ -1,15 +1,18 @@
 import type { BuildContextParams, Session, IntervalDetails } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
+import { normalizePaceFormat } from '@/lib/utils/duration';
 
 function isIntervalDetails(value: unknown): value is IntervalDetails {
   return typeof value === 'object' && value !== null;
 }
 
+/**
+ * Normalizes pace for display in context, with fallback to '00:00'
+ * Uses the centralized normalizePaceFormat from duration.ts
+ */
 function normalizePace(pace?: string): string {
   if (!pace || typeof pace !== 'string') return '00:00';
-  const parts = pace.split(':');
-  if (parts.length === 2) return pace;
-  return '00:00';
+  return normalizePaceFormat(pace) ?? '00:00';
 }
 
 function getSessionData(s: Session) {

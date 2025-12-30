@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { disconnectStrava } from '@/lib/services/api-client/auth';
+import {
+  getStravaActivities,
+  getStravaActivityDetails,
+} from '@/lib/services/api-client/strava';
 import * as clientModule from '@/lib/services/api-client/client';
 
 vi.mock('@/lib/services/api-client/client', () => ({
@@ -63,6 +67,87 @@ describe('Strava API', () => {
       });
 
       await expect(disconnectStrava()).rejects.toThrow('Une erreur est survenue lors de la déconnexion de Strava');
+    });
+  });
+
+  describe('getStravaActivities', () => {
+    it('fetches all Strava activities', async () => {
+      const mockActivities = [
+        {
+          id: 12345678,
+          name: 'Morning Run',
+          distance: 10000,
+          moving_time: 3600,
+          start_date_local: '2024-01-15T08:00:00Z',
+          average_heartrate: 145,
+        },
+        {
+          id: 87654321,
+          name: 'Evening Jog',
+          distance: 5000,
+          moving_time: 1800,
+          start_date_local: '2024-01-15T18:00:00Z',
+          average_heartrate: 135,
+        },
+      ];
+      mockApiRequest.mockResolvedValue(mockActivities);
+
+      const result = await getStravaActivities();
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities');
+      expect(result).toEqual(mockActivities);
+    });
+
+    it('returns empty array when no activities', async () => {
+      mockApiRequest.mockResolvedValue([]);
+
+      const result = await getStravaActivities();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getStravaActivityDetails', () => {
+    it('fetches details for a specific activity', async () => {
+      const mockDetails = {
+        id: '12345678',
+        date: '2024-01-15',
+        sessionType: 'Footing',
+        duration: '01:00:00',
+        distance: 10,
+        avgPace: '06:00',
+        avgHeartRate: 145,
+        comments: 'Morning Run',
+      };
+      mockApiRequest.mockResolvedValue(mockDetails);
+
+      const result = await getStravaActivityDetails('12345678');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activity/12345678');
+      expect(result).toEqual(mockDetails);
+    });
+
+    it('fetches activity with interval details', async () => {
+      const mockDetails = {
+        id: '12345678',
+        date: '2024-01-15',
+        sessionType: 'Fractionné',
+        duration: '00:45:00',
+        distance: 8,
+        avgPace: '05:30',
+        avgHeartRate: 160,
+        comments: 'Interval Training',
+        intervalDetails: {
+          repetitionCount: 8,
+          effortDuration: '03:00',
+          recoveryDuration: '01:30',
+        },
+      };
+      mockApiRequest.mockResolvedValue(mockDetails);
+
+      const result = await getStravaActivityDetails('12345678');
+
+      expect(result.intervalDetails).toBeDefined();
     });
   });
 });

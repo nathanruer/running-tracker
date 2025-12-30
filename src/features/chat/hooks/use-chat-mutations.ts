@@ -2,21 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import type { AIRecommendedSession } from '@/lib/types';
-
-interface Conversation {
-  id: string;
-  title: string;
-  chat_messages: Message[];
-}
-
-interface Message {
-  id: string;
-  role: string;
-  content: string;
-  recommendations: unknown;
-  model?: string;
-  createdAt: string;
-}
+import {
+  sendMessage as apiSendMessage,
+  deleteSession,
+  type ConversationWithMessages,
+} from '@/lib/services/api-client';
 
 export function useChatMutations(conversationId: string | null) {
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -73,12 +63,7 @@ export function useChatMutations(conversationId: string | null) {
 
   const deleteSessionMutation = useMutation({
     mutationFn: async ({ sessionId }: { sessionId: string; recommendationId: string }) => {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Erreur lors de la suppression de la séance');
-      return response.json();
+      await deleteSession(sessionId);
     },
     onMutate: ({ recommendationId }) => {
       setLoadingSessionId(recommendationId);
@@ -106,24 +91,14 @@ export function useChatMutations(conversationId: string | null) {
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!conversationId) throw new Error('Aucune conversation sélectionnée');
-
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Erreur lors de l\'envoi du message');
-      return response.json();
+      return apiSendMessage(conversationId, content);
     },
     onMutate: async (content: string) => {
       await queryClient.cancelQueries({ queryKey: ['conversation', conversationId] });
 
       const previousConversation = queryClient.getQueryData(['conversation', conversationId]);
 
-      queryClient.setQueryData(['conversation', conversationId], (old: Conversation | undefined) => {
+      queryClient.setQueryData(['conversation', conversationId], (old: ConversationWithMessages | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -143,7 +118,7 @@ export function useChatMutations(conversationId: string | null) {
       return { previousConversation };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['conversation', conversationId], (old: Conversation | undefined) => {
+      queryClient.setQueryData(['conversation', conversationId], (old: ConversationWithMessages | undefined) => {
         if (!old) return old;
 
         const messagesWithoutTemp = old.chat_messages.filter((m) => !m.id.toString().startsWith('temp-'));
