@@ -147,7 +147,40 @@ describe('strava formatters', () => {
         avgPace: '05:00', // 4500s / 15km = 300s/km = 5:00
         avgHeartRate: 158,
         comments: 'Tempo run',
+        externalId: '123456',
+        source: 'strava',
+        stravaData: activity,
+        elevationGain: 100,
+        maxElevation: undefined,
+        minElevation: undefined,
+        averageCadence: undefined,
+        averageTemp: undefined,
+        calories: undefined,
       });
+    });
+
+    it('should map detailed strava fields correctly', () => {
+      const detailedActivity: StravaActivity = {
+        ...baseActivity,
+        total_elevation_gain: 150,
+        elev_high: 200,
+        elev_low: 50,
+        average_cadence: 175,
+        average_temp: 20,
+        calories: 800,
+      };
+
+      const result = formatStravaActivity(detailedActivity);
+
+      expect(result.elevationGain).toBe(150);
+      expect(result.maxElevation).toBe(200);
+      expect(result.minElevation).toBe(50);
+      expect(result.averageCadence).toBe(175);
+      expect(result.averageTemp).toBe(20);
+      expect(result.calories).toBe(800);
+      expect(result.externalId).toBe('123456');
+      expect(result.source).toBe('strava');
+      expect(result.stravaData).toEqual(detailedActivity);
     });
   });
 });

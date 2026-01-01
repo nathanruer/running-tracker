@@ -6,6 +6,7 @@ import { sessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
 import { getNextSessionNumber } from '@/lib/domain/sessions/utils';
+import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
           sessionNumber: nextNumber,
           week: 1,
           userId,
-          status: 'completed',
+          status: SESSION_STATUS.COMPLETED,
         },
       });
 
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         { session: refreshedSession || session },
-        { status: 201 }
+        { status: HTTP_STATUS.CREATED }
       );
     },
     { logContext: 'create-session' }

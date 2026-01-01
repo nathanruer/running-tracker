@@ -18,4 +18,15 @@ export interface StravaActivity {
   max_speed: number;
   average_heartrate?: number;
   max_heartrate?: number;
+  average_cadence?: number;
+  average_temp?: number;
+  elev_high?: number;
+  elev_low?: number;
+  calories?: number;
+  map?: {
+    id: string;
+    summary_polyline: string;
+  };
+  external_id?: string;
+  upload_id?: number;
 }

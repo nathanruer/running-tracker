@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "training_sessions" ADD COLUMN "averageCadence" DOUBLE PRECISION,
+ADD COLUMN "averageTemp" DOUBLE PRECISION,
+ADD COLUMN "calories" INTEGER,
+ADD COLUMN "elevationGain" DOUBLE PRECISION,
+ADD COLUMN "externalId" TEXT,
+ADD COLUMN "maxElevation" DOUBLE PRECISION,
+ADD COLUMN "minElevation" DOUBLE PRECISION,
+ADD COLUMN "source" TEXT DEFAULT 'manual',
+ADD COLUMN "stravaData" JSONB;

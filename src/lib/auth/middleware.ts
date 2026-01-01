@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from './index';
+import { HTTP_STATUS } from '@/lib/constants';
 
-/**
- * Authentication middleware result
- */
 export type AuthResult =
   | { success: true; userId: string }
   | { success: false; error: NextResponse };
@@ -32,7 +30,7 @@ export function requireAuth(request: NextRequest): AuthResult {
       success: false,
       error: NextResponse.json(
         { error: 'Non authentifié' },
-        { status: 401 }
+        { status: HTTP_STATUS.UNAUTHORIZED }
       ),
     };
   }

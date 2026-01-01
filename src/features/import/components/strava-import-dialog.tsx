@@ -150,6 +150,15 @@ export function StravaImportDialog({
           avgHeartRate: activity.avgHeartRate || null,
           perceivedExertion: null,
           comments: activity.comments || '',
+          externalId: activity.externalId,
+          source: activity.source,
+          stravaData: activity.stravaData,
+          elevationGain: activity.elevationGain,
+          maxElevation: activity.maxElevation,
+          minElevation: activity.minElevation,
+          averageCadence: activity.averageCadence,
+          averageTemp: activity.averageTemp,
+          calories: activity.calories,
         }));
 
         const result = await bulkImportSessions(sessionsToImport);

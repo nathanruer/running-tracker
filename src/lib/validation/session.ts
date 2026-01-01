@@ -37,6 +37,15 @@ export const sessionSchema = z.object({
   intervalDetails: intervalDetailsSchema.optional(),
   perceivedExertion: z.number().min(0).max(10).optional().nullable(),
   comments: z.string().optional().default(''),
+  externalId: z.string().optional().nullable(),
+  source: z.string().optional().nullable(),
+  stravaData: z.any().optional().nullable(),
+  elevationGain: z.number().optional().nullable(),
+  maxElevation: z.number().optional().nullable(),
+  minElevation: z.number().optional().nullable(),
+  averageCadence: z.number().optional().nullable(),
+  averageTemp: z.number().optional().nullable(),
+  calories: z.number().optional().nullable(),
 });
 
 export const partialSessionSchema = sessionSchema.partial();

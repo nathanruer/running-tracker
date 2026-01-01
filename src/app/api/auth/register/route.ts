@@ -5,6 +5,7 @@ import { prisma } from '@/lib/database';
 import { registerSchema } from '@/lib/validation';
 import { createSessionToken, persistSessionCookie } from '@/lib/auth';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { HTTP_STATUS } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       if (existingUser) {
         return NextResponse.json(
           { error: 'Cet email est déjà utilisé.' },
-          { status: 400 },
+          { status: HTTP_STATUS.BAD_REQUEST },
         );
       }
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
             email: user.email,
           },
         },
-        { status: 201 },
+        { status: HTTP_STATUS.CREATED },
       );
     },
     { requireAuth: false, logContext: 'register' }

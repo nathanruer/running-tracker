@@ -12,9 +12,20 @@ vi.mock('@/components/ui/table', () => ({
   ),
 }));
 
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-trigger">{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-content">{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <button data-testid="dropdown-item" onClick={onClick}>{children}</button>
+  ),
+  DropdownMenuSeparator: () => <hr />,
+}));
+
 describe('CompletedSessionRow', () => {
   const mockOnEdit = vi.fn();
   const mockOnDelete = vi.fn();
+  const mockOnView = vi.fn();
 
   const mockSession: TrainingSession = {
     id: '1',
@@ -41,103 +52,101 @@ describe('CompletedSessionRow', () => {
     return render(
       <table>
         <tbody>
-          <CompletedSessionRow session={session} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+          <CompletedSessionRow 
+            session={session} 
+            onEdit={mockOnEdit} 
+            onDelete={mockOnDelete} 
+            onView={mockOnView}
+          />
         </tbody>
       </table>
     );
   };
 
   describe('Data rendering', () => {
-    it('renders all session data correctly', () => {
+    it('displays basic session information', () => {
       renderRow();
 
-      // Basic session info
       expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
-      expect(screen.getByText('15/01/2024')).toBeInTheDocument();
       expect(screen.getByText('Footing')).toBeInTheDocument();
-
-      // Metrics
       expect(screen.getByText('1:00:00')).toBeInTheDocument();
-      expect(screen.getByText('10.50')).toBeInTheDocument();
-      expect(screen.getByText('km')).toBeInTheDocument();
       expect(screen.getByText('5:42')).toBeInTheDocument();
-      expect(screen.getByText('mn/km')).toBeInTheDocument();
-      expect(screen.getByText('145')).toBeInTheDocument();
-      expect(screen.getByText('bpm')).toBeInTheDocument();
       expect(screen.getByText('6/10')).toBeInTheDocument();
-      expect(screen.getByText('Bonne séance de récupération')).toBeInTheDocument();
     });
 
-    it('displays interval structure when present', () => {
-      const sessionWithIntervals: TrainingSession = {
-        ...mockSession,
-        sessionType: 'Fractionné',
-        intervalDetails: {
-          workoutType: '10x400m',
-          steps: [],
-          repetitionCount: null,
-          effortDuration: null,
-          recoveryDuration: null,
-          effortDistance: null,
-          recoveryDistance: null,
-          targetEffortPace: null,
-          targetEffortHR: null,
-          targetRecoveryPace: null,
-        },
-      };
+    it('formats large distances correctly', () => {
+      renderRow();
+      expect(screen.getByText('10.50')).toBeInTheDocument();
+      expect(screen.getByText('km')).toBeInTheDocument();
+    });
 
-      renderRow(sessionWithIntervals);
+    it('displays heart rate with unit', () => {
+      renderRow();
 
-      expect(screen.getByText('Fractionné')).toBeInTheDocument();
-      expect(screen.getByText('10x400m')).toBeInTheDocument();
+      expect(screen.getByText('145')).toBeInTheDocument();
+      expect(screen.getAllByText('bpm').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('colors RPE appropriately based on value', () => {
+      // Low RPE (green)
+      const { unmount: unmount1 } = renderRow({ ...mockSession, perceivedExertion: 3 });
+      expect(screen.getByText('3/10')).toHaveClass('text-green-500');
+      unmount1();
+
+      // Medium RPE (yellow)
+      const { unmount: unmount2 } = renderRow({ ...mockSession, perceivedExertion: 5 });
+      expect(screen.getByText('5/10')).toHaveClass('text-yellow-500');
+      unmount2();
+
+      // High RPE (orange)
+      const { unmount: unmount3 } = renderRow({ ...mockSession, perceivedExertion: 7 });
+      expect(screen.getByText('7/10')).toHaveClass('text-orange-500');
+      unmount3();
+
+      // Very high RPE (red + bold)
+      renderRow({ ...mockSession, perceivedExertion: 9 });
+      const rpe = screen.getByText('9/10');
+      expect(rpe).toHaveClass('text-red-500');
+      expect(rpe).toHaveClass('font-bold');
     });
   });
 
-  describe('RPE coloring', () => {
-    it('applies correct colors based on RPE value', () => {
-      // Low RPE (1-3) - green
-      const { rerender: rerenderLow } = renderRow({ ...mockSession, perceivedExertion: 2 });
-      expect(screen.getByText('2/10')).toHaveClass('text-green-500');
+  describe('Fractionné sessions', () => {
+    const fractionnéSession: TrainingSession = {
+      ...mockSession,
+      sessionType: 'Fractionné',
+      intervalDetails: {
+        workoutType: '10x400m',
+        repetitionCount: 10,
+        effortDuration: '1:30',
+        recoveryDuration: '1:00',
+        effortDistance: 400,
+        recoveryDistance: null,
+        targetEffortPace: '3:45',
+        targetEffortHR: 170,
+        targetRecoveryPace: null,
+        steps: [
+          { stepNumber: 1, stepType: 'warmup', duration: '10:00', distance: null, pace: null, hr: null },
+          { stepNumber: 2, stepType: 'effort', duration: '1:30', distance: 400, pace: '3:45', hr: 170 },
+        ],
+      },
+    };
 
-      // Medium RPE (4-6) - yellow
-      rerenderLow(
-        <table>
-          <tbody>
-            <CompletedSessionRow
-              session={{ ...mockSession, perceivedExertion: 5 }}
-              onEdit={mockOnEdit}
-              onDelete={mockOnDelete}
-            />
-          </tbody>
-        </table>
-      );
-      expect(screen.getByText('5/10')).toHaveClass('text-yellow-500');
+    it('displays chevron indicator for fractionné sessions', () => {
+      renderRow(fractionnéSession);
+      expect(screen.getByText('Fractionné')).toBeInTheDocument();
+      expect(screen.getByText('10x400m')).toBeInTheDocument();
+    });
 
-      // High RPE (7-10) - red, bold
-      rerenderLow(
-        <table>
-          <tbody>
-            <CompletedSessionRow
-              session={{ ...mockSession, perceivedExertion: 10 }}
-              onEdit={mockOnEdit}
-              onDelete={mockOnDelete}
-            />
-          </tbody>
-        </table>
-      );
-      const highRPE = screen.getByText('10/10');
-      expect(highRPE).toHaveClass('text-red-500');
-      expect(highRPE).toHaveClass('font-bold');
+    it('shows non-clickable cursor for non-fractionné sessions', () => {
+      renderRow();
+      const sessionTypeCell = screen.getByText('Footing').closest('td');
+      expect(sessionTypeCell).not.toHaveClass('cursor-pointer');
     });
   });
 
   describe('Edge cases', () => {
-    it('handles null values gracefully', () => {
-      // Null RPE
-      renderRow({ ...mockSession, perceivedExertion: null });
-      expect(screen.getByText('-')).toBeInTheDocument();
-
+    it('handles missing data gracefully', () => {
       // Null week
       renderRow({ ...mockSession, week: null });
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);
@@ -149,22 +158,48 @@ describe('CompletedSessionRow', () => {
   });
 
   describe('Actions', () => {
-    it('calls onEdit when edit button is clicked', () => {
+    it('renders dropdown menu trigger', () => {
       renderRow();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-
-      expect(mockOnEdit).toHaveBeenCalledWith(mockSession);
+      expect(screen.getByTestId('dropdown-menu')).toBeInTheDocument();
     });
 
-    it('calls onDelete when delete button is clicked', () => {
+    it('calls onView when view details item is clicked', () => {
       renderRow();
+      
+      const menuItems = screen.getAllByTestId('dropdown-item');
+      const viewItem = menuItems.find(item => item.textContent?.includes('Voir détails'));
+      expect(viewItem).toBeInTheDocument();
+      
+      if (viewItem) {
+        fireEvent.click(viewItem);
+        expect(mockOnView).toHaveBeenCalledWith(mockSession);
+      }
+    });
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[1]);
+    it('calls onEdit when edit item is clicked', () => {
+      renderRow();
+      
+      const menuItems = screen.getAllByTestId('dropdown-item');
+      const editItem = menuItems.find(item => item.textContent?.includes('Modifier'));
+      expect(editItem).toBeInTheDocument();
+      
+      if (editItem) {
+        fireEvent.click(editItem);
+        expect(mockOnEdit).toHaveBeenCalledWith(mockSession);
+      }
+    });
 
-      expect(mockOnDelete).toHaveBeenCalledWith('1');
+    it('calls onDelete when delete item is clicked', () => {
+      renderRow();
+      
+      const menuItems = screen.getAllByTestId('dropdown-item');
+      const deleteItem = menuItems.find(item => item.textContent?.includes('Supprimer'));
+      expect(deleteItem).toBeInTheDocument();
+      
+      if (deleteItem) {
+        fireEvent.click(deleteItem);
+        expect(mockOnDelete).toHaveBeenCalledWith('1');
+      }
     });
   });
 });

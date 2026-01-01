@@ -1,18 +1,19 @@
 import type { StravaTokens, StravaActivity } from '@/lib/types';
 import { logger } from '@/lib/infrastructure/logger';
+import { STRAVA_URLS, GRANT_TYPES } from '@/lib/constants';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 
 export async function exchangeCodeForTokens(code: string): Promise<StravaTokens> {
-  const response = await fetch('https://www.strava.com/oauth/token', {
+  const response = await fetch(STRAVA_URLS.TOKEN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       client_id: STRAVA_CLIENT_ID,
       client_secret: STRAVA_CLIENT_SECRET,
       code,
-      grant_type: 'authorization_code',
+      grant_type: GRANT_TYPES.AUTHORIZATION_CODE,
     }),
   });
 
@@ -24,14 +25,14 @@ export async function exchangeCodeForTokens(code: string): Promise<StravaTokens>
 }
 
 export async function refreshAccessToken(refreshToken: string): Promise<StravaTokens> {
-  const response = await fetch('https://www.strava.com/oauth/token', {
+  const response = await fetch(STRAVA_URLS.TOKEN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       client_id: STRAVA_CLIENT_ID,
       client_secret: STRAVA_CLIENT_SECRET,
       refresh_token: refreshToken,
-      grant_type: 'refresh_token',
+      grant_type: GRANT_TYPES.REFRESH_TOKEN,
     }),
   });
 
@@ -47,7 +48,7 @@ export async function getActivities(
   perPage: number = 30
 ): Promise<StravaActivity[]> {
   const response = await fetch(
-    `https://www.strava.com/api/v3/athlete/activities?per_page=${perPage}`,
+    `${STRAVA_URLS.ACTIVITIES}?per_page=${perPage}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -67,7 +68,7 @@ export async function getActivityDetails(
   activityId: number
 ): Promise<StravaActivity> {
   const response = await fetch(
-    `https://www.strava.com/api/v3/activities/${activityId}`,
+    `${STRAVA_URLS.API_BASE}/activities/${activityId}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, ZodSchema } from 'zod';
 import { logger } from '@/lib/infrastructure/logger';
 import { requireAuth } from '@/lib/auth/middleware';
+import { HTTP_STATUS } from '@/lib/constants';
 
 export interface ApiHandlerOptions {
   requireAuth?: boolean;
@@ -54,7 +55,7 @@ export async function handleApiRequest<T = unknown>(
         if (authErrorMessage) {
           return NextResponse.json(
             { error: authErrorMessage },
-            { status: 401 }
+            { status: HTTP_STATUS.UNAUTHORIZED }
           );
         }
         return auth.error;
@@ -95,13 +96,13 @@ export function handleApiError(error: unknown, context: string = 'api-error'): N
 
     return NextResponse.json(
       { error: message, details: error.issues },
-      { status: 400 }
+      { status: HTTP_STATUS.BAD_REQUEST }
     );
   }
 
   if (error instanceof Error) {
     const errorWithStatus = error as Error & { statusCode?: number; status?: number };
-    const statusCode = errorWithStatus.statusCode || errorWithStatus.status || 500;
+    const statusCode = errorWithStatus.statusCode || errorWithStatus.status || HTTP_STATUS.INTERNAL_SERVER_ERROR;
 
     logger.error({ error, context }, `Error in ${context}`);
 
@@ -115,7 +116,7 @@ export function handleApiError(error: unknown, context: string = 'api-error'): N
 
   return NextResponse.json(
     { error: 'Erreur interne du serveur' },
-    { status: 500 }
+    { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
   );
 }
 

@@ -83,6 +83,8 @@ const SessionDialog = ({
     onIntervalModeChange: setIntervalEntryMode,
   });
 
+  const watchedSessionType = form.watch('sessionType');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
@@ -152,7 +154,7 @@ const SessionDialog = ({
                 )}
               />
             </div>
-            {form.watch('sessionType') === 'Fractionné' && (
+            {watchedSessionType === 'Fractionné' && (
               <>
                 <IntervalImportSection
                   onCsvClick={triggerCsvSelect}

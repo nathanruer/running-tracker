@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/features/sessions/components/session-dialog';
 import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
 import { CsvImportDialog } from '@/features/import/components/csv-import-dialog';
-import { SessionsTable } from '@/features/dashboard/components/sessions-table';
+import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
+import { SessionDetailsSheet } from '@/features/sessions/components/session-details-sheet';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -43,6 +44,8 @@ const DashboardPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] =
     useState<TrainingSession | null>(null);
+  const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
+  const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
   const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
@@ -176,6 +179,16 @@ const DashboardPage = () => {
     }
   }, [availableTypes, selectedType]);
 
+  const sessionDialogInitialData = useMemo(() => {
+    if (!importedData) return null;
+    return {
+      ...importedData,
+      date: importedData.date ?? undefined,
+      duration: importedData.duration ?? undefined,
+      avgPace: importedData.avgPace ?? undefined,
+    };
+  }, [importedData]);
+
   if (!user && !userLoading) {
     return null;
   }
@@ -193,9 +206,11 @@ const DashboardPage = () => {
             onTypeChange={() => {}}
             viewMode="paginated"
             onViewModeChange={() => {}}
-            onEdit={() => {}}
-            onDelete={() => {}}
-            onBulkDelete={async () => {}}
+            actions={{
+              onEdit: () => {},
+              onDelete: () => {},
+              onBulkDelete: async () => {},
+            }}
             initialLoading={true}
           />
         </div>
@@ -333,6 +348,17 @@ const DashboardPage = () => {
     return null;
   }
 
+  const sessionActions: SessionActions = {
+    onEdit: handleEdit,
+    onDelete: setDeletingId,
+    onBulkDelete: handleBulkDelete,
+    onView: (session) => {
+      setViewingSession(session);
+      setIsDetailsSheetOpen(true);
+    },
+    onNewSession: openNewSession,
+  };
+
   return (
     <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
       <div className="mx-auto max-w-[90rem]">
@@ -346,10 +372,7 @@ const DashboardPage = () => {
             onTypeChange={setSelectedType}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
-            onEdit={handleEdit}
-            onDelete={setDeletingId}
-            onBulkDelete={handleBulkDelete}
-            onNewSession={openNewSession}
+            actions={sessionActions}
             initialLoading={initialLoading}
           />
         ) : (
@@ -381,17 +404,23 @@ const DashboardPage = () => {
         onClose={handleDialogClose}
         onSuccess={handleEntitySuccess}
         session={editingSession}
-        initialData={importedData ? {
-          ...importedData,
-          date: importedData.date ?? undefined,
-          duration: importedData.duration ?? undefined,
-          avgPace: importedData.avgPace ?? undefined,
-        } : null}
+        initialData={sessionDialogInitialData}
         mode={getDialogMode()}
         onRequestStravaImport={handleRequestStravaImport}
         onRequestCsvImport={() => {
           setIsCsvDialogOpen(true);
         }}
+      />
+
+      <SessionDetailsSheet
+        open={isDetailsSheetOpen}
+        onOpenChange={(open) => {
+          setIsDetailsSheetOpen(open);
+          if (!open) {
+            setTimeout(() => setViewingSession(null), 300);
+          }
+        }}
+        session={viewingSession}
       />
 
       <CsvImportDialog
@@ -401,7 +430,7 @@ const DashboardPage = () => {
         isImporting={isImportingCsv}
         mode={getDialogMode()}
       />
-
+      
       <StravaImportDialog
         open={isStravaDialogOpen}
         onOpenChange={setIsStravaDialogOpen}

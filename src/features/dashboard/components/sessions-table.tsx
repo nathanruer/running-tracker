@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, MoreVertical } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { PlannedSessionRow } from './planned-session-row';
 import { CompletedSessionRow } from './completed-session-row';
@@ -42,6 +42,14 @@ import { useSessionsTableSort } from '../hooks/use-sessions-table-sort';
 import { useSessionsSelection } from '../hooks/use-sessions-selection';
 import { useBulkDelete } from '../hooks/use-bulk-delete';
 
+export interface SessionActions {
+  onEdit: (session: TrainingSession) => void;
+  onDelete: (id: string) => void;
+  onBulkDelete: (ids: string[]) => Promise<void>;
+  onView?: (session: TrainingSession) => void;
+  onNewSession?: () => void;
+}
+
 interface SessionsTableProps {
   sessions: TrainingSession[];
   availableTypes: string[];
@@ -49,10 +57,7 @@ interface SessionsTableProps {
   onTypeChange: (type: string) => void;
   viewMode: 'paginated' | 'all';
   onViewModeChange: (mode: 'paginated' | 'all') => void;
-  onEdit: (session: TrainingSession) => void;
-  onDelete: (id: string) => void;
-  onBulkDelete: (ids: string[]) => Promise<void>;
-  onNewSession?: () => void;
+  actions: SessionActions;
   initialLoading: boolean;
 }
 
@@ -63,71 +68,76 @@ export function SessionsTable({
   onTypeChange,
   viewMode,
   onViewModeChange,
-  onEdit,
-  onDelete,
-  onBulkDelete,
-  onNewSession,
+  actions,
   initialLoading,
 }: SessionsTableProps) {
   const { sortColumn, sortDirection, handleSort, getSortedSessions } = useSessionsTableSort(sessions);
   const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(getSortedSessions());
-  const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(onBulkDelete);
+  const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
 
   const sortedSessions = getSortedSessions();
 
   return (
     <>
-      <Card className="border-border/50">
+      <Card className="border-border/50">        
         <CardHeader className="flex flex-col gap-4 space-y-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
-            {onNewSession && (
-              initialLoading ? (
-                <div className="h-10 w-10 md:w-[168px] animate-pulse rounded-md bg-muted shrink-0" />
-              ) : (
-                <Button
-                  onClick={onNewSession}
-                  className="gradient-violet shrink-0"
-                  title="Nouvelle séance"
-                >
-                  <Plus />
-                  <span className="hidden md:inline">Ajouter une séance</span>
-                </Button>
-              )
-            )}
+            {initialLoading ? (
+              <div className="h-10 w-10 md:w-[168px] animate-pulse rounded-md bg-muted shrink-0" />
+            ) : actions.onNewSession ? (
+              <Button
+                onClick={actions.onNewSession}
+                className="gradient-violet shrink-0"
+                title="Nouvelle séance"
+              >
+                <Plus />
+                <span className="hidden md:inline">Ajouter une séance</span>
+              </Button>
+            ) : null}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
-            <Select value={selectedType} onValueChange={onTypeChange}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Type de séance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                {availableTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={viewMode}
-              onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Affichage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="paginated">10 dernières</SelectItem>
-                <SelectItem value="all">Tout afficher</SelectItem>
-              </SelectContent>
-            </Select>
-            <ExportSessions
-              selectedType={selectedType}
-              selectedSessions={selectedSessions}
-              allSessions={sessions}
-            />
+            {initialLoading ? (
+              <>
+                <div className="h-8 w-full sm:w-[180px] animate-pulse rounded-md bg-muted" />
+                <div className="h-8 w-full sm:w-[180px] animate-pulse rounded-md bg-muted" />
+                <div className="h-8 w-full sm:w-[110px] animate-pulse rounded-md bg-muted" />
+              </>
+            ) : (
+              <>
+                <Select value={selectedType} onValueChange={onTypeChange}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Type de séance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    {availableTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={viewMode}
+                  onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Affichage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paginated">10 dernières</SelectItem>
+                    <SelectItem value="all">Tout afficher</SelectItem>
+                  </SelectContent>
+                </Select>
+                <ExportSessions
+                  selectedType={selectedType}
+                  selectedSessions={selectedSessions}
+                  allSessions={sessions}
+                />
+              </>
+            )}
           </div>
 
           {selectedSessions.size > 0 && (
@@ -205,7 +215,9 @@ export function SessionsTable({
                     </button>
                   </TableHead>
                   <TableHead className="max-w-[40ch]">Commentaires</TableHead>
-                  <TableHead className="whitespace-nowrap text-center">Actions</TableHead>
+                  <TableHead className="w-10 text-center">
+                    <MoreVertical className="h-4 w-4 mx-auto text-muted-foreground" />
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -227,10 +239,14 @@ export function SessionsTable({
                       <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell><div className="h-6 w-12 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-10 w-full animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell className="min-w-[320px]">
+                        <div className="flex flex-col gap-2">
+                          <div className="h-4 w-80 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                          <div className="h-4 w-72 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                        </div>
+                      </TableCell>
                       <TableCell>
-                        <div className="flex gap-2 justify-center">
-                          <div className="h-8 w-8 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                        <div className="flex justify-center">
                           <div className="h-8 w-8 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
                         </div>
                       </TableCell>
@@ -242,21 +258,23 @@ export function SessionsTable({
                       <PlannedSessionRow
                         key={session.id}
                         session={session}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
+                        onEdit={actions.onEdit}
+                        onDelete={actions.onDelete}
                         showCheckbox={true}
                         isSelected={selectedSessions.has(session.id)}
                         onToggleSelect={() => toggleSessionSelection(session.id)}
+                        onView={actions.onView}
                       />
                     ) : (
                       <CompletedSessionRow
                         key={session.id}
                         session={session}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
+                        onEdit={actions.onEdit}
+                        onDelete={actions.onDelete}
                         showCheckbox={true}
                         isSelected={selectedSessions.has(session.id)}
                         onToggleSelect={() => toggleSessionSelection(session.id)}
+                        onView={actions.onView}
                       />
                     )
                   )

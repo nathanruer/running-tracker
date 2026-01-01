@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Trash2, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronDown } from 'lucide-react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
@@ -8,6 +7,7 @@ import { generateIntervalStructure } from '@/lib/utils';
 import { normalizePaceFormat } from '@/lib/utils/duration';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
+import { SessionRowActions } from './session-row-actions';
 
 interface PlannedSessionRowProps {
   session: TrainingSession;
@@ -16,6 +16,7 @@ interface PlannedSessionRowProps {
   showCheckbox?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  onView?: (session: TrainingSession) => void;
 }
 
 export function PlannedSessionRow({ 
@@ -24,13 +25,20 @@ export function PlannedSessionRow({
   onDelete, 
   showCheckbox = false,
   isSelected = false,
-  onToggleSelect
+  onToggleSelect,
+  onView
 }: PlannedSessionRowProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const hasIntervalDetails = session.sessionType === 'Fractionné' && session.intervalDetails;
+  const hasIntervalDetails = session.sessionType === 'Fractionné' && !!session.intervalDetails;
+
+  const handleRowClick = () => {
+    if (hasIntervalDetails) {
+      setIsOpen(!isOpen);
+    }
+  };
 
   const getSessionTotals = () => {
-    if (hasIntervalDetails && session.intervalDetails?.steps?.length) {
+    if (session.intervalDetails?.steps?.length) {
       let totalSeconds = 0;
       let totalDistance = 0;
       let totalWeightedHR = 0;
@@ -68,7 +76,7 @@ export function PlannedSessionRow({
   const totals = getSessionTotals();
 
   const calculateGlobalPace = () => {
-    if (hasIntervalDetails && session.intervalDetails?.steps?.length) {
+    if (session.intervalDetails?.steps?.length) {
       let totalWeightedPaceSec = 0;
       let paceDistance = 0;
       let totalDistance = 0;
@@ -123,13 +131,13 @@ export function PlannedSessionRow({
     <>
       <TableRow
         className={`text-muted-foreground/70 italic transition-colors ${
-          hasIntervalDetails
-            ? isOpen
-              ? 'bg-muted/20 border-b-0 hover:bg-muted/20 cursor-pointer'
-              : 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30 hover:bg-muted/10 cursor-pointer'
-            : 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30 hover:bg-muted/10'
+          hasIntervalDetails && isOpen
+            ? 'bg-muted/20 border-b-0 cursor-pointer'
+            : hasIntervalDetails
+            ? 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30 cursor-pointer'
+            : 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30'
         }`}
-        onClick={hasIntervalDetails ? () => setIsOpen(!isOpen) : undefined}
+        onClick={handleRowClick}
       >
         <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
           {showCheckbox && (
@@ -204,29 +212,24 @@ export function PlannedSessionRow({
             </span>
           ) : '-'}
         </TableCell>
-        <CommentCell comment={session.comments} className="text-muted-foreground/70" />
+        <CommentCell
+          comment={session.comments}
+          className="text-muted-foreground/70"
+          onShowMore={() => onView?.(session)}
+        />
         <TableCell onClick={(e) => e.stopPropagation()}>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(session)}
-            >
-              <CheckCircle className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(session.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <SessionRowActions
+            session={session}
+            onView={onView}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isPlanned={true}
+          />
         </TableCell>
       </TableRow>
 
       {hasIntervalDetails && isOpen && (
-        <TableRow className="hover:bg-transparent">
+        <TableRow>
           <TableCell colSpan={12} className="bg-muted/20 border-b-2 border-dashed border-muted-foreground/30 p-2 italic text-muted-foreground/70">
             <div className="opacity-80 grayscale-[0.3]">
               <IntervalDetailsView

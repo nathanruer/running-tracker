@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest, createSessionToken } from '@/lib/auth';
 import { logger } from '@/lib/infrastructure/logger';
+import {
+  HTTP_STATUS,
+  STRAVA_URLS,
+  STRAVA_ERRORS,
+  SESSION_COOKIE_NAME,
+  COOKIE_CONFIG,
+  GRANT_TYPES,
+} from '@/lib/constants';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
@@ -15,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     if (error || !code) {
       return NextResponse.redirect(
-        new URL('/error/strava?error=strava_auth_failed', request.url)
+        new URL(`/error/strava?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
       );
     }
 
@@ -27,18 +35,18 @@ export async function GET(request: NextRequest) {
       }, 'Missing Strava OAuth configuration');
       return NextResponse.json(
         { error: 'Configuration Strava manquante' },
-        { status: 500 }
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
       );
     }
 
-    const tokenResponse = await fetch('https://www.strava.com/oauth/token', {
+    const tokenResponse = await fetch(STRAVA_URLS.TOKEN, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: STRAVA_CLIENT_ID,
         client_secret: STRAVA_CLIENT_SECRET,
         code,
-        grant_type: 'authorization_code',
+        grant_type: GRANT_TYPES.AUTHORIZATION_CODE,
       }),
     });
 
@@ -50,11 +58,11 @@ export async function GET(request: NextRequest) {
         error: errorData,
       }, 'Strava token exchange failed');
       
-      if (tokenResponse.status === 429 || 
+      if (tokenResponse.status === HTTP_STATUS.TOO_MANY_REQUESTS ||
           (errorData.errors && errorData.errors.some((e: { code: string }) => e.code === 'Rate Limit Exceeded')) ||
           (errorData.message && errorData.message.includes('rate limit'))) {
         return NextResponse.redirect(
-          new URL('/error/strava?error=strava_api_limit', request.url)
+          new URL(`/error/strava?error=${STRAVA_ERRORS.API_LIMIT}`, request.url)
         );
       }
       
@@ -94,9 +102,9 @@ export async function GET(request: NextRequest) {
           stravaLinkedToUserId: stravaAlreadyLinked.id,
           stravaId: athlete.id.toString(),
         }, 'Strava account already linked to a different user');
-        
+
         return NextResponse.redirect(
-          new URL('/error/strava?error=strava_already_linked', request.url)
+          new URL(`/error/strava?error=${STRAVA_ERRORS.ALREADY_LINKED}`, request.url)
         );
       }
 
@@ -106,9 +114,9 @@ export async function GET(request: NextRequest) {
           currentStravaId: currentUser.stravaId,
           newStravaId: athlete.id.toString(),
         }, 'User already has a Strava account linked');
-        
+
         return NextResponse.redirect(
-          new URL('/error/strava?error=strava_already_linked', request.url)
+          new URL(`/error/strava?error=${STRAVA_ERRORS.ALREADY_LINKED}`, request.url)
         );
       }
 
@@ -157,19 +165,19 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(
       new URL('/dashboard', request.url)
     );
-    response.cookies.set('rt_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: COOKIE_CONFIG.HTTP_ONLY,
+      secure: COOKIE_CONFIG.SECURE,
+      sameSite: COOKIE_CONFIG.SAME_SITE,
+      path: COOKIE_CONFIG.PATH,
+      maxAge: COOKIE_CONFIG.MAX_AGE,
     });
 
     return response;
   } catch (error) {
     logger.error({ error }, 'Strava OAuth callback failed');
     return NextResponse.redirect(
-      new URL('/error/strava?error=strava_auth_failed', request.url)
+      new URL(`/error/strava?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
     );
   }
 }

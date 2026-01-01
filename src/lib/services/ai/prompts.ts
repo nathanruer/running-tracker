@@ -73,7 +73,8 @@ Si "session_type" = "Fractionné", ALORS les contraintes suivantes deviennent OB
    - "targetEffortPace": allure cible pour les efforts (ex: "4:30")
    - "targetEffortHR": FC cible pour les efforts (nombre entier)
    - "targetRecoveryPace": allure cible pour les récupérations (ex: "7:00" ou "8:00")
-   - "steps": tableau exhaustif de toutes les étapes (échauffement, chaque effort, chaque récup, retour au calme).
+   - "steps": TABLEAU OBLIGATOIRE ET EXHAUSTIF contenant TOUTES les étapes (échauffement, N répétitions effort, N répétitions récup, retour au calme). IL NE DOIT JAMAIS ÊTRE VIDE, NULL OU MANQUANT.
+   - SI "steps" EST VIDE, LA RÉPONSE EST INVALIDÉE.
 
 3. Cohérence STRICTE des allures dans les steps :
    - TOUS les steps de type "effort" doivent avoir exactement la même allure que "targetEffortPace"

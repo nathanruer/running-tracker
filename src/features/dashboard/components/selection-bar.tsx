@@ -29,6 +29,7 @@ export function SelectionBar({ selectedCount, onClear, onDelete }: SelectionBarP
         size="sm"
         onClick={onDelete}
         className="h-8 px-3 text-xs"
+        data-testid="bulk-delete-button"
       >
         <Trash2 className="mr-2 h-3.5 w-3.5" />
         Supprimer

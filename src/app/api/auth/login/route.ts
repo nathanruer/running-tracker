@@ -5,6 +5,7 @@ import { prisma } from '@/lib/database';
 import { createSessionToken, persistSessionCookie } from '@/lib/auth';
 import { loginSchema } from '@/lib/validation';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { HTTP_STATUS } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       if (!user) {
         return NextResponse.json(
           { error: 'Identifiants invalides' },
-          { status: 401 },
+          { status: HTTP_STATUS.UNAUTHORIZED },
         );
       }
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       if (!passwordMatches) {
         return NextResponse.json(
           { error: 'Identifiants invalides' },
-          { status: 401 },
+          { status: HTTP_STATUS.UNAUTHORIZED },
         );
       }
 

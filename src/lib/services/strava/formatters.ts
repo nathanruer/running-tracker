@@ -28,5 +28,14 @@ export function formatStravaActivity(activity: StravaActivity) {
     avgPace,
     avgHeartRate: activity.average_heartrate || 0,
     comments: activity.name || '',
+    externalId: activity.id.toString(),
+    source: 'strava',
+    stravaData: activity,
+    elevationGain: activity.total_elevation_gain,
+    maxElevation: activity.elev_high,
+    minElevation: activity.elev_low,
+    averageCadence: activity.average_cadence,
+    averageTemp: activity.average_temp,
+    calories: activity.calories,
   };
 }

@@ -44,6 +44,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       targetEffortHR: undefined,
       targetRecoveryPace: '',
       steps: [],
+      externalId: null,
+      source: 'manual',
+      stravaData: null,
+      elevationGain: null,
+      maxElevation: null,
+      minElevation: null,
+      averageCadence: null,
+      averageTemp: null,
+      calories: null,
     },
   });
 
@@ -67,6 +76,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         avgPace: '',
         avgHeartRate: null,
         ...importedFields,
+        externalId: session.externalId,
+        source: session.source,
+        stravaData: session.stravaData,
+        elevationGain: session.elevationGain,
+        maxElevation: session.maxElevation,
+        minElevation: session.minElevation,
+        averageCadence: session.averageCadence,
+        averageTemp: session.averageTemp,
+        calories: session.calories,
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (session && (mode === 'edit' || mode === 'complete')) {
@@ -116,6 +134,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
           pace: s.pace || null,
           hr: s.hr ?? null,
         })) || [],
+        externalId: session.externalId,
+        source: session.source,
+        stravaData: session.stravaData,
+        elevationGain: session.elevationGain,
+        maxElevation: session.maxElevation,
+        minElevation: session.minElevation,
+        averageCadence: session.averageCadence,
+        averageTemp: session.averageTemp,
+        calories: session.calories,
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (initialData) {
@@ -142,6 +169,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         avgHeartRate: null,
         perceivedExertion: null,
         comments: '',
+        externalId: null,
+        source: 'manual',
+        stravaData: null,
+        elevationGain: null,
+        maxElevation: null,
+        minElevation: null,
+        averageCadence: null,
+        averageTemp: null,
+        calories: null,
       });
       setIsCustomSessionType(false);
     }
@@ -163,6 +199,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         intervalDetails,
         perceivedExertion: values.perceivedExertion,
         comments: values.comments,
+        externalId: values.externalId,
+        source: values.source,
+        stravaData: values.stravaData,
+        elevationGain: values.elevationGain,
+        maxElevation: values.maxElevation,
+        minElevation: values.minElevation,
+        averageCadence: values.averageCadence,
+        averageTemp: values.averageTemp,
+        calories: values.calories,
       };
 
       const updatedSession = await updateSession(session.id, sessionData);
@@ -197,6 +242,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         intervalDetails,
         perceivedExertion: values.perceivedExertion,
         comments: values.comments,
+        externalId: values.externalId,
+        source: values.source,
+        stravaData: values.stravaData,
+        elevationGain: values.elevationGain,
+        maxElevation: values.maxElevation,
+        minElevation: values.minElevation,
+        averageCadence: values.averageCadence,
+        averageTemp: values.averageTemp,
+        calories: values.calories,
       };
 
       let resultSession: TrainingSession;

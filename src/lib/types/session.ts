@@ -45,6 +45,15 @@ export interface TrainingSession {
   targetHeartRateBpm?: string | null;
   targetRPE?: number | null;
   recommendationId?: string | null;
+  externalId?: string | null;
+  source?: string | null;
+  stravaData?: unknown | null;
+  elevationGain?: number | null;
+  maxElevation?: number | null;
+  minElevation?: number | null;
+  averageCadence?: number | null;
+  averageTemp?: number | null;
+  calories?: number | null;
 }
 
 export type TrainingSessionPayload = Omit<

@@ -1,13 +1,11 @@
-'use client';
-
 import { useState } from 'react';
-import { Edit, Trash2, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { type TrainingSession } from '@/lib/types';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
+import { SessionRowActions } from './session-row-actions';
 
 interface CompletedSessionRowProps {
   session: TrainingSession;
@@ -16,6 +14,7 @@ interface CompletedSessionRowProps {
   showCheckbox?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  onView?: (session: TrainingSession) => void;
 }
 
 export function CompletedSessionRow({
@@ -24,22 +23,29 @@ export function CompletedSessionRow({
   onDelete,
   showCheckbox = false,
   isSelected = false,
-  onToggleSelect
+  onToggleSelect,
+  onView
 }: CompletedSessionRowProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const hasIntervalDetails = session.sessionType === 'Fractionné' && session.intervalDetails;
+  const hasIntervalDetails = session.sessionType === 'Fractionné' && !!session.intervalDetails;
+
+  const handleRowClick = () => {
+    if (hasIntervalDetails) {
+      setIsOpen(!isOpen);
+    }
+  };
 
   return (
     <>
       <TableRow
         className={
-          hasIntervalDetails
-            ? isOpen
-              ? 'bg-muted/50 border-b-0 hover:bg-muted/50 cursor-pointer'
-              : 'cursor-pointer hover:bg-transparent'
-            : 'hover:bg-transparent'
+          hasIntervalDetails && isOpen
+            ? 'bg-muted/50 border-b-0 cursor-pointer'
+            : hasIntervalDetails
+            ? 'cursor-pointer'
+            : ''
         }
-        onClick={hasIntervalDetails ? () => setIsOpen(!isOpen) : undefined}
+        onClick={handleRowClick}
       >
         <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
           {showCheckbox && (
@@ -119,35 +125,23 @@ export function CompletedSessionRow({
             <span className="text-muted-foreground">-</span>
           )}
         </TableCell>
-        <CommentCell comment={session.comments} />
-        <TableCell>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(session);
-              }}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(session.id);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+        <CommentCell
+          comment={session.comments}
+          onShowMore={() => onView?.(session)}
+        />
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <SessionRowActions
+            session={session}
+            onView={onView}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isPlanned={false}
+          />
         </TableCell>
       </TableRow>
 
       {hasIntervalDetails && isOpen && (
-        <TableRow className="hover:bg-transparent">
+        <TableRow>
           <TableCell colSpan={12} className="bg-muted/50 p-2">
             <IntervalDetailsView
               intervalDetails={session.intervalDetails!}

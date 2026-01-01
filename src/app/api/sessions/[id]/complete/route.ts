@@ -3,6 +3,7 @@ import { prisma } from '@/lib/database';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 
 export async function PATCH(
   request: NextRequest,
@@ -19,14 +20,14 @@ export async function PATCH(
       if (!session) {
         return NextResponse.json(
           { error: 'Séance non trouvée' },
-          { status: 404 }
+          { status: HTTP_STATUS.NOT_FOUND }
         );
       }
 
-      if (session.status !== 'planned') {
+      if (session.status !== SESSION_STATUS.PLANNED) {
         return NextResponse.json(
           { error: 'Cette séance n\'est pas planifiée' },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
 
@@ -44,7 +45,7 @@ export async function PATCH(
       const completedSession = await prisma.training_sessions.update({
         where: { id },
         data: {
-          status: 'completed',
+          status: SESSION_STATUS.COMPLETED,
           date: new Date(date),
           duration,
           distance: parseFloat(distance),

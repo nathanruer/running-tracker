@@ -18,18 +18,25 @@ export function useChatMutations(conversationId: string | null) {
       const recommendationText = session.why_this_session || session.reason || '';
       const comments = recommendationText ? `Séance recommandée : ${recommendationText}` : '';
 
+      const sessionType = session.session_type || session.type;
+      const intervalDetails = session.interval_details || null;
+
+      if (sessionType === 'Fractionné' && (!intervalDetails?.steps || intervalDetails.steps.length === 0)) {
+        throw new Error("Impossible d'ajouter la séance : L'IA n'a pas généré les étapes détaillées. Veuillez demander à l'IA de régénérer la séance.");
+      }
+
       const response = await fetch('/api/sessions/planned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionType: session.session_type || session.type,
+          sessionType,
           targetDuration: session.duration_minutes || session.duration_min,
           targetDistance: session.estimated_distance_km,
           targetPace: session.target_pace_min_km,
           targetHeartRateZone: session.target_hr_zone || session.target_hr,
           targetHeartRateBpm: session.target_hr_bpm,
           targetRPE: session.target_rpe,
-          intervalDetails: session.interval_details || null,
+          intervalDetails,
           recommendationId: session.recommendation_id,
           comments,
         }),

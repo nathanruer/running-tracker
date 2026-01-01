@@ -26,7 +26,7 @@ export function useFileImport({ onValuesChange, onIntervalModeChange }: UseFileI
         return;
       }
 
-      onValuesChange('sessionType', 'Fractionné');
+      onValuesChange('sessionType', 'Fractionné', { shouldDirty: true, shouldValidate: true });
 
       onValuesChange('steps', result.steps.map(step => ({
         ...step,
@@ -34,9 +34,9 @@ export function useFileImport({ onValuesChange, onIntervalModeChange }: UseFileI
         distance: step.distance ?? null,
         pace: step.pace || null,
         hr: step.hr ?? null,
-      })));
+      })), { shouldDirty: true });
 
-      onValuesChange('repetitionCount', result.repetitionCount || undefined);
+      onValuesChange('repetitionCount', result.repetitionCount || undefined, { shouldDirty: true });
 
       onIntervalModeChange('detailed');
 

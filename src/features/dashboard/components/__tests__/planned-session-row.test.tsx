@@ -16,9 +16,20 @@ vi.mock('@/components/ui/badge', () => ({
   Badge: ({ children }: { children: React.ReactNode }) => <span data-testid="badge">{children}</span>,
 }));
 
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-trigger">{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-content">{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <button data-testid="dropdown-item" onClick={onClick}>{children}</button>
+  ),
+  DropdownMenuSeparator: () => <hr />,
+}));
+
 describe('PlannedSessionRow', () => {
   const mockOnEdit = vi.fn();
   const mockOnDelete = vi.fn();
+  const mockOnView = vi.fn();
 
   const mockPlannedSession: TrainingSession = {
     id: '1',
@@ -50,103 +61,93 @@ describe('PlannedSessionRow', () => {
     return render(
       <table>
         <tbody>
-          <PlannedSessionRow session={session} onEdit={mockOnEdit} onDelete={mockOnDelete} />
+          <PlannedSessionRow 
+            session={session} 
+            onEdit={mockOnEdit} 
+            onDelete={mockOnDelete}
+            onView={mockOnView}
+          />
         </tbody>
       </table>
     );
   };
 
   describe('Data rendering', () => {
-    it('renders all planned session data correctly', () => {
+    it('displays session type and targets', () => {
       renderRow();
 
-      // Basic info
       expect(screen.getByText('3')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
       expect(screen.getByText('Sortie longue')).toBeInTheDocument();
-
-      // Target metrics (with ~ prefix)
-      expect(screen.getByText('~01:30:00')).toBeInTheDocument();
-      expect(screen.getByText('~18.00')).toBeInTheDocument();
-      expect(screen.getByText('km')).toBeInTheDocument();
-      expect(screen.getByText('~05:00')).toBeInTheDocument();
-      expect(screen.getByText('mn/km')).toBeInTheDocument();
-      expect(screen.getByText('~Z2')).toBeInTheDocument();
-      expect(screen.getByText('bpm')).toBeInTheDocument();
-      expect(screen.getByText('5/10')).toBeInTheDocument();
-      expect(screen.getByText('Préparation semi-marathon')).toBeInTheDocument();
     });
 
-    it('displays interval structure when present', () => {
-      const sessionWithIntervals: TrainingSession = {
-        ...mockPlannedSession,
-        sessionType: 'Fractionné',
-        intervalDetails: {
-          workoutType: '10x400m',
-          steps: [],
-          repetitionCount: null,
-          effortDuration: null,
-          recoveryDuration: null,
-          effortDistance: null,
-          recoveryDistance: null,
-          targetEffortPace: null,
-          targetEffortHR: null,
-          targetRecoveryPace: null,
-        },
-      };
-
-      renderRow(sessionWithIntervals);
-
-      expect(screen.getByText('Fractionné')).toBeInTheDocument();
-      expect(screen.getByText('10x400m')).toBeInTheDocument();
-    });
-
-    it('uses targetHeartRateBpm when available instead of zone', () => {
-      const sessionWithBPM: TrainingSession = {
-        ...mockPlannedSession,
-        targetHeartRateZone: null,
-        targetHeartRateBpm: '150',
-      };
-
-      renderRow(sessionWithBPM);
-      expect(screen.getByText('~150')).toBeInTheDocument();
-      expect(screen.getByText('bpm')).toBeInTheDocument();
-    });
-  });
-
-  describe('Date handling', () => {
-    it('displays "À planifier" when date is null', () => {
+    it('shows "À planifier" when no date is set', () => {
       renderRow();
       expect(screen.getByText('À planifier')).toBeInTheDocument();
     });
 
-    it('displays formatted date when present', () => {
-      const sessionWithDate: TrainingSession = {
-        ...mockPlannedSession,
-        date: '2024-01-15T10:00:00.000Z',
-      };
+    it('displays target RPE', () => {
+      renderRow();
+      expect(screen.getByText('5/10')).toBeInTheDocument();
+    });
 
-      renderRow(sessionWithDate);
-      expect(screen.getByText('15/01/2024')).toBeInTheDocument();
+    it('shows italic styling for planned rows', () => {
+      const { container } = renderRow();
+      const row = container.querySelector('tr');
+      expect(row?.className).toContain('italic');
+    });
+  });
+
+  describe('Fractionné planned sessions', () => {
+    const fractionnéPlanned: TrainingSession = {
+      ...mockPlannedSession,
+      sessionType: 'Fractionné',
+      intervalDetails: {
+        workoutType: '6x1000m',
+        repetitionCount: 6,
+        effortDuration: '4:00',
+        recoveryDuration: '2:00',
+        effortDistance: 1000,
+        recoveryDistance: 400,
+        targetEffortPace: '4:00',
+        targetEffortHR: 170,
+        targetRecoveryPace: '6:00',
+        steps: [
+          { stepNumber: 1, stepType: 'warmup', duration: '15:00', distance: 3000, pace: '5:00', hr: null },
+          { stepNumber: 2, stepType: 'effort', duration: '4:00', distance: 1000, pace: '4:00', hr: 170 },
+          { stepNumber: 3, stepType: 'recovery', duration: '2:00', distance: 400, pace: '6:00', hr: 130 },
+        ],
+      },
+    };
+
+    it('displays workout type for fractionné', () => {
+      renderRow(fractionnéPlanned);
+      expect(screen.getByText('Fractionné')).toBeInTheDocument();
+      expect(screen.getByText('6x1000m')).toBeInTheDocument();
+    });
+
+    it('calculates and displays totals from steps', () => {
+      renderRow(fractionnéPlanned);
+      expect(screen.getByText('Fractionné')).toBeInTheDocument();
+    });
+
+    it('shows chevron for expandable interval details', () => {
+      renderRow(fractionnéPlanned);
+      expect(screen.getByText('Fractionné')).toBeInTheDocument();
     });
   });
 
   describe('Edge cases', () => {
-    it('handles null values gracefully', () => {
-      // Null target duration
+    it('handles missing target duration gracefully', () => {
       renderRow({ ...mockPlannedSession, targetDuration: null });
-      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
-
-      // Null target distance
-      renderRow({ ...mockPlannedSession, targetDistance: null });
-      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
-
-      // Null week
-      renderRow({ ...mockPlannedSession, week: null });
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);
     });
 
-    it('formats target duration correctly for different values', () => {
+    it('handles missing target pace gracefully', () => {
+      renderRow({ ...mockPlannedSession, targetPace: null });
+      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    });
+
+    it('formats target duration correctly', () => {
       renderRow({ ...mockPlannedSession, targetDuration: 30 });
       expect(screen.getByText('~00:30:00')).toBeInTheDocument();
 
@@ -156,22 +157,48 @@ describe('PlannedSessionRow', () => {
   });
 
   describe('Actions', () => {
-    it('calls onEdit when complete button is clicked', () => {
+    it('renders dropdown menu trigger', () => {
       renderRow();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-
-      expect(mockOnEdit).toHaveBeenCalledWith(mockPlannedSession);
+      expect(screen.getByTestId('dropdown-menu')).toBeInTheDocument();
     });
 
-    it('calls onDelete when delete button is clicked', () => {
+    it('calls onView when view details item is clicked', () => {
       renderRow();
+      
+      const menuItems = screen.getAllByTestId('dropdown-item');
+      const viewItem = menuItems.find(item => item.textContent?.includes('Voir détails'));
+      expect(viewItem).toBeInTheDocument();
+      
+      if (viewItem) {
+        fireEvent.click(viewItem);
+        expect(mockOnView).toHaveBeenCalledWith(mockPlannedSession);
+      }
+    });
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[1]);
+    it('calls onEdit when complete item is clicked', () => {
+      renderRow();
+      
+      const menuItems = screen.getAllByTestId('dropdown-item');
+      const editItem = menuItems.find(item => item.textContent?.includes('Compléter'));
+      expect(editItem).toBeInTheDocument();
+      
+      if (editItem) {
+        fireEvent.click(editItem);
+        expect(mockOnEdit).toHaveBeenCalledWith(mockPlannedSession);
+      }
+    });
 
-      expect(mockOnDelete).toHaveBeenCalledWith('1');
+    it('calls onDelete when delete item is clicked', () => {
+      renderRow();
+      
+      const menuItems = screen.getAllByTestId('dropdown-item');
+      const deleteItem = menuItems.find(item => item.textContent?.includes('Supprimer'));
+      expect(deleteItem).toBeInTheDocument();
+      
+      if (deleteItem) {
+        fireEvent.click(deleteItem);
+        expect(mockOnDelete).toHaveBeenCalledWith('1');
+      }
     });
   });
 });

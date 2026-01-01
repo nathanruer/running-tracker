@@ -61,6 +61,15 @@ describe('SessionsTable', () => {
   const mockOnDelete = vi.fn();
   const mockOnBulkDelete = vi.fn();
   const mockOnNewSession = vi.fn();
+  const mockOnView = vi.fn();
+
+  const defaultActions = {
+    onEdit: mockOnEdit,
+    onDelete: mockOnDelete,
+    onBulkDelete: mockOnBulkDelete,
+    onNewSession: mockOnNewSession,
+    onView: mockOnView,
+  };
 
   const defaultProps = {
     sessions: mockSessions,
@@ -69,10 +78,7 @@ describe('SessionsTable', () => {
     onTypeChange: mockOnTypeChange,
     viewMode: 'all' as const,
     onViewModeChange: mockOnViewModeChange,
-    onEdit: mockOnEdit,
-    onDelete: mockOnDelete,
-    onBulkDelete: mockOnBulkDelete,
-    onNewSession: mockOnNewSession,
+    actions: defaultActions,
     initialLoading: false,
   };
 
@@ -108,7 +114,8 @@ describe('SessionsTable', () => {
   });
 
   it('should not render "Ajouter une séance" button when onNewSession is not provided', () => {
-    render(<SessionsTable {...defaultProps} onNewSession={undefined} />);
+    const actionsWithoutNewSession = { ...defaultActions, onNewSession: undefined };
+    render(<SessionsTable {...defaultProps} actions={actionsWithoutNewSession} />);
 
     expect(screen.queryByRole('button', { name: /ajouter une séance/i })).not.toBeInTheDocument();
   });
@@ -172,7 +179,7 @@ describe('SessionsTable', () => {
     await user.click(selectAllCheckbox);
 
     // Click delete button
-    const deleteButton = screen.getByRole('button', { name: /supprimer/i });
+    const deleteButton = screen.getByTestId('bulk-delete-button');
     await user.click(deleteButton);
 
     // Dialog should appear
@@ -191,7 +198,7 @@ describe('SessionsTable', () => {
     await user.click(selectAllCheckbox);
 
     // Open dialog
-    const deleteButton = screen.getByRole('button', { name: /supprimer/i });
+    const deleteButton = screen.getByTestId('bulk-delete-button');
     await user.click(deleteButton);
 
     // Confirm deletion

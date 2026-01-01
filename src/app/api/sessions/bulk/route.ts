@@ -5,6 +5,7 @@ import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
@@ -18,14 +19,14 @@ export async function POST(request: NextRequest) {
       if (!Array.isArray(sessions) || sessions.length === 0) {
         return NextResponse.json(
           { error: 'Le tableau de séances est requis' },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
 
       const validatedSessions = sessions.map((session) =>
         sessionSchema.parse(session)
       );
-
+      
       const result = await prisma.training_sessions.createMany({
         data: validatedSessions.map((session) => {
           const { intervalDetails, ...sessionData } = session;
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
             sessionNumber: 1,
             week: 1,
             userId,
-            status: 'completed',
+            status: SESSION_STATUS.COMPLETED,
           };
         }),
       });
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
           message: `${result.count} séance(s) importée(s) avec succès`,
           count: result.count,
         },
-        { status: 201 }
+        { status: HTTP_STATUS.CREATED }
       );
     },
     { logContext: 'bulk-import-sessions' }
@@ -65,7 +66,7 @@ export async function DELETE(request: NextRequest) {
       if (!Array.isArray(ids) || ids.length === 0) {
         return NextResponse.json(
           { error: 'Le tableau d\'identifiants est requis' },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
 
@@ -83,7 +84,7 @@ export async function DELETE(request: NextRequest) {
           message: `${result.count} séance(s) supprimée(s) avec succès`,
           count: result.count,
         },
-        { status: 200 }
+        { status: HTTP_STATUS.OK }
       );
     },
     { logContext: 'bulk-delete-sessions' }

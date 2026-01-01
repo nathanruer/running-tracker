@@ -6,6 +6,7 @@ import { partialSessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { HTTP_STATUS } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 
@@ -24,7 +25,7 @@ export async function PUT(
       if (!session) {
         return NextResponse.json(
           { error: 'Séance introuvable' },
-          { status: 404 }
+          { status: HTTP_STATUS.NOT_FOUND }
         );
       }
 
@@ -77,7 +78,7 @@ export async function DELETE(
       if (!session) {
         return NextResponse.json(
           { error: 'Séance introuvable' },
-          { status: 404 }
+          { status: HTTP_STATUS.NOT_FOUND }
         );
       }
 
