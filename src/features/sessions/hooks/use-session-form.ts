@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { addSession, updateSession } from '@/lib/services/api-client';
@@ -8,6 +8,7 @@ import { PREDEFINED_TYPES } from '@/features/sessions/components/session-type-se
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
 import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';
+import { calculatePaceFromDurationAndDistance } from '@/lib/utils/duration';
 
 interface UseSessionFormProps {
   mode: 'create' | 'edit' | 'complete';
@@ -27,7 +28,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: getTodayISO(),
-      sessionType: '',
+      sessionType: 'Footing',
       duration: '',
       distance: null,
       avgPace: '',
@@ -56,6 +57,21 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     },
   });
 
+  const watchedDuration = useWatch({ control: form.control, name: 'duration' });
+  const watchedDistance = useWatch({ control: form.control, name: 'distance' });
+
+  useEffect(() => {
+    if (watchedDuration && watchedDistance) {
+      const pace = calculatePaceFromDurationAndDistance(watchedDuration, watchedDistance);
+      if (pace) {
+        const currentPace = form.getValues('avgPace');
+        if (currentPace !== pace) {
+             form.setValue('avgPace', pace, { shouldValidate: true, shouldDirty: true });
+        }
+      }
+    }
+  }, [watchedDuration, watchedDistance, form]);
+
   useEffect(() => {
     const predefinedTypes = PREDEFINED_TYPES;
 
@@ -68,7 +84,6 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
       form.reset({
         date: sessionDate,
-        sessionType: session.sessionType,
         perceivedExertion,
         comments: session.comments || '',
         duration: '',
@@ -76,7 +91,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         avgPace: '',
         avgHeartRate: null,
         ...importedFields,
-        externalId: session.externalId,
+        sessionType: importedFields.sessionType || session.sessionType || 'Footing',
         source: session.source,
         stravaData: session.stravaData,
         elevationGain: session.elevationGain,
@@ -149,7 +164,6 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       const { date, ...importedFields } = initialData;
       form.reset({
         date: date ? extractDatePart(date) : getTodayISO(),
-        sessionType: '',
         duration: '',
         distance: null,
         avgPace: '',
@@ -157,12 +171,13 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         perceivedExertion: null,
         comments: '',
         ...importedFields,
+        sessionType: importedFields.sessionType || 'Footing',
       });
       setIsCustomSessionType(false);
     } else {
       form.reset({
         date: getTodayISO(),
-        sessionType: '',
+        sessionType: 'Footing',
         duration: '',
         distance: null,
         avgPace: '',
@@ -212,7 +227,9 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
       const updatedSession = await updateSession(session.id, sessionData);
 
-      handleSuccess('Séance modifiée', 'La séance a été mise à jour avec succès.');
+      const type = values.sessionType.toLowerCase();
+      const dist = values.distance ? ` de ${values.distance}km` : '';
+      handleSuccess('Séance modifiée', `Votre séance ${type}${dist} a été mise à jour avec succès.`);
       if (onSuccess) onSuccess(updatedSession);
       onClose();
       form.reset();
@@ -253,6 +270,9 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         calories: values.calories,
       };
 
+      const type = values.sessionType.toLowerCase();
+      const dist = values.distance ? ` de ${values.distance}km` : '';
+
       let resultSession: TrainingSession;
 
       if (mode === 'complete' && session) {
@@ -269,13 +289,13 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         }
 
         resultSession = data;
-        handleSuccess('Séance enregistrée', 'La séance a été enregistrée avec succès.');
+        handleSuccess('Séance enregistrée', `Votre sortie ${type}${dist} a été enregistrée !`);
       } else if (mode === 'edit' && session) {
         resultSession = await updateSession(session.id, sessionData);
-        handleSuccess('Séance modifiée', 'La séance a été mise à jour avec succès.');
+        handleSuccess('Séance modifiée', `Votre séance ${type}${dist} a été mise à jour avec succès.`);
       } else {
         resultSession = await addSession(sessionData);
-        handleSuccess('Séance ajoutée', 'La séance a été enregistrée avec succès.');
+        handleSuccess('Séance ajoutée', `Votre sortie ${type}${dist} a été enregistrée !`);
       }
 
       if (onSuccess) onSuccess(resultSession);
@@ -291,7 +311,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
   const resetForm = () => {
     form.reset({
       date: getTodayISO(),
-      sessionType: '',
+      sessionType: 'Footing',
       duration: '',
       distance: null,
       avgPace: '',

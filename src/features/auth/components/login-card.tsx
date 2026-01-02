@@ -27,15 +27,17 @@ const LoginCard = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    const cleanEmail = email.trim();
+
     try {
       if (isLogin) {
-        await loginUser(email, password);
+        await loginUser(cleanEmail, password);
         toast({
           title: 'Connexion réussie',
           description: 'Bienvenue !',
         });
       } else {
-        await registerUser(email, password);
+        await registerUser(cleanEmail, password);
         toast({
           title: 'Compte créé',
           description: 'Votre compte a été créé avec succès !',
@@ -70,7 +72,7 @@ const LoginCard = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input

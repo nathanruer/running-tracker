@@ -271,3 +271,35 @@ export function normalizeDurationToMMSS(
 
   return null;
 }
+
+/**
+ * Calculates pace from duration and distance
+ * 
+ * @param durationStr - Duration string (HH:MM:SS or MM:SS)
+ * @param distance - Distance in km
+ * @returns Pace string in MM:SS format, or null if inputs are invalid or incomplete
+ * 
+ * @example
+ * calculatePaceFromDurationAndDistance("01:00:00", 10) // "06:00"
+ * calculatePaceFromDurationAndDistance("00:45:00", 10) // "04:30"
+ */
+export function calculatePaceFromDurationAndDistance(durationStr: string, distance: number | null): string | null {
+  if (!durationStr || !distance || distance <= 0) {
+    return null;
+  }
+
+  const durationSeconds = parseDuration(durationStr);
+  if (durationSeconds === null) {
+    return null;
+  }
+
+  const paceSeconds = durationSeconds / distance;
+  
+  // Pace is minutes per km. formatDuration returns MM:SS or HH:MM:SS.
+  // We want MM:SS. If pace is > 1 hour/km (walking very slow), formatDuration handles it.
+  
+  // formatDuration checks if seconds < 3600 (1 hour). For pace, it usually is.
+  // 06:00 min/km = 360 seconds.
+  
+  return formatDuration(paceSeconds);
+}

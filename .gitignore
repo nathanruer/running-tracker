@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -40,7 +38,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Playwright
-.playwright/
-test-results/
-playwright-report/
+# Playwright E2E artifacts
+/e2e/.auth/
+/e2e/test-results/
+/e2e/screenshots/
+/e2e/videos/
+/e2e/traces/
+/playwright-report/
+/test-results/
+/.auth/

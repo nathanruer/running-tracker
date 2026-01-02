@@ -123,7 +123,7 @@ describe('Strava API', () => {
 
       const result = await getStravaActivityDetails('12345678');
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activity/12345678');
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities/12345678');
       expect(result).toEqual(mockDetails);
     });
 

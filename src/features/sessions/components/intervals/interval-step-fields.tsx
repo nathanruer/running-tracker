@@ -1,4 +1,5 @@
-import { Control, UseFormSetValue } from 'react-hook-form';
+import { Control, UseFormSetValue, useWatch } from 'react-hook-form';
+import { useEffect } from 'react';
 import {
   FormControl,
   FormField,
@@ -8,6 +9,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { type IntervalFormValues } from '@/lib/validation/session-form';
+import { calculatePaceFromDurationAndDistance } from '@/lib/utils/duration';
 
 interface IntervalStepFieldsProps {
   stepIndex: number;
@@ -22,7 +24,25 @@ const STEP_TYPE_LABELS: Record<string, string> = {
   cooldown: 'Retour au calme',
 };
 
-export function IntervalStepFields({ stepIndex, control }: IntervalStepFieldsProps) {
+export function IntervalStepFields({ stepIndex, control, setValue }: IntervalStepFieldsProps) {
+  const duration = useWatch({
+    control,
+    name: `steps.${stepIndex}.duration`,
+  });
+  const distance = useWatch({
+    control,
+    name: `steps.${stepIndex}.distance`,
+  });
+
+  useEffect(() => {
+    if (duration && distance !== null && distance !== undefined && setValue) {
+      const pace = calculatePaceFromDurationAndDistance(duration, distance);
+      if (pace) {
+        setValue(`steps.${stepIndex}.pace`, pace, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  }, [duration, distance, setValue, stepIndex]);
+
   return (
     <div className="grid grid-cols-4 gap-3">
       <FormField

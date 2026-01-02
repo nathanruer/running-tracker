@@ -175,7 +175,7 @@ const SessionDialog = ({
               hasSession={!!session}
               onCancel={() => {
                 onOpenChange(false);
-                form.reset();
+                resetForm();
               }}
               onUpdate={mode === 'complete' ? form.handleSubmit(onUpdate) : undefined}
             />

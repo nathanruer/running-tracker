@@ -58,12 +58,12 @@ export default function ProfilePage() {
     try {
       setIsLoggingOut(true);
       
+      await fetch('/api/auth/logout', { method: 'POST' });
+      
       queryClient.setQueryData(['user'], null);
       queryClient.clear();
 
       window.location.href = '/';
-      
-      fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
     } catch {
       setIsLoggingOut(false);
       setShowLogoutDialog(false);

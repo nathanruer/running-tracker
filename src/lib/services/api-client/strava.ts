@@ -25,5 +25,5 @@ export async function getStravaActivities(): Promise<StravaActivity[]> {
  * @param activityId Strava activity ID
  */
 export async function getStravaActivityDetails(activityId: string): Promise<StravaActivityDetails> {
-  return apiRequest<StravaActivityDetails>(`/api/strava/activity/${activityId}`);
+  return apiRequest<StravaActivityDetails>(`/api/strava/activities/${activityId}`);
 }

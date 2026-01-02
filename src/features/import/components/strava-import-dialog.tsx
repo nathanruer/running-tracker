@@ -96,7 +96,7 @@ export function StravaImportDialog({
 
       if (mode === 'complete') {
         const activity = selectedActivities[0];
-        const response = await fetch(`/api/strava/activity/${activity.id}`);
+        const response = await fetch(`/api/strava/activities/${activity.id}`);
 
         if (!response.ok) {
           throw new Error('Échec de la récupération');
@@ -109,7 +109,7 @@ export function StravaImportDialog({
       } else if (selectedIndices.size === 1) {
         // Single activity import - fills session form
         const activity = selectedActivities[0];
-        const response = await fetch(`/api/strava/activity/${activity.id}`);
+        const response = await fetch(`/api/strava/activities/${activity.id}`);
 
         if (!response.ok) {
           throw new Error('Échec de la récupération');
@@ -123,7 +123,7 @@ export function StravaImportDialog({
         // Bulk import mode (multiple activities)
         const activityPromises = selectedActivities.map(async (activity) => {
           try {
-            const response = await fetch(`/api/strava/activity/${activity.id}`);
+            const response = await fetch(`/api/strava/activities/${activity.id}`);
             if (response.ok) {
               return await response.json();
             }

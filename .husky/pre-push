@@ -1,16 +1,27 @@
 #!/usr/bin/env sh
 set -e
 
+echo "Running pre-push checks..."
+echo ""
+
 echo "TypeScript check..."
 npm run typecheck
 
+echo ""
 echo "Linting..."
 npm run lint
 
-echo "Tests..."
+echo ""
+echo "Unit & Integration Tests..."
 npm test -- --run
 
-echo "Build..."
+echo ""
+echo "E2E Tests..."                                                                                                         
+npm run test:e2e      
+
+echo ""
+echo "Build check..."
 npm run build
 
+echo ""
 echo "All checks passed!"
