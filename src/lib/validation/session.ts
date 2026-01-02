@@ -33,7 +33,7 @@ export const sessionSchema = z.object({
   avgPace: z
     .string()
     .regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS'),
-  avgHeartRate: z.number().min(0),
+  avgHeartRate: z.number().min(0).optional().nullable(),
   intervalDetails: intervalDetailsSchema.optional(),
   perceivedExertion: z.number().min(0).max(10).optional().nullable(),
   comments: z.string().optional().default(''),

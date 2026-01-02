@@ -8,7 +8,7 @@ import { PREDEFINED_TYPES } from '@/features/sessions/components/session-type-se
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
 import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';
-import { calculatePaceFromDurationAndDistance } from '@/lib/utils/duration';
+import { calculatePaceFromDurationAndDistance, normalizeDurationToHHMMSS } from '@/lib/utils/duration';
 
 interface UseSessionFormProps {
   mode: 'create' | 'edit' | 'complete';
@@ -198,16 +198,72 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     }
   }, [session, initialData, mode, form]);
 
+  interface ValidationErrorDetail {
+    path: (string | number)[];
+    message: string;
+  }
+
+  interface ValidationError extends Error {
+    details?: ValidationErrorDetail[];
+  }
+
+  const handleFormError = (error: unknown) => {
+    if (error instanceof Error && 'details' in error && Array.isArray((error as ValidationError).details)) {
+      const details = (error as ValidationError).details || [];
+
+      details.forEach((err) => {
+        if (err.path && Array.isArray(err.path)) {
+          const pathParts = [...err.path];
+          if (pathParts[0] === 'intervalDetails') {
+            pathParts.shift();
+          }
+
+          const fieldName = pathParts.join('.');
+
+          let message = err.message;
+          if (message.includes('expected number') || message.includes('received null')) {
+            message = 'Ce champ est requis';
+          } else if (message.includes('expected string') && message.includes('received ""')) {
+            message = 'Ce champ est requis';
+          } else if (message.includes('invalid_type')) {
+            message = 'Type invalide';
+          }
+
+          form.setError(fieldName as keyof FormValues, {
+            type: 'server',
+            message: message
+          });
+        }
+      });
+
+      return;
+    }
+
+    handleError(error, 'Une erreur est survenue lors de l\'enregistrement.');
+  };
+
   const onUpdate = async (values: FormValues) => {
     if (!session) return;
 
     setLoading(true);
     try {
-      const intervalDetails = transformIntervalData(values, intervalEntryMode);
+      // Normalize durations to HH:MM:SS
+      const normalizedValues: FormValues = {
+        ...values,
+        duration: normalizeDurationToHHMMSS(values.duration) || '',
+        effortDuration: normalizeDurationToHHMMSS(values.effortDuration) || '',
+        recoveryDuration: normalizeDurationToHHMMSS(values.recoveryDuration) || '',
+        steps: values.steps?.map(s => ({
+          ...s,
+          duration: normalizeDurationToHHMMSS(s.duration)
+        }))
+      };
+
+      const intervalDetails = transformIntervalData(normalizedValues, intervalEntryMode);
       const sessionData: TrainingSessionPayload = {
         date: values.date,
         sessionType: values.sessionType,
-        duration: values.duration,
+        duration: normalizedValues.duration,
         distance: values.distance ?? null,
         avgPace: values.avgPace,
         avgHeartRate: values.avgHeartRate ?? null,
@@ -234,7 +290,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       onClose();
       form.reset();
     } catch (error) {
-      handleError(error, 'Une erreur est survenue lors de la modification.');
+      handleFormError(error);
     } finally {
       setLoading(false);
     }
@@ -248,11 +304,22 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
     setLoading(true);
     try {
-      const intervalDetails = transformIntervalData(values, intervalEntryMode);
+      const normalizedValues: FormValues = {
+        ...values,
+        duration: normalizeDurationToHHMMSS(values.duration) || '',
+        effortDuration: normalizeDurationToHHMMSS(values.effortDuration) || '',
+        recoveryDuration: normalizeDurationToHHMMSS(values.recoveryDuration) || '',
+        steps: values.steps?.map(s => ({
+          ...s,
+          duration: normalizeDurationToHHMMSS(s.duration)
+        }))
+      };
+
+      const intervalDetails = transformIntervalData(normalizedValues, intervalEntryMode);
       const sessionData: TrainingSessionPayload = {
         date: values.date,
         sessionType: values.sessionType,
-        duration: values.duration,
+        duration: normalizedValues.duration,
         distance: values.distance ?? null,
         avgPace: values.avgPace,
         avgHeartRate: values.avgHeartRate ?? null,
@@ -285,7 +352,11 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Erreur lors de l\'enregistrement de la séance');
+          const error = new Error(data.error || 'Erreur lors de l\'enregistrement de la séance') as Error & { details?: unknown };
+          if (data.details) {
+            error.details = data.details;
+          }
+          throw error;
         }
 
         resultSession = data;
@@ -302,7 +373,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       onClose();
       form.reset();
     } catch (error) {
-      handleError(error, 'Une erreur est survenue lors de l\'enregistrement.');
+      handleFormError(error);
     } finally {
       setLoading(false);
     }

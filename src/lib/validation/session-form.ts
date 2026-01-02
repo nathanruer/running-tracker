@@ -6,33 +6,65 @@ const nullableNumberRefinement = (n: unknown) =>
 
 const numberRefinement = { message: 'Nombre requis' };
 
+const requiredDuration = () =>
+  z.string()
+    .min(1, 'Durée requise')
+    .refine(
+      (val) => validateDurationInput(val),
+      { message: 'Format: MM:SS ou HH:MM:SS' }
+    );
+
+const optionalDuration = () =>
+  z.string()
+    .optional()
+    .refine(
+      (val) => !val || val === '' || validateDurationInput(val),
+      { message: 'Format: MM:SS ou HH:MM:SS' }
+    );
+
+const requiredPace = () =>
+  z.string()
+    .min(1, 'Allure requise')
+    .refine(
+      (val) => validatePaceInput(val),
+      { message: 'Format: MM:SS' }
+    );
+
+const optionalPace = () =>
+  z.string()
+    .optional()
+    .refine(
+      (val) => !val || val === '' || validatePaceInput(val),
+      { message: 'Format: MM:SS' }
+    );
+
 const intervalStepSchema = z.object({
   stepNumber: z.number(),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-  duration: z.string().nullable().refine(
-    (val) => val === null || val === '' || validateDurationInput(val),
-    { message: 'Format: MM:SS ou HH:MM:SS' }
-  ),
+  duration: optionalDuration().nullable(),
   distance: z.number().nullable(),
-  pace: z.string().nullable().refine(
-    (val) => val === null || val === '' || validatePaceInput(val),
-    { message: 'Format: MM:SS' }
-  ),
+  pace: optionalPace().nullable(),
   hr: z.number().nullable(),
 });
 
 const formSchema = z.object({
   date: z.string(),
   sessionType: z.string().min(1, 'Type de séance requis'),
-  duration: z.string().refine(
-    (val) => val === '' || validateDurationInput(val),
-    { message: 'Format: MM:SS ou HH:MM:SS' }
-  ),
-  distance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  avgPace: z.string().refine(
-    (val) => val === '' || validatePaceInput(val),
-    { message: 'Format: MM:SS' }
-  ),
+  duration: requiredDuration(),
+  distance: z.number().nullable().superRefine((val, ctx) => {
+    if (val === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Distance requise'
+      });
+    } else if (val < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Distance doit être positive'
+      });
+    }
+  }),
+  avgPace: requiredPace(),
   avgHeartRate: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
   perceivedExertion: z.number().nullable().optional().refine(
     (val) => val === null || val === undefined || (typeof val === 'number' && val >= 0 && val <= 10),
@@ -41,25 +73,13 @@ const formSchema = z.object({
   comments: z.string(),
   workoutType: z.string().optional(),
   repetitionCount: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  effortDuration: z.string().optional().refine(
-    (val) => !val || val === '' || validateDurationInput(val),
-    { message: 'Format: MM:SS ou HH:MM:SS' }
-  ),
-  recoveryDuration: z.string().optional().refine(
-    (val) => !val || val === '' || validateDurationInput(val),
-    { message: 'Format: MM:SS ou HH:MM:SS' }
-  ),
+  effortDuration: optionalDuration(),
+  recoveryDuration: optionalDuration(),
   effortDistance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
   recoveryDistance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  targetEffortPace: z.string().optional().refine(
-    (val) => !val || val === '' || validatePaceInput(val),
-    { message: 'Format: MM:SS' }
-  ),
+  targetEffortPace: optionalPace(),
   targetEffortHR: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  targetRecoveryPace: z.string().optional().refine(
-    (val) => !val || val === '' || validatePaceInput(val),
-    { message: 'Format: MM:SS' }
-  ),
+  targetRecoveryPace: optionalPace(),
   steps: z.array(intervalStepSchema).optional(),
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),

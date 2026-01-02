@@ -23,9 +23,9 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="duration"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Durée (HH:MM:SS)</FormLabel>
+              <FormLabel>Durée</FormLabel>
               <FormControl>
-                <Input placeholder="00:00" {...field} />
+                <Input placeholder="00:00:00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

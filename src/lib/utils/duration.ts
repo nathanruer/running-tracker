@@ -303,3 +303,39 @@ export function calculatePaceFromDurationAndDistance(durationStr: string, distan
   
   return formatDuration(paceSeconds);
 }
+
+/**
+ * Formats duration in seconds to HH:MM:SS format always
+ *
+ * @param seconds - Duration in seconds
+ * @returns Formatted duration string in HH:MM:SS
+ *
+ * @example
+ * formatDurationHHMMSS(2910)   // "00:48:30"
+ * formatDurationHHMMSS(5400)   // "01:30:00"
+ */
+export function formatDurationHHMMSS(seconds: number): string {
+  if (seconds < 0 || !isFinite(seconds)) {
+    return '00:00:00';
+  }
+
+  const roundedSeconds = Math.round(seconds);
+  const hours = Math.floor(roundedSeconds / 3600);
+  const minutes = Math.floor((roundedSeconds % 3600) / 60);
+  const secs = roundedSeconds % 60;
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Normalizes a duration string to HH:MM:SS format
+ *
+ * @param input - Duration string in MM:SS or HH:MM:SS
+ * @returns Normalized duration string in HH:MM:SS, or null if input is empty
+ */
+export function normalizeDurationToHHMMSS(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const seconds = parseDuration(input);
+  if (seconds === null) return input;
+  return formatDurationHHMMSS(seconds);
+}

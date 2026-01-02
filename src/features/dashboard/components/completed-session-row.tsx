@@ -106,9 +106,7 @@ export function CompletedSessionRow({
               {session.avgHeartRate} <span className="text-xs text-muted-foreground">bpm</span>
             </>
           ) : (
-            <>
-              0 <span className="text-xs text-muted-foreground">bpm</span>
-            </>
+            <span className="text-muted-foreground">-</span>
           )}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">

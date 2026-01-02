@@ -80,11 +80,25 @@ describe('CompletedSessionRow', () => {
       expect(screen.getByText('km')).toBeInTheDocument();
     });
 
-    it('displays heart rate with unit', () => {
+    it('displays heart rate with unit when present', () => {
       renderRow();
 
       expect(screen.getByText('145')).toBeInTheDocument();
       expect(screen.getAllByText('bpm').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('displays "-" when heart rate is not provided', () => {
+      renderRow({ ...mockSession, avgHeartRate: null });
+
+      const cells = screen.getAllByText('-');
+      expect(cells.length).toBeGreaterThan(0);
+    });
+
+    it('displays "-" when heart rate is 0', () => {
+      renderRow({ ...mockSession, avgHeartRate: 0 });
+
+      const cells = screen.getAllByText('-');
+      expect(cells.length).toBeGreaterThan(0);
     });
 
     it('colors RPE appropriately based on value', () => {

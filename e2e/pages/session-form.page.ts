@@ -30,7 +30,7 @@ export class SessionFormPage {
   }
 
   async fillDuration(value: string): Promise<void> {
-    const input = this.dialog.getByRole('textbox', { name: /^durée \(hh:mm:ss\)$/i });
+    const input = this.dialog.locator('input[name="duration"]');
     await input.clear();
     await input.fill(value);
   }
@@ -77,6 +77,32 @@ export class SessionFormPage {
     return typeof pattern === 'string'
       ? errors.some(e => e.includes(pattern))
       : errors.some(e => pattern.test(e));
+  }
+
+  /**
+   * Get specific field error message
+   */
+  async getFieldError(fieldName: string): Promise<string | null> {
+    const fieldError = await this.dialog
+      .locator(`[id$="${fieldName}-form-item-message"]`)
+      .textContent()
+      .catch(() => null);
+    return fieldError;
+  }
+
+  /**
+   * Clear a specific field
+   */
+  async clearField(fieldName: 'duration' | 'distance' | 'avgPace' | 'avgHeartRate'): Promise<void> {
+    const selectors: Record<string, string> = {
+      duration: 'input[name="duration"]',
+      distance: 'input[name="distance"]',
+      avgPace: 'input[name="avgPace"]',
+      avgHeartRate: 'input[name="avgHeartRate"]',
+    };
+
+    const input = this.dialog.locator(selectors[fieldName]);
+    await input.clear();
   }
 
   /**
