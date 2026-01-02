@@ -82,6 +82,7 @@ test.describe('Dashboard - Empty State', () => {
     await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
 
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText(/aucune séance/i)).toBeVisible({ timeout: 10000 });
   });
 

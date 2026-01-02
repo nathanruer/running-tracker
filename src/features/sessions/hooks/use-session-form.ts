@@ -92,14 +92,14 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         avgHeartRate: null,
         ...importedFields,
         sessionType: importedFields.sessionType || session.sessionType || 'Footing',
-        source: session.source,
-        stravaData: session.stravaData,
-        elevationGain: session.elevationGain,
-        maxElevation: session.maxElevation,
-        minElevation: session.minElevation,
-        averageCadence: session.averageCadence,
-        averageTemp: session.averageTemp,
-        calories: session.calories,
+        source: importedFields.source ?? session.source,
+        stravaData: importedFields.stravaData ?? session.stravaData,
+        elevationGain: importedFields.elevationGain ?? session.elevationGain,
+        maxElevation: importedFields.maxElevation ?? session.maxElevation,
+        minElevation: importedFields.minElevation ?? session.minElevation,
+        averageCadence: importedFields.averageCadence ?? session.averageCadence,
+        averageTemp: importedFields.averageTemp ?? session.averageTemp,
+        calories: importedFields.calories ?? session.calories,
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
     } else if (session && (mode === 'edit' || mode === 'complete')) {

@@ -94,7 +94,7 @@ describe('/api/sessions/[id]/complete', () => {
       expect(data).toEqual(completedSession);
       expect(prisma.training_sessions.update).toHaveBeenCalledWith({
         where: { id: 'session-123' },
-        data: {
+        data: expect.objectContaining({
           status: 'completed',
           date: new Date(completionData.date),
           duration: completionData.duration,
@@ -103,7 +103,7 @@ describe('/api/sessions/[id]/complete', () => {
           avgHeartRate: 150,
           perceivedExertion: 7,
           comments: completionData.comments,
-        },
+        }),
       });
       expect(recalculateSessionNumbers).toHaveBeenCalledWith('user-123');
     });
@@ -294,6 +294,129 @@ describe('/api/sessions/[id]/complete', () => {
       expect(prisma.training_sessions.findUnique).toHaveBeenCalledWith({
         where: { id: 'session-123' },
       });
+    });
+
+    it('should save Strava import data when completing session with Strava activity', async () => {
+      const plannedSession = {
+        id: 'session-123',
+        userId: 'user-123',
+        status: 'planned',
+        sessionType: 'Footing',
+      };
+
+      const stravaData = {
+        id: 16913359219,
+        name: 'Morning Run',
+        distance: 3858.3,
+        moving_time: 1643,
+        total_elevation_gain: 9,
+        elev_high: 40.1,
+        elev_low: 33.9,
+        average_cadence: 76.6,
+        average_temp: 12,
+        calories: 317,
+        map: {
+          id: 'a16913359219',
+          summary_polyline: 'kbjiHgywLHOEO?OPOJOASM',
+        },
+      };
+
+      const completionData = {
+        date: '2026-01-02T10:00:00.000Z',
+        duration: '00:27:23',
+        distance: '3.86',
+        avgPace: '07:06',
+        avgHeartRate: '153',
+        perceivedExertion: '5',
+        comments: 'Course à pied dans l\'après-midi',
+        externalId: '16913359219',
+        source: 'strava',
+        stravaData: stravaData,
+        elevationGain: 9,
+        maxElevation: 40.1,
+        minElevation: 33.9,
+        averageCadence: 76.6,
+        averageTemp: 12,
+        calories: 317,
+      };
+
+      const completedSession = {
+        ...plannedSession,
+        status: 'completed',
+        ...completionData,
+        distance: 3.86,
+        avgHeartRate: 153,
+        perceivedExertion: 5,
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
+      vi.mocked(prisma.training_sessions.update).mockResolvedValue(completedSession as never);
+      vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(completedSession as never);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+
+      const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
+        method: 'PATCH',
+        body: JSON.stringify(completionData),
+      });
+
+      const response = await PATCH(request, { params: Promise.resolve({ id: 'session-123' }) });
+      await response.json();
+
+      expect(response.status).toBe(200);
+      expect(prisma.training_sessions.update).toHaveBeenCalledWith({
+        where: { id: 'session-123' },
+        data: expect.objectContaining({
+          status: 'completed',
+          externalId: '16913359219',
+          source: 'strava',
+          stravaData: stravaData,
+          elevationGain: 9,
+          maxElevation: 40.1,
+          minElevation: 33.9,
+          averageCadence: 76.6,
+          averageTemp: 12,
+          calories: 317,
+        }),
+      });
+    });
+
+    it('should not include undefined Strava fields when completing without Strava import', async () => {
+      const plannedSession = {
+        id: 'session-123',
+        userId: 'user-123',
+        status: 'planned',
+        sessionType: 'Footing',
+      };
+
+      const completionData = {
+        date: '2025-12-27T10:00:00.000Z',
+        duration: '01:00:00',
+        distance: '10.5',
+        avgPace: '05:43',
+        avgHeartRate: '150',
+        perceivedExertion: '7',
+        comments: 'Manual entry',
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
+      vi.mocked(prisma.training_sessions.update).mockResolvedValue({} as never);
+      vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue({} as never);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+
+      const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
+        method: 'PATCH',
+        body: JSON.stringify(completionData),
+      });
+
+      await PATCH(request, { params: Promise.resolve({ id: 'session-123' }) });
+
+      const updateCall = vi.mocked(prisma.training_sessions.update).mock.calls[0][0];
+      expect(updateCall.data.externalId).toBeUndefined();
+      expect(updateCall.data.source).toBeUndefined();
+      expect(updateCall.data.stravaData).toBeUndefined();
+      expect(updateCall.data.elevationGain).toBeUndefined();
     });
   });
 });

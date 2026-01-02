@@ -40,6 +40,15 @@ export async function PATCH(
         avgHeartRate,
         perceivedExertion,
         comments,
+        externalId,
+        source,
+        stravaData,
+        elevationGain,
+        maxElevation,
+        minElevation,
+        averageCadence,
+        averageTemp,
+        calories,
       } = body;
 
       const completedSession = await prisma.training_sessions.update({
@@ -53,6 +62,15 @@ export async function PATCH(
           avgHeartRate: parseInt(avgHeartRate, 10) || 0,
           perceivedExertion: perceivedExertion ? parseInt(perceivedExertion, 10) : 0,
           comments: comments || '',
+          externalId: externalId ?? undefined,
+          source: source ?? undefined,
+          stravaData: stravaData ?? undefined,
+          elevationGain: elevationGain ?? undefined,
+          maxElevation: maxElevation ?? undefined,
+          minElevation: minElevation ?? undefined,
+          averageCadence: averageCadence ?? undefined,
+          averageTemp: averageTemp ?? undefined,
+          calories: calories ?? undefined,
         },
       });
 
