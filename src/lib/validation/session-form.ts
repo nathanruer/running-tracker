@@ -38,12 +38,28 @@ const optionalPace = () =>
       { message: 'Format: MM:SS' }
     );
 
+const nullableDuration = () =>
+  z.string()
+    .nullable()
+    .refine(
+      (val) => val === null || val === '' || validateDurationInput(val),
+      { message: 'Format: MM:SS ou HH:MM:SS' }
+    );
+
+const nullablePace = () =>
+  z.string()
+    .nullable()
+    .refine(
+      (val) => val === null || val === '' || validatePaceInput(val),
+      { message: 'Format: MM:SS' }
+    );
+
 const intervalStepSchema = z.object({
   stepNumber: z.number(),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-  duration: optionalDuration().nullable(),
+  duration: nullableDuration(),
   distance: z.number().nullable(),
-  pace: optionalPace().nullable(),
+  pace: nullablePace(),
   hr: z.number().nullable(),
 });
 
@@ -54,12 +70,12 @@ const formSchema = z.object({
   distance: z.number().nullable().superRefine((val, ctx) => {
     if (val === null) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Distance requise'
       });
     } else if (val < 0) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Distance doit être positive'
       });
     }
