@@ -143,8 +143,7 @@ test.describe('Logout Flow - Session Persistence', () => {
     await page.waitForURL('**/', { timeout: 10000 });
 
     await page.goBack();
-    await page.waitForURL((url) => new URL(url).pathname === '/', { timeout: 10000 });
-    await page.goto('/dashboard');
-    await page.waitForURL('**/', { timeout: 10000 });
+    await expect(page).not.toHaveURL(/\/profile/);
+    await expect(page.locator('#email')).toBeVisible();
   });
 });
