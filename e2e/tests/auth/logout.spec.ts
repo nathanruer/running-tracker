@@ -143,6 +143,7 @@ test.describe('Logout Flow - Session Persistence', () => {
     await page.waitForURL('**/', { timeout: 10000 });
 
     await page.goBack();
+    await page.waitForLoadState('domcontentloaded');
     await page.goto('/dashboard');
     await page.waitForURL('**/', { timeout: 10000 });
   });
