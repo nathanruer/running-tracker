@@ -44,7 +44,6 @@ export function useFileImport({ onValuesChange, onIntervalModeChange }: UseFileI
 
       csvInput.resetFileInput();
     } catch (error) {
-      console.error('Error importing CSV:', error);
       handleError(error, 'Une erreur est survenue lors de l\'import du fichier CSV');
     }
   };

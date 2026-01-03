@@ -320,8 +320,6 @@ const DashboardPage = () => {
         description: `${sessions.length} séance(s) importée(s) avec succès.`,
       });
     } catch (error) {
-      console.error('Import error:', error);
-
       let errorMessage = 'Erreur lors de l\'import';
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -329,7 +327,6 @@ const DashboardPage = () => {
         const errorData = (error as Error & { details?: Array<{ path: string; message: string }> }).details;
         if (errorData && Array.isArray(errorData)) {
           const details = errorData.map((d) => `${d.path}: ${d.message}`).join('\n');
-          console.error('Validation errors:', details);
           errorMessage += '\n' + details;
         }
       }

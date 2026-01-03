@@ -49,7 +49,7 @@ export function useTableSelection<T>(
 
   const toggleSelectAll = () => {
     if (mode === 'single') {
-      console.warn('toggleSelectAll is not supported in single selection mode');
+      // toggleSelectAll not supported in single selection mode
       return;
     }
 
@@ -70,7 +70,7 @@ export function useTableSelection<T>(
 
   const selectIndices = (indices: number[]) => {
     if (mode === 'single' && indices.length > 1) {
-      console.warn('Cannot select multiple indices in single selection mode');
+      // In single mode, only select first index
       setSelectedIndices(new Set([indices[0]]));
       return;
     }

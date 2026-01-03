@@ -71,7 +71,6 @@ export function useConversationCreation({ conversationId }: UseConversationCreat
         queryClient.invalidateQueries({ queryKey: ['conversation', newConversationId] });
       }, 500);
     } catch (error) {
-      console.error('Error creating conversation:', error);
       setOptimisticMessages([]);
       setIsWaitingForResponse(false);
       throw error;

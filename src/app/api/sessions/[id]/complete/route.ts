@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
@@ -51,6 +52,11 @@ export async function PATCH(
         calories,
       } = body;
 
+      let weather = null;
+      if (stravaData) {
+        weather = await enrichSessionWithWeather(stravaData, new Date(date));
+      }
+
       const completedSession = await prisma.training_sessions.update({
         where: { id },
         data: {
@@ -71,6 +77,7 @@ export async function PATCH(
           averageCadence: averageCadence ?? undefined,
           averageTemp: averageTemp ?? undefined,
           calories: calories ?? undefined,
+          weather: weather ?? undefined,
         },
       });
 

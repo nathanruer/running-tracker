@@ -10,8 +10,8 @@ export function useBulkDelete(onBulkDelete: (ids: string[]) => Promise<void>) {
       await onBulkDelete(selectedSessionIds);
       clearSelection();
       setShowBulkDeleteDialog(false);
-    } catch (error) {
-      console.error('Error deleting sessions:', error);
+    } catch {
+      // Deletion failed - error already handled by caller
     } finally {
       setIsDeletingBulk(false);
     }

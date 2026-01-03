@@ -119,40 +119,18 @@ describe('useBulkDelete', () => {
     });
 
     it('should handle delete errors gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const mockOnBulkDelete = vi.fn().mockRejectedValue(new Error('Delete failed'));
       const mockClearSelection = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
-      const sessionIds = ['1'];
-      
-      await act(async () => {
-        await result.current.handleBulkDelete(sessionIds, mockClearSelection);
-      });
-      
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error deleting sessions:', expect.any(Error));
-      expect(result.current.isDeletingBulk).toBe(false);
-      // Should not clear selection on error
-      expect(mockClearSelection).not.toHaveBeenCalled();
-      
-      consoleErrorSpy.mockRestore();
-    });
 
-    it('should set isDeletingBulk to false even on error', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const mockOnBulkDelete = vi.fn().mockRejectedValue(new Error('Delete failed'));
-      const mockClearSelection = vi.fn();
-      const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
       const sessionIds = ['1'];
-      
+
       await act(async () => {
         await result.current.handleBulkDelete(sessionIds, mockClearSelection);
       });
-      
+
       expect(result.current.isDeletingBulk).toBe(false);
-      
-      consoleErrorSpy.mockRestore();
+      expect(mockClearSelection).not.toHaveBeenCalled();
     });
   });
 });

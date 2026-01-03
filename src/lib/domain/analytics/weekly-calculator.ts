@@ -31,7 +31,7 @@ export interface WeeklyStats {
  *   sessions.filter(s => s.status === 'completed'),
  *   sessions.filter(s => s.status === 'planned')
  * );
- * console.log(`Total: ${stats.totalKm.toFixed(1)} km`);
+ * // stats.totalKm, stats.chartData, etc.
  */
 export function calculateWeeklyStats(
   completedSessions: TrainingSession[],

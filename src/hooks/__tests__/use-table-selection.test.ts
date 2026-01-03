@@ -1,6 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
 import { useTableSelection } from '../use-table-selection';
-import { vi } from 'vitest';
 
 describe('useTableSelection', () => {
   const testItems = [
@@ -264,38 +263,27 @@ describe('useTableSelection', () => {
       expect(result.current.selectedCount).toBe(0);
     });
 
-    it('should warn when trying to select multiple indices', () => {
-      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+    it('should select only first index when trying to select multiple indices', () => {
       const { result } = renderHook(() => useTableSelection(testItems, 'single'));
-      
+
       act(() => {
         result.current.selectIndices([0, 1, 2]);
       });
-      
-      expect(consoleWarn).toHaveBeenCalledWith(
-        'Cannot select multiple indices in single selection mode'
-      );
+
+      // In single mode, only first index should be selected
       expect(result.current.selectedCount).toBe(1);
-      
-      consoleWarn.mockRestore();
+      expect(result.current.getSelectedItems()).toEqual([testItems[0]]);
     });
 
-    it('should warn when trying to toggleSelectAll', () => {
-      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+    it('should not select all when trying to toggleSelectAll in single mode', () => {
       const { result } = renderHook(() => useTableSelection(testItems, 'single'));
-      
+
       act(() => {
         result.current.toggleSelectAll();
       });
-      
-      expect(consoleWarn).toHaveBeenCalledWith(
-        'toggleSelectAll is not supported in single selection mode'
-      );
+
+      // toggleSelectAll not supported in single mode
       expect(result.current.selectedCount).toBe(0);
-      
-      consoleWarn.mockRestore();
     });
   });
 

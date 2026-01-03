@@ -84,8 +84,8 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions }: 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error exporting to CSV:', error);
+    } catch {
+      // Export failed silently
     } finally {
       setIsExporting(false);
     }
@@ -129,8 +129,8 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions }: 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error exporting to JSON:', error);
+    } catch {
+      // Export failed silently
     } finally {
       setIsExporting(false);
     }
@@ -192,8 +192,8 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions }: 
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
+    } catch {
+      // Export failed silently
     } finally {
       setIsExporting(false);
     }

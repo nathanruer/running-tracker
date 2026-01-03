@@ -18,9 +18,7 @@ vi.mock('../message-list', () => ({
   ),
 }));
 
-const mockSendMessage = vi.fn((message: string) => {
-  console.log('sendMessage called with:', message);
-});
+const mockSendMessage = vi.fn();
 const mockAcceptSession = vi.fn();
 const mockDeleteSession = vi.fn();
 const mockReplace = vi.fn();

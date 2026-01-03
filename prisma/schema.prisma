@@ -40,6 +40,7 @@ model training_sessions {
   averageCadence    Float?
   averageTemp       Float?
   calories          Int?
+  weather           Json?
 
   users             users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 

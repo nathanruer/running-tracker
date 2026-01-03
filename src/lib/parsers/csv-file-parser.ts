@@ -22,9 +22,9 @@ export interface ParseResult {
  * @example
  * const result = await parseJsonFile(file);
  * if (result.error) {
- *   console.error(result.error);
+ *   // Handle error
  * } else {
- *   console.log(`Parsed ${result.sessions.length} sessions`);
+ *   // Process result.sessions
  * }
  */
 export async function parseJsonFile(file: File): Promise<ParseResult> {
@@ -99,8 +99,7 @@ export async function parseJsonFile(file: File): Promise<ParseResult> {
         } else {
           resolve({ sessions: parsedSessions, error: null });
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
         resolve({
           sessions: [],
           error: 'Erreur lors de la lecture du fichier JSON.',
@@ -128,9 +127,9 @@ export async function parseJsonFile(file: File): Promise<ParseResult> {
  * @example
  * const result = await parseCsvFile(file);
  * if (result.error) {
- *   console.error(result.error);
+ *   // Handle error
  * } else {
- *   console.log(`Parsed ${result.sessions.length} sessions`);
+ *   // Process result.sessions
  * }
  */
 export async function parseCsvFile(file: File): Promise<ParseResult> {

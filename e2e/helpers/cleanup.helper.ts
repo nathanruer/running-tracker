@@ -22,14 +22,12 @@ export async function deleteCurrentUser(page: Page, email?: string): Promise<boo
       if (loginResponse.ok()) {
         response = await page.request.delete(`${API_BASE_URL}/api/auth/delete-account`);
       } else {
-        console.error(`Failed to re-login for cleanup: ${loginResponse.status()}`);
         return false;
       }
     }
 
     return response.ok();
-  } catch (error) {
-    console.error('Error during user cleanup:', error);
+  } catch {
     return false;
   }
 }

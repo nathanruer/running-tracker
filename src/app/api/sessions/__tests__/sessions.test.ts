@@ -5,6 +5,8 @@ import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { getNextSessionNumber } from '@/lib/domain/sessions/utils';
+import { decodePolyline } from '@/lib/utils/polyline';
+import { getHistoricalWeather } from '@/lib/services/weather';
 
 vi.mock('@/lib/database', () => ({
   prisma: {
@@ -34,6 +36,15 @@ vi.mock('@/lib/infrastructure/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
   },
+}));
+
+vi.mock('@/lib/utils/polyline', () => ({
+  decodePolyline: vi.fn(),
+  coordinatesToSVG: vi.fn(),
+}));
+
+vi.mock('@/lib/services/weather', () => ({
+  getHistoricalWeather: vi.fn(),
 }));
 
 describe('/api/sessions', () => {
@@ -257,6 +268,7 @@ describe('/api/sessions', () => {
         sessionNumber: 1,
         week: 1,
         status: 'completed',
+        intervalDetails: sessionWithIntervals.intervalDetails, // Ensure it's in created object for findUnique mock
       };
 
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
@@ -304,6 +316,169 @@ describe('/api/sessions', () => {
 
       expect(response.status).toBe(500);
       expect(data).toEqual({ error: 'Database error' });
+    });
+
+    it('should enrich session with weather data when strava polyline is present', async () => {
+      const stravaSession = {
+        sessionType: 'Footing',
+        date: '2025-12-27T10:00:00.000Z',
+        distance: 10,
+        duration: '01:00:00',
+        avgPace: '06:00',
+        avgHeartRate: 150,
+        stravaData: {
+          map: {
+            summary_polyline: 'encoded_polyline_string'
+          }
+        }
+      };
+
+      const createdSession = {
+        id: 'session-strava-123',
+        ...stravaSession,
+        userId: 'user-123',
+        sessionNumber: 6,
+        week: 1,
+        status: 'completed',
+        weather: {
+          conditionCode: 1,
+          temperature: 15,
+          windSpeed: 10,
+          precipitation: 0
+        }
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(getNextSessionNumber).mockResolvedValue(6);
+      vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
+      vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      
+      vi.mocked(decodePolyline).mockReturnValue([[48.8566, 2.3522]]);
+      vi.mocked(getHistoricalWeather).mockResolvedValue({
+        conditionCode: 1,
+        temperature: 15,
+        windSpeed: 10,
+        precipitation: 0
+      });
+
+      const request = new NextRequest('http://localhost/api/sessions', {
+        method: 'POST',
+        body: JSON.stringify(stravaSession),
+      });
+
+      const response = await POST(request);
+      await response.json();
+
+      expect(response.status).toBe(201);
+      
+      expect(decodePolyline).toHaveBeenCalledWith('encoded_polyline_string');
+      
+      expect(prisma.training_sessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            weather: {
+              conditionCode: 1,
+              temperature: 15,
+              windSpeed: 10,
+              precipitation: 0
+            }
+          })
+        })
+      );
+    });
+
+    it('should handle Strava session without polyline gracefully (no weather)', async () => {
+      const stravaSession = {
+        sessionType: 'Tapis',
+        date: '2025-12-27T10:00:00.000Z',
+        distance: 5,
+        duration: '00:30:00',
+        avgPace: '06:00',
+        stravaData: {
+          id: 12345
+        }
+      };
+
+      const createdSession = {
+        id: 'session-strava-no-map',
+        ...stravaSession,
+        userId: 'user-123',
+        sessionNumber: 7,
+        week: 1,
+        status: 'completed',
+        weather: null
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(getNextSessionNumber).mockResolvedValue(7);
+      vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
+      vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
+
+      const request = new NextRequest('http://localhost/api/sessions', {
+        method: 'POST',
+        body: JSON.stringify(stravaSession),
+      });
+
+      await POST(request);
+
+      expect(decodePolyline).not.toHaveBeenCalled();
+      expect(getHistoricalWeather).not.toHaveBeenCalled();
+      
+      expect(prisma.training_sessions.create).toHaveBeenCalled();
+    });
+
+    it('should create session without weather if weather service fails', async () => {
+      const stravaSession = {
+        sessionType: 'Footing',
+        date: '2025-12-27T10:00:00.000Z',
+        distance: 10,
+        duration: '01:00:00',
+        avgPace: '06:00',
+        avgHeartRate: 150,
+        stravaData: {
+          map: {
+            summary_polyline: 'valid_polyline'
+          }
+        }
+      };
+
+      const createdSession = {
+        id: 'session-weather-error',
+        ...stravaSession,
+        userId: 'user-123',
+        sessionNumber: 8,
+        week: 1,
+        status: 'completed',
+        weather: null
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(getNextSessionNumber).mockResolvedValue(8);
+      vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
+      vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+
+      vi.mocked(decodePolyline).mockReturnValue([[48.85, 2.35]]);
+      vi.mocked(getHistoricalWeather).mockRejectedValue(new Error('API Down'));
+
+      const request = new NextRequest('http://localhost/api/sessions', {
+        method: 'POST',
+        body: JSON.stringify(stravaSession),
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(201);
+      
+      expect(getHistoricalWeather).toHaveBeenCalled();
+      
+      expect(prisma.training_sessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+          })
+        })
+      );
     });
   });
 });

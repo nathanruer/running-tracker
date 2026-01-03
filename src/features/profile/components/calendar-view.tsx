@@ -52,8 +52,8 @@ export function CalendarView({ sessions }: CalendarViewProps) {
           displayDate: sessionDate
         });
       }
-    } catch (error) {
-      console.error('Erreur lors du parsing de la date pour la session', session.id, error);
+    } catch {
+      // Skip sessions with invalid dates
     }
     return acc;
   }, {} as Record<string, SessionWithType[]>);

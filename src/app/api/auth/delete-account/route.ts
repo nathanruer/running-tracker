@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database/prisma';
 import { getUserIdFromRequest, clearSessionCookie } from '@/lib/auth';
+import { logger } from '@/lib/infrastructure/logger';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting account:', error);
+    logger.error({ error, userId: await getUserIdFromRequest(request) }, 'Failed to delete account');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

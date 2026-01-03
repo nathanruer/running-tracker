@@ -116,8 +116,8 @@ export function StravaImportDialog({
         }
 
         const data = await response.json();
-        onImport(data); // Opens SessionDialog with pre-filled data
-        onOpenChange(false); // Close Strava dialog
+        onImport(data);
+        onOpenChange(false);
         clearSelection();
       } else {
         // Bulk import mode (multiple activities)
@@ -128,8 +128,7 @@ export function StravaImportDialog({
               return await response.json();
             }
             return null;
-          } catch (error) {
-            console.error(`Failed to fetch activity ${activity.id}:`, error);
+          } catch {
             return null;
           }
         });
@@ -182,7 +181,6 @@ export function StravaImportDialog({
         return;
       }
     } catch (error) {
-      console.error('Import error:', error);
       handleError(error, "Impossible d'importer les activités");
     } finally {
       setImporting(false);

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 
@@ -26,20 +27,32 @@ export async function POST(request: NextRequest) {
       const validatedSessions = sessions.map((session) =>
         sessionSchema.parse(session)
       );
-      
-      const result = await prisma.training_sessions.createMany({
-        data: validatedSessions.map((session) => {
+
+      // Fetch weather for each session in parallel
+      const sessionsWithWeather = await Promise.all(
+        validatedSessions.map(async (session) => {
           const { intervalDetails, ...sessionData } = session;
+          
+          let weather = null;
+          if (sessionData.stravaData) {
+            weather = await enrichSessionWithWeather(sessionData.stravaData, new Date(session.date));
+          }
+
           return {
             ...sessionData,
             intervalDetails: intervalDetails || Prisma.JsonNull,
+            weather: weather ?? Prisma.JsonNull,
             date: new Date(session.date),
             sessionNumber: 1,
             week: 1,
             userId,
             status: SESSION_STATUS.COMPLETED,
           };
-        }),
+        })
+      );
+      
+      const result = await prisma.training_sessions.createMany({
+        data: sessionsWithWeather,
       });
 
       await recalculateSessionNumbers(userId);

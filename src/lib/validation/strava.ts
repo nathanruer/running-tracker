@@ -30,12 +30,37 @@ export const stravaActivitySchema = z.object({
 export type StravaActivityValidated = z.infer<typeof stravaActivitySchema>;
 
 /**
+ * Lightweight schema for validating only the map field (used for weather enrichment)
+ */
+export const stravaMapSchema = z.object({
+  start_date: z.string().optional(),
+  map: z.object({
+    id: z.string().optional(),
+    summary_polyline: z.string(),
+  }).optional(),
+}).loose();
+
+export type StravaMapData = z.infer<typeof stravaMapSchema>;
+
+/**
  * Safely validates and parses stravaData from unknown JSON
  * Returns null if validation fails
  */
 export function validateStravaData(data: unknown): StravaActivityValidated | null {
   try {
     return stravaActivitySchema.parse(data);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validates only the map field for weather enrichment
+ * More permissive than full validation
+ */
+export function validateStravaMap(data: unknown): StravaMapData | null {
+  try {
+    return stravaMapSchema.parse(data);
   } catch {
     return null;
   }

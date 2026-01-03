@@ -1,3 +1,5 @@
+import type { WeatherData } from './weather';
+
 export interface IntervalStep {
   stepNumber: number;
   stepType: 'warmup' | 'effort' | 'recovery' | 'cooldown';
@@ -54,6 +56,7 @@ export interface TrainingSession {
   averageCadence?: number | null;
   averageTemp?: number | null;
   calories?: number | null;
+  weather?: WeatherData | null;
 }
 
 export type TrainingSessionPayload = Omit<

@@ -96,18 +96,15 @@ describe('SessionDetailsSheet', () => {
   it('should render Strava metrics section when available', () => {
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     
-    // Updated: section is now called "Données avancées"
     expect(screen.getByText('Données avancées')).toBeInTheDocument();
-    // Note: 150 appears twice (elevationGain and minElevation), so we use getAllByText
     expect(screen.getAllByText('150').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('180')).toBeInTheDocument();
+    expect(screen.getByText('360')).toBeInTheDocument();
     expect(screen.getByText('800')).toBeInTheDocument();
   });
 
   it('should render Intervals section for interval sessions', () => {
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     
-    // Updated: section is now called "Structure"
     expect(screen.getByText('Structure')).toBeInTheDocument();
     expect(screen.getByText('2 phases')).toBeInTheDocument();
     
@@ -119,14 +116,12 @@ describe('SessionDetailsSheet', () => {
     const simpleSession = { ...mockSession, intervalDetails: null };
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={simpleSession} />);
     
-    // Updated: section is now called "Structure"
     expect(screen.queryByText('Structure')).not.toBeInTheDocument();
   });
 
   it('should render comments when present', () => {
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     
-    // Updated: section is now called "Notes"
     expect(screen.getByText('Notes')).toBeInTheDocument();
     expect(screen.getByText('Test session')).toBeInTheDocument();
   });

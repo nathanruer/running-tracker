@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 
+import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
@@ -54,10 +55,17 @@ export async function POST(request: NextRequest) {
       const nextNumber = await getNextSessionNumber(userId);
 
       const { intervalDetails, ...sessionData } = payload;
+      
+      let weather = null;
+      if (sessionData.stravaData) {
+        weather = await enrichSessionWithWeather(sessionData.stravaData, new Date(payload.date));
+      }
+
       const session = await prisma.training_sessions.create({
         data: {
           ...sessionData,
           intervalDetails: intervalDetails || Prisma.JsonNull,
+          weather: weather ?? Prisma.JsonNull,
           date: new Date(payload.date),
           sessionNumber: nextNumber,
           week: 1,
