@@ -6,7 +6,7 @@ import { type IntervalStep } from '@/lib/types';
 import { WORKOUT_TYPES } from './workout-type-field';
 import { IntervalConfig } from './interval-config';
 import { IntervalStepList } from './interval-step-list';
-import { useIntervalSync } from './hooks/use-interval-sync';
+import { useIntervalSync } from '../../hooks/intervals/use-interval-sync';
 
 interface FormValues {
   intervalDetails?: string | null;

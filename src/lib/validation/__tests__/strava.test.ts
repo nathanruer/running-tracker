@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateStravaData, stravaActivitySchema } from '../strava';
+import { validateStravaData, stravaActivitySchema, validateStravaStreams } from '../strava';
 
 describe('validateStravaData', () => {
   const validStravaActivity = {
@@ -182,6 +182,137 @@ describe('validateStravaData', () => {
       // Zod should strip unknown fields
       expect('unknown_field' in (result as Record<string, unknown>)).toBe(false);
       expect('another_field' in (result as Record<string, unknown>)).toBe(false);
+    });
+  });
+});
+
+describe('validateStravaStreams', () => {
+  const validStream = {
+    data: [0, 100, 200, 300],
+    series_type: 'distance',
+    original_size: 4,
+    resolution: 'high',
+  };
+
+  describe('Valid streams', () => {
+    it('should validate correct stream data', () => {
+      const streams = {
+        velocity_smooth: validStream,
+        distance: validStream,
+      };
+
+      const result = validateStravaStreams(streams);
+
+      expect(result).not.toBeNull();
+    });
+
+    it('should validate single stream', () => {
+      const streams = {
+        time: {
+          data: [0, 1, 2, 3],
+          series_type: 'time',
+          original_size: 4,
+          resolution: 'medium',
+        },
+      };
+
+      const result = validateStravaStreams(streams);
+
+      expect(result).not.toBeNull();
+    });
+
+    it('should validate empty streams object', () => {
+      const result = validateStravaStreams({});
+
+      expect(result).not.toBeNull();
+      expect(result).toEqual({});
+    });
+  });
+
+  describe('Invalid streams', () => {
+    it('should return null for null input', () => {
+      const result = validateStravaStreams(null);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for undefined input', () => {
+      const result = validateStravaStreams(undefined);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for non-object input', () => {
+      expect(validateStravaStreams('string')).toBeNull();
+      expect(validateStravaStreams(123)).toBeNull();
+      expect(validateStravaStreams(true)).toBeNull();
+    });
+
+    it('should return null for stream missing data array', () => {
+      const invalidStreams = {
+        velocity_smooth: {
+          series_type: 'distance',
+          original_size: 4,
+          resolution: 'high',
+        },
+      };
+
+      const result = validateStravaStreams(invalidStreams);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for stream with empty data array', () => {
+      const invalidStreams = {
+        velocity_smooth: {
+          data: [],
+          series_type: 'distance',
+          original_size: 0,
+          resolution: 'high',
+        },
+      };
+
+      const result = validateStravaStreams(invalidStreams);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for stream with invalid series_type', () => {
+      const invalidStreams = {
+        velocity_smooth: {
+          data: [1, 2, 3],
+          series_type: 'invalid',
+          original_size: 3,
+          resolution: 'high',
+        },
+      };
+
+      const result = validateStravaStreams(invalidStreams);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for stream with invalid resolution', () => {
+      const invalidStreams = {
+        velocity_smooth: {
+          data: [1, 2, 3],
+          series_type: 'distance',
+          original_size: 3,
+          resolution: 'invalid',
+        },
+      };
+
+      const result = validateStravaStreams(invalidStreams);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for stream with negative original_size', () => {
+      const invalidStreams = {
+        velocity_smooth: {
+          data: [1, 2, 3],
+          series_type: 'distance',
+          original_size: -1,
+          resolution: 'high',
+        },
+      };
+
+      const result = validateStravaStreams(invalidStreams);
+      expect(result).toBeNull();
     });
   });
 });

@@ -24,7 +24,7 @@ export {
 } from './intervals';
 
 export {
-  formatPace,
+  calculatePaceString,
   formatDistance,
   formatDate,
   formatDateToISO,
@@ -36,3 +36,11 @@ export {
 } from './formatters';
 
 export { formatDurationChat } from './chat/formatters';
+
+export {
+  mpsToSecondsPerKm,
+  formatPace,
+  mpsToMinPerKm,
+} from './pace';
+
+export * from './streams';

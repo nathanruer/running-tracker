@@ -65,11 +65,7 @@ export function useConversationCreation({ conversationId }: UseConversationCreat
 
       router.replace(`/chat/${newConversationId}`, { scroll: false });
 
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['conversation', newConversationId] });
-      }, 500);
+      await queryClient.invalidateQueries({ queryKey: ['conversations'] });
     } catch (error) {
       setOptimisticMessages([]);
       setIsWaitingForResponse(false);

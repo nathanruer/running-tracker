@@ -4,11 +4,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import SessionDialog from '@/features/sessions/components/session-dialog';
+import SessionDialog from '@/features/sessions/components/forms/session-dialog';
 import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
 import { CsvImportDialog } from '@/features/import/components/csv-import-dialog';
 import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
-import { SessionDetailsSheet } from '@/features/sessions/components/session-details-sheet';
+import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -46,6 +46,13 @@ const DashboardPage = () => {
     useState<TrainingSession | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isDetailsSheetOpen) {
+      const timer = setTimeout(() => setViewingSession(null), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isDetailsSheetOpen]);
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
   const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
@@ -411,12 +418,7 @@ const DashboardPage = () => {
 
       <SessionDetailsSheet
         open={isDetailsSheetOpen}
-        onOpenChange={(open) => {
-          setIsDetailsSheetOpen(open);
-          if (!open) {
-            setTimeout(() => setViewingSession(null), 300);
-          }
-        }}
+        onOpenChange={setIsDetailsSheetOpen}
         session={viewingSession}
       />
 

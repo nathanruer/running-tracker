@@ -11,7 +11,7 @@ export function WeatherWidget({ weather }: WeatherWidgetProps) {
   const precip = weather.precipitation;
 
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-secondary/50">
+    <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-muted/30 border border-border/50">
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2">
           <Thermometer className="w-4 h-4 text-muted-foreground" />

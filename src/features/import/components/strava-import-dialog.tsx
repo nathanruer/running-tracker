@@ -28,9 +28,7 @@ import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { formatDuration } from '@/lib/utils/duration';
-import { formatPace } from '@/lib/utils/formatters';
-
-
+import { calculatePaceString } from '@/lib/utils/formatters';
 
 interface StravaImportDialogProps {
   open: boolean;
@@ -323,7 +321,7 @@ export function StravaImportDialog({
                         <TableCell className="font-medium">{activity.name}</TableCell>
                         <TableCell className="text-center">{formatDuration(activity.moving_time)}</TableCell>
                         <TableCell className="text-center">{(activity.distance / 1000).toFixed(2)} km</TableCell>
-                        <TableCell className="text-center">{formatPace(activity.distance, activity.moving_time)}</TableCell>
+                        <TableCell className="text-center">{calculatePaceString(activity.distance, activity.moving_time)}</TableCell>
                         <TableCell className="text-center">
                           {activity.average_heartrate ? `${Math.round(activity.average_heartrate)} bpm` : '-'}
                         </TableCell>

@@ -23,8 +23,8 @@ import { FileImportButtons } from './file-import-buttons';
 import { SessionFormFields } from './session-form-fields';
 import { SessionDialogActions } from './session-dialog-actions';
 import { SessionDialogHeader } from './session-dialog-header';
-import { useFileImport } from '../hooks/use-file-import';
-import { useSessionForm } from '../hooks/use-session-form';
+import { useFileImport } from '../../hooks/forms/use-file-import';
+import { useSessionForm } from '../../hooks/forms/use-session-form';
 
 // Helper functions to adapt the main form to interval fields
 const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {

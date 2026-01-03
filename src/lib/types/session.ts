@@ -50,6 +50,7 @@ export interface TrainingSession {
   externalId?: string | null;
   source?: string | null;
   stravaData?: unknown | null;
+  stravaStreams?: unknown | null;
   elevationGain?: number | null;
   maxElevation?: number | null;
   minElevation?: number | null;

@@ -30,3 +30,21 @@ export interface StravaActivity {
   external_id?: string;
   upload_id?: number;
 }
+
+export type StravaStreamType =
+  | 'time'
+  | 'distance'
+  | 'velocity_smooth'
+  | 'heartrate'
+  | 'cadence'
+  | 'altitude'
+  | 'grade_smooth';
+
+export interface StravaStream {
+  data: number[];
+  series_type: 'time' | 'distance';
+  original_size: number;
+  resolution: 'low' | 'medium' | 'high';
+}
+
+export type StravaStreamSet = Partial<Record<StravaStreamType, StravaStream>>;

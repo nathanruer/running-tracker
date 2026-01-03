@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import {
-  formatPace,
+  calculatePaceString,
   formatDistance,
   formatDate,
   formatNumber,
@@ -10,35 +9,35 @@ import {
 import { normalizePaceFormat } from '../duration';
 
 describe('formatters', () => {
-  describe('formatPace', () => {
+  describe('calculatePaceString', () => {
     it('should calculate and format pace correctly', () => {
       // 5km in 25 minutes (1500 seconds) = 5:00 min/km
-      expect(formatPace(5000, 1500)).toBe('05:00');
+      expect(calculatePaceString(5000, 1500)).toBe('05:00');
 
       // 10km in 50 minutes (3000 seconds) = 5:00 min/km
-      expect(formatPace(10000, 3000)).toBe('05:00');
+      expect(calculatePaceString(10000, 3000)).toBe('05:00');
 
       // 1km in 4 minutes (240 seconds) = 4:00 min/km
-      expect(formatPace(1000, 240)).toBe('04:00');
+      expect(calculatePaceString(1000, 240)).toBe('04:00');
     });
 
     it('should return 00:00 when distance is 0', () => {
-      expect(formatPace(0, 1000)).toBe('00:00');
+      expect(calculatePaceString(0, 1000)).toBe('00:00');
     });
 
     it('should round seconds to nearest integer', () => {
       // 5km in 24:30 (1470 seconds) = 4:54 min/km
-      expect(formatPace(5000, 1470)).toBe('04:54');
+      expect(calculatePaceString(5000, 1470)).toBe('04:54');
     });
 
     it('should handle very fast paces', () => {
       // 1km in 3 minutes (180 seconds) = 3:00 min/km
-      expect(formatPace(1000, 180)).toBe('03:00');
+      expect(calculatePaceString(1000, 180)).toBe('03:00');
     });
 
     it('should handle slow paces', () => {
       // 1km in 8 minutes (480 seconds) = 8:00 min/km
-      expect(formatPace(1000, 480)).toBe('08:00');
+      expect(calculatePaceString(1000, 480)).toBe('08:00');
     });
   });
 

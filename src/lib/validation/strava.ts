@@ -65,3 +65,28 @@ export function validateStravaMap(data: unknown): StravaMapData | null {
     return null;
   }
 }
+
+export const stravaStreamSchema = z.object({
+  data: z.array(z.number()).min(1),
+  series_type: z.enum(['time', 'distance']),
+  original_size: z.number().positive(),
+  resolution: z.enum(['low', 'medium', 'high']),
+});
+
+/**
+ * Schema for the complete object (key_by_type=true)
+ */
+export const stravaStreamSetSchema = z.record(z.string(), stravaStreamSchema);
+
+/**
+ * Validates Strava streams
+ * @param data Data to validate
+ * @returns Validated streams or null in case of error
+ */
+export function validateStravaStreams(data: unknown): Record<string, unknown> | null {
+  try {
+    return stravaStreamSetSchema.parse(data);
+  } catch {
+    return null;
+  }
+}

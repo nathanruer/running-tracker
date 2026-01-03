@@ -8,6 +8,7 @@ import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
 import { getNextSessionNumber } from '@/lib/domain/sessions/utils';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
+import { fetchStreamsForSession } from '@/lib/services/strava';
 
 export const runtime = 'nodejs';
 
@@ -55,17 +56,25 @@ export async function POST(request: NextRequest) {
       const nextNumber = await getNextSessionNumber(userId);
 
       const { intervalDetails, ...sessionData } = payload;
-      
+
       let weather = null;
       if (sessionData.stravaData) {
         weather = await enrichSessionWithWeather(sessionData.stravaData, new Date(payload.date));
       }
+
+      const stravaStreams = await fetchStreamsForSession(
+        sessionData.source ?? null,
+        sessionData.externalId ?? null,
+        userId,
+        'session-import'
+      );
 
       const session = await prisma.training_sessions.create({
         data: {
           ...sessionData,
           intervalDetails: intervalDetails || Prisma.JsonNull,
           weather: weather ?? Prisma.JsonNull,
+          stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
           date: new Date(payload.date),
           sessionNumber: nextNumber,
           week: 1,

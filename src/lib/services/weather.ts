@@ -1,4 +1,5 @@
 import type { WeatherData } from '@/lib/types/weather';
+import { fetchWithTimeout } from '@/lib/utils/fetch-with-timeout';
 
 export { WeatherData };
 
@@ -60,40 +61,33 @@ export async function getHistoricalWeather(
 
     const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateYMD}&end_date=${dateYMD}&hourly=temperature_2m,precipitation,weathercode,windspeed_10m`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetchWithTimeout(url, {}, 5000);
+    if (!res.ok) throw new Error('Weather API error');
 
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      if (!res.ok) throw new Error('Weather API error');
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (!data.hourly || !data.hourly.time || data.hourly.time.length === 0) {
-        weatherCache.set(cacheKey, null);
-        return null;
-      }
-
-      const index = hour;
-
-      if (index >= data.hourly.temperature_2m.length) {
-        weatherCache.set(cacheKey, null);
-        return null;
-      }
-
-      const result: WeatherData = {
-        conditionCode: data.hourly.weathercode[index],
-        temperature: data.hourly.temperature_2m[index],
-        windSpeed: data.hourly.windspeed_10m[index],
-        precipitation: data.hourly.precipitation[index],
-        timestamp: hour,
-      };
-
-      weatherCache.set(cacheKey, result);
-      return result;
-    } finally {
-      clearTimeout(timeoutId);
+    if (!data.hourly || !data.hourly.time || data.hourly.time.length === 0) {
+      weatherCache.set(cacheKey, null);
+      return null;
     }
+
+    const index = hour;
+
+    if (index >= data.hourly.temperature_2m.length) {
+      weatherCache.set(cacheKey, null);
+      return null;
+    }
+
+    const result: WeatherData = {
+      conditionCode: data.hourly.weathercode[index],
+      temperature: data.hourly.temperature_2m[index],
+      windSpeed: data.hourly.windspeed_10m[index],
+      precipitation: data.hourly.precipitation[index],
+      timestamp: hour,
+    };
+
+    weatherCache.set(cacheKey, result);
+    return result;
 
   } catch {
     return null;

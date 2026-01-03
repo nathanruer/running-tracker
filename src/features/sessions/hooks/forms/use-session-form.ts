@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { addSession, updateSession } from '@/lib/services/api-client';
 import type { TrainingSessionPayload, TrainingSession } from '@/lib/types';
 import { formSchema, type FormValues } from '@/lib/validation/session-form';
-import { PREDEFINED_TYPES } from '@/features/sessions/components/session-type-selector';
+import { PREDEFINED_TYPES } from '@/features/sessions/components/forms/session-type-selector';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
 import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';

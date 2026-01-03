@@ -5,7 +5,7 @@
  * @returns Formatted pace string (MM:SS per km)
  * @example formatPace(5000, 1500) // "05:00"
  */
-export function formatPace(distanceMeters: number, timeSeconds: number): string {
+export function calculatePaceString(distanceMeters: number, timeSeconds: number): string {
   if (distanceMeters === 0) return '00:00';
 
   const kmPerMinute = (timeSeconds / 60) / (distanceMeters / 1000);

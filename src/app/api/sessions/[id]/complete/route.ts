@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/database';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
+import { fetchStreamsForSession } from '@/lib/services/strava';
 
 export async function PATCH(
   request: NextRequest,
@@ -57,6 +59,13 @@ export async function PATCH(
         weather = await enrichSessionWithWeather(stravaData, new Date(date));
       }
 
+      const stravaStreams = await fetchStreamsForSession(
+        source ?? null,
+        externalId ?? null,
+        userId,
+        'session-completion'
+      );
+
       const completedSession = await prisma.training_sessions.update({
         where: { id },
         data: {
@@ -71,6 +80,7 @@ export async function PATCH(
           externalId: externalId ?? undefined,
           source: source ?? undefined,
           stravaData: stravaData ?? undefined,
+          stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : undefined,
           elevationGain: elevationGain ?? undefined,
           maxElevation: maxElevation ?? undefined,
           minElevation: minElevation ?? undefined,

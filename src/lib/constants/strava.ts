@@ -10,6 +10,9 @@ export const STRAVA_URLS = {
   API_BASE: 'https://www.strava.com/api/v3',
 
   ACTIVITY_BASE: 'https://www.strava.com/activities',
+
+  ACTIVITY_STREAMS: (id: number) =>
+    `https://www.strava.com/api/v3/activities/${id}/streams`,
 } as const;
 
 // ============================================================================

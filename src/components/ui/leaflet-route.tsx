@@ -98,18 +98,15 @@ export function LeafletRoute({
       map.current.zoomControl.setPosition('bottomright');
     }
 
-    const timer = setTimeout(() => {
-      if (!mapLoaded) {
-        setMapLoaded(true);
-      }
-    }, 100);
+    map.current.whenReady(() => {
+      setMapLoaded(true);
+    });
 
     return () => {
-      clearTimeout(timer);
       map.current?.remove();
       map.current = null;
     };
-  }, [coordinates, interactive, mapLoaded]);
+  }, [coordinates, interactive]);
 
   if (coordinates.length === 0) {
     return null;

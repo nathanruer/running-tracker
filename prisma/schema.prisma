@@ -34,6 +34,7 @@ model training_sessions {
   externalId        String?
   source            String?  @default("manual")
   stravaData        Json?
+  stravaStreams     Json?
   elevationGain     Float?
   maxElevation      Float?
   minElevation      Float?

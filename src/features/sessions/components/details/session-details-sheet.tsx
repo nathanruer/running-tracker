@@ -33,6 +33,8 @@ const LeafletRoute = dynamic(
 );
 
 import { WeatherWidget } from './weather-widget';
+import { StreamsSection } from './streams-section';
+import { formatCadence } from '@/lib/utils/cadence';
 
 interface SessionDetailsSheetProps {
   session: TrainingSession | null;
@@ -101,7 +103,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                           day: 'numeric', 
                           month: 'long' 
                         }) 
-                      : 'Séance sans date'
+                      : 'Séance à planifier'
                     }
                   </SheetTitle>
                 <div className="flex items-center justify-between w-full">
@@ -134,24 +136,46 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
               <div className="grid grid-cols-2 gap-3">
                 <StatCard 
                   label="Distance" 
-                  value={session.distance ?? '-'} 
+                  value={session.distance 
+                    ? session.distance 
+                    : session.targetDistance 
+                      ? `~${session.targetDistance}` 
+                      : '-'
+                  } 
                   unit="km" 
                   highlight
                 />
                 <StatCard 
                   label="Durée" 
-                  value={session.duration ?? '-'} 
+                  value={session.duration 
+                    ? session.duration 
+                    : session.targetDuration 
+                      ? `~${session.targetDuration} min` 
+                      : '-'
+                  } 
                   highlight
                 />
                 <StatCard 
                   label="Allure" 
-                  value={session.avgPace ?? '-'} 
+                  value={session.avgPace 
+                    ? session.avgPace 
+                    : session.targetPace 
+                      ? `~${session.targetPace}` 
+                      : '-'
+                  } 
                   unit="min/km"
                 />
                 <StatCard 
                   label="FC moyenne" 
-                  value={session.avgHeartRate ?? '-'} 
-                  unit="bpm"
+                  value={session.avgHeartRate 
+                    ? session.avgHeartRate 
+                    : session.targetHeartRateBpm 
+                      ? `~${session.targetHeartRateBpm}` 
+                      : session.targetHeartRateZone 
+                        ? `Zone ${session.targetHeartRateZone}` 
+                        : '-'
+                  } 
+                  unit={session.avgHeartRate || session.targetHeartRateBpm ? "bpm" : undefined}
                 />
               </div>
 
@@ -165,7 +189,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       <StatCard label="Dénivelé" value={session.elevationGain} unit="m" />
                     )}
                     {session.averageCadence && (
-                      <StatCard label="Cadence" value={(session.averageCadence * 2).toFixed(0)} unit="ppm" />
+                      <StatCard label="Cadence" value={formatCadence(session.averageCadence)} unit="ppm" />
                     )}
                     {session.calories && (
                       <StatCard label="Calories" value={session.calories} unit="kcal" />
@@ -174,22 +198,20 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       <StatCard label="Température" value={session.averageTemp.toFixed(0)} unit="°C" />
                     )}
                   </div>
-                  {session.minElevation !== undefined && session.maxElevation !== undefined && (
-                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Altitude
-                      </span>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-lg font-medium">{session.minElevation?.toFixed(0)}m</span>
-                        <div className="flex-1 h-px bg-border" />
-                        <span className="text-lg font-semibold">{session.maxElevation?.toFixed(0)}m</span>
-                      </div>
-                    </div>
-                  )}
+
 
                   {session.weather && (
                     <WeatherWidget weather={session.weather} />
                   )}
+                </div>
+              )}
+
+              {hasStravaData && session.stravaStreams !== null && session.stravaStreams !== undefined && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                    Analyse de la séance
+                  </h3>
+                  <StreamsSection streams={session.stravaStreams} />
                 </div>
               )}
 

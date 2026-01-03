@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET } from '../activities/[id]/route';
 import { prisma } from '@/lib/database';
-import { getActivityDetails, formatStravaActivity, refreshAccessToken } from '@/lib/services/strava';
+import { getActivityDetails, formatStravaActivity, getValidAccessToken } from '@/lib/services/strava';
 
 vi.mock('@/lib/database', () => ({
   prisma: {
@@ -17,6 +17,7 @@ vi.mock('@/lib/services/strava', () => ({
   getActivityDetails: vi.fn(),
   formatStravaActivity: vi.fn(),
   refreshAccessToken: vi.fn(),
+  getValidAccessToken: vi.fn(),
 }));
 
 vi.mock('@/lib/auth', () => ({
@@ -89,6 +90,7 @@ describe('/api/strava/activities/[id]', () => {
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getValidAccessToken).mockResolvedValue('valid-token');
     vi.mocked(getActivityDetails).mockResolvedValue(mockActivityDetails);
     vi.mocked(formatStravaActivity).mockReturnValue(mockFormattedActivity);
 
@@ -102,47 +104,9 @@ describe('/api/strava/activities/[id]', () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual(mockFormattedActivity);
+    expect(getValidAccessToken).toHaveBeenCalledWith(mockUser);
     expect(getActivityDetails).toHaveBeenCalledWith('valid-token', 123456);
     expect(formatStravaActivity).toHaveBeenCalledWith(mockActivityDetails);
-  });
-
-  it('should refresh token when expired before fetching details', async () => {
-    const expiredTokenUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'expired-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() - 1000),
-    };
-
-    const newTokenData = {
-      access_token: 'new-access-token',
-      refresh_token: 'new-refresh-token',
-      expires_at: Math.floor(Date.now() / 1000) + 21600,
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(expiredTokenUser as never);
-    vi.mocked(refreshAccessToken).mockResolvedValue(newTokenData);
-    vi.mocked(prisma.users.update).mockResolvedValue({
-      ...expiredTokenUser,
-      stravaAccessToken: newTokenData.access_token,
-    } as never);
-    vi.mocked(getActivityDetails).mockResolvedValue(mockActivityDetails);
-    vi.mocked(formatStravaActivity).mockReturnValue(mockFormattedActivity);
-
-    const request = new NextRequest('http://localhost/api/strava/activities/123456', {
-      method: 'GET',
-    });
-
-    const params = Promise.resolve({ id: '123456' });
-    const response = await GET(request, { params });
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(refreshAccessToken).toHaveBeenCalledWith('refresh-token');
-    expect(getActivityDetails).toHaveBeenCalledWith('new-access-token', 123456);
-    expect(data).toEqual(mockFormattedActivity);
   });
 
   it('should return 404 when user is not found', async () => {
@@ -181,33 +145,6 @@ describe('/api/strava/activities/[id]', () => {
     expect(data).toEqual({ error: 'Compte Strava non connecté' });
   });
 
-  it('should handle invalid activity ID', async () => {
-    const mockUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(getActivityDetails).mockRejectedValue(
-      new Error('Failed to fetch activity details: 404 Not Found')
-    );
-
-    const request = new NextRequest('http://localhost/api/strava/activities/999999', {
-      method: 'GET',
-    });
-
-    const params = Promise.resolve({ id: '999999' });
-    const response = await GET(request, { params });
-    const data = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(data).toHaveProperty('error');
-  });
-
   it('should handle Strava API errors', async () => {
     const mockUser = {
       id: 'user-123',
@@ -219,6 +156,7 @@ describe('/api/strava/activities/[id]', () => {
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getValidAccessToken).mockResolvedValue('valid-token');
     vi.mocked(getActivityDetails).mockRejectedValue(new Error('Strava API error'));
 
     const request = new NextRequest('http://localhost/api/strava/activities/123456', {
@@ -244,6 +182,7 @@ describe('/api/strava/activities/[id]', () => {
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getValidAccessToken).mockResolvedValue('valid-token');
     vi.mocked(getActivityDetails).mockResolvedValue(mockActivityDetails);
     vi.mocked(formatStravaActivity).mockReturnValue(mockFormattedActivity);
 
