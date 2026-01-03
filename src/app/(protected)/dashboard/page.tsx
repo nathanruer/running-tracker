@@ -443,7 +443,7 @@ const DashboardPage = () => {
         }}
       />
 
-      <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
@@ -453,7 +453,7 @@ const DashboardPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeletingId(null)}>Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingId && handleDelete(deletingId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
