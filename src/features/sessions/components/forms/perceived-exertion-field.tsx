@@ -14,11 +14,10 @@ import {
 
 interface PerceivedExertionFieldProps {
   value?: number | null;
-  onChange: (value: number) => void;
+  onChange: (value: number | null) => void;
 }
 
 const RPE_SCALE = [
-  { value: 0, label: 'Non spécifié' },
   { value: 1, label: '1 - Très facile' },
   { value: 2, label: '2 - Facile' },
   { value: 3, label: '3 - Modéré' },
@@ -39,8 +38,11 @@ export function PerceivedExertionField({
     <FormItem className="flex-1">
       <FormLabel>RPE (1-10)</FormLabel>
       <Select
-        onValueChange={(val) => onChange(parseInt(val))}
-        value={value?.toString()}
+        onValueChange={(val) => {
+          const numVal = parseInt(val);
+          onChange(numVal === -1 ? null : numVal);
+        }}
+        value={value ? value.toString() : undefined}
       >
         <FormControl>
           <SelectTrigger>
@@ -48,6 +50,9 @@ export function PerceivedExertionField({
           </SelectTrigger>
         </FormControl>
         <SelectContent>
+          <SelectItem value="-1" className="text-muted-foreground italic">
+            Pas de note
+          </SelectItem>
           {RPE_SCALE.map((item) => (
             <SelectItem key={item.value} value={item.value.toString()}>
               {item.label}

@@ -194,7 +194,9 @@ export function PlannedSessionRow({
         <TableCell className="text-center whitespace-nowrap">
           {globalPace !== '-' ? (
             <>
-              {globalPace} <span className="text-xs">mn/km</span>
+              {globalPace} <span className="text-xs">
+                {globalPace.length > 6 ? 'h/km' : 'mn/km'}
+              </span>
             </>
           ) : '-'}
         </TableCell>

@@ -80,7 +80,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       const sessionDate = date ? extractDatePart(date) :
                           (session.date ? extractDatePart(session.date) : getTodayISO());
 
-      const perceivedExertion = session.targetRPE || 0;
+      const perceivedExertion = session.targetRPE || null;
 
       form.reset({
         date: sessionDate,
@@ -120,7 +120,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         : session.avgHeartRate || 0;
       const perceivedExertion = isPlanned && session.targetRPE
         ? session.targetRPE
-        : session.perceivedExertion || 0;
+        : session.perceivedExertion || null;
 
       form.reset({
         date: sessionDate,

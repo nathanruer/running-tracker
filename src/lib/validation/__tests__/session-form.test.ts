@@ -111,7 +111,7 @@ describe('session-form validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const paceError = result.error.issues.find(i => i.path.includes('avgPace'));
-        expect(paceError?.message).toBe('Format: MM:SS');
+        expect(paceError?.message).toBe('Format: MM:SS ou HH:MM:SS');
       }
     });
   });
@@ -292,7 +292,7 @@ describe('session-form validation', () => {
         sessionType: 'Endurance',
         duration: '01:30:00',
         distance: 15.5,
-        avgPace: '5:30:00', // Invalid: should be MM:SS not HH:MM:SS
+        avgPace: 'invalid',
         avgHeartRate: 145,
         perceivedExertion: 7,
         comments: '',
@@ -301,7 +301,7 @@ describe('session-form validation', () => {
       const result = formSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Format: MM:SS');
+        expect(result.error.issues[0].message).toBe('Format: MM:SS ou HH:MM:SS');
       }
     });
 
@@ -507,7 +507,7 @@ describe('session-form validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const paceError = result.error.issues.find(i => i.path.includes('pace'));
-        expect(paceError?.message).toBe('Format: MM:SS');
+        expect(paceError?.message).toBe('Format: MM:SS ou HH:MM:SS');
       }
     });
 
@@ -525,7 +525,7 @@ describe('session-form validation', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const paceError = result.error.issues.find(i => i.path.includes('pace'));
-        expect(paceError?.message).toBe('Format: MM:SS');
+        expect(paceError?.message).toBe('Format: MM:SS ou HH:MM:SS');
       }
     });
 

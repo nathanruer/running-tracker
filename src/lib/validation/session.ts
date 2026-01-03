@@ -1,24 +1,43 @@
 import { z } from 'zod';
+import { validateDurationInput, validatePaceInput } from '@/lib/utils/duration';
 
 export const intervalStepSchema = z.object({
   stepNumber: z.number().min(1),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-  duration: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  duration: z.string().nullable().refine(
+    (val) => val === null || val === '' || validateDurationInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
   distance: z.number().min(0).nullable(),
-  pace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  pace: z.string().nullable().refine(
+    (val) => val === null || val === '' || validatePaceInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
   hr: z.number().min(0).max(250).nullable(),
 });
 
 export const intervalDetailsSchema = z.object({
   workoutType: z.string().nullable(),
   repetitionCount: z.number().min(1).nullable(),
-  effortDuration: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
-  recoveryDuration: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  effortDuration: z.string().nullable().refine(
+    (val) => val === null || val === '' || validateDurationInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
+  recoveryDuration: z.string().nullable().refine(
+    (val) => val === null || val === '' || validateDurationInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
   effortDistance: z.number().min(0).nullable(),
 
-  targetEffortPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  targetEffortPace: z.string().nullable().refine(
+    (val) => val === null || val === '' || validatePaceInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
   targetEffortHR: z.number().min(0).max(250).nullable(),
-  targetRecoveryPace: z.string().regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS').nullable(),
+  targetRecoveryPace: z.string().nullable().refine(
+    (val) => val === null || val === '' || validatePaceInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
 
   steps: z.array(intervalStepSchema),
 }).nullable();
@@ -26,13 +45,15 @@ export const intervalDetailsSchema = z.object({
 export const sessionSchema = z.object({
   date: z.string(),
   sessionType: z.string().min(1),
-  duration: z
-    .string()
-    .regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Format HH:MM:SS'),
+  duration: z.string().refine(
+    (val) => validateDurationInput(val),
+    { message: 'Format HH:MM:SS' }
+  ),
   distance: z.number().min(0).transform((val) => Math.round(val * 100) / 100),
-  avgPace: z
-    .string()
-    .regex(/^\d{1,2}:\d{2}$/, 'Format MM:SS'),
+  avgPace: z.string().refine(
+    (val) => validatePaceInput(val),
+    { message: 'Format MM:SS ou HH:MM:SS' }
+  ),
   avgHeartRate: z.number().min(0).optional().nullable(),
   intervalDetails: intervalDetailsSchema.optional(),
   perceivedExertion: z.number().min(0).max(10).optional().nullable(),

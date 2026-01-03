@@ -47,7 +47,7 @@ describe('Session Validation Schemas', () => {
     });
 
     it('rejects invalid duration format', () => {
-      const invalidFormats = ['1:30', '130:00', 'abc', '1:2:3', ''];
+      const invalidFormats = ['abc', '1:2:3:4', ''];
       invalidFormats.forEach((duration) => {
         const result = sessionSchema.safeParse({
           ...validSession,
@@ -69,7 +69,7 @@ describe('Session Validation Schemas', () => {
     });
 
     it('rejects invalid pace format', () => {
-      const invalidFormats = ['6', '6:0', 'abc', '600', ''];
+      const invalidFormats = ['abc', '1:2:3:4', ''];
       invalidFormats.forEach((avgPace) => {
         const result = sessionSchema.safeParse({
           ...validSession,

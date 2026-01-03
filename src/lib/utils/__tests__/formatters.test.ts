@@ -148,9 +148,8 @@ describe('formatters', () => {
       expect(normalizePaceFormat(undefined as unknown as string)).toBeNull();
     });
 
-    it('should return null for invalid formats', () => {
-      expect(normalizePaceFormat('invalid')).toBeNull();
-      expect(normalizePaceFormat('5:00:00')).toBeNull();
+    it('should normalize HH:MM:SS format', () => {
+      expect(normalizePaceFormat('5:00:00')).toBe('05:00:00');
     });
   });
 

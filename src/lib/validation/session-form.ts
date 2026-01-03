@@ -27,7 +27,7 @@ const requiredPace = () =>
     .min(1, 'Allure requise')
     .refine(
       (val) => validatePaceInput(val),
-      { message: 'Format: MM:SS' }
+      { message: 'Format: MM:SS ou HH:MM:SS' }
     );
 
 const optionalPace = () =>
@@ -35,7 +35,7 @@ const optionalPace = () =>
     .optional()
     .refine(
       (val) => !val || val === '' || validatePaceInput(val),
-      { message: 'Format: MM:SS' }
+      { message: 'Format: MM:SS ou HH:MM:SS' }
     );
 
 const nullableDuration = () =>
@@ -51,7 +51,7 @@ const nullablePace = () =>
     .nullable()
     .refine(
       (val) => val === null || val === '' || validatePaceInput(val),
-      { message: 'Format: MM:SS' }
+      { message: 'Format: MM:SS ou HH:MM:SS' }
     );
 
 const intervalStepSchema = z.object({

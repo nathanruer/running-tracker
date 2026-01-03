@@ -117,7 +117,7 @@ export function normalizeDurationFormat(input: string): string | null {
  * Paces are always in MM:SS format (minutes per km)
  *
  * @param input - Pace string to validate
- * @returns true if valid MM:SS format, false otherwise
+ * @returns true if valid MM:SS or HH:MM:SS format, false otherwise
  *
  * @example
  * validatePaceInput("05:30")   // true
@@ -133,25 +133,25 @@ export function validatePaceInput(input: string): boolean {
   const trimmed = input.trim();
   const parts = trimmed.split(':').map(part => parseInt(part, 10));
 
-  if (parts.length !== 2) {
-    return false;
+  if (parts.length === 2) {
+    const [minutes, seconds] = parts;
+    if (isNaN(minutes) || isNaN(seconds)) return false;
+    if (minutes < 0 || seconds < 0 || seconds >= 60) return false;
+    return true;
   }
 
-  const [minutes, seconds] = parts;
-
-  if (isNaN(minutes) || isNaN(seconds)) {
-    return false;
+  if (parts.length === 3) {
+    const [hours, minutes, seconds] = parts;
+    if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return false;
+    if (hours < 0 || minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60) return false;
+    return true;
   }
 
-  if (minutes < 0 || seconds < 0 || seconds >= 60) {
-    return false;
-  }
-
-  return true;
+  return false;
 }
 
 /**
- * Normalizes a pace string to MM:SS format with leading zeros
+ * Normalizes a pace string to MM:SS or HH:MM:SS format with leading zeros
  *
  * @param input - Pace string
  * @returns Normalized pace string (MM:SS), or null if invalid
@@ -167,8 +167,13 @@ export function normalizePaceFormat(input: string): string | null {
   }
 
   const parts = input.trim().split(':').map(part => parseInt(part, 10));
-  const [minutes, seconds] = parts;
+  
+  if (parts.length === 3) {
+    const [hours, minutes, seconds] = parts;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
 
+  const [minutes, seconds] = parts;
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
@@ -301,6 +306,8 @@ export function calculatePaceFromDurationAndDistance(durationStr: string, distan
   // formatDuration checks if seconds < 3600 (1 hour). For pace, it usually is.
   // 06:00 min/km = 360 seconds.
   
+  // Pace is minutes per km. 
+  // formatDuration automatically handles < 1h (MM:SS) and >= 1h (HH:MM:SS)
   return formatDuration(paceSeconds);
 }
 

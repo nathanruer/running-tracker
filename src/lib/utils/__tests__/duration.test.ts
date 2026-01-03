@@ -170,15 +170,15 @@ describe('validatePaceInput', () => {
     expect(validatePaceInput('10:00')).toBe(true);
   });
 
-  it('should reject HH:MM:SS format for pace', () => {
-    expect(validatePaceInput('00:05:30')).toBe(false);
-    expect(validatePaceInput('01:05:30')).toBe(false);
+  it('should accept HH:MM:SS format for pace', () => {
+    expect(validatePaceInput('00:05:30')).toBe(true);
+    expect(validatePaceInput('01:05:30')).toBe(true);
   });
 
   it('should reject invalid formats', () => {
     expect(validatePaceInput('invalid')).toBe(false);
     expect(validatePaceInput('12')).toBe(false);
-    expect(validatePaceInput('12:60')).toBe(false); // seconds >= 60
+    expect(validatePaceInput('12:60')).toBe(false);
     expect(validatePaceInput('')).toBe(false);
   });
 
@@ -203,8 +203,13 @@ describe('normalizePaceFormat', () => {
   it('should return null for invalid pace', () => {
     expect(normalizePaceFormat('invalid')).toBe(null);
     expect(normalizePaceFormat('12:60')).toBe(null);
-    expect(normalizePaceFormat('00:05:30')).toBe(null); // HH:MM:SS not allowed for pace
+    expect(normalizePaceFormat('12:60')).toBe(null);
     expect(normalizePaceFormat('')).toBe(null);
+  });
+
+  it('should normalize HH:MM:SS pace', () => {
+    expect(normalizePaceFormat('00:05:30')).toBe('00:05:30');
+    expect(normalizePaceFormat('1:5:30')).toBe('01:05:30');
   });
 });
 
@@ -234,5 +239,13 @@ describe('calculatePaceFromDurationAndDistance', () => {
     expect(calculatePaceFromDurationAndDistance('01:00:00', 0)).toBeNull();
     expect(calculatePaceFromDurationAndDistance('01:00:00', -5)).toBeNull();
     expect(calculatePaceFromDurationAndDistance('01:00:00', null)).toBeNull();
+  });
+
+  it('should format very slow paces as HH:MM:SS (if > 60 min)', () => {
+    // 0.02km in 45:06 -> ~2255:00 min/km
+    // 45:06 = 2706 seconds
+    // 2706 / 0.02 = 135300 seconds per km
+    // 135300 + seconds = 37h 35m 00s
+    expect(calculatePaceFromDurationAndDistance('00:45:06', 0.02)).toBe('37:35:00');
   });
 });
