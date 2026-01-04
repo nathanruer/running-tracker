@@ -109,8 +109,9 @@ export function PlannedSessionRow({
         : (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
 
       if (avgPaceSec) {
-        const mins = Math.floor(avgPaceSec / 60);
-        const secs = Math.round(avgPaceSec % 60);
+        const roundedPace = Math.round(avgPaceSec);
+        const mins = Math.floor(roundedPace / 60);
+        const secs = roundedPace % 60;
         return `~${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       }
     }
@@ -180,7 +181,13 @@ export function PlannedSessionRow({
         <TableCell className="text-center whitespace-nowrap">
           {displayDuration > 0 ? (
             <span>
-              {`~${Math.floor(displayDuration / 60).toString().padStart(2, '0')}:${(Math.round(displayDuration % 60)).toString().padStart(2, '0')}:00`}
+              {(() => {
+                // Round duration first to avoid XX:60 bug
+                const roundedDuration = Math.round(displayDuration);
+                const hours = Math.floor(roundedDuration / 60);
+                const mins = roundedDuration % 60;
+                return `~${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
+              })()}
             </span>
           ) : '-'}
         </TableCell>

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
+import { secondsToPace } from '@/lib/utils/pace';
 import { Target, ListChecks } from 'lucide-react';
 
 interface IntervalDetailsViewProps {
@@ -17,13 +18,6 @@ const paceToSeconds = (pace: string | null): number | null => {
   const parts = pace.split(':').map(Number);
   if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
   return parts[0] * 60 + parts[1];
-};
-
-const secondsToPace = (totalSeconds: number | null): string => {
-  if (totalSeconds === null || totalSeconds <= 0) return '-';
-  const min = Math.floor(totalSeconds / 60);
-  const sec = Math.round(totalSeconds % 60);
-  return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 };
 
 const formatPace = (pace: string | null): string => {

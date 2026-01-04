@@ -13,8 +13,9 @@ function mpsToSecondsPerKm(mps: number): number {
  */
 export function formatPace(secondsPerKm: number): string {
   if (secondsPerKm === 0 || !isFinite(secondsPerKm)) return '-';
-  const minutes = Math.floor(secondsPerKm / 60);
-  const seconds = Math.round(secondsPerKm % 60);
+  const totalSeconds = Math.round(secondsPerKm);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
