@@ -85,7 +85,7 @@ describe('SessionRowActions', () => {
     expect(mockOnEdit).toHaveBeenCalledWith(mockSession);
   });
 
-  it('should show "Compléter" button for planned session', () => {
+  it('should show "Compléter / Modifier" button for planned session', () => {
     const plannedSession = { ...mockSession, status: 'planned' as const };
 
     render(
@@ -102,10 +102,11 @@ describe('SessionRowActions', () => {
     const completeButton = items.find(item => item.textContent?.includes('Compléter'));
 
     expect(completeButton).toBeDefined();
-    expect(screen.queryByText('Modifier')).not.toBeInTheDocument();
+    // "Modifier" seul ne devrait pas exister car on affiche "Compléter / Modifier"
+    expect(screen.queryByText(/^Modifier$/)).not.toBeInTheDocument();
   });
 
-  it('should call onEdit when "Compléter" is clicked for planned session', () => {
+  it('should call onEdit when "Compléter / Modifier" is clicked for planned session', () => {
     const plannedSession = { ...mockSession, status: 'planned' as const };
 
     render(

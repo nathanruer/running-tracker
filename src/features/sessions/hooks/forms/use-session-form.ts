@@ -160,6 +160,9 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         calories: session.calories,
       });
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
+      if (session.intervalDetails?.steps && session.intervalDetails.steps.length > 0) {
+        setIntervalEntryMode('detailed');
+      }
     } else if (initialData) {
       const { date, ...importedFields } = initialData;
       form.reset({

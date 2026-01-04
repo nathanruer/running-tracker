@@ -52,7 +52,7 @@ export function SessionRowActions({
           {isPlanned ? (
             <>
               <CheckCircle className="h-4 w-4 mr-2" />
-              Compléter
+              Compléter / Modifier
             </>
           ) : (
             <>
