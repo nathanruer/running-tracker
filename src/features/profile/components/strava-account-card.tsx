@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { StravaBadge } from "@/components/ui/strava-badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,7 +79,7 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
             Votre compte Strava est actuellement lié à ce profil.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Button
             variant="destructive"
             onClick={() => setShowDisconnectDialog(true)}
@@ -88,6 +89,9 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
             <LogOut className="mr-2 h-4 w-4" />
             Déconnecter Strava
           </Button>
+          <div className="flex justify-end">
+            <StravaBadge variant="orange" />
+          </div>
         </CardContent>
       </Card>
 

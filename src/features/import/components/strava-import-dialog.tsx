@@ -29,6 +29,7 @@ import { useTableSelection } from '@/hooks/use-table-selection';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { formatDuration } from '@/lib/utils/duration';
 import { calculatePaceString } from '@/lib/utils/formatters';
+import { StravaBadge } from '@/components/ui/strava-badge';
 
 interface StravaImportDialogProps {
   open: boolean;
@@ -213,6 +214,9 @@ export function StravaImportDialog({
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Se connecter avec Strava
             </Button>
+            <div className="flex justify-end w-full">
+              <StravaBadge variant="orange" />
+            </div>
           </div>
         ) : loading || activities.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
