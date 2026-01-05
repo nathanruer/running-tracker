@@ -69,22 +69,20 @@ describe('CsvPreviewTable', () => {
     it('should display all session data correctly', () => {
       renderTable();
 
-      // Session types
       expect(screen.getByText('Endurance fondamentale')).toBeInTheDocument();
       expect(screen.getByText('Fractionné')).toBeInTheDocument();
       expect(screen.getByText('Récupération')).toBeInTheDocument();
 
-      // Formatted dates
       expect(screen.getByText('01/01/2024')).toBeInTheDocument();
       expect(screen.getByText('03/01/2024')).toBeInTheDocument();
       expect(screen.getByText('05/01/2024')).toBeInTheDocument();
 
-      // Duration and distance
-      expect(screen.getByText('00:45:00')).toBeInTheDocument();
+      expect(screen.getByText('45:00')).toBeInTheDocument();
+      expect(screen.getByText('30:00')).toBeInTheDocument();
+      expect(screen.getByText('20:00')).toBeInTheDocument();
       expect(screen.getByText('8.50 km')).toBeInTheDocument();
       expect(screen.getByText('5.20 km')).toBeInTheDocument();
 
-      // Comments
       expect(screen.getByText('Bonne séance')).toBeInTheDocument();
       expect(screen.getByText('Difficile')).toBeInTheDocument();
     });

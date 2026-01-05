@@ -4,7 +4,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
-import { normalizePaceFormat } from '@/lib/utils/duration';
+import { normalizePaceFormat, parseDuration, formatDuration } from '@/lib/utils/duration';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
 import { SessionRowActions } from './session-row-actions';
@@ -45,8 +45,7 @@ export function PlannedSessionRow({
       let hrSeconds = 0;
 
       session.intervalDetails.steps.forEach(step => {
-        const [m, s] = (step.duration || '0:00').split(':').map(Number);
-        const durationSec = (m * 60) + (s || 0);
+        const durationSec = parseDuration(step.duration) || 0;
         
         totalSeconds += durationSec;
         totalDistance += step.distance || 0;
@@ -83,14 +82,9 @@ export function PlannedSessionRow({
       let totalSeconds = 0;
 
       session.intervalDetails.steps.forEach(step => {
-        const [m, s] = (step.duration || '0:00').split(':').map(Number);
-        const durationSec = (m * 60) + (s || 0);
+        const durationSec = parseDuration(step.duration) || 0;
         
-        const paceStr = step.pace || '';
-        const paceParts = paceStr.split(':').map(Number);
-        const stepPaceSec = (paceParts.length === 2 && !isNaN(paceParts[0]) && !isNaN(paceParts[1]))
-          ? paceParts[0] * 60 + paceParts[1]
-          : null;
+        const stepPaceSec = parseDuration(step.pace);
 
         if (durationSec > 0) {
           totalSeconds += durationSec;
@@ -181,13 +175,7 @@ export function PlannedSessionRow({
         <TableCell className="text-center whitespace-nowrap">
           {displayDuration > 0 ? (
             <span>
-              {(() => {
-                // Round duration first to avoid XX:60 bug
-                const roundedDuration = Math.round(displayDuration);
-                const hours = Math.floor(roundedDuration / 60);
-                const mins = roundedDuration % 60;
-                return `~${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
-              })()}
+              ~{formatDuration(Math.round(displayDuration) * 60)}
             </span>
           ) : '-'}
         </TableCell>

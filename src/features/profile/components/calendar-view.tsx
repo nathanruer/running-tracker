@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
+import { normalizeDurationFormat } from '@/lib/utils/duration';
 
 interface CalendarViewProps {
   sessions: TrainingSession[];
@@ -87,7 +88,8 @@ export function CalendarView({ sessions }: CalendarViewProps) {
   };
 
   const formatDuration = (duration: string | null | undefined): string => {
-    return duration || '--';
+    if (!duration) return '--';
+    return normalizeDurationFormat(duration) || duration;
   };
 
   const capitalize = (str: string): string => {

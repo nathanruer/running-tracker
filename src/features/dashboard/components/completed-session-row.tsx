@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { type TrainingSession } from '@/lib/types';
+import { normalizeDurationFormat } from '@/lib/utils/duration';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
 import { SessionRowActions } from './session-row-actions';
@@ -84,7 +85,7 @@ export function CompletedSessionRow({
           </div>
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
-          {session.duration}
+          {session.duration ? (normalizeDurationFormat(session.duration) || session.duration) : '-'}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {session.distance ? (

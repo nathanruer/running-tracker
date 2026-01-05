@@ -218,7 +218,8 @@ describe('SessionsTable', () => {
     const rows = screen.getAllByRole('row');
     const dataRows = rows.slice(1);
 
-    expect(within(dataRows[0]).getByText('00:45:00')).toBeInTheDocument();
+    // Adaptive format: MM:SS for durations < 60min
+    expect(within(dataRows[0]).getByText('45:00')).toBeInTheDocument();
   });
 
   it('should toggle sort direction on multiple clicks', async () => {
@@ -230,7 +231,7 @@ describe('SessionsTable', () => {
     // First click - descending (longest first)
     await user.click(durationHeader);
     let rows = screen.getAllByRole('row');
-    expect(within(rows[1]).getByText('00:45:00')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('45:00')).toBeInTheDocument();
 
     // Second click - ascending (shortest first)
     await user.click(durationHeader);
@@ -240,7 +241,7 @@ describe('SessionsTable', () => {
     // Third click - no sort (back to original order)
     await user.click(durationHeader);
     rows = screen.getAllByRole('row');
-    expect(within(rows[1]).getByText('00:30:00')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('30:00')).toBeInTheDocument();
   });
 
   it('should render type filter select', () => {

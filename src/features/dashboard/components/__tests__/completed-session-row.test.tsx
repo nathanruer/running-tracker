@@ -33,7 +33,7 @@ describe('CompletedSessionRow', () => {
     week: 2,
     date: '2024-01-15T10:00:00.000Z',
     sessionType: 'Footing',
-    duration: '1:00:00',
+    duration: '01:00:00',
     distance: 10.5,
     avgPace: '5:42',
     avgHeartRate: 145,
@@ -69,7 +69,7 @@ describe('CompletedSessionRow', () => {
 
       expect(screen.getByText('5')).toBeInTheDocument();
       expect(screen.getByText('Footing')).toBeInTheDocument();
-      expect(screen.getByText('1:00:00')).toBeInTheDocument();
+      expect(screen.getByText('01:00:00')).toBeInTheDocument();
       expect(screen.getByText('5:42')).toBeInTheDocument();
       expect(screen.getByText('6/10')).toBeInTheDocument();
     });

@@ -35,6 +35,7 @@ const LeafletRoute = dynamic(
 import { WeatherWidget } from './weather-widget';
 import { StreamsSection } from './streams-section';
 import { formatCadence } from '@/lib/utils/cadence';
+import { normalizeDurationFormat } from '@/lib/utils/duration';
 
 interface SessionDetailsSheetProps {
   session: TrainingSession | null;
@@ -145,14 +146,14 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                   unit="km" 
                   highlight
                 />
-                <StatCard 
-                  label="Durée" 
-                  value={session.duration 
-                    ? session.duration 
-                    : session.targetDuration 
-                      ? `~${session.targetDuration} min` 
+                <StatCard
+                  label="Durée"
+                  value={session.duration
+                    ? (normalizeDurationFormat(session.duration) || session.duration)
+                    : session.targetDuration
+                      ? `~${session.targetDuration} min`
                       : '-'
-                  } 
+                  }
                   highlight
                 />
                 <StatCard 

@@ -1,5 +1,5 @@
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
-import { parseDuration, normalizeDurationToMMSS } from './duration';
+import { parseDuration, normalizeDurationToMMSS, normalizeDurationFormat } from './duration';
 
 export interface IntervalFormValues {
   sessionType: string;
@@ -42,8 +42,16 @@ export function generateIntervalStructure(intervalDetails: IntervalDetails | nul
     recoveryDuration,
   } = intervalDetails;
 
+  // Helper to format duration smartly (MM:SS when < 1h, HH:MM:SS when >= 1h)
+  const formatDur = (dur: string | null | undefined): string => {
+    if (!dur) return '';
+    return normalizeDurationFormat(dur) || dur;
+  };
+
   if (workoutType && repetitionCount && effortDuration && recoveryDuration) {
-    return `${workoutType}: ${repetitionCount}x${effortDuration} R:${recoveryDuration}`;
+    const formattedEffort = formatDur(effortDuration);
+    const formattedRecovery = formatDur(recoveryDuration);
+    return `${workoutType}: ${repetitionCount}x${formattedEffort} R:${formattedRecovery}`;
   }
 
   if (workoutType && intervalDetails.steps?.length) {
@@ -55,8 +63,8 @@ export function generateIntervalStructure(intervalDetails: IntervalDetails | nul
       const firstRecovery = recoverySteps[0];
 
       const count = effortSteps.length;
-      const effortDur = firstEffort.duration || '';
-      const recoveryDur = firstRecovery?.duration || '';
+      const effortDur = formatDur(firstEffort.duration);
+      const recoveryDur = formatDur(firstRecovery?.duration);
 
       if (effortDur && recoveryDur) {
         return `${workoutType}: ${count}x${effortDur} R:${recoveryDur}`;

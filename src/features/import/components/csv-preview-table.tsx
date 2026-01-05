@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { normalizeDurationFormat } from '@/lib/utils/duration';
 
 export interface ParsedSession {
   date: string;
@@ -137,7 +138,9 @@ export function CsvPreviewTable({
                   <span>{session.sessionType}</span>
                 </div>
               </TableCell>
-              <TableCell className="text-center">{session.duration}</TableCell>
+              <TableCell className="text-center">
+                {normalizeDurationFormat(session.duration) || session.duration}
+              </TableCell>
               <TableCell className="text-center">{session.distance.toFixed(2)} km</TableCell>
               <TableCell className="text-center">{session.avgPace}</TableCell>
               <TableCell className="text-center">{session.avgHeartRate}</TableCell>

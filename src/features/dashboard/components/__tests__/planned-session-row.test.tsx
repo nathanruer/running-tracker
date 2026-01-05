@@ -149,7 +149,7 @@ describe('PlannedSessionRow', () => {
 
     it('formats target duration correctly', () => {
       renderRow({ ...mockPlannedSession, targetDuration: 30 });
-      expect(screen.getByText('~00:30:00')).toBeInTheDocument();
+      expect(screen.getByText('~30:00')).toBeInTheDocument();
 
       renderRow({ ...mockPlannedSession, targetDuration: 120 });
       expect(screen.getByText('~02:00:00')).toBeInTheDocument();

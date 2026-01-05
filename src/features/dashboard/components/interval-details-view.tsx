@@ -6,29 +6,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils';
 import { secondsToPace } from '@/lib/utils/pace';
+import { parseDuration, normalizeDurationFormat, normalizePaceFormat } from '@/lib/utils/duration';
 import { Target, ListChecks } from 'lucide-react';
 
 interface IntervalDetailsViewProps {
   intervalDetails: IntervalDetails;
   isPlanned?: boolean;
 }
-
-const paceToSeconds = (pace: string | null): number | null => {
-  if (!pace) return null;
-  const parts = pace.split(':').map(Number);
-  if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
-  return parts[0] * 60 + parts[1];
-};
-
-const formatPace = (pace: string | null): string => {
-  if (!pace) return '-';
-  const parts = pace.split(':');
-  if (parts.length !== 2) return pace;
-  const min = parseInt(parts[0]);
-  const sec = parseInt(parts[1]);
-  if (isNaN(min) || isNaN(sec)) return pace;
-  return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-};
 
 export function IntervalDetailsView({
   intervalDetails,
@@ -56,9 +40,8 @@ export function IntervalDetailsView({
     let paceDistance = 0;
 
     items.forEach(step => {
-      const [m, s] = (step.duration || '0:00').split(':').map(Number);
-      const durationSec = (m * 60) + (s || 0);
-      const stepPaceSec = paceToSeconds(step.pace);
+      const durationSec = parseDuration(step.duration) || 0;
+      const stepPaceSec = parseDuration(step.pace);
 
       if (durationSec > 0) {
         totalSeconds += durationSec;
@@ -127,7 +110,7 @@ export function IntervalDetailsView({
                 {displayStructure}
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(paceToSeconds(targetEffortPace)) || '-'} mn/km</span>
+                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'} mn/km</span>
                 {targetEffortHR ? <span className="ml-1.5 opacity-40">|</span> : ''}
                 {targetEffortHR ? <span className="ml-1.5 font-bold text-orange-400/80">{targetEffortHR} bpm</span> : ''}
               </span>
@@ -197,7 +180,7 @@ export function IntervalDetailsView({
                       </div>
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
-                      {step.duration === '00:00' ? '-' : (step.duration || '-')}
+                      {step.duration === '00:00' || step.duration === '00:00:00' ? '-' : (normalizeDurationFormat(step.duration || '') || step.duration || '-')}
                     </td>
                     <td className="py-2 px-4 text-center font-mono">
                       {step.distance && step.distance > 0 ? (
@@ -207,7 +190,7 @@ export function IntervalDetailsView({
                       ) : '-'}
                     </td>
                     <td className="py-2 px-4 text-center font-mono font-bold text-foreground underline decoration-violet-500/20 underline-offset-4">
-                      {formatPace(step.pace)} <span className="text-xs text-muted-foreground">mn/km</span>
+                      {step.pace ? (normalizePaceFormat(step.pace) || step.pace) : '-'} <span className="text-xs text-muted-foreground">mn/km</span>
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
                       {step.hr ? (
@@ -238,7 +221,7 @@ export function IntervalDetailsView({
              <span>Totaux ({filter === 'all' ? 'Toutes' : filter === 'effort' ? 'Efforts' : 'Récupérations'}):</span>
            </div>
            {averages.totalTime !== "-" && (
-             <span>Temps: {averages.totalTime} mn</span>
+             <span>Temps: {averages.totalTime}</span>
            )}
            {averages.totalDist !== "0.00" && (
              <span>Distance: {averages.totalDist} km</span>
