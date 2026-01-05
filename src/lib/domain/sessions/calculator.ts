@@ -1,14 +1,37 @@
 import { prisma } from '@/lib/database';
 import { Prisma } from '@prisma/client';
 
-export async function recalculateSessionNumbers(userId: string): Promise<void> {
+/**
+ * Recalculates session numbers for a user.
+ * 
+ * @param userId User ID
+ * @param newSessionDate Optional - If provided, skips recalculation when this date is the most recent
+ * @returns true if recalculation was performed, false if skipped
+ */
+export async function recalculateSessionNumbers(
+  userId: string,
+  newSessionDate?: Date | null
+): Promise<boolean> {
+  if (newSessionDate) {
+    const laterSessions = await prisma.training_sessions.count({
+      where: {
+        userId,
+        date: { gt: newSessionDate },
+      },
+    });
+
+    if (laterSessions === 0) {
+      return false;
+    }
+  }
+
   const sessions = await prisma.training_sessions.findMany({
     where: { userId },
     orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
     select: { id: true, date: true, status: true, sessionNumber: true },
   });
 
-  if (sessions.length === 0) return;
+  if (sessions.length === 0) return false;
 
   const sessionsWithDates = sessions.filter(s => s.date !== null);
   const plannedWithoutDates = sessions.filter(s => s.status === 'planned' && s.date === null);
@@ -53,7 +76,7 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
     globalSessionNumber++;
   }
 
-  if (updates.length === 0) return;
+  if (updates.length === 0) return false;
 
   const sessionNumberCases = updates
     .map(u => `WHEN id = '${u.id}' THEN ${u.sessionNumber}`)
@@ -72,6 +95,8 @@ export async function recalculateSessionNumbers(userId: string): Promise<void> {
       week = CASE ${Prisma.raw(weekCases)} END
     WHERE id IN (${Prisma.raw(ids)})
   `;
+
+  return true;
 }
 
 function getWeekKey(date: Date): string {

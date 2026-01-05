@@ -83,14 +83,10 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      await recalculateSessionNumbers(userId);
-
-      const refreshedSession = await prisma.training_sessions.findUnique({
-        where: { id: session.id },
-      });
+      await recalculateSessionNumbers(userId, new Date(payload.date));
 
       return NextResponse.json(
-        { session: refreshedSession || session },
+        { session },
         { status: HTTP_STATUS.CREATED }
       );
     },

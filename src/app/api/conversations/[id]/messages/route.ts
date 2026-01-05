@@ -42,6 +42,7 @@ export async function POST(
         prisma.training_sessions.findMany({
           where: { userId },
           orderBy: { date: 'desc' },
+          take: 50,
         }),
       ]);
 

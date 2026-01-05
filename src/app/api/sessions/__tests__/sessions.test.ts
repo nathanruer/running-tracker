@@ -183,7 +183,7 @@ describe('/api/sessions', () => {
       vi.mocked(getNextSessionNumber).mockResolvedValue(5);
       vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions', {
         method: 'POST',
@@ -196,7 +196,7 @@ describe('/api/sessions', () => {
       expect(response.status).toBe(201);
       expect(data.session).toEqual(createdSession);
       expect(getNextSessionNumber).toHaveBeenCalledWith('user-123');
-      expect(recalculateSessionNumbers).toHaveBeenCalledWith('user-123');
+      expect(recalculateSessionNumbers).toHaveBeenCalledWith('user-123', expect.any(Date));
     });
 
     it('should return 401 when not authenticated', async () => {
@@ -275,7 +275,7 @@ describe('/api/sessions', () => {
       vi.mocked(getNextSessionNumber).mockResolvedValue(1);
       vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions', {
         method: 'POST',
@@ -352,7 +352,7 @@ describe('/api/sessions', () => {
       vi.mocked(getNextSessionNumber).mockResolvedValue(6);
       vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
       
       vi.mocked(decodePolyline).mockReturnValue([[48.8566, 2.3522]]);
       vi.mocked(getHistoricalWeather).mockResolvedValue({
@@ -457,7 +457,7 @@ describe('/api/sessions', () => {
       vi.mocked(getNextSessionNumber).mockResolvedValue(8);
       vi.mocked(prisma.training_sessions.create).mockResolvedValue(createdSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(createdSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       vi.mocked(decodePolyline).mockReturnValue([[48.85, 2.35]]);
       vi.mocked(getHistoricalWeather).mockRejectedValue(new Error('API Down'));

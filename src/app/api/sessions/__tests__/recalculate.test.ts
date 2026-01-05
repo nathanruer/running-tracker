@@ -28,7 +28,7 @@ describe('/api/sessions/recalculate', () => {
   describe('POST', () => {
     it('should recalculate sessions successfully', async () => {
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/recalculate', {
         method: 'POST',

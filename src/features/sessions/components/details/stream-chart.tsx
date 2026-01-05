@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -59,11 +59,19 @@ export function StreamChart({
     }
   }, [onMouseLeave]);
 
+  const dataIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    data.forEach((d, i) => {
+      map.set(`${d.distance}-${d.time}`, i);
+    });
+    return map;
+  }, [data]);
+
   const CustomTooltip = useCallback((props: { active?: boolean; payload?: ReadonlyArray<{ payload: StreamDataPoint }> }) => {
     const { active, payload } = props;
     if (active && payload && payload.length > 0 && onMouseMove) {
       const dataPoint = payload[0].payload;
-      const index = data.findIndex(d => d.distance === dataPoint.distance && d.time === dataPoint.time);
+      const index = dataIndexMap.get(`${dataPoint.distance}-${dataPoint.time}`) ?? -1;
       if (index !== -1 && index !== pendingIndexRef.current) {
         pendingIndexRef.current = index;
         requestAnimationFrame(() => {
@@ -74,7 +82,7 @@ export function StreamChart({
       }
     }
     return null;
-  }, [data, onMouseMove]);
+  }, [dataIndexMap, onMouseMove]);
 
   if (data.length === 0) {
     return (

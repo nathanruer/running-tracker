@@ -48,6 +48,8 @@ model training_sessions {
   @@index([userId])
   @@index([status])
   @@index([recommendationId])
+  @@index([userId, date])
+  @@index([userId, status, sessionNumber])
 }
 
 model users {

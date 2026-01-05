@@ -80,7 +80,7 @@ describe('/api/sessions/[id]/complete', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue(completedSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(completedSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
         method: 'PATCH',
@@ -195,7 +195,7 @@ describe('/api/sessions/[id]/complete', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue(completedSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(completedSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
         method: 'PATCH',
@@ -233,7 +233,7 @@ describe('/api/sessions/[id]/complete', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue({} as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue({} as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
         method: 'PATCH',
@@ -274,7 +274,7 @@ describe('/api/sessions/[id]/complete', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue(updatedSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(refreshedSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
         method: 'PATCH',
@@ -353,7 +353,7 @@ describe('/api/sessions/[id]/complete', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue(completedSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(completedSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
         method: 'PATCH',
@@ -403,7 +403,7 @@ describe('/api/sessions/[id]/complete', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue({} as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue({} as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
         method: 'PATCH',

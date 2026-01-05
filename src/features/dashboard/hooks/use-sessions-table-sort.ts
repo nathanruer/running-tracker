@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { type TrainingSession } from '@/lib/types/session';
 import { 
   parseDuration,
@@ -27,7 +27,7 @@ export function useSessionsTableSort(sessions: TrainingSession[]) {
     }
   };
 
-  const getSortedSessions = () => {
+  const sortedSessions = useMemo(() => {
     if (!sortColumn || !sortDirection) {
       return sessions;
     }
@@ -134,12 +134,12 @@ export function useSessionsTableSort(sessions: TrainingSession[]) {
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  };
+  }, [sessions, sortColumn, sortDirection]);
 
   return {
     sortColumn,
     sortDirection,
     handleSort,
-    getSortedSessions,
+    sortedSessions,
   };
 }

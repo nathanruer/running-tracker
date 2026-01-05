@@ -134,7 +134,7 @@ describe('/api/sessions/[id]', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(existingSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue(updatedSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(refreshedSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123', {
         method: 'PUT',
@@ -168,7 +168,7 @@ describe('/api/sessions/[id]', () => {
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(existingSession as never);
       vi.mocked(prisma.training_sessions.update).mockResolvedValue(updatedSession as never);
       vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue(updatedSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123', {
         method: 'PUT',
@@ -245,7 +245,7 @@ describe('/api/sessions/[id]', () => {
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
       vi.mocked(findSessionByIdAndUser).mockResolvedValue(existingSession as never);
       vi.mocked(prisma.training_sessions.delete).mockResolvedValue(existingSession as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/session-123', {
         method: 'DELETE',

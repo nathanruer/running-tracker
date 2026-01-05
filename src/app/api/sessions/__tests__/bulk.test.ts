@@ -58,7 +58,7 @@ describe('/api/sessions/bulk', () => {
 
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
       vi.mocked(prisma.training_sessions.createMany).mockResolvedValue({ count: 2 } as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/bulk', {
         method: 'POST',
@@ -176,7 +176,7 @@ describe('/api/sessions/bulk', () => {
 
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
       vi.mocked(prisma.training_sessions.deleteMany).mockResolvedValue({ count: 3 } as never);
-      vi.mocked(recalculateSessionNumbers).mockResolvedValue(undefined);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
 
       const request = new NextRequest('http://localhost/api/sessions/bulk', {
         method: 'DELETE',

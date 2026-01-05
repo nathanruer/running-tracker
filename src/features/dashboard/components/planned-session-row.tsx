@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,7 +19,7 @@ interface PlannedSessionRowProps {
   onView?: (session: TrainingSession) => void;
 }
 
-export function PlannedSessionRow({ 
+export const PlannedSessionRow = React.memo(function PlannedSessionRow({ 
   session, 
   onEdit, 
   onDelete, 
@@ -239,4 +239,4 @@ export function PlannedSessionRow({
       )}
     </>
   );
-}
+});

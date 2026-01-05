@@ -50,7 +50,7 @@ describe('useSessionsTableSort', () => {
       
       expect(result.current.sortColumn).toBeNull();
       expect(result.current.sortDirection).toBeNull();
-      expect(result.current.getSortedSessions()).toEqual(sessions);
+      expect(result.current.sortedSessions).toEqual(sessions);
     });
   });
 
@@ -121,7 +121,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('sessionNumber');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.sessionNumber)).toEqual([3, 2, 1]);
     });
 
@@ -140,7 +140,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('sessionNumber');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.sessionNumber)).toEqual([1, 2, 3]);
     });
   });
@@ -158,7 +158,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('date');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.date)).toEqual(['2024-01-03', '2024-01-02', '2024-01-01']);
     });
 
@@ -174,7 +174,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('date');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted[0].date).toBe('2024-01-02');
       expect(sorted[1].date).toBe('2024-01-01');
       expect(sorted[2].date).toBeNull();
@@ -194,7 +194,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgHeartRate');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.avgHeartRate)).toEqual([160, 150, 140]);
     });
 
@@ -210,7 +210,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgHeartRate');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.targetHeartRateBpm)).toEqual(['160', '150', '140']);
     });
 
@@ -226,7 +226,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgHeartRate');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.targetHeartRateBpm)).toEqual(['160', '150', '140']);
     });
 
@@ -243,7 +243,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgHeartRate');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       const heartRates = sorted.map(s => 
         s.status === 'planned' 
           ? (s.targetHeartRateBpm ? parseFloat(s.targetHeartRateBpm) : null)
@@ -264,7 +264,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgHeartRate');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted[0].avgHeartRate).toBe(150);
       expect(sorted[1].avgHeartRate).toBe(140);
       expect(sorted[2].avgHeartRate).toBeNull();
@@ -285,7 +285,7 @@ describe('useSessionsTableSort', () => {
       });
 
       expect(result.current.sortDirection).toBe('desc');
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.avgPace)).toEqual(['05:30', '06:00', '06:30']);
     });
 
@@ -301,7 +301,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgPace');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.targetPace)).toEqual(['05:30', '06:00', '06:30']);
     });
 
@@ -318,7 +318,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgPace');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       const paces = sorted.map(s => 
         s.status === 'planned' ? s.targetPace : s.avgPace
       );
@@ -337,7 +337,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('avgPace');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted[0].avgPace).toBe('05:30');
       expect(sorted[1].avgPace).toBe('06:00');
       expect(sorted[2].avgPace).toBeNull();
@@ -357,7 +357,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('perceivedExertion');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.perceivedExertion)).toEqual([8, 5, 3]);
     });
 
@@ -373,7 +373,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('perceivedExertion');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.targetRPE)).toEqual([8, 5, 3]);
     });
 
@@ -390,7 +390,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('perceivedExertion');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       const rpes = sorted.map(s => 
         s.status === 'planned' ? s.targetRPE : s.perceivedExertion
       );
@@ -409,7 +409,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('perceivedExertion');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted[0].perceivedExertion).toBe(5);
       expect(sorted[1].perceivedExertion).toBe(3);
       expect(sorted[2].perceivedExertion).toBeNull();
@@ -429,7 +429,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('duration');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.duration)).toEqual(['00:45:00', '00:30:00', '00:20:00']);
     });
 
@@ -445,7 +445,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('duration');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.targetDuration)).toEqual([45, 30, 20]);
     });
 
@@ -462,7 +462,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('duration');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted[0].id).toBe('2');
       expect(sorted[1].id).toBe('1');
       expect(sorted[2].id).toBe('4');
@@ -483,7 +483,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('distance');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.distance)).toEqual([8, 5, 3]);
     });
 
@@ -499,7 +499,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('distance');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.targetDistance)).toEqual([8, 5, 3]);
     });
 
@@ -516,7 +516,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('distance');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.id)).toEqual(['2', '4', '1', '3']);
     });
   });
@@ -534,7 +534,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('sessionType');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.sessionType)).toEqual(['Sortie longue', 'Fractionné', 'Footing']);
     });
   });
@@ -552,7 +552,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('week');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted.map(s => s.week)).toEqual([3, 2, 1]);
     });
 
@@ -568,7 +568,7 @@ describe('useSessionsTableSort', () => {
         result.current.handleSort('week');
       });
 
-      const sorted = result.current.getSortedSessions();
+      const sorted = result.current.sortedSessions;
       expect(sorted[0].week).toBe(2);
       expect(sorted[1].week).toBe(1);
       expect(sorted[2].week).toBeNull();

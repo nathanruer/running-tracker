@@ -6,6 +6,7 @@ vi.mock('@/lib/database', () => ({
   prisma: {
     training_sessions: {
       findMany: vi.fn(),
+      count: vi.fn(),
     },
     $executeRaw: vi.fn(),
   },
@@ -20,8 +21,9 @@ describe('calculator', () => {
     it('should handle empty sessions array', async () => {
       (prisma.training_sessions.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
-      await recalculateSessionNumbers('user-123');
+      const result = await recalculateSessionNumbers('user-123');
 
+      expect(result).toBe(false);
       expect(prisma.training_sessions.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
@@ -58,8 +60,9 @@ describe('calculator', () => {
       );
       (prisma.$executeRaw as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
-      await recalculateSessionNumbers('user-123');
+      const result = await recalculateSessionNumbers('user-123');
 
+      expect(result).toBe(true);
       expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
 
       const sqlCall = (prisma.$executeRaw as ReturnType<typeof vi.fn>).mock.calls[0];
@@ -237,6 +240,43 @@ describe('calculator', () => {
       await recalculateSessionNumbers('user-123');
 
       expect(prisma.$executeRaw).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('recalculateSessionNumbers with optimization', () => {
+    it('should skip recalculation when new session has the most recent date', async () => {
+      (prisma.training_sessions.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
+
+      const result = await recalculateSessionNumbers('user-123', new Date('2024-01-15'));
+
+      expect(result).toBe(false);
+      expect(prisma.training_sessions.count).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-123',
+          date: { gt: new Date('2024-01-15') },
+        },
+      });
+      expect(prisma.training_sessions.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should recalculate when new session is not the most recent', async () => {
+      (prisma.training_sessions.count as ReturnType<typeof vi.fn>).mockResolvedValue(2);
+      (prisma.training_sessions.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+      const result = await recalculateSessionNumbers('user-123', new Date('2024-01-10'));
+
+      expect(result).toBe(false);
+      expect(prisma.training_sessions.findMany).toHaveBeenCalled();
+    });
+
+    it('should always recalculate when no date is provided', async () => {
+      (prisma.training_sessions.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+      const result = await recalculateSessionNumbers('user-123');
+
+      expect(result).toBe(false);
+      expect(prisma.training_sessions.count).not.toHaveBeenCalled();
+      expect(prisma.training_sessions.findMany).toHaveBeenCalled();
     });
   });
 });

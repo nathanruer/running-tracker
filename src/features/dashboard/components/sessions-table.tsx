@@ -71,11 +71,9 @@ export function SessionsTable({
   actions,
   initialLoading,
 }: SessionsTableProps) {
-  const { sortColumn, sortDirection, handleSort, getSortedSessions } = useSessionsTableSort(sessions);
-  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(getSortedSessions());
+  const { sortColumn, sortDirection, handleSort, sortedSessions } = useSessionsTableSort(sessions);
+  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sortedSessions);
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
-
-  const sortedSessions = getSortedSessions();
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -18,7 +18,7 @@ interface CompletedSessionRowProps {
   onView?: (session: TrainingSession) => void;
 }
 
-export function CompletedSessionRow({
+export const CompletedSessionRow = React.memo(function CompletedSessionRow({
   session,
   onEdit,
   onDelete,
@@ -153,4 +153,4 @@ export function CompletedSessionRow({
       )}
     </>
   );
-}
+});
