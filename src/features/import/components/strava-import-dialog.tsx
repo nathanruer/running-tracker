@@ -152,8 +152,6 @@ export function StravaImportDialog({
           source: activity.source,
           stravaData: activity.stravaData,
           elevationGain: activity.elevationGain,
-          maxElevation: activity.maxElevation,
-          minElevation: activity.minElevation,
           averageCadence: activity.averageCadence,
           averageTemp: activity.averageTemp,
           calories: activity.calories,

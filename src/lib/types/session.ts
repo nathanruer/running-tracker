@@ -52,8 +52,6 @@ export interface TrainingSession {
   stravaData?: unknown | null;
   stravaStreams?: unknown | null;
   elevationGain?: number | null;
-  maxElevation?: number | null;
-  minElevation?: number | null;
   averageCadence?: number | null;
   averageTemp?: number | null;
   calories?: number | null;

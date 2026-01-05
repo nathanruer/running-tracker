@@ -51,8 +51,6 @@ describe('SessionDetailsSheet', () => {
     source: 'strava',
     externalId: '12345',
     elevationGain: 150,
-    maxElevation: 300,
-    minElevation: 150,
     averageCadence: 180,
     averageTemp: 20,
     calories: 800,

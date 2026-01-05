@@ -36,8 +36,6 @@ model training_sessions {
   stravaData        Json?
   stravaStreams     Json?
   elevationGain     Float?
-  maxElevation      Float?
-  minElevation      Float?
   averageCadence    Float?
   averageTemp       Float?
   calories          Int?

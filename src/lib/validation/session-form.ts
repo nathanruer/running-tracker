@@ -101,8 +101,6 @@ const formSchema = z.object({
   source: z.string().optional().nullable(),
   stravaData: z.any().optional().nullable(),
   elevationGain: z.number().optional().nullable(),
-  maxElevation: z.number().optional().nullable(),
-  minElevation: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
   calories: z.number().optional().nullable(),

@@ -151,8 +151,6 @@ describe('strava formatters', () => {
         source: 'strava',
         stravaData: activity,
         elevationGain: 100,
-        maxElevation: undefined,
-        minElevation: undefined,
         averageCadence: undefined,
         averageTemp: undefined,
         calories: undefined,
@@ -163,8 +161,6 @@ describe('strava formatters', () => {
       const detailedActivity: StravaActivity = {
         ...baseActivity,
         total_elevation_gain: 150,
-        elev_high: 200,
-        elev_low: 50,
         average_cadence: 175,
         average_temp: 20,
         calories: 800,
@@ -173,8 +169,6 @@ describe('strava formatters', () => {
       const result = formatStravaActivity(detailedActivity);
 
       expect(result.elevationGain).toBe(150);
-      expect(result.maxElevation).toBe(200);
-      expect(result.minElevation).toBe(50);
       expect(result.averageCadence).toBe(175);
       expect(result.averageTemp).toBe(20);
       expect(result.calories).toBe(800);

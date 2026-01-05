@@ -68,8 +68,6 @@ describe('/api/strava/activities/[id]', () => {
     source: 'strava',
     stravaData: mockActivityDetails,
     elevationGain: 50,
-    maxElevation: undefined,
-    minElevation: undefined,
     averageCadence: 85,
     averageTemp: 15,
     calories: 350,
