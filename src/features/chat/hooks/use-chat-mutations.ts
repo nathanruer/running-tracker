@@ -15,10 +15,10 @@ export function useChatMutations(conversationId: string | null) {
 
   const acceptSessionMutation = useMutation({
     mutationFn: async (session: AIRecommendedSession) => {
-      const recommendationText = session.why_this_session || session.reason || '';
+      const recommendationText = session.why_this_session || '';
       const comments = recommendationText ? `Séance recommandée : ${recommendationText}` : '';
 
-      const sessionType = session.session_type || session.type;
+      const sessionType = session.session_type;
       const intervalDetails = session.interval_details || null;
 
       if (sessionType === 'Fractionné' && (!intervalDetails?.steps || intervalDetails.steps.length === 0)) {
@@ -30,10 +30,10 @@ export function useChatMutations(conversationId: string | null) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionType,
-          targetDuration: session.duration_minutes || session.duration_min,
+          targetDuration: session.duration_min,
           targetDistance: session.estimated_distance_km,
           targetPace: session.target_pace_min_km,
-          targetHeartRateZone: session.target_hr_zone || session.target_hr,
+          targetHeartRateZone: session.target_hr_zone,
           targetHeartRateBpm: session.target_hr_bpm,
           targetRPE: session.target_rpe,
           intervalDetails,

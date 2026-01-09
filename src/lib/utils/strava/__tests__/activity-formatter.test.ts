@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatStravaActivity } from '../formatters';
+import { formatStravaActivity } from '../activity-formatter';
 import type { StravaActivity } from '@/lib/types';
 
 describe('strava formatters', () => {

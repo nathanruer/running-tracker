@@ -16,7 +16,6 @@ vi.mock('../recommendation-card', () => ({
   ),
 }));
 
-// Mock session helpers
 vi.mock('@/lib/utils/chat/session-helpers', () => ({
   isSessionAlreadyAdded: vi.fn(() => false),
   isSessionCompleted: vi.fn(() => false),
@@ -173,7 +172,6 @@ describe('MessageList', () => {
         recommendation_id: 'rec-1',
         session_type: 'Endurance fondamentale',
         duration_min: 45,
-        duration_minutes: 45,
         estimated_distance_km: 8,
       };
 
@@ -203,7 +201,6 @@ describe('MessageList', () => {
         recommendation_id: 'rec-1',
         session_type: 'Endurance fondamentale',
         duration_min: 45,
-        duration_minutes: 45,
         estimated_distance_km: 8,
       };
 
@@ -211,7 +208,6 @@ describe('MessageList', () => {
         recommendation_id: 'rec-2',
         session_type: 'Fractionné',
         duration_min: 30,
-        duration_minutes: 30,
         estimated_distance_km: 5,
       };
 

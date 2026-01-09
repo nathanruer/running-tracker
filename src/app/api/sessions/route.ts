@@ -55,11 +55,11 @@ export async function POST(request: NextRequest) {
     async (payload, userId) => {
       const nextNumber = await getNextSessionNumber(userId);
 
-      const { intervalDetails, ...sessionData } = payload;
+      const { intervalDetails, stravaData, ...sessionData } = payload;
 
       let weather = null;
-      if (sessionData.stravaData) {
-        weather = await enrichSessionWithWeather(sessionData.stravaData, new Date(payload.date));
+      if (stravaData) {
+        weather = await enrichSessionWithWeather(stravaData, new Date(payload.date));
       }
 
       const stravaStreams = await fetchStreamsForSession(
@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         data: {
           ...sessionData,
           intervalDetails: intervalDetails || Prisma.JsonNull,
+          stravaData: stravaData || Prisma.JsonNull,
           weather: weather ?? Prisma.JsonNull,
           stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
           date: new Date(payload.date),

@@ -7,7 +7,7 @@ import {
   getAvailableStreams,
   calculateStreamAverage,
   STREAM_CONFIGS,
-} from '../streams';
+} from '../stream-charts';
 import type { StravaStreamSet } from '@/lib/types';
 
 describe('streams utilities', () => {

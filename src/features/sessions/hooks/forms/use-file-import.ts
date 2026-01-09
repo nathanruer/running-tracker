@@ -1,7 +1,7 @@
 import type { UseFormSetValue } from 'react-hook-form';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { useFileInput } from '@/hooks/use-file-input';
-import { parseIntervalCSV } from '@/lib/parsers/interval-csv-parser';
+import { parseIntervalCSV } from '@/lib/utils/parsers/interval-csv';
 import type { FormValues } from '@/lib/validation/session-form';
 
 interface UseFileImportProps {

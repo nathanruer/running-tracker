@@ -12,7 +12,6 @@ describe('RecommendationCard', () => {
     recommendation_id: 'rec-1',
     session_type: 'Endurance fondamentale',
     duration_min: 45,
-    duration_minutes: 45,
     estimated_distance_km: 8,
     target_pace_min_km: '5:30',
     target_hr_zone: 'Zone 2',
@@ -209,37 +208,37 @@ describe('RecommendationCard', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle session with "reason" instead of "why_this_session"', () => {
+    it('should handle missing why_this_session gracefully', () => {
       render(
         <RecommendationCard
           {...defaultProps}
           session={{
             ...mockSession,
             why_this_session: undefined,
-            reason: 'Alternative reason text',
           }}
         />
       );
 
-      expect(screen.getByText('Alternative reason text')).toBeInTheDocument();
+      // Should not crash, reason area should be empty
+      expect(screen.getByText('Endurance fondamentale')).toBeInTheDocument();
     });
 
-    it('should handle session with "type" instead of "session_type"', () => {
+    it('should handle missing session_type gracefully', () => {
       render(
         <RecommendationCard
           {...defaultProps}
           session={{
             ...mockSession,
             session_type: undefined,
-            type: 'Récupération',
           }}
         />
       );
 
-      expect(screen.getByText('Récupération')).toBeInTheDocument();
+      // Should not crash
+      expect(screen.getByText('Séance 5')).toBeInTheDocument();
     });
 
-    it('should handle duration_min when duration_minutes is absent', async () => {
+    it('should use duration_min directly', async () => {
       const { formatDurationChat } = await import('@/lib/utils/chat/formatters');
 
       render(
@@ -247,7 +246,6 @@ describe('RecommendationCard', () => {
           {...defaultProps}
           session={{
             ...mockSession,
-            duration_minutes: undefined,
             duration_min: 60,
           }}
         />

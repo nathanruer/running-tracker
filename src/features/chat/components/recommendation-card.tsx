@@ -35,7 +35,7 @@ export function RecommendationCard({
           </Badge>
           <Badge variant="outline" className="font-medium">
             {(() => {
-              const sessionType = session.session_type || session.type;
+              const sessionType = session.session_type;
               if (sessionType === 'Fractionné' && session.interval_structure) {
                 const intervalStr = typeof session.interval_structure === 'string'
                   ? session.interval_structure
@@ -90,7 +90,7 @@ export function RecommendationCard({
         <span className="font-semibold">{session.estimated_distance_km} km</span>
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {formatDurationChat(session.duration_minutes || session.duration_min)}
+          {formatDurationChat(session.duration_min)}
         </span>
         <span className="flex items-center gap-1">
           <Activity className="h-3 w-3" />
@@ -98,7 +98,7 @@ export function RecommendationCard({
         </span>
         <span>•</span>
         <span className="text-sm">
-          FC: {session.target_hr_bpm || session.target_hr_zone || session.target_hr}
+          FC: {session.target_hr_bpm || session.target_hr_zone}
           {session.target_hr_bpm && ' bpm'}
         </span>
         {session.target_rpe && (
@@ -109,7 +109,7 @@ export function RecommendationCard({
       </div>
 
       <p className="text-sm bg-muted/30 rounded px-3 py-2 border-l-2 border-primary">
-        {session.why_this_session || session.reason}
+        {session.why_this_session}
       </p>
     </div>
   );

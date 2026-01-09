@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { StreamChart } from './stream-chart';
-import { STREAM_CONFIGS } from '@/lib/utils/streams';
+import { STREAM_CONFIGS } from '@/lib/utils/geo/stream-charts';
 import { useStreamData } from '../../hooks/details/use-stream-data';
 import { CHART_DISPLAY_ORDER } from '@/lib/constants/stream-charts';
 

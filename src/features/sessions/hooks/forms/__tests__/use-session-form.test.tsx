@@ -82,4 +82,147 @@ describe('useSessionForm', () => {
 
     expect(result.current.form.getValues('perceivedExertion')).toBe(5);
   });
+
+  it('should include perceivedExertion in update payload for completed sessions', async () => {
+    const { updateSession } = await import('@/lib/services/api-client');
+    const onSuccess = vi.fn();
+    
+    const sessionWithRPE = { 
+      ...mockSession, 
+      id: 'session-123',
+      status: 'completed',
+      perceivedExertion: 5 
+    };
+    
+    const { result } = renderHook(() => useSessionForm({ 
+      mode: 'edit', 
+      session: sessionWithRPE as unknown as TrainingSession, 
+      onClose,
+      onSuccess,
+    }));
+
+    act(() => {
+      result.current.form.setValue('perceivedExertion', 8);
+      result.current.form.setValue('duration', '01:00:00');
+      result.current.form.setValue('distance', 10);
+      result.current.form.setValue('avgPace', '06:00');
+    });
+
+    await act(async () => {
+      await result.current.onUpdate(result.current.form.getValues());
+    });
+
+    expect(updateSession).toHaveBeenCalledWith(
+      'session-123',
+      expect.objectContaining({
+        perceivedExertion: 8,
+        sessionType: 'Footing',
+        duration: '01:00:00',
+        distance: 10,
+        avgPace: '06:00',
+      })
+    );
+  });
+
+  it('should preserve interval target values when completing with imported data', () => {
+    const plannedIntervalSession = {
+      id: 'interval-session-1',
+      date: '2024-01-01',
+      sessionType: 'Fractionné',
+      status: 'planned',
+      targetRPE: 7,
+      comments: 'Séance SEUIL',
+      intervalDetails: {
+        workoutType: 'SEUIL',
+        repetitionCount: 3,
+        effortDuration: '08:00',
+        recoveryDuration: '02:00',
+        targetEffortPace: '05:07',
+        targetEffortHR: 175,
+        targetRecoveryPace: '07:30',
+        steps: [
+          { stepNumber: 1, stepType: 'warmup', duration: '10:00', distance: 1.48, pace: '06:45', hr: 152 },
+          { stepNumber: 2, stepType: 'effort', duration: '08:00', distance: 1.56, pace: '05:07', hr: 175 },
+        ],
+      },
+    };
+
+    const importedData = {
+      date: '2024-01-01',
+      duration: '00:45:00',
+      distance: 7.5,
+      avgPace: '06:00',
+      avgHeartRate: 165,
+      steps: [
+        { stepNumber: 1, stepType: 'warmup' as const, duration: '13:00', distance: 1.9, pace: '06:50', hr: 141 },
+        { stepNumber: 2, stepType: 'effort' as const, duration: '08:00', distance: 1.59, pace: '05:01', hr: 164 },
+      ],
+    };
+
+    const { result } = renderHook(() => useSessionForm({
+      mode: 'complete',
+      session: plannedIntervalSession as unknown as TrainingSession,
+      initialData: importedData,
+      onClose,
+    }));
+
+    expect(result.current.form.getValues('workoutType')).toBe('SEUIL');
+    expect(result.current.form.getValues('targetEffortPace')).toBe('05:07');
+    expect(result.current.form.getValues('targetEffortHR')).toBe(175);
+    expect(result.current.form.getValues('targetRecoveryPace')).toBe('07:30');
+    expect(result.current.form.getValues('effortDuration')).toBe('08:00');
+    expect(result.current.form.getValues('recoveryDuration')).toBe('02:00');
+
+    expect(result.current.form.getValues('steps')).toHaveLength(2);
+    expect(result.current.form.getValues('steps.0.duration')).toBe('13:00');
+    expect(result.current.form.getValues('steps.1.pace')).toBe('05:01');
+
+    expect(result.current.form.getValues('duration')).toBe('00:45:00');
+    expect(result.current.form.getValues('distance')).toBe(7.5);
+    expect(result.current.form.getValues('avgHeartRate')).toBe(165);
+  });
+
+  it('should set form field error when date is missing on submit', async () => {
+    const { result } = renderHook(() => useSessionForm({
+      mode: 'create',
+      onClose,
+    }));
+
+    act(() => {
+      result.current.form.setValue('date', '', { shouldValidate: true });
+      result.current.form.setValue('duration', '01:00:00', { shouldValidate: true });
+      result.current.form.setValue('distance', 10, { shouldValidate: true });
+      result.current.form.setValue('avgPace', '06:00', { shouldValidate: true });
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.form.formState.errors.date).toBeDefined();
+    expect(result.current.form.formState.errors.date?.message).toBe('Date requise');
+  });
+
+  it('should show all validation errors at once (date and duration)', async () => {
+    const { result } = renderHook(() => useSessionForm({
+      mode: 'create',
+      onClose,
+    }));
+
+    act(() => {
+      result.current.form.setValue('date', '', { shouldValidate: true });
+      result.current.form.setValue('duration', '', { shouldValidate: true });
+      result.current.form.setValue('distance', 10, { shouldValidate: true });
+      result.current.form.setValue('avgPace', '06:00', { shouldValidate: true });
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.form.formState.errors.date).toBeDefined();
+    expect(result.current.form.formState.errors.date?.message).toBe('Date requise');
+    expect(result.current.form.formState.errors.duration).toBeDefined();
+    expect(result.current.form.formState.errors.duration?.message).toBe('Durée requise');
+  });
 });

@@ -35,9 +35,13 @@ export async function PUT(
           : { date: new Date(updates.date) }
         : {};
 
-      const { intervalDetails, ...restUpdates } = updates;
+      const { intervalDetails, stravaData, ...restUpdates } = updates;
       const intervalDetailsUpdate = intervalDetails !== undefined
         ? { intervalDetails: intervalDetails || Prisma.JsonNull }
+        : {};
+
+      const stravaDataUpdate = stravaData !== undefined
+        ? { stravaData: stravaData || Prisma.JsonNull }
         : {};
 
       const updated = await prisma.training_sessions.update({
@@ -46,6 +50,7 @@ export async function PUT(
           ...restUpdates,
           ...dateUpdate,
           ...intervalDetailsUpdate,
+          ...stravaDataUpdate,
         },
       });
 

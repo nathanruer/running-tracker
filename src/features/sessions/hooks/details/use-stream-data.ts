@@ -8,7 +8,7 @@ import {
   prepareCadenceData,
   getAvailableStreams,
   calculateStreamAverage,
-} from '@/lib/utils/streams';
+} from '@/lib/utils/geo/stream-charts';
 import { STREAM_CHART_CONSTANTS } from '@/lib/constants/stream-charts';
 
 export function useStreamData(streams: unknown) {

@@ -10,18 +10,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { normalizeDurationFormat } from '@/lib/utils/duration';
+import type { ParsedSession } from '@/lib/types/parser';
 
-export interface ParsedSession {
-  date: string;
-  sessionType: string;
-  duration: string;
-  distance: number;
-  avgPace: string;
-  avgHeartRate: number;
-  perceivedExertion?: number;
-  comments: string;
-  intervalDetails?: string | null;
-}
+export type { ParsedSession };
 
 interface CsvPreviewTableProps {
   preview: ParsedSession[];

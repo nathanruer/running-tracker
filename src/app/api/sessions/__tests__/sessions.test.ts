@@ -5,7 +5,7 @@ import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { getNextSessionNumber } from '@/lib/domain/sessions/utils';
-import { decodePolyline } from '@/lib/utils/polyline';
+import { decodePolyline } from '@/lib/utils/geo/polyline';
 import { getHistoricalWeather } from '@/lib/services/weather';
 
 vi.mock('@/lib/database', () => ({
@@ -38,7 +38,7 @@ vi.mock('@/lib/infrastructure/logger', () => ({
   },
 }));
 
-vi.mock('@/lib/utils/polyline', () => ({
+vi.mock('@/lib/utils/geo/polyline', () => ({
   decodePolyline: vi.fn(),
   coordinatesToSVG: vi.fn(),
 }));
@@ -327,7 +327,19 @@ describe('/api/sessions', () => {
         avgPace: '06:00',
         avgHeartRate: 150,
         stravaData: {
+          id: 123456,
+          name: 'Morning Run',
+          distance: 10000,
+          moving_time: 3600,
+          elapsed_time: 3700,
+          total_elevation_gain: 100,
+          type: 'Run',
+          start_date: '2025-12-27T10:00:00Z',
+          start_date_local: '2025-12-27T11:00:00',
+          average_speed: 2.78,
+          max_speed: 3.5,
           map: {
+            id: 'map123',
             summary_polyline: 'encoded_polyline_string'
           }
         }
@@ -396,7 +408,17 @@ describe('/api/sessions', () => {
         duration: '00:30:00',
         avgPace: '06:00',
         stravaData: {
-          id: 12345
+          id: 12345,
+          name: 'Treadmill Run',
+          distance: 5000,
+          moving_time: 1800,
+          elapsed_time: 1850,
+          total_elevation_gain: 0,
+          type: 'Run',
+          start_date: '2025-12-27T10:00:00Z',
+          start_date_local: '2025-12-27T11:00:00',
+          average_speed: 2.78,
+          max_speed: 3.0
         }
       };
 
@@ -437,7 +459,19 @@ describe('/api/sessions', () => {
         avgPace: '06:00',
         avgHeartRate: 150,
         stravaData: {
+          id: 123789,
+          name: 'Evening Run',
+          distance: 10000,
+          moving_time: 3600,
+          elapsed_time: 3700,
+          total_elevation_gain: 100,
+          type: 'Run',
+          start_date: '2025-12-27T10:00:00Z',
+          start_date_local: '2025-12-27T11:00:00',
+          average_speed: 2.78,
+          max_speed: 3.5,
           map: {
+            id: 'map789',
             summary_polyline: 'valid_polyline'
           }
         }

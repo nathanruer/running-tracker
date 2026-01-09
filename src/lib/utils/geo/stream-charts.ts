@@ -1,55 +1,6 @@
 import type { StravaStreamSet } from '@/lib/types';
-
-/**
- * Converts velocity (m/s) to pace (seconds per km)
- */
-function mpsToSecondsPerKm(mps: number): number {
-  if (mps <= 0) return 0;
-  return 1000 / mps;
-}
-
-/**
- * Formats pace (seconds per km) to MM:SS string
- */
-export function formatPace(secondsPerKm: number): string {
-  if (secondsPerKm === 0 || !isFinite(secondsPerKm)) return '-';
-  const totalSeconds = Math.round(secondsPerKm);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
-
-/**
- * Converts m/s to formatted MM:SS string
- */
-function mpsToMinPerKm(mps: number): string {
-  return formatPace(mpsToSecondsPerKm(mps));
-}
-
-/**
- * Generic data point for stream charts
- */
-export interface StreamDataPoint {
-  distance: number;
-  time: number;
-  value: number;
-  formattedValue: string;
-}
-
-/**
- * Stream chart configuration
- */
-export interface StreamChartConfig {
-  key: string;
-  label: string;
-  unit: string;
-  color: string;
-  gradientId: string;
-  formatValue: (value: number) => string;
-  formatTooltip: (value: number) => string;
-  reversed?: boolean;
-  domain?: [number | 'auto' | 'dataMin' | 'dataMax', number | 'auto' | 'dataMin' | 'dataMax'];
-}
+import type { StreamDataPoint, StreamChartConfig } from '@/lib/types/stream-charts';
+import { mpsToSecondsPerKm, mpsToMinPerKm, formatPace } from '@/lib/utils/formatters/pace';
 
 /**
  * Available stream chart configurations

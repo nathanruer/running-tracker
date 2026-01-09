@@ -31,7 +31,6 @@ describe('useChatMutations', () => {
         recommendation_id: 'rec-1',
         session_type: 'Endurance fondamentale',
         duration_min: 45,
-        duration_minutes: 45,
         estimated_distance_km: 8,
         target_pace_min_km: '5:30',
         target_hr_zone: 'Zone 2',
@@ -67,7 +66,6 @@ describe('useChatMutations', () => {
         recommendation_id: 'rec-1',
         session_type: 'Endurance fondamentale',
         duration_min: 45,
-        duration_minutes: 45,
         estimated_distance_km: 8,
         target_pace_min_km: '5:30',
       };

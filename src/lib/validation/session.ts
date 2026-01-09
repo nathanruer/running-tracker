@@ -1,66 +1,68 @@
 import { z } from 'zod';
-import { validateDurationInput, validatePaceInput } from '@/lib/utils/duration';
+import { DISTANCE } from '@/lib/constants/validation';
+import { VALIDATION_MESSAGES } from '@/lib/constants/messages';
+import {
+  requiredDurationSchema,
+  nullableDurationSchema,
+  requiredPaceSchema,
+  nullablePaceSchema,
+  nullableHeartRateSchema,
+  optionalHeartRateSchema,
+  optionalRpeSchema,
+  nullablePositiveNumberSchema,
+} from './schemas/primitives';
+import { stravaActivityStoredSchema } from './schemas/entities';
+
+// ============================================================================
+// INTERVAL STEP SCHEMA
+// ============================================================================
 
 export const intervalStepSchema = z.object({
-  stepNumber: z.number().min(1),
+  stepNumber: z.number().min(1, { message: VALIDATION_MESSAGES.STEP_NUMBER_REQUIRED }),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-  duration: z.string().nullable().refine(
-    (val) => val === null || val === '' || validateDurationInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
-  distance: z.number().min(0).nullable(),
-  pace: z.string().nullable().refine(
-    (val) => val === null || val === '' || validatePaceInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
-  hr: z.number().min(0).max(250).nullable(),
+  duration: nullableDurationSchema,
+  distance: nullablePositiveNumberSchema,
+  pace: nullablePaceSchema,
+  hr: nullableHeartRateSchema,
 });
+
+// ============================================================================
+// INTERVAL DETAILS SCHEMA
+// ============================================================================
 
 export const intervalDetailsSchema = z.object({
   workoutType: z.string().nullable(),
-  repetitionCount: z.number().min(1).nullable(),
-  effortDuration: z.string().nullable().refine(
-    (val) => val === null || val === '' || validateDurationInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
-  recoveryDuration: z.string().nullable().refine(
-    (val) => val === null || val === '' || validateDurationInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
-  effortDistance: z.number().min(0).nullable(),
+  repetitionCount: z.number().min(1, { message: VALIDATION_MESSAGES.REPETITION_MIN }).nullable(),
+  effortDuration: nullableDurationSchema,
+  recoveryDuration: nullableDurationSchema,
+  effortDistance: nullablePositiveNumberSchema,
 
-  targetEffortPace: z.string().nullable().refine(
-    (val) => val === null || val === '' || validatePaceInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
-  targetEffortHR: z.number().min(0).max(250).nullable(),
-  targetRecoveryPace: z.string().nullable().refine(
-    (val) => val === null || val === '' || validatePaceInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
+  targetEffortPace: nullablePaceSchema,
+  targetEffortHR: nullableHeartRateSchema,
+  targetRecoveryPace: nullablePaceSchema,
 
   steps: z.array(intervalStepSchema),
 }).nullable();
 
+// ============================================================================
+// SESSION SCHEMA
+// ============================================================================
+
 export const sessionSchema = z.object({
   date: z.string(),
-  sessionType: z.string().min(1),
-  duration: z.string().refine(
-    (val) => validateDurationInput(val),
-    { message: 'Format HH:MM:SS' }
-  ),
-  distance: z.number().min(0).transform((val) => Math.round(val * 100) / 100),
-  avgPace: z.string().refine(
-    (val) => validatePaceInput(val),
-    { message: 'Format MM:SS ou HH:MM:SS' }
-  ),
-  avgHeartRate: z.number().min(0).optional().nullable(),
+  sessionType: z.string().min(1, { message: VALIDATION_MESSAGES.SESSION_TYPE_REQUIRED }),
+  duration: requiredDurationSchema,
+  distance: z.number()
+    .min(0, { message: VALIDATION_MESSAGES.DISTANCE_POSITIVE })
+    .transform((val) => Math.round(val * DISTANCE.PRECISION_MULTIPLIER) / DISTANCE.PRECISION_MULTIPLIER),
+  avgPace: requiredPaceSchema,
+  avgHeartRate: optionalHeartRateSchema,
   intervalDetails: intervalDetailsSchema.optional(),
-  perceivedExertion: z.number().min(0).max(10).optional().nullable(),
+  perceivedExertion: optionalRpeSchema,
   comments: z.string().optional().default(''),
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
-  stravaData: z.any().optional().nullable(),
+  stravaData: stravaActivityStoredSchema.optional().nullable(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
@@ -68,6 +70,10 @@ export const sessionSchema = z.object({
 });
 
 export const partialSessionSchema = sessionSchema.partial();
+
+// ============================================================================
+// INFERRED TYPES
+// ============================================================================
 
 export type SessionInput = z.infer<typeof sessionSchema>;
 export type IntervalDetailsInput = z.infer<typeof intervalDetailsSchema>;

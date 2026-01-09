@@ -1,5 +1,6 @@
-import { decodePolyline } from '@/lib/utils/polyline';
-import { getHistoricalWeather, WeatherData } from '@/lib/services/weather';
+import { decodePolyline } from '@/lib/utils/geo/polyline';
+import { getHistoricalWeather } from '@/lib/services/weather';
+import type { WeatherData } from '@/lib/types/weather';
 import { logger } from '@/lib/infrastructure/logger';
 import { validateStravaMap } from '@/lib/validation/strava';
 

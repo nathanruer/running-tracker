@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { enrichSessionWithWeather } from '../enrichment';
-import { decodePolyline } from '@/lib/utils/polyline';
+import { decodePolyline } from '@/lib/utils/geo/polyline';
 import { getHistoricalWeather } from '@/lib/services/weather';
 import { logger } from '@/lib/infrastructure/logger';
 
-vi.mock('@/lib/utils/polyline', () => ({
+vi.mock('@/lib/utils/geo/polyline', () => ({
   decodePolyline: vi.fn(),
 }));
 

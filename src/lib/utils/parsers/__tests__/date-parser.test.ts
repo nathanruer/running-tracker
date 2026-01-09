@@ -5,7 +5,7 @@ import {
   parsePace,
   parseNumber,
   detectColumns,
-} from '../csv-import-helpers';
+} from '../date-parser';
 
 describe('csv-import-helpers', () => {
   describe('parseDate', () => {

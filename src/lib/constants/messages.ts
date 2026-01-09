@@ -41,6 +41,33 @@ export const ERROR_MESSAGES = {
 } as const;
 
 // ============================================================================
+// VALIDATION MESSAGES (for Zod schemas)
+// ============================================================================
+
+import { HEART_RATE, RPE } from './validation';
+
+export const VALIDATION_MESSAGES = {
+  DURATION_FORMAT: 'Format: MM:SS ou HH:MM:SS',
+  PACE_FORMAT: 'Format: MM:SS ou HH:MM:SS',
+  
+  DURATION_REQUIRED: 'Durée requise',
+  PACE_REQUIRED: 'Allure requise',
+  DISTANCE_REQUIRED: 'Distance requise',
+  NUMBER_REQUIRED: 'Nombre requis',
+  SESSION_TYPE_REQUIRED: 'Type de séance requis',
+  DATE_REQUIRED: 'Date requise',
+  STEP_NUMBER_REQUIRED: 'Numéro de step requis',
+  
+  DISTANCE_POSITIVE: 'Distance doit être positive',
+  HR_POSITIVE: 'FC doit être positive',
+  HR_MAX: `FC max ${HEART_RATE.MAX} bpm`,
+  RPE_RANGE: `Entre ${RPE.MIN} et ${RPE.MAX}`,
+  RPE_POSITIVE: 'RPE doit être positive',
+  RPE_MAX: `RPE max ${RPE.MAX}`,
+  REPETITION_MIN: 'Au moins 1 répétition',
+} as const;
+
+// ============================================================================
 // SUCCESS MESSAGES
 // ============================================================================
 

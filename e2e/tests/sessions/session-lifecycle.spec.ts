@@ -50,14 +50,11 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
 
     const newComment = `Edited Session ${Date.now()}`;
     await formPage.selectSessionType('Sortie longue');
-    await formPage.fillDuration('01:30:00');
-    await formPage.fillDistance('15');
     await formPage.fillComments(newComment);
     await formPage.submit();
     await formPage.waitForClosed();
 
     await expect(page.getByText('Sortie longue').first()).toBeVisible();
-    await expect(page.getByText('01:30:00').first()).toBeVisible();
     await expect(page.getByText(newComment).first()).toBeVisible();
     await expect(page.getByText('Footing')).not.toBeVisible();
     await expect(page.getByText(initialComment)).not.toBeVisible();

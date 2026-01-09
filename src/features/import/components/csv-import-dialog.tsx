@@ -11,13 +11,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { parseTrainingFile } from '@/lib/parsers/csv-file-parser';
+import { parseTrainingFile } from '@/lib/utils/parsers/csv';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import type { ParsedSession } from '@/lib/types/parser';
 import { CsvFileUploadSection } from './csv-file-upload-section';
 import { CsvPreviewActions } from './csv-preview-actions';
-import { CsvPreviewTable, type ParsedSession } from './csv-preview-table';
+import { CsvPreviewTable } from './csv-preview-table';
 import { CsvImportActions } from './csv-import-actions';
 
 interface CsvImportDialogProps {

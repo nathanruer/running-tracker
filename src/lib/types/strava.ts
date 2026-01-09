@@ -1,36 +1,41 @@
+/**
+ * Strava types
+ * 
+ * Core types (StravaActivity, StravaStream, StravaStreamSet) are now
+ * re-exported from Zod schemas for consistency.
+ * 
+ * Additional types specific to Strava API (StravaTokens, StravaStreamType)
+ * are defined here.
+ */
+
+export type {
+  StravaActivity,
+  StravaStream,
+  StravaStreamSet,
+} from '@/lib/validation/schemas/entities';
+
+export {
+  stravaActivityStoredSchema,
+  stravaStreamSchema,
+  stravaStreamSetSchema,
+} from '@/lib/validation/schemas/entities';
+
+// ============================================================================
+// STRAVA API SPECIFIC TYPES
+// ============================================================================
+
+/**
+ * Strava OAuth tokens
+ */
 export interface StravaTokens {
   access_token: string;
   refresh_token: string;
   expires_at: number;
 }
 
-export interface StravaActivity {
-  id: number;
-  name: string;
-  distance: number;
-  moving_time: number;
-  elapsed_time: number;
-  total_elevation_gain: number;
-  type: string;
-  start_date: string;
-  start_date_local: string;
-  average_speed: number;
-  max_speed: number;
-  average_heartrate?: number;
-  max_heartrate?: number;
-  average_cadence?: number;
-  average_temp?: number;
-  elev_high?: number;
-  elev_low?: number;
-  calories?: number;
-  map?: {
-    id: string;
-    summary_polyline: string;
-  };
-  external_id?: string;
-  upload_id?: number;
-}
-
+/**
+ * Available stream types from Strava API
+ */
 export type StravaStreamType =
   | 'time'
   | 'distance'
@@ -39,12 +44,3 @@ export type StravaStreamType =
   | 'cadence'
   | 'altitude'
   | 'grade_smooth';
-
-export interface StravaStream {
-  data: number[];
-  series_type: 'time' | 'distance';
-  original_size: number;
-  resolution: 'low' | 'medium' | 'high';
-}
-
-export type StravaStreamSet = Partial<Record<StravaStreamType, StravaStream>>;

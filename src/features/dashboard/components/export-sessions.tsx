@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { type TrainingSession } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils';
+import { generateIntervalStructure } from '@/lib/utils/intervals';
 import { getSessions } from '@/lib/services/api-client';
 
 interface ExportSessionsProps {

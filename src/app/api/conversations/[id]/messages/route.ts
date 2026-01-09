@@ -3,7 +3,7 @@ import Groq from 'groq-sdk';
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
-import { jsonError } from '@/lib/utils/api';
+import { jsonError } from '@/lib/utils/api-helpers';
 import { normalizeSessions } from '@/lib/domain/sessions/normalizer';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import {

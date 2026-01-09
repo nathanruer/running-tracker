@@ -31,16 +31,17 @@ export async function POST(request: NextRequest) {
       // Fetch weather for each session in parallel
       const sessionsWithWeather = await Promise.all(
         validatedSessions.map(async (session) => {
-          const { intervalDetails, ...sessionData } = session;
-          
+          const { intervalDetails, stravaData, ...sessionData } = session;
+
           let weather = null;
-          if (sessionData.stravaData) {
-            weather = await enrichSessionWithWeather(sessionData.stravaData, new Date(session.date));
+          if (stravaData) {
+            weather = await enrichSessionWithWeather(stravaData, new Date(session.date));
           }
 
           return {
             ...sessionData,
             intervalDetails: intervalDetails || Prisma.JsonNull,
+            stravaData: stravaData || Prisma.JsonNull,
             weather: weather ?? Prisma.JsonNull,
             date: new Date(session.date),
             sessionNumber: 1,

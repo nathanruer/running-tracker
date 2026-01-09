@@ -2,13 +2,28 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { addSession, updateSession } from '@/lib/services/api-client';
-import type { TrainingSessionPayload, TrainingSession } from '@/lib/types';
+import type {
+  TrainingSessionPayload,
+  TrainingSession,
+  CompletedSessionUpdatePayload,
+  PlannedSessionPayload,
+} from '@/lib/types';
 import { formSchema, type FormValues } from '@/lib/validation/session-form';
 import { PREDEFINED_TYPES } from '@/features/sessions/components/forms/session-type-selector';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
-import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';
-import { calculatePaceFromDurationAndDistance, normalizeDurationToHHMMSS } from '@/lib/utils/duration';
+import { getTodayISO } from '@/lib/utils/formatters';
+import { calculatePaceFromDurationAndDistance } from '@/lib/utils/duration';
+import {
+  normalizeFormValues,
+  buildPlannedSessionPayload,
+  buildCompletedSessionPayload,
+} from '@/lib/domain/forms/session-helpers';
+import {
+  initializeFormForCreate,
+  initializeFormForEdit,
+  initializeFormForComplete,
+} from '@/lib/domain/forms/session-form';
 
 interface UseSessionFormProps {
   mode: 'create' | 'edit' | 'complete';
@@ -72,123 +87,29 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
   useEffect(() => {
     const predefinedTypes = PREDEFINED_TYPES;
+    let defaultValues: Partial<FormValues>;
 
     if (session && mode === 'complete' && initialData) {
-      const { date, ...importedFields } = initialData;
-      const sessionDate = date ? extractDatePart(date) :
-                          (session.date ? extractDatePart(session.date) : getTodayISO());
-
-      const perceivedExertion = session.targetRPE || null;
-
-      form.reset({
-        date: sessionDate,
-        perceivedExertion,
-        comments: session.comments || '',
-        duration: '',
-        distance: null,
-        avgPace: '',
-        avgHeartRate: null,
-        ...importedFields,
-        sessionType: importedFields.sessionType || session.sessionType || 'Footing',
-        source: importedFields.source ?? session.source,
-        stravaData: importedFields.stravaData ?? session.stravaData,
-        elevationGain: importedFields.elevationGain ?? session.elevationGain,
-        averageCadence: importedFields.averageCadence ?? session.averageCadence,
-        averageTemp: importedFields.averageTemp ?? session.averageTemp,
-        calories: importedFields.calories ?? session.calories,
-      });
+      defaultValues = initializeFormForComplete(session, initialData);
+      form.reset(defaultValues);
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
+
+      const hasDetailedSteps = (initialData.steps && initialData.steps.length > 0) ||
+                               (session.intervalDetails?.steps && session.intervalDetails.steps.length > 0);
+      if (hasDetailedSteps) {
+        setIntervalEntryMode('detailed');
+      }
     } else if (session && (mode === 'edit' || mode === 'complete')) {
-      const sessionDate = session.date ? extractDatePart(session.date) : '';
-
-      const isPlanned = session.status === 'planned';
-      const duration = isPlanned && session.targetDuration
-        ? `${Math.floor(session.targetDuration / 60).toString().padStart(2, '0')}:${(session.targetDuration % 60).toString().padStart(2, '0')}:00`
-        : session.duration || '00:00:00';
-      const distance = isPlanned && session.targetDistance
-        ? session.targetDistance
-        : session.distance || 0;
-      const avgPace = isPlanned && session.targetPace
-        ? session.targetPace
-        : session.avgPace || '00:00';
-      const avgHeartRate = isPlanned && session.targetHeartRateBpm
-        ? parseInt(session.targetHeartRateBpm)
-        : session.avgHeartRate || 0;
-      const perceivedExertion = isPlanned && session.targetRPE
-        ? session.targetRPE
-        : session.perceivedExertion || null;
-
-      form.reset({
-        date: sessionDate,
-        sessionType: session.sessionType,
-        duration,
-        distance,
-        avgPace,
-        avgHeartRate,
-        perceivedExertion,
-        comments: session.comments || '',
-
-        workoutType: session.intervalDetails?.workoutType || '',
-        repetitionCount: session.intervalDetails?.repetitionCount || undefined,
-        effortDuration: session.intervalDetails?.effortDuration || '',
-        recoveryDuration: session.intervalDetails?.recoveryDuration || '',
-        effortDistance: session.intervalDetails?.effortDistance || undefined,
-        recoveryDistance: session.intervalDetails?.recoveryDistance || undefined,
-        targetEffortPace: session.intervalDetails?.targetEffortPace || '',
-        targetEffortHR: session.intervalDetails?.targetEffortHR || undefined,
-        targetRecoveryPace: session.intervalDetails?.targetRecoveryPace || '',
-        steps: session.intervalDetails?.steps?.map(s => ({
-          stepNumber: s.stepNumber,
-          stepType: s.stepType,
-          duration: s.duration || null,
-          distance: s.distance ?? null,
-          pace: s.pace || null,
-          hr: s.hr ?? null,
-        })) || [],
-        externalId: session.externalId,
-        source: session.source,
-        stravaData: session.stravaData,
-        elevationGain: session.elevationGain,
-        averageCadence: session.averageCadence,
-        averageTemp: session.averageTemp,
-        calories: session.calories,
-      });
+      defaultValues = initializeFormForEdit(session);
+      form.reset(defaultValues);
       setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
+
       if (session.intervalDetails?.steps && session.intervalDetails.steps.length > 0) {
         setIntervalEntryMode('detailed');
       }
-    } else if (initialData) {
-      const { date, ...importedFields } = initialData;
-      form.reset({
-        date: date ? extractDatePart(date) : getTodayISO(),
-        duration: '',
-        distance: null,
-        avgPace: '',
-        avgHeartRate: null,
-        perceivedExertion: null,
-        comments: '',
-        ...importedFields,
-        sessionType: importedFields.sessionType || 'Footing',
-      });
-      setIsCustomSessionType(false);
-    } else {
-      form.reset({
-        date: getTodayISO(),
-        sessionType: 'Footing',
-        duration: '',
-        distance: null,
-        avgPace: '',
-        avgHeartRate: null,
-        perceivedExertion: null,
-        comments: '',
-        externalId: null,
-        source: 'manual',
-        stravaData: null,
-        elevationGain: null,
-        averageCadence: null,
-        averageTemp: null,
-        calories: null,
-      });
+    } else if (initialData || !session) {
+      defaultValues = initializeFormForCreate(initialData);
+      form.reset(defaultValues);
       setIsCustomSessionType(false);
     }
   }, [session, initialData, mode, form]);
@@ -242,37 +163,13 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
     setLoading(true);
     try {
-      // Normalize durations to HH:MM:SS
-      const normalizedValues: FormValues = {
-        ...values,
-        duration: normalizeDurationToHHMMSS(values.duration) || '',
-        effortDuration: normalizeDurationToHHMMSS(values.effortDuration) || '',
-        recoveryDuration: normalizeDurationToHHMMSS(values.recoveryDuration) || '',
-        steps: values.steps?.map(s => ({
-          ...s,
-          duration: normalizeDurationToHHMMSS(s.duration)
-        }))
-      };
-
+      const normalizedValues = normalizeFormValues(values);
       const intervalDetails = transformIntervalData(normalizedValues, intervalEntryMode);
-      const sessionData: TrainingSessionPayload = {
-        date: values.date,
-        sessionType: values.sessionType,
-        duration: normalizedValues.duration,
-        distance: values.distance ?? null,
-        avgPace: values.avgPace,
-        avgHeartRate: values.avgHeartRate ?? null,
-        intervalDetails,
-        perceivedExertion: values.perceivedExertion,
-        comments: values.comments,
-        externalId: values.externalId,
-        source: values.source,
-        stravaData: values.stravaData,
-        elevationGain: values.elevationGain,
-        averageCadence: values.averageCadence,
-        averageTemp: values.averageTemp,
-        calories: values.calories,
-      };
+      const isPlanned = session.status === 'planned';
+
+      const sessionData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlanned
+        ? buildPlannedSessionPayload(values, normalizedValues, intervalDetails, session.recommendationId)
+        : buildCompletedSessionPayload(values, normalizedValues, intervalDetails);
 
       const updatedSession = await updateSession(session.id, sessionData);
 
@@ -290,50 +187,36 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!values.date) {
-      handleError(new Error('La date est requise pour marquer une séance comme réalisée'));
-      return;
-    }
-
     setLoading(true);
     try {
-      const normalizedValues: FormValues = {
-        ...values,
-        duration: normalizeDurationToHHMMSS(values.duration) || '',
-        effortDuration: normalizeDurationToHHMMSS(values.effortDuration) || '',
-        recoveryDuration: normalizeDurationToHHMMSS(values.recoveryDuration) || '',
-        steps: values.steps?.map(s => ({
-          ...s,
-          duration: normalizeDurationToHHMMSS(s.duration)
-        }))
-      };
-
+      const normalizedValues = normalizeFormValues(values);
       const intervalDetails = transformIntervalData(normalizedValues, intervalEntryMode);
-      const sessionData: TrainingSessionPayload = {
-        date: values.date,
-        sessionType: values.sessionType,
-        duration: normalizedValues.duration,
-        distance: values.distance ?? null,
-        avgPace: values.avgPace,
-        avgHeartRate: values.avgHeartRate ?? null,
-        intervalDetails,
-        perceivedExertion: values.perceivedExertion,
-        comments: values.comments,
-        externalId: values.externalId,
-        source: values.source,
-        stravaData: values.stravaData,
-        elevationGain: values.elevationGain,
-        averageCadence: values.averageCadence,
-        averageTemp: values.averageTemp,
-        calories: values.calories,
-      };
 
       const type = values.sessionType.toLowerCase();
       const dist = values.distance ? ` de ${values.distance}km` : '';
-
       let resultSession: TrainingSession;
 
       if (mode === 'complete' && session) {
+        // Complete a planned session
+        const sessionData: TrainingSessionPayload = {
+          date: values.date,
+          sessionType: values.sessionType,
+          duration: normalizedValues.duration,
+          distance: values.distance ?? null,
+          avgPace: values.avgPace,
+          avgHeartRate: values.avgHeartRate ?? null,
+          intervalDetails,
+          perceivedExertion: values.perceivedExertion,
+          comments: values.comments,
+          externalId: values.externalId,
+          source: values.source,
+          stravaData: values.stravaData,
+          elevationGain: values.elevationGain,
+          averageCadence: values.averageCadence,
+          averageTemp: values.averageTemp,
+          calories: values.calories,
+        };
+
         const response = await fetch(`/api/sessions/${session.id}/complete`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -353,9 +236,35 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         resultSession = data;
         handleSuccess('Séance enregistrée', `Votre sortie ${type}${dist} a été enregistrée !`);
       } else if (mode === 'edit' && session) {
-        resultSession = await updateSession(session.id, sessionData);
+        // Edit existing session (planned or completed)
+        const isPlanned = session.status === 'planned';
+        const editData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlanned
+          ? buildPlannedSessionPayload(values, normalizedValues, intervalDetails, session.recommendationId)
+          : buildCompletedSessionPayload(values, normalizedValues, intervalDetails);
+
+        resultSession = await updateSession(session.id, editData);
         handleSuccess('Séance modifiée', `Votre séance ${type}${dist} a été mise à jour avec succès.`);
       } else {
+        // Create new session
+        const sessionData: TrainingSessionPayload = {
+          date: values.date,
+          sessionType: values.sessionType,
+          duration: normalizedValues.duration,
+          distance: values.distance ?? null,
+          avgPace: values.avgPace,
+          avgHeartRate: values.avgHeartRate ?? null,
+          intervalDetails,
+          perceivedExertion: values.perceivedExertion,
+          comments: values.comments,
+          externalId: values.externalId,
+          source: values.source,
+          stravaData: values.stravaData,
+          elevationGain: values.elevationGain,
+          averageCadence: values.averageCadence,
+          averageTemp: values.averageTemp,
+          calories: values.calories,
+        };
+
         resultSession = await addSession(sessionData);
         handleSuccess('Séance ajoutée', `Votre sortie ${type}${dist} a été enregistrée !`);
       }

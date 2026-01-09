@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseJsonFile, parseCsvFile, parseTrainingFile } from '../csv-file-parser';
+import { parseJsonFile, parseCsvFile, parseTrainingFile } from '../csv';
 import Papa from 'papaparse';
 
 vi.mock('papaparse', () => ({
@@ -8,7 +8,7 @@ vi.mock('papaparse', () => ({
   },
 }));
 
-vi.mock('../csv-import-helpers', () => ({
+vi.mock('../date-parser', () => ({
   parseDate: vi.fn((str: string) => {
     if (!str || str === '') return '';
     return str;

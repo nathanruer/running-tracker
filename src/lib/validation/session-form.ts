@@ -1,112 +1,91 @@
 import * as z from 'zod';
-import { validateDurationInput, validatePaceInput } from '@/lib/utils/duration';
+import { VALIDATION_MESSAGES } from '@/lib/constants/messages';
+import {
+  requiredDurationSchema,
+  optionalDurationSchema,
+  nullableDurationSchema,
+  requiredPaceSchema,
+  optionalPaceSchema,
+  nullablePaceSchema,
+  nullableHeartRateSchema,
+  optionalNullableNumberSchema,
+  isValidNullableNumber,
+} from './schemas/primitives';
+import { stravaActivityStoredSchema } from './schemas/entities';
+import { RPE } from '@/lib/constants/validation';
 
-const nullableNumberRefinement = (n: unknown) =>
-  n === null || n === undefined || (typeof n === 'number' && !isNaN(n));
-
-const numberRefinement = { message: 'Nombre requis' };
-
-const requiredDuration = () =>
-  z.string()
-    .min(1, 'Durée requise')
-    .refine(
-      (val) => validateDurationInput(val),
-      { message: 'Format: MM:SS ou HH:MM:SS' }
-    );
-
-const optionalDuration = () =>
-  z.string()
-    .optional()
-    .refine(
-      (val) => !val || val === '' || validateDurationInput(val),
-      { message: 'Format: MM:SS ou HH:MM:SS' }
-    );
-
-const requiredPace = () =>
-  z.string()
-    .min(1, 'Allure requise')
-    .refine(
-      (val) => validatePaceInput(val),
-      { message: 'Format: MM:SS ou HH:MM:SS' }
-    );
-
-const optionalPace = () =>
-  z.string()
-    .optional()
-    .refine(
-      (val) => !val || val === '' || validatePaceInput(val),
-      { message: 'Format: MM:SS ou HH:MM:SS' }
-    );
-
-const nullableDuration = () =>
-  z.string()
-    .nullable()
-    .refine(
-      (val) => val === null || val === '' || validateDurationInput(val),
-      { message: 'Format: MM:SS ou HH:MM:SS' }
-    );
-
-const nullablePace = () =>
-  z.string()
-    .nullable()
-    .refine(
-      (val) => val === null || val === '' || validatePaceInput(val),
-      { message: 'Format: MM:SS ou HH:MM:SS' }
-    );
+// ============================================================================
+// INTERVAL STEP SCHEMA (for form)
+// ============================================================================
 
 const intervalStepSchema = z.object({
   stepNumber: z.number(),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
-  duration: nullableDuration(),
+  duration: nullableDurationSchema,
   distance: z.number().nullable(),
-  pace: nullablePace(),
-  hr: z.number().nullable(),
+  pace: nullablePaceSchema,
+  hr: nullableHeartRateSchema,
 });
 
+// ============================================================================
+// FORM SCHEMA
+// ============================================================================
+
 const formSchema = z.object({
-  date: z.string(),
-  sessionType: z.string().min(1, 'Type de séance requis'),
-  duration: requiredDuration(),
+  date: z.string().min(1, VALIDATION_MESSAGES.DATE_REQUIRED),
+  sessionType: z.string().min(1, VALIDATION_MESSAGES.SESSION_TYPE_REQUIRED),
+  duration: requiredDurationSchema,
   distance: z.number().nullable().superRefine((val, ctx) => {
     if (val === null) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Distance requise'
+        message: VALIDATION_MESSAGES.DISTANCE_REQUIRED,
       });
     } else if (val < 0) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Distance doit être positive'
+        message: VALIDATION_MESSAGES.DISTANCE_POSITIVE,
       });
     }
   }),
-  avgPace: requiredPace(),
-  avgHeartRate: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
+  avgPace: requiredPaceSchema,
+  avgHeartRate: z.number().nullable().optional().refine(isValidNullableNumber, {
+    message: VALIDATION_MESSAGES.NUMBER_REQUIRED,
+  }),
   perceivedExertion: z.number().nullable().optional().refine(
-    (val) => val === null || val === undefined || (typeof val === 'number' && val >= 0 && val <= 10),
-    { message: 'Entre 0 et 10' }
+    (val) => val === null || val === undefined || (typeof val === 'number' && val >= RPE.MIN && val <= RPE.MAX),
+    { message: VALIDATION_MESSAGES.RPE_RANGE }
   ),
   comments: z.string(),
+
+  // Interval fields (flattened for form)
   workoutType: z.string().optional(),
-  repetitionCount: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  effortDuration: optionalDuration(),
-  recoveryDuration: optionalDuration(),
-  effortDistance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  recoveryDistance: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  targetEffortPace: optionalPace(),
-  targetEffortHR: z.number().nullable().optional().refine(nullableNumberRefinement, numberRefinement),
-  targetRecoveryPace: optionalPace(),
+  repetitionCount: optionalNullableNumberSchema,
+  effortDuration: optionalDurationSchema,
+  recoveryDuration: optionalDurationSchema,
+  effortDistance: optionalNullableNumberSchema,
+  recoveryDistance: optionalNullableNumberSchema,
+  targetEffortPace: optionalPaceSchema,
+  targetEffortHR: optionalNullableNumberSchema,
+  targetRecoveryPace: optionalPaceSchema,
   steps: z.array(intervalStepSchema).optional(),
+
+  // External/Strava fields
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
-  stravaData: z.any().optional().nullable(),
+  stravaData: stravaActivityStoredSchema.optional().nullable(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
   calories: z.number().optional().nullable(),
 });
 
+// ============================================================================
+// INFERRED TYPES
+// ============================================================================
+
 export type FormValues = z.infer<typeof formSchema>;
+
 export type IntervalFormValues = {
   workoutType?: string | null;
   repetitionCount?: number | null;

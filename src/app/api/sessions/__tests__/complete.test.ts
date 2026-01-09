@@ -414,5 +414,78 @@ describe('/api/sessions/[id]/complete', () => {
       expect(updateCall.data.stravaData).toBeUndefined();
       expect(updateCall.data.elevationGain).toBeUndefined();
     });
+
+    it('should save intervalDetails when completing a fractionné session with CSV import', async () => {
+      const plannedSession = {
+        id: 'session-123',
+        userId: 'user-123',
+        status: 'planned',
+        sessionType: 'Fractionné',
+        intervalDetails: {
+          workoutType: 'SEUIL',
+          repetitionCount: 3,
+          effortDuration: '08:00',
+          recoveryDuration: '02:00',
+          targetEffortPace: '5:07',
+          targetEffortHR: 182,
+          targetRecoveryPace: '7:30',
+          steps: [
+            { stepNumber: 1, stepType: 'warmup', duration: '10:00', distance: 1.33, pace: '7:30', hr: 152 },
+            { stepNumber: 2, stepType: 'effort', duration: '08:00', distance: 1.56, pace: '5:07', hr: 182 },
+            { stepNumber: 3, stepType: 'recovery', duration: '02:00', distance: 0.27, pace: '7:30', hr: 152 },
+            { stepNumber: 4, stepType: 'effort', duration: '08:00', distance: 1.56, pace: '5:07', hr: 182 },
+            { stepNumber: 5, stepType: 'recovery', duration: '02:00', distance: 0.27, pace: '7:30', hr: 152 },
+            { stepNumber: 6, stepType: 'effort', duration: '08:00', distance: 1.56, pace: '5:07', hr: 182 },
+            { stepNumber: 7, stepType: 'cooldown', duration: '05:00', distance: 0.68, pace: '7:20', hr: 150 },
+          ],
+        },
+      };
+
+      const updatedIntervalDetails = {
+        workoutType: 'SEUIL',
+        repetitionCount: 3,
+        effortDuration: '08:00',
+        recoveryDuration: '02:00',
+        targetEffortPace: '5:07',
+        targetEffortHR: 182,
+        targetRecoveryPace: '7:30',
+        steps: [
+          { stepNumber: 1, stepType: 'warmup', duration: '13:10', distance: 1.92, pace: '6:51', hr: 141 },
+          { stepNumber: 2, stepType: 'effort', duration: '08:00', distance: 1.59, pace: '5:01', hr: 164 },
+          { stepNumber: 3, stepType: 'recovery', duration: '02:00', distance: 0.27, pace: '7:30', hr: 158 },
+          { stepNumber: 4, stepType: 'effort', duration: '08:00', distance: 1.60, pace: '5:00', hr: 168 },
+          { stepNumber: 5, stepType: 'recovery', duration: '02:00', distance: 0.27, pace: '7:28', hr: 162 },
+          { stepNumber: 6, stepType: 'effort', duration: '08:00', distance: 1.65, pace: '4:50', hr: 169 },
+          { stepNumber: 7, stepType: 'cooldown', duration: '05:11', distance: 0.77, pace: '6:46', hr: 157 },
+        ],
+      };
+
+      const completionData = {
+        date: '2026-01-07T10:00:00.000Z',
+        duration: '00:46:22',
+        distance: '8.07',
+        avgPace: '05:45',
+        avgHeartRate: '157',
+        perceivedExertion: '7',
+        comments: 'Course à pied dans l\'après-midi',
+        intervalDetails: updatedIntervalDetails,
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
+      vi.mocked(prisma.training_sessions.update).mockResolvedValue({} as never);
+      vi.mocked(prisma.training_sessions.findUnique).mockResolvedValue({} as never);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
+
+      const request = new NextRequest('http://localhost/api/sessions/session-123/complete', {
+        method: 'PATCH',
+        body: JSON.stringify(completionData),
+      });
+
+      await PATCH(request, { params: Promise.resolve({ id: 'session-123' }) });
+
+      const updateCall = vi.mocked(prisma.training_sessions.update).mock.calls[0][0];
+      expect(updateCall.data.intervalDetails).toEqual(updatedIntervalDetails);
+    });
   });
 });

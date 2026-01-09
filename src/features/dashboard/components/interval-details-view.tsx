@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils';
-import { secondsToPace } from '@/lib/utils/pace';
+import { generateIntervalStructure } from '@/lib/utils/intervals';
+import { secondsToPace } from '@/lib/utils/formatters/pace';
 import { parseDuration, normalizeDurationFormat, normalizePaceFormat } from '@/lib/utils/duration';
 import { Target, ListChecks } from 'lucide-react';
 

@@ -50,6 +50,7 @@ export async function PATCH(
         averageCadence,
         averageTemp,
         calories,
+        intervalDetails,
       } = body;
 
       let weather = null;
@@ -84,6 +85,7 @@ export async function PATCH(
           averageTemp: averageTemp ?? undefined,
           calories: calories ?? undefined,
           weather: weather ?? undefined,
+          intervalDetails: intervalDetails ? (intervalDetails as unknown as Prisma.InputJsonValue) : undefined,
         },
       });
 

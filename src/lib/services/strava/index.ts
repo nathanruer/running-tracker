@@ -6,7 +6,7 @@ export {
   getActivityStreams,
 } from './client';
 
-export { formatStravaActivity } from './formatters';
+export { formatStravaActivity } from '@/lib/utils/strava/activity-formatter';
 
 export { getValidAccessToken } from './auth-helpers';
 

@@ -25,6 +25,7 @@ import { SessionDialogActions } from './session-dialog-actions';
 import { SessionDialogHeader } from './session-dialog-header';
 import { useFileImport } from '../../hooks/forms/use-file-import';
 import { useSessionForm } from '../../hooks/forms/use-session-form';
+import { useScrollToError } from '@/hooks/use-scroll-to-error';
 
 // Helper functions to adapt the main form to interval fields
 const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {
@@ -84,6 +85,9 @@ const SessionDialog = ({
   });
 
   const watchedSessionType = form.watch('sessionType');
+
+  // Scroll to first error on each submission attempt
+  useScrollToError(form.formState.errors, form.formState.submitCount);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

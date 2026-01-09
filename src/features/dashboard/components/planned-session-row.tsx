@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils';
+import { generateIntervalStructure } from '@/lib/utils/intervals';
 import { normalizePaceFormat, parseDuration, formatDuration } from '@/lib/utils/duration';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';

@@ -1,7 +1,2 @@
-export type WeatherData = {
-  conditionCode: number;
-  temperature: number;
-  windSpeed: number;
-  precipitation: number;
-  timestamp?: number;
-};
+export type { WeatherData } from '@/lib/validation/schemas/entities';
+export { weatherDataSchema } from '@/lib/validation/schemas/entities';

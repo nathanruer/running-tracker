@@ -1,2 +1,31 @@
+export * from './schemas';
 export * from './auth';
-export * from './session';
+
+export {
+  sessionSchema,
+  partialSessionSchema,
+  intervalStepSchema,
+  intervalDetailsSchema,
+  type SessionInput,
+  type IntervalDetailsInput,
+  type IntervalStepInput,
+} from './session';
+
+export {
+  formSchema,
+  intervalStepSchema as formIntervalStepSchema,
+  type FormValues,
+  type IntervalFormValues,
+} from './session-form';
+
+export {
+  stravaActivitySchema,
+  stravaMapSchema,
+  stravaStreamSchema as stravaApiStreamSchema,
+  stravaStreamSetSchema as stravaApiStreamSetSchema,
+  validateStravaData,
+  validateStravaMap,
+  validateStravaStreams,
+  type StravaActivityValidated,
+  type StravaMapData,
+} from './strava';

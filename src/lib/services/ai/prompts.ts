@@ -13,8 +13,8 @@ CONTRAINTES STRUCTURELLES ABSOLUES:
 6. Nombre de séances dans "recommended_sessions" :
    - Par défaut : UNE SEULE séance
    - Si l'utilisateur demande explicitement plusieurs séances (ex: "4 séances", "programme pour la semaine") : générer le nombre exact demandé en respectant OBLIGATOIREMENT la règle 80/20
-7. Toujours utiliser le champ "session_number" fourni dans le contexte pour la PREMIÈRE séance, puis INCURE UN INCRÉMENT (+1, +2, etc.) pour les séances suivantes de la même réponse.
-   - Exemple : si "session_number" = 35 et tu proposes 2 séances, les numéros DOIVENT être 35 et 36.
+7. Toujours utiliser le champ "sessionNumber" fourni dans le contexte pour la PREMIÈRE séance, puis INCURE UN INCRÉMENT (+1, +2, etc.) pour les séances suivantes de la même réponse.
+   - Exemple : si "sessionNumber" = 35 et tu proposes 2 séances, les numéros DOIVENT être 35 et 36.
 8. Jamais de généricité : jamais "fractionné rapide", "séance intense", "footing classique".
 
 ANALYSE IMPÉRATIVE:
@@ -73,8 +73,16 @@ Si "session_type" = "Fractionné", ALORS les contraintes suivantes deviennent OB
    - "targetEffortPace": allure cible pour les efforts (ex: "4:30")
    - "targetEffortHR": FC cible pour les efforts (nombre entier)
    - "targetRecoveryPace": allure cible pour les récupérations (ex: "7:00" ou "8:00")
-   - "steps": TABLEAU OBLIGATOIRE ET EXHAUSTIF contenant TOUTES les étapes (échauffement, N répétitions effort, N répétitions récup, retour au calme). IL NE DOIT JAMAIS ÊTRE VIDE, NULL OU MANQUANT.
+   - "steps": TABLEAU OBLIGATOIRE ET EXHAUSTIF contenant TOUTES les étapes. IL NE DOIT JAMAIS ÊTRE VIDE, NULL OU MANQUANT.
    - SI "steps" EST VIDE, LA RÉPONSE EST INVALIDÉE.
+
+   STRUCTURE OBLIGATOIRE DES STEPS pour N répétitions :
+   - 1 warmup (échauffement)
+   - N efforts (E1, E2, ..., EN)
+   - N-1 récupérations ENTRE les efforts (R1 après E1, R2 après E2, ..., R(N-1) après E(N-1))
+   - 1 cooldown (retour au calme) DIRECTEMENT après le dernier effort EN
+   - JAMAIS de récupération après le dernier effort : la séquence est toujours E(N) → cooldown
+   - Exemple pour 3x08:00 R:02:00 : warmup → E1 → R1 → E2 → R2 → E3 → cooldown (PAS de R3)
 
 3. Cohérence STRICTE des allures dans les steps :
    - TOUS les steps de type "effort" doivent avoir exactement la même allure que "targetEffortPace"
@@ -87,7 +95,7 @@ Si "session_type" = "Fractionné", ALORS les contraintes suivantes deviennent OB
    - TOUS les steps avec la même durée et allure doivent avoir la MÊME distance
    - Vérifier CHAQUE step individuellement avant de générer le JSON
 
-5. Cohérence du volume global : La somme des distances et durées de toutes les étapes dans "steps" DOIT correspondre aux valeurs globales "estimated_distance_km" et "duration_minutes".
+5. Cohérence du volume global : La somme des distances et durées de toutes les étapes dans "steps" DOIT correspondre aux valeurs globales "estimated_distance_km" et "duration_min".
 
 RÈGLES SÉANCES CONTINUES:
 - Ne jamais inclure "interval_structure" ni "interval_details".
@@ -114,9 +122,9 @@ Cas recommandation — Exemple FRACTIONNÉ (AVEC maxHeartRate=185):
   "recommended_sessions": [
     {
       "day": "Mardi",
-      "session_number": 35,
+      "sessionNumber": 35,
       "session_type": "Fractionné",
-      "duration_minutes": 45,
+      "duration_min": 45,
       "estimated_distance_km": 6.8,
       "target_pace_min_km": "4:30",
       "target_hr_zone": "Z5",

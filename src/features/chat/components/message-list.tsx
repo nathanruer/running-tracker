@@ -8,7 +8,7 @@ import {
   getAddedSessionId,
   getCompletedSession,
   getNextSessionNumber,
-} from '@/lib/utils/chat/session-helpers';
+} from '@/lib/domain/sessions/helpers';
 
 interface Recommendations {
   recommended_sessions?: AIRecommendedSession[];
@@ -87,7 +87,7 @@ export function MessageList({
                     const dynamicSessionNumber = getNextSessionNumber(allSessions) + notAddedSessionsBeforeThis;
 
                     const displaySessionNumber = isAdded
-                      ? (completedSession?.sessionNumber || session.session_number || session.sessionNumber || dynamicSessionNumber)
+                      ? (completedSession?.sessionNumber || session.sessionNumber || dynamicSessionNumber)
                       : dynamicSessionNumber;
 
                     return (

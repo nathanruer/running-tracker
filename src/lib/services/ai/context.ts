@@ -1,5 +1,5 @@
 import type { BuildContextParams, Session, IntervalDetails } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils';
+import { generateIntervalStructure } from '@/lib/utils/intervals';
 import { normalizePaceFormat } from '@/lib/utils/duration';
 
 function isIntervalDetails(value: unknown): value is IntervalDetails {

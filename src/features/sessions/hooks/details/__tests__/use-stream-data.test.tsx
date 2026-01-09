@@ -6,7 +6,7 @@ vi.mock('@/lib/validation/strava', () => ({
   validateStravaStreams: vi.fn((streams) => streams),
 }));
 
-vi.mock('@/lib/utils/streams', () => ({
+vi.mock('@/lib/utils/geo/stream-charts', () => ({
   prepareAltitudeData: vi.fn(() => [{ value: 100 }]),
   preparePaceData: vi.fn(() => [{ value: 300 }]),
   prepareHeartrateData: vi.fn(() => []),

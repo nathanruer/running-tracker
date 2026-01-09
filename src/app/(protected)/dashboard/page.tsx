@@ -34,7 +34,7 @@ import {
   type TrainingSession,
   type TrainingSessionPayload,
 } from '@/lib/types';
-import { parseIntervalStructure } from '@/lib/utils';
+import { parseIntervalStructure } from '@/lib/utils/intervals';
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();

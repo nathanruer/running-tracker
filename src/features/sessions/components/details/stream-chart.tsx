@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
-import type { StreamDataPoint, StreamChartConfig } from '@/lib/utils/streams';
+import type { StreamDataPoint, StreamChartConfig } from '@/lib/types/stream-charts';
 import { formatDuration } from '@/lib/utils/duration';
 import { STREAM_CHART_CONSTANTS } from '@/lib/constants/stream-charts';
 

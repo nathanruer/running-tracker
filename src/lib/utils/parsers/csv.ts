@@ -5,8 +5,8 @@ import {
   parsePace,
   parseNumber,
   detectColumns,
-} from './csv-import-helpers';
-import type { ParsedSession } from '@/features/import/components/csv-preview-table';
+} from './date-parser';
+import type { ParsedSession } from '@/lib/types/parser';
 
 export interface ParseResult {
   sessions: ParsedSession[];

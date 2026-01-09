@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseIntervalCSV } from '@/lib/parsers/interval-csv-parser';
+import { parseIntervalCSV } from '@/lib/utils/parsers/interval-csv';
 
 describe('interval-csv-parser', () => {
   it('should parse a valid Garmin CSV correctly', () => {

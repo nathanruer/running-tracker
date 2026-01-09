@@ -5,14 +5,13 @@ import {
   getAddedSessionId,
   getCompletedSession,
   getNextSessionNumber,
-} from '../session-helpers';
+} from '../helpers';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 
 const mockRecommendedSession: AIRecommendedSession = {
   recommendation_id: 'rec-1',
   session_type: 'Endurance fondamentale',
   duration_min: 45,
-  duration_minutes: 45,
   estimated_distance_km: 8,
   target_pace_min_km: '5:30',
 };

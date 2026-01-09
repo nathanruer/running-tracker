@@ -18,7 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
 import { ExternalLink, Map } from 'lucide-react';
 import type { TrainingSession, IntervalStep } from '@/lib/types';
-import { decodePolyline, coordinatesToSVG } from '@/lib/utils/polyline';
+import { decodePolyline, coordinatesToSVG } from '@/lib/utils/geo/polyline';
 import { cn } from '@/lib/utils/cn';
 import { validateStravaData } from '@/lib/validation/strava';
 import { MAP_DIMENSIONS } from '@/lib/constants/map';
@@ -34,7 +34,7 @@ const LeafletRoute = dynamic(
 
 import { WeatherWidget } from './weather-widget';
 import { StreamsSection } from './streams-section';
-import { formatCadence } from '@/lib/utils/cadence';
+import { formatCadence } from '@/lib/utils/strava/cadence';
 import { normalizeDurationFormat } from '@/lib/utils/duration';
 
 interface SessionDetailsSheetProps {
