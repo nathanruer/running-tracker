@@ -4,9 +4,8 @@ import { Prisma } from '@prisma/client';
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
-import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { calculateSessionPosition } from '@/lib/domain/sessions/position';
 import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
-import { getNextSessionNumber } from '@/lib/domain/sessions/utils';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/lib/services/strava';
 
@@ -53,13 +52,15 @@ export async function POST(request: NextRequest) {
     request,
     sessionSchema,
     async (payload, userId) => {
-      const nextNumber = await getNextSessionNumber(userId);
+      const sessionDate = new Date(payload.date);
+
+      const { sessionNumber, week } = await calculateSessionPosition(userId, sessionDate);
 
       const { intervalDetails, stravaData, ...sessionData } = payload;
 
       let weather = null;
       if (stravaData) {
-        weather = await enrichSessionWithWeather(stravaData, new Date(payload.date));
+        weather = await enrichSessionWithWeather(stravaData, sessionDate);
       }
 
       const stravaStreams = await fetchStreamsForSession(
@@ -76,15 +77,13 @@ export async function POST(request: NextRequest) {
           stravaData: stravaData || Prisma.JsonNull,
           weather: weather ?? Prisma.JsonNull,
           stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-          date: new Date(payload.date),
-          sessionNumber: nextNumber,
-          week: 1,
+          date: sessionDate,
+          sessionNumber,
+          week,
           userId,
           status: SESSION_STATUS.COMPLETED,
         },
       });
-
-      await recalculateSessionNumbers(userId, new Date(payload.date));
 
       return NextResponse.json(
         { session },

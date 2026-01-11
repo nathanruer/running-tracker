@@ -3,9 +3,9 @@ import { Prisma } from '@prisma/client';
 
 /**
  * Recalculates session numbers for a user.
- * 
+ *
  * @param userId User ID
- * @param newSessionDate Optional - If provided, skips recalculation when this date is the most recent
+ * @param newSessionDate Optional - If provided, optimizes by checking if recalculation is needed
  * @returns true if recalculation was performed, false if skipped
  */
 export async function recalculateSessionNumbers(
@@ -20,7 +20,20 @@ export async function recalculateSessionNumbers(
       },
     });
 
-    if (laterSessions === 0) {
+    const sevenDaysBefore = new Date(newSessionDate);
+    sevenDaysBefore.setDate(sevenDaysBefore.getDate() - 7);
+
+    const sessionsInSameWeek = await prisma.training_sessions.count({
+      where: {
+        userId,
+        date: {
+          gte: sevenDaysBefore,
+          lt: newSessionDate,
+        },
+      },
+    });
+
+    if (laterSessions === 0 && sessionsInSameWeek === 0) {
       return false;
     }
   }
@@ -99,15 +112,21 @@ export async function recalculateSessionNumbers(
   return true;
 }
 
+/**
+ * Calculates ISO 8601 week key for a date.
+ * ISO weeks start on Monday and belong to the year that contains the Thursday.
+ * This ensures proper handling of weeks spanning multiple years.
+ */
 function getWeekKey(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  monday.setHours(0, 0, 0, 0);
-  
-  const yearStart = new Date(monday.getFullYear(), 0, 1);
-  const weekNumber = Math.ceil((((monday.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  
-  return `${monday.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+  const d = new Date(date.getTime());
+  d.setHours(0, 0, 0, 0);
+
+  const dayNum = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dayNum);
+
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+
+  const weekNumber = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+
+  return `${d.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
 }
