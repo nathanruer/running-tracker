@@ -65,7 +65,24 @@ export function prepareAltitudeData(streams: StravaStreamSet): StreamDataPoint[]
 }
 
 /**
+ * Applies a rolling average to smooth noisy data
+ * Uses a centered window for better results
+ */
+function applyRollingAverage(values: number[], windowSize: number): number[] {
+  const halfWindow = Math.floor(windowSize / 2);
+
+  return values.map((_, index) => {
+    const start = Math.max(0, index - halfWindow);
+    const end = Math.min(values.length, index + halfWindow + 1);
+    const windowValues = values.slice(start, end);
+
+    return windowValues.reduce((sum, v) => sum + v, 0) / windowValues.length;
+  });
+}
+
+/**
  * Prepares pace data for charting
+ * Applies smoothing for better visualization while maintaining data integrity
  */
 export function preparePaceData(streams: StravaStreamSet): StreamDataPoint[] {
   const velocity = streams.velocity_smooth?.data || [];
@@ -74,7 +91,16 @@ export function preparePaceData(streams: StravaStreamSet): StreamDataPoint[] {
 
   if (velocity.length === 0) return [];
 
-  return velocity.map((v, i) => ({
+  const MIN_VELOCITY = 1.2; // ~13:53 min/km - anything slower gets clamped
+  const MAX_VELOCITY = 10.0; // ~1:40 min/km - anything faster gets clamped
+
+  const clampedVelocities = velocity.map(v =>
+    Math.max(MIN_VELOCITY, Math.min(MAX_VELOCITY, v))
+  );
+
+  const smoothedVelocities = applyRollingAverage(clampedVelocities, 25);
+
+  return smoothedVelocities.map((v, i) => ({
     distance: distance[i] ? parseFloat((distance[i] / 1000).toFixed(2)) : i,
     time: time[i] || i,
     value: mpsToSecondsPerKm(v),
@@ -84,6 +110,7 @@ export function preparePaceData(streams: StravaStreamSet): StreamDataPoint[] {
 
 /**
  * Prepares heart rate data for charting
+ * Applies light smoothing to reduce sensor noise
  */
 export function prepareHeartrateData(streams: StravaStreamSet): StreamDataPoint[] {
   const heartrate = streams.heartrate?.data || [];
@@ -92,7 +119,9 @@ export function prepareHeartrateData(streams: StravaStreamSet): StreamDataPoint[
 
   if (heartrate.length === 0) return [];
 
-  return heartrate.map((v, i) => ({
+  const smoothedHeartrate = applyRollingAverage(heartrate, 7);
+
+  return smoothedHeartrate.map((v, i) => ({
     distance: distance[i] ? parseFloat((distance[i] / 1000).toFixed(2)) : i,
     time: time[i] || i,
     value: v,
@@ -102,6 +131,7 @@ export function prepareHeartrateData(streams: StravaStreamSet): StreamDataPoint[
 
 /**
  * Prepares cadence data for charting
+ * Applies smoothing for better visualization
  */
 export function prepareCadenceData(streams: StravaStreamSet): StreamDataPoint[] {
   const cadence = streams.cadence?.data || [];
@@ -110,7 +140,13 @@ export function prepareCadenceData(streams: StravaStreamSet): StreamDataPoint[] 
 
   if (cadence.length === 0) return [];
 
-  return cadence.map((v, i) => ({
+  const MIN_CADENCE = 30;
+
+  const clampedCadence = cadence.map(v => Math.max(MIN_CADENCE, v));
+
+  const smoothedCadence = applyRollingAverage(clampedCadence, 25);
+
+  return smoothedCadence.map((v, i) => ({
     distance: distance[i] ? parseFloat((distance[i] / 1000).toFixed(2)) : i,
     time: time[i] || i,
     value: v,
@@ -139,4 +175,25 @@ export function calculateStreamAverage(data: StreamDataPoint[]): number {
   if (data.length === 0) return 0;
   const sum = data.reduce((acc, point) => acc + point.value, 0);
   return sum / data.length;
+}
+
+/**
+ * Calculates an optimized domain for pace data to focus on the main data range
+ * Uses a gentle percentile-based approach that works well with smoothed data
+ */
+export function calculatePaceDomain(data: StreamDataPoint[]): [number, number] | undefined {
+  if (data.length === 0) return undefined;
+
+  const sortedValues = [...data].map(d => d.value).sort((a, b) => a - b);
+
+  const dataMin = sortedValues[0];
+  const dataMax = sortedValues[sortedValues.length - 1];
+
+  const range = dataMax - dataMin;
+  const padding = range * 0.10;
+
+  return [
+    Math.max(0, dataMin - padding),
+    dataMax + padding
+  ];
 }

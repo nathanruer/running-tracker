@@ -13,6 +13,11 @@ vi.mock('@/lib/utils/geo/stream-charts', () => ({
   prepareCadenceData: vi.fn(() => []),
   getAvailableStreams: vi.fn(() => ['altitude', 'pace']),
   calculateStreamAverage: vi.fn(() => 300),
+  calculatePaceDomain: vi.fn((data) => {
+    if (data.length === 0) return undefined;
+    const value = data[0].value;
+    return [value * 0.9, value * 2.2];
+  }),
 }));
 
 describe('useStreamData', () => {

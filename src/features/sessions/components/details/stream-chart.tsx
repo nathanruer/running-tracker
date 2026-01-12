@@ -100,18 +100,18 @@ export function StreamChart({
   const dataMax = Math.max(...values);
 
   const range = dataMax - dataMin || (dataMin === 0 ? 10 : dataMin * 0.1);
-  const padding = range * STREAM_CHART_CONSTANTS.CHART_PADDING_PERCENT; 
-  
+  const padding = range * STREAM_CHART_CONSTANTS.CHART_PADDING_PERCENT;
+
   let domainMin = dataMin - padding;
   let domainMax = dataMax + padding;
-  
+
   if (config.domain) {
     if (typeof config.domain[0] === 'number') domainMin = config.domain[0];
     if (typeof config.domain[1] === 'number') domainMax = config.domain[1];
   } else {
     if (dataMin >= 0 && domainMin < 0) domainMin = 0;
   }
-  
+
   const chartDomain = [domainMin, domainMax];
 
   const baseValue = config.reversed ? domainMax : undefined;

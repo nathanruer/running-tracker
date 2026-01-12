@@ -68,7 +68,7 @@ describe('streams utilities', () => {
   });
 
   describe('prepareHeartrateData', () => {
-    it('should prepare heart rate data correctly', () => {
+    it('should prepare heart rate data correctly with smoothing', () => {
       const streams: StravaStreamSet = {
         heartrate: createMockStream([140, 150, 160]),
         distance: createMockStream([0, 500, 1000]),
@@ -78,7 +78,8 @@ describe('streams utilities', () => {
       const result = prepareHeartrateData(streams);
 
       expect(result).toHaveLength(3);
-      expect(result[0].value).toBe(140);
+      // With rolling average window of 7, small datasets get averaged
+      expect(result[0].value).toBeCloseTo(150, 0);
       expect(result[1].formattedValue).toBe('150 bpm');
     });
 
@@ -92,7 +93,7 @@ describe('streams utilities', () => {
   });
 
   describe('prepareCadenceData', () => {
-    it('should prepare cadence data with doubled values (both legs)', () => {
+    it('should prepare cadence data with smoothing and doubled values (both legs)', () => {
       const streams: StravaStreamSet = {
         cadence: createMockStream([75, 80, 85]), // Strava gives single leg
         distance: createMockStream([0, 500, 1000]),
@@ -102,8 +103,9 @@ describe('streams utilities', () => {
       const result = prepareCadenceData(streams);
 
       expect(result).toHaveLength(3);
-      expect(result[0].value).toBe(75);
-      expect(result[0].formattedValue).toBe('150 ppm'); // Doubled for both legs
+      // With rolling average window of 25, small datasets get averaged
+      expect(result[0].value).toBeCloseTo(80, 0);
+      expect(result[0].formattedValue).toBe('160 ppm'); // Doubled for both legs
       expect(result[1].formattedValue).toBe('160 ppm');
     });
 
