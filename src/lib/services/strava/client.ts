@@ -62,10 +62,11 @@ export async function refreshAccessToken(refreshToken: string): Promise<StravaTo
  */
 export async function getActivities(
   accessToken: string,
-  perPage: number = 30
+  perPage: number = 30,
+  page: number = 1
 ): Promise<StravaActivity[]> {
   const response = await fetch(
-    `${STRAVA_URLS.ACTIVITIES}?per_page=${perPage}`,
+    `${STRAVA_URLS.ACTIVITIES}?per_page=${perPage}&page=${page}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -204,21 +204,27 @@ export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={data.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
-          Exporter
+        <Button 
+          data-testid="btn-analytics-export"
+          variant="ghost" 
+          size="sm"
+          disabled={data.length === 0}
+          className="h-9 px-2 sm:px-4 text-xs font-bold text-muted-foreground/60 hover:bg-white/5 hover:text-foreground active:scale-95 transition-all rounded-xl border-none"
+        >
+          <Download className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Exporter</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-background">
-        <DropdownMenuItem onClick={exportToCSV} className="bg-background hover:bg-accent cursor-pointer">
+        <DropdownMenuItem data-testid="export-csv" onClick={exportToCSV} className="bg-background hover:bg-accent cursor-pointer">
           <Download className="mr-2 h-4 w-4" />
           CSV
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportToJSON} className="bg-background hover:bg-accent cursor-pointer">
+        <DropdownMenuItem data-testid="export-json" onClick={exportToJSON} className="bg-background hover:bg-accent cursor-pointer">
           <Download className="mr-2 h-4 w-4" />
           JSON
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportToExcel} className="bg-background hover:bg-accent cursor-pointer">
+        <DropdownMenuItem data-testid="export-excel" onClick={exportToExcel} className="bg-background hover:bg-accent cursor-pointer">
           <Download className="mr-2 h-4 w-4" />
           Excel
         </DropdownMenuItem>

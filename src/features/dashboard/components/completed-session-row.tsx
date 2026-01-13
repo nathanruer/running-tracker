@@ -99,9 +99,7 @@ export const CompletedSessionRow = React.memo(function CompletedSessionRow({
           )}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
-          {session.avgPace} <span className="text-xs text-muted-foreground">
-            {session.avgPace && session.avgPace.length > 5 ? 'h/km' : 'mn/km'}
-          </span>
+          {session.avgPace} <span className="text-xs text-muted-foreground">/km</span>
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {session.avgHeartRate ? (

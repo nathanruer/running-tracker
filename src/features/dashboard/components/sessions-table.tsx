@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, MoreVertical } from 'lucide-react';
+import { Plus, MoreVertical, FilterX } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { PlannedSessionRow } from './planned-session-row';
 import { CompletedSessionRow } from './completed-session-row';
@@ -87,11 +87,12 @@ export function SessionsTable({
               <div className="h-10 w-10 md:w-[168px] animate-pulse rounded-md bg-muted shrink-0" />
             ) : actions.onNewSession ? (
               <Button
+                data-testid="btn-new-session"
                 onClick={actions.onNewSession}
-                className="gradient-violet shrink-0"
+                className="bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all h-10 rounded-xl px-6 font-bold shrink-0"
                 title="Nouvelle séance"
               >
-                <Plus />
+                <Plus className="h-5 w-5" />
                 <span className="hidden md:inline">Ajouter une séance</span>
               </Button>
             ) : null}
@@ -106,7 +107,7 @@ export function SessionsTable({
             ) : (
               <>
                 <Select value={selectedType} onValueChange={onTypeChange}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectTrigger data-testid="filter-session-type" className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Type de séance" />
                   </SelectTrigger>
                   <SelectContent>
@@ -122,7 +123,7 @@ export function SessionsTable({
                   value={viewMode}
                   onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
                 >
-                  <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectTrigger data-testid="filter-view-mode" className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Affichage" />
                   </SelectTrigger>
                   <SelectContent>
@@ -162,6 +163,7 @@ export function SessionsTable({
                   <TableHead className="whitespace-nowrap text-center">Séance</TableHead>
                   <TableHead className="whitespace-nowrap text-center">
                     <button
+                      data-testid="sort-duration"
                       onClick={() => handleSort('duration')}
                       className="flex items-center justify-center hover:text-foreground transition-colors w-full"
                     >
@@ -171,6 +173,7 @@ export function SessionsTable({
                   </TableHead>
                   <TableHead className="whitespace-nowrap text-center">
                     <button
+                      data-testid="sort-distance"
                       onClick={() => handleSort('distance')}
                       className="flex items-center justify-center hover:text-foreground transition-colors w-full"
                     >
@@ -181,6 +184,7 @@ export function SessionsTable({
                   <TableHead className="whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
+                        data-testid="sort-avgPace"
                         onClick={() => handleSort('avgPace')}
                         className="flex items-center hover:text-foreground transition-colors"
                       >
@@ -192,6 +196,7 @@ export function SessionsTable({
                   <TableHead className="whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
+                        data-testid="sort-avgHeartRate"
                         onClick={() => handleSort('avgHeartRate')}
                         className="flex items-center hover:text-foreground transition-colors"
                       >
@@ -202,6 +207,7 @@ export function SessionsTable({
                   </TableHead>
                   <TableHead className="whitespace-nowrap text-center">
                     <button
+                      data-testid="sort-perceivedExertion"
                       onClick={() => handleSort('perceivedExertion')}
                       className="flex items-center justify-center w-full hover:text-foreground transition-colors"
                     >
@@ -247,7 +253,7 @@ export function SessionsTable({
                       </TableCell>
                     </TableRow>
                   ))
-                ) : (
+                ) : sortedSessions.length > 0 ? (
                   sortedSessions.map((session) =>
                     session.status === 'planned' ? (
                       <PlannedSessionRow
@@ -273,6 +279,30 @@ export function SessionsTable({
                       />
                     )
                   )
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={12} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="p-4 rounded-full bg-muted/50 border border-border/50">
+                          <FilterX className="h-6 w-6 text-muted-foreground/50" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-foreground">Aucun résultat trouvé</p>
+                          <p className="text-xs text-muted-foreground">
+                            Essayez de modifier vos filtres ou d&apos;afficher tous les types.
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onTypeChange('all')}
+                          className="mt-2 text-[10px] font-black uppercase tracking-widest text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 rounded-xl h-8 px-4"
+                        >
+                          Réinitialiser les filtres
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
@@ -289,14 +319,15 @@ export function SessionsTable({
               Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingBulk}>Annuler</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel data-testid="bulk-delete-session-cancel" disabled={isDeletingBulk} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
             <AlertDialogAction
+              data-testid="bulk-delete-session-confirm"
               onClick={() => handleBulkDelete(Array.from(selectedSessions), clearSelection)}
               disabled={isDeletingBulk}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
             >
-              {isDeletingBulk ? 'Suppression...' : 'Supprimer'}
+              {isDeletingBulk ? 'Suppression...' : 'Confirmer la suppression'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

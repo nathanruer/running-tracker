@@ -4,7 +4,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
 import { generateIntervalStructure, calculateIntervalTotals } from '@/lib/utils/intervals';
-import { normalizePaceFormat, formatDuration } from '@/lib/utils/duration';
+import { normalizePaceOrRange, formatDuration } from '@/lib/utils/duration';
 import { formatHRDisplay } from '@/lib/utils/hr';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
@@ -50,7 +50,7 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
 
   const globalPace = totals.avgPaceFormatted 
     ? `~${totals.avgPaceFormatted}` 
-    : (normalizePaceFormat(session.targetPace || '') ? `~${normalizePaceFormat(session.targetPace || '')}` : '-');
+    : (normalizePaceOrRange(session.targetPace) ? `~${normalizePaceOrRange(session.targetPace)}` : '-');
 
   const globalHRDisplay = formatHRDisplay(
     totals.avgBpm,
@@ -125,9 +125,7 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
         <TableCell className="text-center whitespace-nowrap">
           {globalPace !== '-' ? (
             <>
-              {globalPace} <span className="text-xs">
-                {globalPace.length > 6 ? 'h/km' : 'mn/km'}
-              </span>
+              {globalPace} <span className="text-xs">/km</span>
             </>
           ) : '-'}
         </TableCell>
@@ -164,12 +162,10 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
       {hasIntervalDetails && isOpen && (
         <TableRow>
           <TableCell colSpan={12} className="bg-muted/20 border-b-2 border-dashed border-muted-foreground/30 p-2 italic text-muted-foreground/70">
-            <div className="opacity-80 grayscale-[0.3]">
-              <IntervalDetailsView
-                intervalDetails={session.intervalDetails!}
-                isPlanned={true}
-              />
-            </div>
+            <IntervalDetailsView
+              intervalDetails={session.intervalDetails!}
+              isPlanned={true}
+            />
           </TableCell>
         </TableRow>
       )}

@@ -6,8 +6,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { ExportWeeklyAnalytics } from './export-weekly-analytics';
-import { DateRangeSelector } from './date-range-selector';
 
 interface WeeklyData {
   semaine: string;
@@ -22,24 +20,10 @@ interface WeeklyData {
 
 interface WeeklyEvolutionChartProps {
   chartData: WeeklyData[];
-  dateRange: '2weeks' | '4weeks' | '12weeks' | 'all' | 'custom';
-  onDateRangeChange: (value: '2weeks' | '4weeks' | '12weeks' | 'all' | 'custom') => void;
-  customStartDate: string;
-  customEndDate: string;
-  onCustomStartDateChange: (date: string) => void;
-  onCustomEndDateChange: (date: string) => void;
-  customDateError?: string;
 }
 
 export function WeeklyEvolutionChart({
   chartData,
-  dateRange,
-  onDateRangeChange,
-  customStartDate,
-  customEndDate,
-  onCustomStartDateChange,
-  onCustomEndDateChange,
-  customDateError,
 }: WeeklyEvolutionChartProps) {
   return (
     <Card className="border-border/50">
@@ -51,18 +35,6 @@ export function WeeklyEvolutionChart({
               <CardDescription>
                 Kilomètres parcourus par semaine
               </CardDescription>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <ExportWeeklyAnalytics data={chartData} />
-              <DateRangeSelector
-                dateRange={dateRange}
-                onDateRangeChange={onDateRangeChange}
-                customStartDate={customStartDate}
-                customEndDate={customEndDate}
-                onCustomStartDateChange={onCustomStartDateChange}
-                onCustomEndDateChange={onCustomEndDateChange}
-                customDateError={customDateError}
-              />
             </div>
           </div>
         </div>

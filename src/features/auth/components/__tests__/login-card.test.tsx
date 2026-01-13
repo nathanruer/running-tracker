@@ -40,10 +40,10 @@ describe('LoginCard', () => {
   it('calls login API on submit', async () => {
     render(<LoginCard />);
     
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'test@example.com' } });
+    fireEvent.change(screen.getByTestId('login-password'), { target: { value: 'password123' } });
     
-    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(api.loginUser).toHaveBeenCalledWith('test@example.com', 'password123');
@@ -56,10 +56,10 @@ describe('LoginCard', () => {
     
     fireEvent.click(screen.getByText("Pas encore de compte ? S'inscrire"));
     
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'newpass123' } });
+    fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByTestId('login-password'), { target: { value: 'newpass123' } });
     
-    fireEvent.click(screen.getByRole('button', { name: "S'inscrire" }));
+    fireEvent.click(screen.getByTestId('login-submit'));
     
     await waitFor(() => {
       expect(api.registerUser).toHaveBeenCalledWith('new@example.com', 'newpass123');

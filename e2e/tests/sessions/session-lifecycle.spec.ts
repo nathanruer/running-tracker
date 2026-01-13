@@ -86,7 +86,7 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
 
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: /supprimer/i }).click();
+    await page.locator('[data-testid="delete-session-confirm"]').click();
 
     await expect(dialog).not.toBeVisible();
     await expect(page.getByText(comment)).not.toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
 
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: /annuler/i }).click();
+    await page.locator('[data-testid="delete-session-cancel"]').click();
 
     await expect(dialog).not.toBeVisible();
     await expect(page.getByText(comment)).toBeVisible();

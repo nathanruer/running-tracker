@@ -53,14 +53,21 @@ export async function GET(request: NextRequest) {
       }
 
       const accessToken = await getValidAccessToken(user);
+      const { searchParams } = new URL(request.url);
+      const page = parseInt(searchParams.get('page') || '1');
+      const perPage = parseInt(searchParams.get('per_page') || '50');
 
-      const activities = await getActivities(accessToken, 30);
+      const activities = await getActivities(accessToken, perPage, page);
+      const hasMore = activities.length === perPage;
 
       const runningActivities = activities.filter(
         (activity) => activity.type === 'Run'
       );
 
-      return NextResponse.json({ activities: runningActivities });
+      return NextResponse.json({ 
+        activities: runningActivities,
+        hasMore 
+      });
     },
     { logContext: 'get-strava-activities' }
   );

@@ -22,7 +22,7 @@ export class SessionFormPage {
   }
 
   async selectSessionType(type: string): Promise<void> {
-    const typeButton = this.dialog.locator('[role="combobox"]').first();
+    const typeButton = this.dialog.locator('[data-testid="select-session-type"]');
     await typeButton.click();
     await this.page.waitForTimeout(300);
     await this.page.getByRole('option', { name: new RegExp(type, 'i') }).first().click();
@@ -30,41 +30,41 @@ export class SessionFormPage {
   }
 
   async fillDuration(value: string): Promise<void> {
-    const input = this.dialog.locator('input[name="duration"]');
+    const input = this.dialog.locator('[data-testid="input-duration"]');
     await input.clear();
     await input.fill(value);
   }
 
   async fillDistance(value: string | number): Promise<void> {
-    const input = this.dialog.getByLabel(/distance/i);
+    const input = this.dialog.locator('[data-testid="input-distance"]');
     await input.clear();
     await input.fill(value.toString());
   }
 
   async fillAvgPace(value: string): Promise<void> {
-    const input = this.dialog.getByLabel(/allure/i);
+    const input = this.dialog.locator('[data-testid="input-avgpace"]');
     await input.clear();
     await input.fill(value);
   }
 
   async fillAvgHeartRate(value: string | number): Promise<void> {
-    const input = this.dialog.getByLabel(/fc moy/i);
+    const input = this.dialog.locator('[data-testid="input-avgheartrate"]');
     await input.clear();
     await input.fill(value.toString());
   }
 
   async fillComments(value: string): Promise<void> {
-    const input = this.dialog.getByLabel(/commentaires/i);
+    const input = this.dialog.locator('[data-testid="input-comments"]');
     await input.click();
     await input.fill(value);
   }
 
   async submit(): Promise<void> {
-    await this.dialog.getByRole('button', { name: /enregistrer|ajouter|modifier/i }).click({ force: true });
+    await this.dialog.locator('[data-testid="btn-session-submit"]').first().click({ force: true });
   }
 
   async cancel(): Promise<void> {
-    await this.dialog.getByRole('button', { name: /annuler/i }).click();
+    await this.dialog.locator('[data-testid="btn-session-cancel"]').click();
   }
 
   async getValidationErrors(): Promise<string[]> {

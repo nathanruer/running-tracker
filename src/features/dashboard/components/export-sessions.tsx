@@ -278,7 +278,7 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
             <Label>Format</Label>
             <div className="flex gap-2">
               <Button
-                className="flex-1"
+                className="flex-1 h-10 rounded-xl font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
                 variant="outline"
                 onClick={() => handleExport('csv')}
                 disabled={isExporting}
@@ -287,7 +287,7 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
                 CSV
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 h-10 rounded-xl font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
                 variant="outline"
                 onClick={() => handleExport('json')}
                 disabled={isExporting}
@@ -296,7 +296,7 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
                 JSON
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 h-10 rounded-xl font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
                 variant="outline"
                 onClick={() => handleExport('excel')}
                 disabled={isExporting}

@@ -47,10 +47,10 @@ export default function ChatPage() {
 
   if (isGlobalLoading) {
     return (
-      <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+      <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
         <div className="mx-auto max-w-[90rem]">
-          <div className="flex items-center justify-between mb-8 md:hidden">
-            <h1 className="text-4xl font-bold text-gradient">Coach IA</h1>
+          <div className="flex items-center justify-between mb-6 md:hidden">
+            <h1 className="text-3xl font-extrabold text-gradient px-1">Coach IA</h1>
             <Button
               size="icon"
               variant="outline"
@@ -62,7 +62,6 @@ export default function ChatPage() {
           </div>
 
           <div className="flex h-[calc(100vh-12rem)] gap-4">
-            {/* Desktop sidebar skeleton */}
             <div className="hidden md:block">
               <Card className="w-80 h-full flex flex-col p-4">
                 <div className="flex items-center justify-between mb-4">
@@ -88,7 +87,6 @@ export default function ChatPage() {
               </Card>
             </div>
 
-            {/* Mobile sidebar skeleton */}
             <div className="md:hidden flex-1">
               <Card className="h-full flex flex-col">
                 <div className="border-b p-4">
@@ -111,7 +109,6 @@ export default function ChatPage() {
               </Card>
             </div>
 
-            {/* Desktop conversation skeleton */}
             <div className="hidden md:block flex-1">
               <Card className="h-full flex flex-col">
                 <div className="border-b p-4">
@@ -159,10 +156,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+    <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
       <div className="mx-auto max-w-[90rem]">
-        <div className="flex items-center justify-between mb-8 md:hidden">
-          <h1 className="text-4xl font-bold text-gradient">Coach IA</h1>
+        <div className="flex items-center justify-between mb-6 md:hidden">
+          <h1 className="text-3xl font-extrabold text-gradient px-1">Coach IA</h1>
           <Button
             onClick={() => setIsConversationsOpen(true)}
             size="icon"

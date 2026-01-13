@@ -20,6 +20,7 @@ interface DatePickerProps {
   placeholder?: string
   className?: string
   allowClear?: boolean
+  variant?: "outline" | "ghost"
 }
 
 export function DatePicker({
@@ -28,13 +29,14 @@ export function DatePicker({
   placeholder = "Choisir une date",
   className,
   allowClear = false,
+  variant = "outline",
 }: DatePickerProps) {
   return (
     <div className="relative flex w-full">
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant={"outline"}
+            variant={variant}
             className={cn(
               "w-full justify-start text-left font-normal",
               !date && "text-muted-foreground",

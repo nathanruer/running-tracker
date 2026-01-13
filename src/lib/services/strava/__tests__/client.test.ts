@@ -113,7 +113,7 @@ describe('Strava client', () => {
       const result = await getActivities('access-token');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        `${STRAVA_URLS.ACTIVITIES}?per_page=30`,
+        `${STRAVA_URLS.ACTIVITIES}?per_page=30&page=1`,
         {
           headers: { Authorization: 'Bearer access-token' },
         }
@@ -130,7 +130,21 @@ describe('Strava client', () => {
       await getActivities('access-token', 50);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        `${STRAVA_URLS.ACTIVITIES}?per_page=50`,
+        `${STRAVA_URLS.ACTIVITIES}?per_page=50&page=1`,
+        expect.anything()
+      );
+    });
+
+    it('should use custom page parameter', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+
+      await getActivities('access-token', 30, 2);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${STRAVA_URLS.ACTIVITIES}?per_page=30&page=2`,
         expect.anything()
       );
     });

@@ -193,7 +193,7 @@ describe('SessionsTable', () => {
     const deleteButton = screen.getByTestId('bulk-delete-button');
     await user.click(deleteButton);
 
-    const confirmButton = screen.getByRole('button', { name: /^supprimer$/i });
+    const confirmButton = screen.getByRole('button', { name: /confirmer la suppression/i });
     await user.click(confirmButton);
 
     expect(mockOnBulkDelete).toHaveBeenCalledWith(['1', '2', '3']);
@@ -253,7 +253,9 @@ describe('SessionsTable', () => {
     expect(screen.getByText('Historique des séances')).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
-    expect(rows.length).toBe(1);
+    expect(rows.length).toBe(2);
+    expect(screen.getByText('Aucun résultat trouvé')).toBeInTheDocument();
+    expect(screen.getByText('Réinitialiser les filtres')).toBeInTheDocument();
   });
 
   it('should show correct session types in table', () => {

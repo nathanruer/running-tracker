@@ -28,7 +28,7 @@ export function FileImportButtons({
             <Button
               type="button"
               variant="secondary"
-              className="gradient-orange"
+              className="h-10 px-5 rounded-xl font-bold bg-orange-500 hover:bg-orange-600 text-white active:scale-95 transition-all border-none"
               onClick={onStravaClick}
             >
               <Watch className="mr-2 h-4 w-4" />

@@ -101,14 +101,14 @@ export function SortableIntervalStep({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2 font-medium text-sm hover:bg-muted/50"
+                className="h-9 px-3 rounded-xl font-medium text-sm hover:bg-muted/50 active:scale-95 transition-all"
               >
                 {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS] || step.stepType}
                 {step.stepType === 'effort' && ` ${calculateEffortNumber()}`}
                 <ChevronDown className="ml-1 h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" className="rounded-xl">
               <DropdownMenuItem onClick={() => handleTypeChange('warmup')}>
                 {STEP_TYPE_LABELS.warmup}
               </DropdownMenuItem>
@@ -129,7 +129,7 @@ export function SortableIntervalStep({
           variant="ghost"
           size="icon"
           onClick={() => onRemove(index)}
-          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          className="h-8 w-8 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

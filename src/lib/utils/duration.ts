@@ -178,6 +178,39 @@ export function normalizePaceFormat(input: string): string | null {
 }
 
 /**
+ * Normalizes a pace value or range string
+ * Handles both single values "5:30" and ranges "5:30-5:40"
+ *
+ * @param input - Pace string or range
+ * @returns Normalized pace string, or the original if it's a range, or null if invalid
+ *
+ * @example
+ * normalizePaceOrRange("5:30")      // "05:30"
+ * normalizePaceOrRange("5:30-5:40") // "5:30-5:40" (kept as-is, it's a valid range)
+ * normalizePaceOrRange("invalid")   // null
+ */
+export function normalizePaceOrRange(input: string | null | undefined): string | null {
+  if (!input || typeof input !== 'string') {
+    return null;
+  }
+
+  const trimmed = input.trim();
+  
+  // Check if it's a range (contains '-' and has valid paces on both sides)
+  if (trimmed.includes('-') && !trimmed.startsWith('-')) {
+    const parts = trimmed.split('-');
+    if (parts.length === 2) {
+      const [start, end] = parts.map(p => p.trim());
+      if (validatePaceInput(start) && validatePaceInput(end)) {
+        return trimmed;
+      }
+    }
+  }
+  
+  return normalizePaceFormat(trimmed);
+}
+
+/**
  * Normalizes various duration formats to MM:SS format
  * Handles multiple input formats:
  * - Apostrophe notation: "5'00", "45'30"

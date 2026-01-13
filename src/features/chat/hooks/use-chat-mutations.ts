@@ -32,7 +32,7 @@ export function useChatMutations(conversationId: string | null) {
           sessionType,
           targetDuration: session.duration_min,
           targetDistance: session.estimated_distance_km,
-          targetPace: session.target_pace_min_km,
+          targetPace: session.target_pace_range || session.target_pace_min_km,
           targetHeartRateBpm: session.target_hr_range || session.target_hr_bpm,
           targetRPE: session.target_rpe,
           intervalDetails,

@@ -34,14 +34,15 @@ export function SessionDialogHeader({ mode, onReset }: SessionDialogHeaderProps)
           {description}
         </DialogDescription>
         <Button
+          data-testid="btn-session-reset"
           type="button"
           variant="ghost"
           size="sm"
           onClick={onReset}
-          className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+          className="h-8 px-2.5 rounded-xl text-[10px] font-black uppercase tracking-tight text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/5 transition-all shrink-0 border border-transparent hover:border-red-500/10"
         >
-          <RotateCcw className="mr-1 h-3 w-3" />
-          Réinitialiser
+          <RotateCcw className="mr-1.5 h-3 w-3" />
+          Réinitialiser le formulaire
         </Button>
       </div>
     </DialogHeader>

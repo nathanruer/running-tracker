@@ -30,7 +30,7 @@ export function BottomNavigation() {
             <button
               key={item.href}
               onClick={() => router.push(item.href)}
-              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors ${
+              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full active:scale-95 transition-all ${
                 active
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'

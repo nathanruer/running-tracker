@@ -72,43 +72,48 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
 
   return (
     <>
-      <Card>
+      <Card className="border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-xl">Compte Strava connecté</CardTitle>
+          <CardTitle className="text-xl font-bold">Services Connectés</CardTitle>
           <CardDescription>
-            Votre compte Strava est actuellement lié à ce profil.
+            Gérez votre connexion avec les applications tierces.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-black text-orange-600 uppercase tracking-widest">Strava</span>
+              <span className="text-xs text-muted-foreground font-medium italic">Compte synchronisé</span>
+            </div>
+            <StravaBadge variant="orange" className="h-6" />
+          </div>
+
           <Button
-            variant="destructive"
+            variant="outline"
             onClick={() => setShowDisconnectDialog(true)}
             disabled={isDisconnectingStrava}
-            className="w-full"
+            className="w-full h-10 px-5 text-sm font-semibold text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all rounded-xl"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Déconnecter Strava
           </Button>
-          <div className="flex justify-end">
-            <StravaBadge variant="orange" />
-          </div>
         </CardContent>
       </Card>
 
       <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-none shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Déconnexion Strava</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir déconnecter votre compte Strava ? Vous ne pourrez plus importer vos activités depuis Strava.
+            <AlertDialogTitle className="text-2xl font-bold">Déconnexion Strava</AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              Êtes-vous sûr de vouloir déconnecter votre compte Strava ? Vous ne pourrez plus importer vos activités automatiquement.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDisconnectingStrava}>Annuler</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel disabled={isDisconnectingStrava} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDisconnectStrava}
               disabled={isDisconnectingStrava}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
             >
               {isDisconnectingStrava ? (
                 <>
@@ -116,7 +121,7 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
                   Déconnexion...
                 </>
               ) : (
-                'Déconnecter Strava'
+                'Confirmer la déconnexion'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

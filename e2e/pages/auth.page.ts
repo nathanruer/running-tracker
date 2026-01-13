@@ -18,14 +18,14 @@ export class AuthPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.emailInput = this.page.locator('#email');
-    this.passwordInput = this.page.locator('#password');
-    this.submitButton = this.page.locator('button[type="submit"]');
-    this.loginButton = this.getByRole('button', { name: /se connecter/i });
-    this.registerButton = this.getByRole('button', { name: /s'inscrire/i });
+    this.emailInput = this.page.locator('[data-testid="login-email"]');
+    this.passwordInput = this.page.locator('[data-testid="login-password"]');
+    this.submitButton = this.page.locator('[data-testid="login-submit"]');
+    this.loginButton = this.page.locator('[data-testid="login-submit"]');
+    this.registerButton = this.page.locator('[data-testid="login-submit"]');
     this.toast = this.page.locator('li[data-state="open"]');
-    this.toggleToRegisterButton = this.page.locator('button:has-text("Pas encore de compte")');
-    this.toggleToLoginButton = this.page.locator('button:has-text("Déjà un compte")');
+    this.toggleToRegisterButton = this.page.locator('[data-testid="login-switch"]');
+    this.toggleToLoginButton = this.page.locator('[data-testid="login-switch"]');
   }
 
   async goto(): Promise<void> {

@@ -63,7 +63,7 @@ describe('useStravaActivities', () => {
 
     expect(result.current.activities).toEqual(mockActivities);
     expect(result.current.isConnected).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith('/api/strava/activities');
+    expect(global.fetch).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=50');
   });
 
   it('should handle 401 unauthorized error', async () => {
@@ -215,6 +215,77 @@ describe('useStravaActivities', () => {
     expect(result.current.isConnected).toBe(true);
   });
 
+  it('should handle pagination with loadMore', async () => {
+    const page1Activities = [{ id: 1, name: 'Run 1', type: 'Run', start_date_local: '2024-01-01', distance: 5000, moving_time: 1800 }];
+    const page2Activities = [{ id: 2, name: 'Run 2', type: 'Run', start_date_local: '2024-01-02', distance: 10000, moving_time: 3600 }];
+
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ activities: page1Activities, hasMore: true }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ activities: page2Activities, hasMore: false }),
+      } as Response);
+
+    const { result } = renderHook(() => useStravaActivities(true));
+
+    await waitFor(() => {
+      expect(result.current.activities).toEqual(page1Activities);
+    });
+
+    await act(async () => {
+      result.current.loadMore();
+    });
+
+    await waitFor(() => {
+      expect(result.current.activities).toEqual([...page1Activities, ...page2Activities]);
+      expect(result.current.hasMore).toBe(false);
+    });
+
+    expect(global.fetch).toHaveBeenLastCalledWith('/api/strava/activities?page=2&per_page=50');
+  });
+
+  it('should deduplicate activities by ID', async () => {
+    const page1Activities = [{ id: 1, name: 'Run 1', type: 'Run', start_date_local: '2024-01-01', distance: 5000, moving_time: 1800 }];
+    // Duplicate ID 1 in page 2
+    const page2Activities = [
+      { id: 1, name: 'Run 1', type: 'Run', start_date_local: '2024-01-01', distance: 5000, moving_time: 1800 },
+      { id: 2, name: 'Run 2', type: 'Run', start_date_local: '2024-01-02', distance: 10000, moving_time: 3600 }
+    ];
+
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ activities: page1Activities, hasMore: true }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ activities: page2Activities, hasMore: false }),
+      } as Response);
+
+    const { result } = renderHook(() => useStravaActivities(true));
+
+    await waitFor(() => {
+      expect(result.current.activities).toHaveLength(1);
+    });
+
+    await act(async () => {
+      result.current.loadMore();
+    });
+
+    await waitFor(() => {
+      // Should only have 2 activities total (id 1 and 2), not 3
+      expect(result.current.activities).toHaveLength(2);
+      expect(result.current.activities.map(a => a.id)).toEqual([1, 2]);
+    });
+  });
+
   it('should provide loadActivities function for manual refresh', async () => {
     const mockActivities = [
       {
@@ -246,6 +317,6 @@ describe('useStravaActivities', () => {
       expect(result.current.activities).toEqual(mockActivities);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/strava/activities');
+    expect(global.fetch).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=50');
   });
 });

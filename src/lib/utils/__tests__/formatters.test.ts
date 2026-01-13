@@ -5,10 +5,60 @@ import {
   formatNumber,
   formatHeartRate,
   extractHeartRateValue,
+  capitalize,
+  formatDisplayDuration,
+  formatDisplayPace,
 } from '../formatters';
 import { normalizePaceFormat } from '../duration';
 
 describe('formatters', () => {
+  describe('capitalize', () => {
+    it('should capitalize the first letter of a string', () => {
+      expect(capitalize('hello')).toBe('Hello');
+      expect(capitalize('world')).toBe('World');
+      expect(capitalize('running tracker')).toBe('Running tracker');
+    });
+
+    it('should return empty string for empty input', () => {
+      expect(capitalize('')).toBe('');
+      expect(capitalize(null as unknown as string)).toBe('');
+    });
+
+    it('should handle already capitalized strings', () => {
+      expect(capitalize('Hello')).toBe('Hello');
+    });
+  });
+
+  describe('formatDisplayDuration', () => {
+    it('should format duration string correctly', () => {
+      expect(formatDisplayDuration('1:23')).toBe('01:23');
+      expect(formatDisplayDuration('01:23:45')).toBe('01:23:45');
+    });
+
+    it('should return -- for null or empty input', () => {
+      expect(formatDisplayDuration(null)).toBe('--');
+      expect(formatDisplayDuration(undefined)).toBe('--');
+      expect(formatDisplayDuration('')).toBe('--');
+    });
+
+    it('should return original string if normalization fails', () => {
+      expect(formatDisplayDuration('invalid')).toBe('invalid');
+    });
+  });
+
+  describe('formatDisplayPace', () => {
+    it('should return the pace string if provided', () => {
+      expect(formatDisplayPace('5:30')).toBe('5:30');
+      expect(formatDisplayPace('05:30')).toBe('05:30');
+    });
+
+    it('should return -- for null or empty input', () => {
+      expect(formatDisplayPace(null)).toBe('--');
+      expect(formatDisplayPace(undefined)).toBe('--');
+      expect(formatDisplayPace('')).toBe('--');
+    });
+  });
+
   describe('calculatePaceString', () => {
     it('should calculate and format pace correctly', () => {
       // 5km in 25 minutes (1500 seconds) = 5:00 min/km

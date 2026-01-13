@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { MessageSquare, User } from 'lucide-react';
+import { MessageSquare, User, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppNavigation() {
@@ -17,35 +17,49 @@ export function AppNavigation() {
 
   return (
     <header className="hidden md:block border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="container flex p-4 items-center">
-        <div className="mr-8">
+      <div className="container flex h-20 items-center px-6">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/dashboard')}
-            className="rounded-lg text-4xl font-bold text-gradient hover:opacity-80 transition-opacity"
+            className="group flex items-center gap-3 active:scale-95 transition-all text-left"
           >
-            Running Tracker
+            <span className="text-2xl font-black text-gradient tracking-tight">
+              Running Tracker
+            </span>
           </button>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <nav className="ml-auto flex items-center gap-1.5">
           <Button
+            data-testid="nav-dashboard"
+            variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
+            onClick={() => router.push('/dashboard')}
+            className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/dashboard') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+          >
+            <LayoutDashboard className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
+
+          <Button
+            data-testid="nav-chat"
             variant={isActive('/chat') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/chat')}
-            className={isActive('/chat') ? 'bg-muted' : ''}
+            className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/chat') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             Coach IA
           </Button>
 
           <Button
+            data-testid="nav-profile"
             variant={isActive('/profile') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/profile')}
-            className={isActive('/profile') ? 'bg-muted' : ''}
+            className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/profile') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <User className="h-4 w-4 mr-2" />
             Profil
           </Button>
-        </div>
+        </nav>
       </div>
     </header>
   );

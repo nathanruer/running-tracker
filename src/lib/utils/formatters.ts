@@ -1,3 +1,5 @@
+import { normalizeDurationFormat } from './duration';
+
 /**
  * Calculates and formats pace (min/km) from distance and time
  * @param distanceMeters - Distance in meters
@@ -51,7 +53,10 @@ export function formatDate(
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
   if (format === 'iso') {
-    return dateObj.toISOString().split('T')[0];
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   if (format === 'long') {
@@ -82,7 +87,10 @@ export function formatDate(
  */
 export function formatDateToISO(date: string | Date): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toISOString().split('T')[0];
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -95,7 +103,11 @@ export function formatDateToISO(date: string | Date): string {
  * getTodayISO() // '2024-01-15'
  */
 export function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -149,4 +161,36 @@ export function extractHeartRateValue(hr: number | string | null | undefined): n
     return isNaN(parsed) ? null : parsed;
   }
   return null;
+}
+
+/**
+ * Capitalizes the first letter of a string
+ * @param str - String to capitalize
+ * @returns String with first letter capitalized
+ * @example capitalize("hello") // "Hello"
+ */
+export function capitalize(str: string): string {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Formats duration string to a normalized format for display
+ * @param duration - Duration string (e.g., "01:23:45" or "1:23")
+ * @returns Normalized duration string or "--" if invalid
+ * @example formatDisplayDuration("1:23") // "01:23"
+ */
+export function formatDisplayDuration(duration: string | null | undefined): string {
+  if (!duration) return '--';
+  return normalizeDurationFormat(duration) || duration;
+}
+
+/**
+ * Formats pace string for display
+ * @param pace - Pace string
+ * @returns Pace string or "--" if invalid
+ * @example formatDisplayPace("5:30") // "05:30"
+ */
+export function formatDisplayPace(pace: string | null | undefined): string {
+  return pace || '--';
 }

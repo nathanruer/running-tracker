@@ -6,6 +6,7 @@ import {
   normalizeDurationFormat,
   validatePaceInput,
   normalizePaceFormat,
+  normalizePaceOrRange,
   calculatePaceFromDurationAndDistance,
 } from '../duration';
 
@@ -210,6 +211,36 @@ describe('normalizePaceFormat', () => {
   it('should normalize HH:MM:SS pace', () => {
     expect(normalizePaceFormat('00:05:30')).toBe('00:05:30');
     expect(normalizePaceFormat('1:5:30')).toBe('01:05:30');
+  });
+});
+
+describe('normalizePaceOrRange', () => {
+  it('should normalize single pace values', () => {
+    expect(normalizePaceOrRange('5:30')).toBe('05:30');
+    expect(normalizePaceOrRange('05:30')).toBe('05:30');
+    expect(normalizePaceOrRange('7:15')).toBe('07:15');
+  });
+
+  it('should return valid pace ranges as-is', () => {
+    expect(normalizePaceOrRange('5:30-5:40')).toBe('5:30-5:40');
+    expect(normalizePaceOrRange('7:10-7:25')).toBe('7:10-7:25');
+    expect(normalizePaceOrRange('8:00-8:20')).toBe('8:00-8:20');
+  });
+
+  it('should handle ranges with spaces', () => {
+    expect(normalizePaceOrRange('5:30 - 5:40')).toBe('5:30 - 5:40');
+  });
+
+  it('should return null for invalid inputs', () => {
+    expect(normalizePaceOrRange(null)).toBe(null);
+    expect(normalizePaceOrRange(undefined)).toBe(null);
+    expect(normalizePaceOrRange('')).toBe(null);
+    expect(normalizePaceOrRange('invalid')).toBe(null);
+  });
+
+  it('should handle edge cases with invalid range parts', () => {
+    expect(normalizePaceOrRange('abc-def')).toBe(null);
+    expect(normalizePaceOrRange('-5:30')).toBe(null);
   });
 });
 

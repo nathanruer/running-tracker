@@ -53,7 +53,7 @@ export function MessageList({
       {messages.map((message) => (
         <div key={message.id}>
           {message.role === 'user' && (
-            <div className="flex justify-end">
+            <div className="flex justify-end" data-testid="user-message">
               <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-[80%]">
                 <p className="text-sm">{message.content}</p>
               </div>
@@ -61,7 +61,7 @@ export function MessageList({
           )}
 
           {message.role === 'assistant' && (
-            <div className="space-y-3">
+            <div className="space-y-3" data-testid="assistant-message">
               <div className="bg-muted/50 rounded-lg p-4 border border-border/30">
                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                   {message.content}
@@ -119,7 +119,7 @@ export function MessageList({
       ))}
 
       {isSending && (
-        <div className="flex justify-start">
+        <div className="flex justify-start" data-testid="chat-loading-indicator">
           <div className="bg-muted/50 rounded-lg p-4 border border-border/30">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -35,20 +35,20 @@ export function SelectionBar({ selectedCount, onClear, onDelete, onExport }: Sel
           variant="outline"
           size="sm"
           onClick={onExport}
-          className="w-full sm:w-auto h-8 px-3 text-xs hover:bg-muted hover:text-foreground justify-start sm:justify-center"
+          className="w-full sm:w-auto h-9 px-4 text-xs font-semibold text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground active:scale-95 transition-all rounded-xl"
           data-testid="bulk-export-button"
         >
-          <Download className="mr-2 h-3.5 w-3.5" />
+          <Download className="mr-2 h-4 w-4" />
           {exportLabel}
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={onDelete}
-          className="w-full sm:w-auto h-8 px-3 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/50 hover:border-destructive justify-start sm:justify-center"
+          className="w-full sm:w-auto h-9 px-4 text-xs font-semibold text-destructive border-destructive/30 hover:bg-destructive hover:text-white transition-all rounded-xl"
           data-testid="bulk-delete-button"
         >
-          <Trash2 className="mr-2 h-3.5 w-3.5" />
+          <Trash2 className="mr-2 h-4 w-4" />
           {deleteLabel}
         </Button>
       </div>

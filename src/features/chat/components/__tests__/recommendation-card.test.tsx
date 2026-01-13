@@ -13,7 +13,9 @@ describe('RecommendationCard', () => {
     session_type: 'Endurance fondamentale',
     duration_min: 45,
     estimated_distance_km: 8,
+    target_pace_range: '5:25-5:35',
     target_pace_min_km: '5:30',
+    target_hr_range: '140-150',
     target_hr_bpm: 145,
     target_rpe: 6,
     description: 'Pour développer votre endurance de base',
@@ -52,19 +54,19 @@ describe('RecommendationCard', () => {
       expect(screen.getByText('Endurance fondamentale')).toBeInTheDocument();
     });
 
-    it('should display session metrics', () => {
+    it('should display session metrics with ranges', () => {
       render(<RecommendationCard {...defaultProps} />);
 
       expect(screen.getByText('8 km')).toBeInTheDocument();
       expect(screen.getByText('45 min')).toBeInTheDocument();
-      expect(screen.getByText('5:30 /km')).toBeInTheDocument();
+      expect(screen.getByText(/5:25-5:35/)).toBeInTheDocument();
     });
 
-    it('should display heart rate info', () => {
+    it('should display heart rate range', () => {
       render(<RecommendationCard {...defaultProps} />);
 
       expect(screen.getByText(/FC:/)).toBeInTheDocument();
-      expect(screen.getByText(/145/)).toBeInTheDocument();
+      expect(screen.getByText(/140-150/)).toBeInTheDocument();
       expect(screen.getByText(/bpm/)).toBeInTheDocument();
     });
 
@@ -201,8 +203,6 @@ describe('RecommendationCard', () => {
   });
 
   describe('Edge cases', () => {
-
-
     it('should handle missing session_type gracefully', () => {
       render(
         <RecommendationCard
@@ -231,6 +231,36 @@ describe('RecommendationCard', () => {
       );
 
       expect(formatDurationChat).toHaveBeenCalledWith(60);
+    });
+
+    it('should fallback to single pace value when range is missing', () => {
+      render(
+        <RecommendationCard
+          {...defaultProps}
+          session={{
+            ...mockSession,
+            target_pace_range: undefined,
+            target_pace_min_km: '5:30',
+          }}
+        />
+      );
+
+      expect(screen.getByText(/5:30/)).toBeInTheDocument();
+    });
+
+    it('should fallback to single HR value when range is missing', () => {
+      render(
+        <RecommendationCard
+          {...defaultProps}
+          session={{
+            ...mockSession,
+            target_hr_range: undefined,
+            target_hr_bpm: 145,
+          }}
+        />
+      );
+
+      expect(screen.getByText(/145 bpm/)).toBeInTheDocument();
     });
   });
 });

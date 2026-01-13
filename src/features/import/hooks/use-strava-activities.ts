@@ -28,26 +28,43 @@ export interface StravaActivity {
  */
 export function useStravaActivities(open: boolean) {
   const [loading, setLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const { handleError } = useApiErrorHandler();
 
-  /**
-   * Fetches activities from Strava API
-   * Handles connection status and error states
-   */
-  const loadActivities = useCallback(async () => {
-    setLoading(true);
+  const loadActivities = useCallback(async (pageToLoad: number = 1) => {
+    if (pageToLoad === 1) {
+      setLoading(true);
+    } else {
+      setIsFetchingMore(true);
+    }
+
     try {
-      const response = await fetch('/api/strava/activities');
+      const response = await fetch(`/api/strava/activities?page=${pageToLoad}&per_page=50`);
 
       if (response.status === 400 || response.status === 401) {
         setIsConnected(false);
         setActivities([]);
+        setHasMore(false);
       } else if (response.ok) {
         const data = await response.json();
-        setActivities(data.activities);
+        
+        if (pageToLoad === 1) {
+          setActivities(data.activities);
+        } else {
+          setActivities(prev => {
+            const existingIds = new Set(prev.map(a => a.id));
+            const newActivities = data.activities.filter((a: StravaActivity) => !existingIds.has(a.id));
+            return [...prev, ...newActivities];
+          });
+        }
+
         setIsConnected(true);
+        setHasMore(data.hasMore);
+        setPage(pageToLoad);
       } else {
         throw new Error('Échec de la récupération');
       }
@@ -55,8 +72,15 @@ export function useStravaActivities(open: boolean) {
       handleError(error, 'Impossible de récupérer les activités Strava');
     } finally {
       setLoading(false);
+      setIsFetchingMore(false);
     }
   }, [handleError]);
+
+  const loadMore = useCallback(() => {
+    if (!loading && !isFetchingMore && hasMore) {
+      loadActivities(page + 1);
+    }
+  }, [loading, isFetchingMore, hasMore, page, loadActivities]);
 
   const connectToStrava = () => {
     window.location.href = '/api/auth/strava/authorize';
@@ -73,8 +97,11 @@ export function useStravaActivities(open: boolean) {
   return {
     activities,
     loading,
+    isFetchingMore,
+    hasMore,
     isConnected,
     loadActivities,
+    loadMore,
     connectToStrava,
   };
 }

@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -61,21 +62,27 @@ const LoginCard = () => {
 
   return (
     <Card className="w-full max-w-md border-border/50 shadow-xl">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-3xl font-bold text-gradient">
-          Running Tracker
-        </CardTitle>
-        <CardDescription>
-          {isLogin
-            ? 'Connectez-vous à votre compte'
-            : 'Créez votre compte'}
-        </CardDescription>
+      <CardHeader className="space-y-4 flex flex-col items-center text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600 shadow-lg shadow-violet-500/30">
+          <Zap className="h-8 w-8 text-white fill-white" />
+        </div>
+        <div className="space-y-1">
+          <CardTitle className="text-3xl font-bold text-gradient">
+            Running Tracker
+          </CardTitle>
+          <CardDescription>
+            {isLogin
+              ? 'Connectez-vous à votre compte'
+              : 'Créez votre compte'}
+          </CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
+              data-testid="login-email"
               id="email"
               type="email"
               placeholder="email@exemple.com"
@@ -87,6 +94,7 @@ const LoginCard = () => {
           <div className="space-y-2">
             <Label htmlFor="password">Mot de passe</Label>
             <Input
+              data-testid="login-password"
               id="password"
               type="password"
               placeholder="••••••••"
@@ -96,8 +104,9 @@ const LoginCard = () => {
             />
           </div>
           <Button
+            data-testid="login-submit"
             type="submit"
-            className="w-full gradient-violet hover:opacity-90"
+            className="w-full h-10 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
             disabled={loading}
           >
             {loading
@@ -109,6 +118,7 @@ const LoginCard = () => {
         </form>
         <div className="mt-4 text-center text-sm">
           <button
+            data-testid="login-switch"
             type="button"
             onClick={() => setIsLogin((prev) => !prev)}
             className="text-primary hover:underline"

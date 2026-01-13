@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import SessionDialog from '@/features/sessions/components/forms/session-dialog';
 import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
 import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
+import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -194,9 +195,9 @@ const DashboardPage = () => {
 
   if (showGlobalLoading) {
     return (
-      <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+      <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
         <div className="mx-auto max-w-[90rem]">
-          <h1 className="text-4xl font-bold text-gradient mb-6 md:hidden">Dashboard</h1>
+          <h1 className="text-3xl font-extrabold text-gradient mb-6 md:hidden px-1">Dashboard</h1>
 
           <SessionsTable
             sessions={[]}
@@ -276,9 +277,9 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12">
+    <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
       <div className="mx-auto max-w-[90rem]">
-        <h1 className="text-4xl font-bold text-gradient mb-6 md:hidden">Dashboard</h1>
+        <h1 data-testid="dashboard-title-mobile" className="text-3xl font-extrabold text-gradient mb-6 md:hidden px-1">Dashboard</h1>
 
         {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
           <SessionsTable
@@ -292,12 +293,7 @@ const DashboardPage = () => {
             initialLoading={initialLoading}
           />
         ) : (
-          <div className="rounded-lg border border-border/50 bg-card p-12 text-center text-muted-foreground">
-            <p className="mb-4">Aucune séance enregistrée</p>
-            <Button onClick={openNewSession} variant="outline">
-              Ajouter votre première séance
-            </Button>
-          </div>
+          <SessionsEmptyState onAction={openNewSession} />
         )}
 
         {hasMore && sessions.length > 0 && (
@@ -305,7 +301,7 @@ const DashboardPage = () => {
             <Button
               variant="outline"
               onClick={loadMoreSessions}
-              className="w-full md:w-auto"
+              className="w-full md:w-auto h-9 px-6 rounded-xl font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
               disabled={isFetchingNextPage}
             >
               {isFetchingNextPage ? 'Chargement...' : 'Voir plus'}
@@ -353,13 +349,14 @@ const DashboardPage = () => {
               irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingId(null)}>Annuler</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel data-testid="delete-session-cancel" onClick={() => setDeletingId(null)} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
             <AlertDialogAction
+              data-testid="delete-session-confirm"
               onClick={() => deletingId && handleDelete(deletingId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
             >
-              Supprimer
+              Confirmer la suppression
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

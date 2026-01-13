@@ -47,22 +47,35 @@ export function IntervalDetailsView({
   const averages = getAverages();
 
   const getTargetEffortHR = (): string | null => {
+    const effortSteps = filterStepsByType(steps, 'effort');
+    if (effortSteps.length > 0) {
+      const hrRanges = effortSteps
+        .map(step => step.hrRange)
+        .filter(Boolean);
+
+      if (hrRanges.length > 0) {
+        const uniqueRanges = [...new Set(hrRanges)];
+        if (uniqueRanges.length === 1) {
+          return uniqueRanges[0] as string;
+        }
+      }
+    }
+
     if (targetEffortHR) {
       return `${targetEffortHR}`;
     }
 
-    const effortSteps = filterStepsByType(steps, 'effort');
-    if (effortSteps.length === 0) return null;
+    if (effortSteps.length > 0) {
+      const hrValues = effortSteps
+        .map(step => step.hr ? `${step.hr}` : null)
+        .filter(Boolean);
 
-    const hrValues = effortSteps
-      .map(step => step.hrRange || (step.hr ? `${step.hr}` : null))
-      .filter(Boolean);
-
-    if (hrValues.length === 0) return null;
-
-    const uniqueValues = [...new Set(hrValues)];
-    if (uniqueValues.length === 1) {
-      return uniqueValues[0] as string;
+      if (hrValues.length > 0) {
+        const uniqueValues = [...new Set(hrValues)];
+        if (uniqueValues.length === 1) {
+          return uniqueValues[0] as string;
+        }
+      }
     }
 
     return null;
@@ -74,7 +87,7 @@ export function IntervalDetailsView({
 
   return (
     <div className="space-y-4 py-3 px-3">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-muted/20 border border-border/40">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-transparent border border-border/40">
         <div className="flex items-start gap-4">
           <div className="hidden sm:flex p-2.5 rounded-lg bg-violet-500/10 shrink-0">
             <Target className="h-5 w-5 text-violet-500" />
@@ -86,7 +99,7 @@ export function IntervalDetailsView({
                 {displayStructure}
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'} mn/km</span>
+                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'} /km</span>
                 {targetHRDisplay ? <span className="ml-1.5 opacity-40">|</span> : ''}
                 {targetHRDisplay ? <span className="ml-1.5 font-bold text-orange-400/80">{targetHRDisplay} bpm</span> : ''}
               </span>
@@ -101,7 +114,7 @@ export function IntervalDetailsView({
             </span>
             <div className="flex items-baseline gap-2 text-xl font-black font-mono text-foreground tracking-tighter">
               <span>{averages.avgPace}</span>
-              <span className="text-xs font-normal text-muted-foreground">mn/km</span>
+              <span className="text-xs font-normal text-muted-foreground">/km</span>
               {averages.avgHR ? (
                 <>
                   <span className="text-sm font-normal opacity-30 ml-1">|</span>
@@ -125,7 +138,7 @@ export function IntervalDetailsView({
         </div>
       </div>
 
-      <Card className="border-border/40 shadow-none overflow-hidden bg-card/20">
+      <Card className="border-border/40 shadow-none overflow-hidden bg-transparent">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -186,7 +199,7 @@ export function IntervalDetailsView({
                       {displayPace ? (
                           <>
                            {(normalizePaceFormat(displayPace) || displayPace)} 
-                           <span className="text-xs text-muted-foreground ml-1">mn/km</span>
+                           <span className="text-xs text-muted-foreground ml-1">/km</span>
                           </>
                       ) : '-'}
                     </td>

@@ -94,6 +94,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
             size="sm"
             onClick={() => createConversation()}
             disabled={isCreating || disableCreate}
+            className="h-9 w-9 rounded-xl active:scale-95 transition-all p-0"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -139,13 +140,14 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
               if (e.key === 'Enter') handleRenameSubmit();
             }}
           />
-          <DialogFooter>
-            <Button variant="outline" onClick={handleRenameCancel}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleRenameCancel} className="h-10 px-6 rounded-xl font-semibold active:scale-95 transition-all">
               Annuler
             </Button>
             <Button
               onClick={handleRenameSubmit}
               disabled={!newTitle.trim() || isRenaming}
+              className="h-10 px-6 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
             >
               Renommer
             </Button>

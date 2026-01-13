@@ -95,6 +95,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
             <div className="relative">
               <Input
+                data-testid="chat-input"
                 placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -108,10 +109,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
                 className="pr-12"
               />
               <Button
+                data-testid="chat-send-button"
                 onClick={handleSendMessage}
-                disabled={isWaitingForResponse || !input.trim()}
+                disabled={isWaitingForResponse || isSending || !input.trim()}
                 size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg active:scale-95 transition-all"
               >
                 {isWaitingForResponse ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -144,6 +146,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
         <div className="border-t p-4">
           <div className="relative">
             <Input
+              data-testid="chat-input"
               placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -157,10 +160,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
               className="pr-12"
             />
             <Button
+              data-testid="chat-send-button"
               onClick={handleSendMessage}
               disabled={isWaitingForResponse || !input.trim()}
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg active:scale-95 transition-all"
             >
               {isWaitingForResponse ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -193,6 +197,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
       <div className="border-t p-4">
         <div className="relative">
           <Input
+            data-testid="chat-input"
             placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -206,10 +211,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
             className="pr-12"
           />
           <Button
+            data-testid="chat-send-button"
             onClick={handleSendMessage}
             disabled={isSending || !input.trim()}
             size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg active:scale-95 transition-all"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

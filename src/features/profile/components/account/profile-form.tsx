@@ -101,90 +101,94 @@ export function ProfileForm({ user }: ProfileFormProps) {
   };
 
   return (
-    <Card className="md:col-span-1">
+    <Card className="md:col-span-1 border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle>Informations personnelles</CardTitle>
+        <CardTitle className="text-xl font-bold">Informations personnelles</CardTitle>
         <CardDescription> 
           Mettez à jour vos informations pour calculer vos zones d&apos;entraînement.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" {...register('email')} />
+            <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Email</Label>
+            <Input id="email" {...register('email')} className="bg-muted/30 border-border/50" />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-xs text-destructive font-medium ml-1">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="goal">Objectif / Contexte</Label>
+            <Label htmlFor="goal" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Objectif / Contexte</Label>
             <Textarea
               id="goal"
               {...register('goal')}
               placeholder="Ex: Je veux courir un 10km en moins de 50 minutes dans 2 mois"
-              rows={3}
+              rows={4}
+              className="bg-muted/30 border-border/50 resize-none"
             />
             {errors.goal && (
-              <p className="text-sm text-destructive">{errors.goal.message}</p>
+              <p className="text-xs text-destructive font-medium ml-1">{errors.goal.message}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="weight">Poids (kg)</Label>
+              <Label htmlFor="weight" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Poids (kg)</Label>
               <Input
                 id="weight"
                 type="number"
                 step="0.1"
                 {...register('weight')}
+                className="bg-muted/30 border-border/50"
               />
               {errors.weight && (
-                <p className="text-sm text-destructive">{errors.weight.message}</p>
+                <p className="text-xs text-destructive font-medium ml-1">{errors.weight.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="age">Âge</Label>
-              <Input id="age" type="number" {...register('age')} />
+              <Label htmlFor="age" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Âge</Label>
+              <Input id="age" type="number" {...register('age')} className="bg-muted/30 border-border/50" />
               {errors.age && (
-                <p className="text-sm text-destructive">{errors.age.message}</p>
+                <p className="text-xs text-destructive font-medium ml-1">{errors.age.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="maxHeartRate">FC Max (bpm)</Label>
+              <Label htmlFor="maxHeartRate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">FC Max (bpm)</Label>
               <Input
                 id="maxHeartRate"
                 type="number"
                 {...register('maxHeartRate')}
+                className="bg-muted/30 border-border/50"
               />
               {errors.maxHeartRate && (
-                <p className="text-sm text-destructive">
+                <p className="text-xs text-destructive font-medium ml-1">
                   {errors.maxHeartRate.message}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="vma">VMA (km/h)</Label>
+              <Label htmlFor="vma" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">VMA (km/h)</Label>
               <Input
                 id="vma"
                 type="number"
                 step="0.1"
                 {...register('vma')}
+                className="bg-muted/30 border-border/50"
               />
               {errors.vma && (
-                <p className="text-sm text-destructive">
+                <p className="text-xs text-destructive font-medium ml-1">
                   {errors.vma.message}
                 </p>
               )}
             </div>
           </div>
 
-          <div className='pt-6'>
-            <Button type="submit" className="w-full gradient-violet" disabled={isSubmitting}>
+          <div className='pt-4'>
+            <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white h-10 rounded-xl font-bold uppercase tracking-widest text-xs active:scale-95 transition-all" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

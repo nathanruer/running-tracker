@@ -101,7 +101,8 @@ describe('/api/strava/activities', () => {
     expect(data.activities).toHaveLength(2);
     expect(data.activities[0].type).toBe('Run');
     expect(data.activities[1].type).toBe('Run');
-    expect(getActivities).toHaveBeenCalledWith('valid-token', 30);
+    expect(data.hasMore).toBe(false);
+    expect(getActivities).toHaveBeenCalledWith('valid-token', 50, 1);
   });
 
   it('should refresh token when expired and fetch activities', async () => {
@@ -145,7 +146,7 @@ describe('/api/strava/activities', () => {
         stravaTokenExpiresAt: expect.any(Date),
       },
     });
-    expect(getActivities).toHaveBeenCalledWith('new-access-token', 30);
+    expect(getActivities).toHaveBeenCalledWith('new-access-token', 50, 1);
     expect(data.activities).toHaveLength(2);
   });
 
@@ -286,5 +287,53 @@ describe('/api/strava/activities', () => {
     expect(response.status).toBe(200);
     expect(data.activities.every((activity: { type: string }) => activity.type === 'Run')).toBe(true);
     expect(data.activities.find((a: { name: string }) => a.name === 'Bike Ride')).toBeUndefined();
+  });
+
+  it('should handle custom page and per_page parameters', async () => {
+    const mockUser = {
+      id: 'user-123',
+      stravaId: '12345',
+      stravaAccessToken: 'valid-token',
+      stravaRefreshToken: 'refresh-token',
+      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
+    };
+
+    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getActivities).mockResolvedValue(mockActivities);
+
+    const request = new NextRequest('http://localhost/api/strava/activities?page=2&per_page=10', {
+      method: 'GET',
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(getActivities).toHaveBeenCalledWith('valid-token', 10, 2);
+    expect(data.hasMore).toBe(false); // mockActivities length is 3, which is < 10
+  });
+
+  it('should set hasMore to true when received max activities', async () => {
+    const mockUser = {
+      id: 'user-123',
+      stravaId: '12345',
+      stravaAccessToken: 'valid-token',
+      stravaRefreshToken: 'refresh-token',
+      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
+    };
+
+    const manyActivities = Array(10).fill(mockActivities[0]);
+
+    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getActivities).mockResolvedValue(manyActivities);
+
+    const request = new NextRequest('http://localhost/api/strava/activities?per_page=10', {
+      method: 'GET',
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(data.hasMore).toBe(true);
   });
 });

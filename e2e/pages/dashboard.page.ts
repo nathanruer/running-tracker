@@ -18,9 +18,9 @@ export class DashboardPage extends BasePage {
     super(page);
     this.pageHeading = this.getByRole('heading', { name: /historique des séances|dashboard/i });
     this.sessionsTable = this.page.getByRole('table');
-    this.newSessionButton = this.page.locator('button[title="Nouvelle séance"]');
-    this.profileLink = this.page.locator('header').getByRole('button', { name: /profil/i });
-    this.chatLink = this.page.locator('header').getByRole('button', { name: /coach/i });
+    this.newSessionButton = this.page.locator('[data-testid="btn-new-session"]');
+    this.profileLink = this.page.locator('[data-testid="nav-profile"]');
+    this.chatLink = this.page.locator('[data-testid="nav-chat"]');
     this.logoutButton = this.getByRole('button', { name: /déconnexion|logout/i });
     this.loadingSkeleton = this.page.locator('[data-loading="true"]');
   }
@@ -53,7 +53,7 @@ export class DashboardPage extends BasePage {
   async clickNewSession(): Promise<void> {
     await this.page.waitForLoadState('networkidle');
 
-    const mainButton = this.page.locator('button[title="Nouvelle séance"]');
+    const mainButton = this.page.locator('[data-testid="btn-new-session"]').first();
     const emptyStateButton = this.page.getByRole('button', { name: /ajouter.*première|première.*séance/i });
 
     const visibleButton = await Promise.race([

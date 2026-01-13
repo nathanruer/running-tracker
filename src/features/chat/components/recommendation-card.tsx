@@ -34,7 +34,7 @@ export function RecommendationCard({
   const isCalculated = totals.totalDistanceKm > 0 || totals.totalDurationMin > 0;
 
   return (
-    <div className="bg-card rounded-lg p-4 border border-border space-y-3">
+    <div className="bg-card rounded-lg p-4 border border-border space-y-3" data-testid="recommendation-card">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="default" className="font-semibold">
@@ -50,10 +50,11 @@ export function RecommendationCard({
                   ? JSON.stringify(session.interval_structure)
                   : String(session.interval_structure);
                 
-                const targets = [];
-                if (session.target_pace_min_km) targets.push(`${session.target_pace_min_km}/km`);
-                if (session.target_hr_range) targets.push(`${session.target_hr_range} bpm`);
-                else if (session.target_hr_bpm) targets.push(`${session.target_hr_bpm} bpm`);
+                const targets: string[] = [];
+                const paceDisplay = session.target_pace_range || session.target_pace_min_km;
+                const hrDisplay = session.target_hr_range || (session.target_hr_bpm ? String(session.target_hr_bpm) : null);
+                if (paceDisplay) targets.push(`${paceDisplay}/km`);
+                if (hrDisplay) targets.push(`${hrDisplay} bpm`);
                 
                 return `${sessionType}: ${intervalStr}${targets.length > 0 ? ` (@ ${targets.join(', ')})` : ''}`;
               }
@@ -63,17 +64,19 @@ export function RecommendationCard({
         </div>
         {!isAdded ? (
           <Button
+            data-testid="recommendation-accept"
             size="sm"
             variant="default"
             onClick={() => onAccept(session)}
             disabled={loadingSessionId === session.recommendation_id}
-            className="shrink-0"
+            className="shrink-0 h-9 px-4 rounded-xl font-bold active:scale-95 transition-all bg-violet-600 hover:bg-violet-700 text-white"
           >
             <Check className="h-4 w-4 mr-2" />
             Ajouter
           </Button>
         ) : isCompleted ? (
           <Badge
+            data-testid="recommendation-completed-badge"
             variant="secondary"
             className="shrink-0 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800"
           >
@@ -82,6 +85,7 @@ export function RecommendationCard({
           </Badge>
         ) : (
           <Button
+            data-testid="recommendation-delete"
             size="sm"
             variant="outline"
             onClick={() => {
@@ -91,7 +95,7 @@ export function RecommendationCard({
               }
             }}
             disabled={loadingSessionId === session.recommendation_id}
-            className="shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200 dark:border-red-800"
+            className="shrink-0 h-9 px-4 rounded-xl font-semibold active:scale-95 transition-all text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Supprimer
@@ -112,17 +116,22 @@ export function RecommendationCard({
         
         <span className="flex items-center gap-1">
           <Activity className="h-3 w-3" />
-          {(totals.avgPaceFormatted) ? `~${totals.avgPaceFormatted}` : session.target_pace_min_km} /km
+          {totals.avgPaceFormatted 
+            ? `~${totals.avgPaceFormatted}` 
+            : (session.target_pace_range || session.target_pace_min_km || '-')
+          } /km
         </span>
         
         <span>•</span>
         
         <span className="text-sm">
-          FC: {totals.avgBpm ? `~${totals.avgBpm} bpm` : (
-            session.target_hr_bpm ? `${session.target_hr_bpm} bpm` :
-            session.target_hr_range ? `${session.target_hr_range} bpm` :
-            '-'
-          )}
+          FC: {totals.avgBpm 
+            ? `~${totals.avgBpm} bpm` 
+            : (session.target_hr_range 
+                ? `${session.target_hr_range} bpm`
+                : (session.target_hr_bpm ? `${session.target_hr_bpm} bpm` : '-')
+              )
+          }
         </span>
         {session.target_rpe && (
           <span className="text-sm">

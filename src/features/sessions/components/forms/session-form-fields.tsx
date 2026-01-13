@@ -25,7 +25,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormItem>
               <FormLabel>Durée</FormLabel>
               <FormControl>
-                <Input placeholder="00:00:00" {...field} />
+                <Input data-testid="input-duration" placeholder="00:00:00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -39,6 +39,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
               <FormLabel>Distance (km)</FormLabel>
               <FormControl>
                 <Input
+                  data-testid="input-distance"
                   type="number"
                   step="0.01"
                   placeholder="0"
@@ -73,7 +74,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormItem>
               <FormLabel>Allure moy (mn/km)</FormLabel>
               <FormControl>
-                <Input placeholder="00:00" {...field} />
+                <Input data-testid="input-avgpace" placeholder="00:00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -87,6 +88,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
               <FormLabel>FC moy (bpm)</FormLabel>
               <FormControl>
                 <Input
+                  data-testid="input-avgheartrate"
                   type="number"
                   placeholder="0"
                   {...field}
@@ -111,6 +113,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormLabel>Commentaires</FormLabel>
             <FormControl>
               <Textarea
+                data-testid="input-comments"
                 placeholder="Comment s'est passée votre séance ?"
                 className="resize-none"
                 {...field}

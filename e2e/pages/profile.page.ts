@@ -20,15 +20,15 @@ export class ProfilePage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.pageHeading = this.getByRole('heading', { name: /mon profil|profile/i });
-    this.profileTab = this.page.locator('main').getByRole('button', { name: /profil/i });
-    this.analyticsTab = this.page.locator('main').getByRole('button', { name: /analyse/i });
-    this.calendarTab = this.page.locator('main').getByRole('button', { name: /calendrier/i });
-    this.logoutButton = this.page.locator('main').locator('button:has-text("Se déconnecter")').first();
-    this.mobileLogoutButton = this.page.locator('main .md\\:hidden button:has-text("Se déconnecter")');
+    this.profileTab = this.page.locator('[data-testid="tab-profile"]');
+    this.analyticsTab = this.page.locator('[data-testid="tab-analytics"]');
+    this.calendarTab = this.page.locator('[data-testid="tab-history"]');
+    this.logoutButton = this.page.locator('[data-testid="logout-desktop"]');
+    this.mobileLogoutButton = this.page.locator('[data-testid="logout-mobile"]');
     this.logoutDialog = this.page.locator('[role="alertdialog"]');
-    this.logoutDialogTitle = this.logoutDialog.getByText('Déconnexion');
-    this.logoutConfirmButton = this.logoutDialog.getByRole('button', { name: /se déconnecter/i });
-    this.logoutCancelButton = this.logoutDialog.getByRole('button', { name: /annuler/i });
+    this.logoutDialogTitle = this.logoutDialog.getByRole('heading', { name: /déconnexion/i });
+    this.logoutConfirmButton = this.page.locator('[data-testid="logout-confirm"]');
+    this.logoutCancelButton = this.page.locator('[data-testid="logout-cancel"]');
   }
 
   async goto(): Promise<void> {
