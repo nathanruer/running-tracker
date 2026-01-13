@@ -7,12 +7,14 @@ describe('SelectionBar', () => {
   it('should render with singular text for 1 selected session', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={1}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -22,12 +24,14 @@ describe('SelectionBar', () => {
   it('should render with plural text for multiple selected sessions', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={5}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -38,12 +42,14 @@ describe('SelectionBar', () => {
     const user = userEvent.setup();
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={3}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -58,12 +64,14 @@ describe('SelectionBar', () => {
     const user = userEvent.setup();
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={2}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -77,12 +85,14 @@ describe('SelectionBar', () => {
   it('should render trash icon in delete button', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     const { container } = render(
       <SelectionBar
         selectedCount={4}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -93,12 +103,14 @@ describe('SelectionBar', () => {
   it('should have correct styling classes', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     const { container } = render(
       <SelectionBar
         selectedCount={2}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -106,34 +118,39 @@ describe('SelectionBar', () => {
     expect(selectionBar).toHaveClass('rounded-md', 'bg-muted/40', 'border', 'border-border');
   });
 
-  it('should render both buttons with correct roles', () => {
+  it('should render all buttons with correct roles', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={3}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
     const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(2);
+    expect(buttons).toHaveLength(3);
 
     expect(screen.getByRole('button', { name: /annuler/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /exporter/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /supprimer/i })).toBeInTheDocument();
   });
 
   it('should handle zero selected count', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={0}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 
@@ -143,12 +160,14 @@ describe('SelectionBar', () => {
   it('should handle large selected counts', () => {
     const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
+    const mockOnExport = vi.fn();
 
     render(
       <SelectionBar
         selectedCount={99}
         onClear={mockOnClear}
         onDelete={mockOnDelete}
+        onExport={mockOnExport}
       />
     );
 

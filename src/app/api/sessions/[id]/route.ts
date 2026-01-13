@@ -35,7 +35,7 @@ export async function PUT(
           : { date: new Date(updates.date) }
         : {};
 
-      const { intervalDetails, stravaData, ...restUpdates } = updates;
+      const { intervalDetails, stravaData, weather, averageTemp, ...restUpdates } = updates;
       const intervalDetailsUpdate = intervalDetails !== undefined
         ? { intervalDetails: intervalDetails || Prisma.JsonNull }
         : {};
@@ -44,6 +44,17 @@ export async function PUT(
         ? { stravaData: stravaData || Prisma.JsonNull }
         : {};
 
+      const weatherUpdate = weather !== undefined
+        ? { weather: weather || Prisma.JsonNull }
+        : {};
+
+      const averageTempUpdate: { averageTemp?: number | null } = {};
+      if (averageTemp !== undefined) {
+        averageTempUpdate.averageTemp = averageTemp;
+      } else if (weather !== undefined && weather?.temperature !== undefined) {
+        averageTempUpdate.averageTemp = weather.temperature;
+      }
+
       const updated = await prisma.training_sessions.update({
         where: { id: params.id },
         data: {
@@ -51,6 +62,8 @@ export async function PUT(
           ...dateUpdate,
           ...intervalDetailsUpdate,
           ...stravaDataUpdate,
+          ...weatherUpdate,
+          ...averageTempUpdate,
         },
       });
 

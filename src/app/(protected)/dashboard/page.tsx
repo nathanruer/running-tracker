@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/features/sessions/components/forms/session-dialog';
 import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
-import { CsvImportDialog } from '@/features/import/components/csv-import-dialog';
 import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ import {
   getCurrentUser,
   getSessions,
   getSessionTypes,
-  bulkImportSessions,
   deleteSession,
   bulkDeleteSessions,
 } from '@/lib/services/api-client';
@@ -34,7 +32,6 @@ import {
   type TrainingSession,
   type TrainingSessionPayload,
 } from '@/lib/types';
-import { parseIntervalStructure } from '@/lib/utils/intervals';
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
@@ -54,12 +51,20 @@ const DashboardPage = () => {
     }
   }, [isDetailsSheetOpen]);
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
-  const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const [isImportingCsv, setIsImportingCsv] = useState(false);
+
+  const { data: availableTypes = [] } = useQuery({
+    queryKey: ['sessionTypes'],
+    queryFn: async () => {
+      const types = await getSessionTypes();
+      return types.sort();
+    },
+    staleTime: 15 * 60 * 1000,
+  });
+
 
   const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } =
     useEntityMutations<TrainingSession>({
@@ -99,14 +104,6 @@ const DashboardPage = () => {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: availableTypes = [] } = useQuery({
-    queryKey: ['sessionTypes'],
-    queryFn: async () => {
-      const types = await getSessionTypes();
-      return types.sort();
-    },
-    staleTime: 15 * 60 * 1000,
-  });
 
   const { 
     data: allSessionsData, 
@@ -180,11 +177,6 @@ const DashboardPage = () => {
     }
   }, [user, userLoading, router]);
 
-  useEffect(() => {
-    if (selectedType !== 'all' && availableTypes.length > 0 && !availableTypes.includes(selectedType)) {
-      setSelectedType('all');
-    }
-  }, [availableTypes, selectedType]);
 
   const sessionDialogInitialData = useMemo(() => {
     if (!importedData) return null;
@@ -268,86 +260,6 @@ const DashboardPage = () => {
     setIsStravaDialogOpen(true);
   };
 
-  const handleCsvImport = async (sessions: Array<{
-    date: string;
-    sessionType: string;
-    duration: string;
-    distance: number;
-    avgPace: string;
-    avgHeartRate: number;
-    perceivedExertion?: number;
-    comments: string;
-    intervalDetails?: string | null;
-  }>) => {
-    if (getDialogMode() === 'complete') {
-      if (sessions.length > 0) {
-        const session = sessions[0];
-        setImportedData({
-          date: session.date,
-          sessionType: session.sessionType,
-          duration: session.duration,
-          distance: session.distance,
-          avgPace: session.avgPace,
-          avgHeartRate: session.avgHeartRate,
-          perceivedExertion: session.perceivedExertion,
-          comments: session.comments,
-          intervalDetails: session.intervalDetails ? parseIntervalStructure(session.intervalDetails) : null,
-        });
-        setIsCsvDialogOpen(false);
-        setIsDialogOpen(true);
-      }
-      return;
-    }
-
-    setIsImportingCsv(true);
-    try {
-      const convertedSessions = sessions.map(session => ({
-        date: session.date,
-        sessionType: session.sessionType,
-        duration: session.duration,
-        distance: session.distance,
-        avgPace: session.avgPace,
-        avgHeartRate: session.avgHeartRate,
-        perceivedExertion: session.perceivedExertion,
-        comments: session.comments,
-        intervalDetails: session.intervalDetails ? parseIntervalStructure(session.intervalDetails) : null,
-      }));
-      await bulkImportSessions(convertedSessions);
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['sessionTypes'] });
-
-      setIsCsvDialogOpen(false);
-      setIsDialogOpen(false);
-
-      setEditingSession(null);
-      setImportedData(null);
-
-      toast({
-        title: 'Import réussi',
-        description: `${sessions.length} séance(s) importée(s) avec succès.`,
-      });
-    } catch (error) {
-      let errorMessage = 'Erreur lors de l\'import';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-
-        const errorData = (error as Error & { details?: Array<{ path: string; message: string }> }).details;
-        if (errorData && Array.isArray(errorData)) {
-          const details = errorData.map((d) => `${d.path}: ${d.message}`).join('\n');
-          errorMessage += '\n' + details;
-        }
-      }
-
-      toast({
-        title: 'Erreur',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsImportingCsv(false);
-    }
-  };
-
   if (!user) {
     return null;
   }
@@ -411,9 +323,6 @@ const DashboardPage = () => {
         initialData={sessionDialogInitialData}
         mode={getDialogMode()}
         onRequestStravaImport={handleRequestStravaImport}
-        onRequestCsvImport={() => {
-          setIsCsvDialogOpen(true);
-        }}
       />
 
       <SessionDetailsSheet
@@ -422,14 +331,6 @@ const DashboardPage = () => {
         session={viewingSession}
       />
 
-      <CsvImportDialog
-        open={isCsvDialogOpen}
-        onOpenChange={setIsCsvDialogOpen}
-        onImport={handleCsvImport}
-        isImporting={isImportingCsv}
-        mode={getDialogMode()}
-      />
-      
       <StravaImportDialog
         open={isStravaDialogOpen}
         onOpenChange={setIsStravaDialogOpen}

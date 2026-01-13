@@ -365,3 +365,26 @@ export function convertDurationToMinutes(duration: string): number {
   if (seconds === null) return 0;
   return Math.round(seconds / 60);
 }
+
+/**
+ * Formats a duration in minutes to HH:MM:SS format
+ * Useful for targetDuration which is stored in minutes
+ *
+ * @param minutes - Duration in minutes
+ * @returns Formatted duration string in HH:MM:SS
+ *
+ * @example
+ * formatMinutesToHHMMSS(45)   // "00:45:00"
+ * formatMinutesToHHMMSS(90)   // "01:30:00"
+ * formatMinutesToHHMMSS(125)  // "02:05:00"
+ */
+export function formatMinutesToHHMMSS(minutes: number): string {
+  if (minutes < 0 || !isFinite(minutes)) {
+    return '00:00:00';
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
+}

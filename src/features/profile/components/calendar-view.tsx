@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
-import { normalizeDurationFormat } from '@/lib/utils/duration';
+import { normalizeDurationFormat, formatMinutesToHHMMSS } from '@/lib/utils/duration';
 
 interface CalendarViewProps {
   sessions: TrainingSession[];
@@ -254,7 +254,7 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                         {session.type === 'completed'
                           ? formatDuration(session.duration)
                           : session.targetDuration
-                            ? `~${Math.floor(session.targetDuration / 60).toString().padStart(2, '0')}:${(session.targetDuration % 60).toString().padStart(2, '0')}:00`
+                            ? `~${formatMinutesToHHMMSS(session.targetDuration)}`
                             : '--'
                         }
                       </p>

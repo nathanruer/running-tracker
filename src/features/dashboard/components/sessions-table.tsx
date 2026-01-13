@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Plus, MoreVertical } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { PlannedSessionRow } from './planned-session-row';
@@ -74,6 +75,7 @@ export function SessionsTable({
   const { sortColumn, sortDirection, handleSort, sortedSessions } = useSessionsTableSort(sessions);
   const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sortedSessions);
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   return (
     <>
@@ -129,11 +131,6 @@ export function SessionsTable({
                     <SelectItem value="all">Tout afficher</SelectItem>
                   </SelectContent>
                 </Select>
-                <ExportSessions
-                  selectedType={selectedType}
-                  selectedSessions={selectedSessions}
-                  allSessions={sessions}
-                />
               </>
             )}
           </div>
@@ -143,6 +140,7 @@ export function SessionsTable({
               selectedCount={selectedSessions.size}
               onClear={clearSelection}
               onDelete={() => setShowBulkDeleteDialog(true)}
+              onExport={() => setShowExportDialog(true)}
             />
           )}
         </CardHeader>
@@ -304,6 +302,14 @@ export function SessionsTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ExportSessions
+        selectedType={selectedType}
+        selectedSessions={selectedSessions}
+        allSessions={sessions}
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+      />
     </>
   );
 }

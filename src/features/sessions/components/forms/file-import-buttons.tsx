@@ -1,18 +1,16 @@
-import { Watch, FileSpreadsheet } from 'lucide-react';
+import { Watch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FileImportButtonsProps {
   mode?: 'create' | 'edit' | 'complete';
   onStravaClick?: () => void;
-  onCsvClick?: () => void;
 }
 
 export function FileImportButtons({
   mode = 'create',
   onStravaClick,
-  onCsvClick,
 }: FileImportButtonsProps) {
-  if (mode === 'edit' || (!onStravaClick && !onCsvClick)) {
+  if (mode === 'edit' || !onStravaClick) {
     return null;
   }
 
@@ -22,7 +20,7 @@ export function FileImportButtons({
         <div>
           <p className="font-medium">Importer une séance</p>
           <p className="text-sm text-muted-foreground">
-            Pré-remplissez votre séance automatiquement depuis une source externe.
+            Pré-remplissez votre séance automatiquement depuis Strava.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -35,16 +33,6 @@ export function FileImportButtons({
             >
               <Watch className="mr-2 h-4 w-4" />
               Strava
-            </Button>
-          )}
-          {onCsvClick && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCsvClick}
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Fichier CSV/JSON
             </Button>
           )}
         </div>

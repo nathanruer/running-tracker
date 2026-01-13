@@ -2,12 +2,41 @@ import type {
   CompletedSessionUpdatePayload,
   PlannedSessionPayload,
   IntervalDetails,
+  TrainingSession,
 } from '@/lib/types';
 import type { FormValues } from '@/lib/validation/session-form';
 import {
   normalizeDurationToHHMMSS,
   convertDurationToMinutes,
+  formatMinutesToHHMMSS,
 } from '@/lib/utils/duration';
+
+/**
+ * Get display data for a session, using target values for planned sessions
+ * and actual values for completed sessions.
+ * This function centralizes the logic for getting the appropriate values to display.
+ */
+export function getSessionDisplayData(session: TrainingSession) {
+  const isPlanned = session.status === 'planned';
+  
+  return {
+    duration: isPlanned 
+      ? (session.targetDuration ? formatMinutesToHHMMSS(session.targetDuration) : '') 
+      : (session.duration || ''),
+    distance: isPlanned 
+      ? (session.targetDistance || 0) 
+      : (session.distance || 0),
+    avgPace: isPlanned 
+      ? (session.targetPace || '') 
+      : (session.avgPace || ''),
+    avgHeartRate: isPlanned 
+      ? (session.targetHeartRateBpm ? parseInt(session.targetHeartRateBpm) : 0) 
+      : (session.avgHeartRate || 0),
+    rpe: isPlanned 
+      ? (session.targetRPE || null) 
+      : (session.perceivedExertion || null),
+  };
+}
 
 /**
  * Normalize all form durations to HH:MM:SS format

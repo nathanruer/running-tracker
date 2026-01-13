@@ -1,7 +1,7 @@
 import type { TrainingSession } from '@/lib/types';
 import type { FormValues } from '@/lib/validation/session-form';
 import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';
-import { transformStepsData } from '@/lib/domain/forms/session-helpers';
+import { transformStepsData, getSessionDisplayData } from '@/lib/domain/forms/session-helpers';
 
 /**
  * Initialize the form to complete a planned session
@@ -50,32 +50,16 @@ export function initializeFormForComplete(
  */
 export function initializeFormForEdit(session: TrainingSession): Partial<FormValues> {
   const sessionDate = session.date ? extractDatePart(session.date) : '';
-
-  const isPlanned = session.status === 'planned';
-  const duration = isPlanned && session.targetDuration
-    ? `${Math.floor(session.targetDuration / 60).toString().padStart(2, '0')}:${(session.targetDuration % 60).toString().padStart(2, '0')}:00`
-    : session.duration || '00:00:00';
-  const distance = isPlanned && session.targetDistance
-    ? session.targetDistance
-    : session.distance || 0;
-  const avgPace = isPlanned && session.targetPace
-    ? session.targetPace
-    : session.avgPace || '00:00';
-  const avgHeartRate = isPlanned && session.targetHeartRateBpm
-    ? parseInt(session.targetHeartRateBpm)
-    : session.avgHeartRate || 0;
-  const perceivedExertion = isPlanned && session.targetRPE
-    ? session.targetRPE
-    : session.perceivedExertion || null;
+  const displayData = getSessionDisplayData(session);
 
   return {
     date: sessionDate,
     sessionType: session.sessionType,
-    duration,
-    distance,
-    avgPace,
-    avgHeartRate,
-    perceivedExertion,
+    duration: displayData.duration || '00:00:00',
+    distance: displayData.distance,
+    avgPace: displayData.avgPace || '00:00',
+    avgHeartRate: displayData.avgHeartRate,
+    perceivedExertion: displayData.rpe,
     comments: session.comments || '',
     workoutType: session.intervalDetails?.workoutType || '',
     repetitionCount: session.intervalDetails?.repetitionCount || undefined,

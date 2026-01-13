@@ -6,53 +6,55 @@ vi.mock('@/lib/services/api-client', () => ({
   getSessions: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock('@/components/ui/dropdown-menu', () => ({
-  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-trigger">{children}</div>,
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-content">{children}</div>,
-  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
-    <button data-testid="dropdown-item" onClick={onClick}>
-      {children}
-    </button>
-  ),
-}));
-
 describe('ExportSessions', () => {
-  it('renders export button', () => {
+  it('renders dialog with export options when open', () => {
+    const mockOnOpenChange = vi.fn();
     render(
       <ExportSessions
         selectedType="all"
         selectedSessions={new Set()}
         allSessions={[]}
+        open={true}
+        onOpenChange={mockOnOpenChange}
       />
     );
-    expect(screen.getByRole('button', { name: /Exporter tout/i })).toBeInTheDocument();
+    expect(screen.getByText('Exporter des séances')).toBeInTheDocument();
+    expect(screen.getByText('Configurez les options d\'export et choisissez le format.')).toBeInTheDocument();
   });
 
-  it('shows dropdown menu with export options', () => {
+  it('shows export format buttons', () => {
+    const mockOnOpenChange = vi.fn();
     render(
       <ExportSessions
         selectedType="all"
         selectedSessions={new Set()}
         allSessions={[]}
+        open={true}
+        onOpenChange={mockOnOpenChange}
       />
     );
-    const items = screen.getAllByTestId('dropdown-item');
-    expect(items.length).toBe(3);
-    expect(screen.getByText('CSV')).toBeInTheDocument();
-    expect(screen.getByText('JSON')).toBeInTheDocument();
-    expect(screen.getByText('Excel')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /CSV/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /JSON/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Excel/i })).toBeInTheDocument();
   });
 
-  it('button is not disabled by default', () => {
+  it('export buttons are not disabled by default', () => {
+    const mockOnOpenChange = vi.fn();
     render(
       <ExportSessions
         selectedType="all"
         selectedSessions={new Set()}
         allSessions={[]}
+        open={true}
+        onOpenChange={mockOnOpenChange}
       />
     );
-    const button = screen.getByRole('button', { name: /Exporter/i });
-    expect(button).not.toBeDisabled();
+    const csvButton = screen.getByRole('button', { name: /CSV/i });
+    const jsonButton = screen.getByRole('button', { name: /JSON/i });
+    const excelButton = screen.getByRole('button', { name: /Excel/i });
+
+    expect(csvButton).not.toBeDisabled();
+    expect(jsonButton).not.toBeDisabled();
+    expect(excelButton).not.toBeDisabled();
   });
 });

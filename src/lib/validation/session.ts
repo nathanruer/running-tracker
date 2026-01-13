@@ -11,7 +11,7 @@ import {
   optionalRpeSchema,
   nullablePositiveNumberSchema,
 } from './schemas/primitives';
-import { stravaActivityStoredSchema } from './schemas/entities';
+import { stravaActivityStoredSchema, weatherDataSchema } from './schemas/entities';
 
 // ============================================================================
 // INTERVAL STEP SCHEMA
@@ -67,6 +67,7 @@ export const sessionSchema = z.object({
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
   calories: z.number().optional().nullable(),
+  weather: weatherDataSchema.optional().nullable(),
 });
 
 export const partialSessionSchema = sessionSchema.partial();

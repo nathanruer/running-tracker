@@ -18,12 +18,10 @@ import { IntervalFields } from '@/features/sessions/components/intervals/interva
 import { type FormValues, type IntervalFormValues } from '@/lib/validation/session-form';
 import { SessionTypeSelector } from './session-type-selector';
 import { PerceivedExertionField } from './perceived-exertion-field';
-import { IntervalImportSection } from './interval-import-section';
 import { FileImportButtons } from './file-import-buttons';
 import { SessionFormFields } from './session-form-fields';
 import { SessionDialogActions } from './session-dialog-actions';
 import { SessionDialogHeader } from './session-dialog-header';
-import { useFileImport } from '../../hooks/forms/use-file-import';
 import { useSessionForm } from '../../hooks/forms/use-session-form';
 import { useScrollToError } from '@/hooks/use-scroll-to-error';
 
@@ -47,7 +45,6 @@ interface SessionDialogProps {
   initialData?: Partial<FormValues> | null;
   mode?: 'create' | 'edit' | 'complete';
   onRequestStravaImport?: () => void;
-  onRequestCsvImport?: () => void;
   onSuccess?: (session: TrainingSession) => void;
 }
 
@@ -59,7 +56,6 @@ const SessionDialog = ({
   initialData,
   mode = 'create',
   onRequestStravaImport,
-  onRequestCsvImport,
   onSuccess,
 }: SessionDialogProps) => {
   const {
@@ -79,11 +75,6 @@ const SessionDialog = ({
     onClose,
   });
 
-  const { csvFileInputRef, triggerCsvSelect, handleCSVImport } = useFileImport({
-    onValuesChange: form.setValue,
-    onIntervalModeChange: setIntervalEntryMode,
-  });
-
   const watchedSessionType = form.watch('sessionType');
 
   // Scroll to first error on each submission attempt
@@ -96,14 +87,6 @@ const SessionDialog = ({
         <FileImportButtons
           mode={mode}
           onStravaClick={onRequestStravaImport}
-          onCsvClick={onRequestCsvImport}
-        />
-        <input
-          ref={csvFileInputRef}
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={handleCSVImport}
         />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -159,18 +142,13 @@ const SessionDialog = ({
               />
             </div>
             {watchedSessionType === 'Fractionné' && (
-              <>
-                <IntervalImportSection
-                  onCsvClick={triggerCsvSelect}
-                />
-                <IntervalFields
-                  control={createIntervalControl(form.control)}
-                  onEntryModeChange={setIntervalEntryMode}
-                  setValue={createIntervalSetValue(form.setValue)}
-                  watch={createIntervalWatch(form.watch)}
-                  disableAutoRegeneration={mode === 'edit' && session?.status === 'completed'}
-                />
-              </>
+              <IntervalFields
+                control={createIntervalControl(form.control)}
+                onEntryModeChange={setIntervalEntryMode}
+                setValue={createIntervalSetValue(form.setValue)}
+                watch={createIntervalWatch(form.watch)}
+                disableAutoRegeneration={mode === 'edit' && session?.status === 'completed'}
+              />
             )}
             <SessionFormFields control={form.control} />
             <SessionDialogActions

@@ -53,9 +53,14 @@ export async function PATCH(
         intervalDetails,
       } = body;
 
-      let weather = null;
-      if (stravaData) {
+      let weather = body.weather || null;
+      if (!weather && stravaData) {
         weather = await enrichSessionWithWeather(stravaData, new Date(date));
+      }
+
+      let finalAverageTemp = averageTemp;
+      if (!finalAverageTemp && weather?.temperature !== undefined) {
+        finalAverageTemp = weather.temperature;
       }
 
       const stravaStreams = await fetchStreamsForSession(
@@ -82,7 +87,7 @@ export async function PATCH(
           stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : undefined,
           elevationGain: elevationGain ?? undefined,
           averageCadence: averageCadence ?? undefined,
-          averageTemp: averageTemp ?? undefined,
+          averageTemp: finalAverageTemp ?? undefined,
           calories: calories ?? undefined,
           weather: weather ?? undefined,
           intervalDetails: intervalDetails ? (intervalDetails as unknown as Prisma.InputJsonValue) : undefined,

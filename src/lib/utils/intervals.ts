@@ -1,5 +1,5 @@
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
-import { parseDuration, normalizeDurationToMMSS, normalizeDurationFormat } from './duration';
+import { parseDuration, normalizeDurationFormat } from './duration';
 
 export interface IntervalFormValues {
   sessionType: string;
@@ -75,74 +75,6 @@ export function generateIntervalStructure(intervalDetails: IntervalDetails | nul
   }
 
   return workoutType || '';
-}
-
-/**
- * Parses an interval structure string into IntervalDetails
- * @param structure String like "VMA: 8x5'00 R:2'00" or "8x5'00/2'00"
- * @returns Parsed IntervalDetails or null if invalid
- * @example parseIntervalStructure("VMA: 8x5'00 R:2'00") // { workoutType: 'VMA', repetitionCount: 8, ... }
- */
-export function parseIntervalStructure(structure: string): IntervalDetails | null {
-  if (!structure || !structure.includes('x')) return null;
-
-  // Match patterns like "VMA: 8x5'00 R:2'00" or "8x5'00/2'00"
-  const pattern1 = /^([A-Z]+):\s*(\d+)x([\d']+)\s*R:([\d']+)$/i;
-  const pattern2 = /^(\d+)x([\d']+)\/([\d']+)$/;
-  const pattern3 = /^([A-Z]+):\s*(\d+)x([\d']+)$/i;
-
-  let match = structure.match(pattern1);
-  if (match) {
-    const [, workoutType, reps, effort, recovery] = match;
-    return {
-      workoutType: workoutType.toUpperCase(),
-      repetitionCount: parseInt(reps),
-      effortDuration: normalizeDurationToMMSS(effort),
-      recoveryDuration: normalizeDurationToMMSS(recovery),
-      effortDistance: null,
-      recoveryDistance: null,
-      targetEffortPace: null,
-      targetEffortHR: null,
-      targetRecoveryPace: null,
-      steps: [],
-    };
-  }
-
-  match = structure.match(pattern2);
-  if (match) {
-    const [, reps, effort, recovery] = match;
-    return {
-      workoutType: null,
-      repetitionCount: parseInt(reps),
-      effortDuration: normalizeDurationToMMSS(effort),
-      recoveryDuration: normalizeDurationToMMSS(recovery),
-      effortDistance: null,
-      recoveryDistance: null,
-      targetEffortPace: null,
-      targetEffortHR: null,
-      targetRecoveryPace: null,
-      steps: [],
-    };
-  }
-
-  match = structure.match(pattern3);
-  if (match) {
-    const [, workoutType, reps, effort] = match;
-    return {
-      workoutType: workoutType.toUpperCase(),
-      repetitionCount: parseInt(reps),
-      effortDuration: normalizeDurationToMMSS(effort),
-      recoveryDuration: null,
-      effortDistance: null,
-      recoveryDistance: null,
-      targetEffortPace: null,
-      targetEffortHR: null,
-      targetRecoveryPace: null,
-      steps: [],
-    };
-  }
-
-  return null;
 }
 
 // ============================================================================
@@ -378,20 +310,3 @@ export function autoFillIntervalDurations(
   }
 }
 
-/**
- * Generates toast message for interval import
- * @param repetitionCount Number of repetitions
- * @param effortSteps Effort steps
- * @param recoverySteps Recovery steps
- * @returns Toast message string
- */
-export function getIntervalImportToastMessage(
-  repetitionCount: number,
-  effortSteps: IntervalStep[],
-  recoverySteps: IntervalStep[]
-): string {
-  const avgEffortSeconds = calculateAverageDuration(effortSteps);
-  const avgRecoverySeconds = calculateAverageDuration(recoverySteps);
-
-  return `${repetitionCount} répétitions détectées. Durée moyenne effort: ${formatDurationAlwaysMMSS(avgEffortSeconds)}, récupération: ${formatDurationAlwaysMMSS(avgRecoverySeconds)}.`;
-}

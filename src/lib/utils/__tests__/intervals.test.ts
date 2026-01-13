@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   generateIntervalStructure,
-  parseIntervalStructure,
   transformIntervalData,
   hasIntervalData,
   validateIntervalData,
@@ -9,7 +8,6 @@ import {
   calculateAverageDuration,
   formatDurationAlwaysMMSS,
   autoFillIntervalDurations,
-  getIntervalImportToastMessage,
   type IntervalFormValues,
 } from '../intervals';
 import type { IntervalDetails, IntervalStep } from '@/lib/types';
@@ -483,39 +481,6 @@ describe('interval-transformers', () => {
     });
   });
 
-  describe('parseIntervalStructure', () => {
-    it('should return null for invalid strings', () => {
-      expect(parseIntervalStructure('')).toBeNull();
-      expect(parseIntervalStructure('invalid')).toBeNull();
-      expect(parseIntervalStructure('no x here')).toBeNull();
-    });
-
-    it('should parse pattern "VMA: 8x5\'00 R:2\'00"', () => {
-      const result = parseIntervalStructure("VMA: 8x5'00 R:2'00");
-
-      expect(result?.workoutType).toBe('VMA');
-      expect(result?.repetitionCount).toBe(8);
-      expect(result?.effortDuration).toBe('05:00');
-      expect(result?.recoveryDuration).toBe('02:00');
-    });
-
-    it('should parse pattern "8x5\'00/2\'00"', () => {
-      const result = parseIntervalStructure("8x5'00/2'00");
-
-      expect(result?.workoutType).toBeNull();
-      expect(result?.repetitionCount).toBe(8);
-      expect(result?.effortDuration).toBe('05:00');
-      expect(result?.recoveryDuration).toBe('02:00');
-    });
-
-    it('should parse pattern "VMA: 10x400"', () => {
-      const result = parseIntervalStructure("VMA: 10x400");
-
-      expect(result?.workoutType).toBe('VMA');
-      expect(result?.repetitionCount).toBe(10);
-    });
-  });
-
   // ============================================================================
   // CALCULATIONS
   // ============================================================================
@@ -586,18 +551,4 @@ describe('interval-transformers', () => {
     });
   });
 
-  describe('getIntervalImportToastMessage', () => {
-    it('should generate correct toast message', () => {
-      const effortSteps: IntervalStep[] = [
-        { stepNumber: 1, stepType: 'effort', duration: '05:00', distance: null, pace: null, hr: null },
-      ];
-      const recoverySteps: IntervalStep[] = [
-        { stepNumber: 1, stepType: 'recovery', duration: '02:00', distance: null, pace: null, hr: null },
-      ];
-
-      const message = getIntervalImportToastMessage(8, effortSteps, recoverySteps);
-
-      expect(message).toBe('8 répétitions détectées. Durée moyenne effort: 05:00, récupération: 02:00.');
-    });
-  });
 });

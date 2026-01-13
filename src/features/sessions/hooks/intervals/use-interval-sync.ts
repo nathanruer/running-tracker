@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { UseFormWatch, UseFieldArrayReplace } from 'react-hook-form';
 import { type IntervalStep } from '@/lib/types';
 
@@ -18,6 +18,8 @@ interface UseIntervalSyncProps {
   disableAutoRegeneration?: boolean;
 }
 
+const EMPTY_STEPS: IntervalStep[] = [];
+
 /**
  * Hook to synchronize repetition count and effort/recovery values with interval steps
  */
@@ -27,7 +29,8 @@ export function useIntervalSync({ watch, replace, onEntryModeChange, disableAuto
   const effortDistance = watch('effortDistance');
   const recoveryDuration = watch('recoveryDuration');
   const recoveryDistance = watch('recoveryDistance');
-  const currentSteps = watch('steps') || [];
+  const watchedSteps = watch('steps');
+  const currentSteps = useMemo(() => watchedSteps ?? EMPTY_STEPS, [watchedSteps]);
 
   const prevRepetitionCount = useRef(repetitionCount);
 
@@ -246,6 +249,5 @@ export function useIntervalSync({ watch, replace, onEntryModeChange, disableAuto
       onEntryModeChange('detailed');
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repetitionCount, effortDuration, effortDistance, recoveryDuration, recoveryDistance, replace, onEntryModeChange]);
+  }, [repetitionCount, effortDuration, effortDistance, recoveryDuration, recoveryDistance, replace, onEntryModeChange, currentSteps, disableAutoRegeneration]);
 }
