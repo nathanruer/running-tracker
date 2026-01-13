@@ -13,12 +13,14 @@ export function SelectionBar({ selectedCount, onClear, onDelete, onExport }: Sel
   const deleteLabel = selectedCount === 1 ? 'Supprimer 1 séance' : 'Supprimer la sélection';
 
   return (
-    <div className="mt-2 flex items-center justify-between rounded-md bg-muted/40 border border-border p-2 pl-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-foreground">
-          {selectedCount} séance{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
-        </span>
-        <div className="h-4 w-[1px] bg-border" />
+    <div className="mt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 rounded-md bg-muted/40 border border-border p-2 sm:pl-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className="flex items-center justify-between sm:justify-start gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-foreground">
+            {selectedCount} séance{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
+          </span>
+          <div className="h-4 w-[1px] bg-border" />
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -28,12 +30,12 @@ export function SelectionBar({ selectedCount, onClear, onDelete, onExport }: Sel
           Annuler
         </Button>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <Button
           variant="outline"
           size="sm"
           onClick={onExport}
-          className="h-8 px-3 text-xs hover:bg-muted hover:text-foreground"
+          className="w-full sm:w-auto h-8 px-3 text-xs hover:bg-muted hover:text-foreground justify-start sm:justify-center"
           data-testid="bulk-export-button"
         >
           <Download className="mr-2 h-3.5 w-3.5" />
@@ -43,7 +45,7 @@ export function SelectionBar({ selectedCount, onClear, onDelete, onExport }: Sel
           variant="outline"
           size="sm"
           onClick={onDelete}
-          className="h-8 px-3 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/50 hover:border-destructive"
+          className="w-full sm:w-auto h-8 px-3 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/50 hover:border-destructive justify-start sm:justify-center"
           data-testid="bulk-delete-button"
         >
           <Trash2 className="mr-2 h-3.5 w-3.5" />

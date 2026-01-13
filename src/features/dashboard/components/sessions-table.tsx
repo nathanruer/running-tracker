@@ -102,7 +102,6 @@ export function SessionsTable({
               <>
                 <div className="h-8 w-full sm:w-[180px] animate-pulse rounded-md bg-muted" />
                 <div className="h-8 w-full sm:w-[180px] animate-pulse rounded-md bg-muted" />
-                <div className="h-8 w-full sm:w-[110px] animate-pulse rounded-md bg-muted" />
               </>
             ) : (
               <>
