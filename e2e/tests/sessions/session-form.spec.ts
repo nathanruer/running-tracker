@@ -366,13 +366,12 @@ test.describe('Session Form - Session Type Switching', () => {
     await form.selectSessionType('Fractionné');
     await page.waitForTimeout(500);
 
-    const hasIntervalContent = await page.locator('[role="dialog"]')
-      .getByText(/type de fractionné|fractionné|répétitions|effort/i)
-      .first().isVisible().catch(() => false);
-    expect(hasIntervalContent).toBe(true);
+    await expect(page.getByLabel(/nombre de répétitions/i)).toBeVisible();
     
-    await expect(page.getByText('Importer les intervalles depuis CSV')).toBeVisible();
-    await expect(page.locator('.border-dashed button', { hasText: 'Importer CSV' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Effort' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Récupération' })).toBeVisible();
+
+    await expect(page.getByText('Afficher les détails avancés')).toBeVisible();
   });
 
   test('should hide interval fields when switching from Fractionné', async ({ page }) => {
