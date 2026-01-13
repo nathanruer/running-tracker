@@ -49,7 +49,6 @@ describe('PlannedSessionRow', () => {
     targetDuration: 90,
     targetDistance: 18,
     targetPace: '5:00',
-    targetHeartRateZone: 'Z2',
     targetRPE: 5,
   };
 

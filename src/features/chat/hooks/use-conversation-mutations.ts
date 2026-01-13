@@ -106,17 +106,14 @@ export function useConversationMutations({
   };
 
   return {
-    // Mutations
     createConversation: createMutation.mutate,
     renameConversation: renameMutation.mutate,
     deleteConversation: deleteMutation.mutate,
 
-    // Loading states
     isCreating: createMutation.isPending,
     isRenaming: renameMutation.isPending,
     isDeleting: deleteMutation.isPending,
 
-    // Rename dialog state
     renameDialogOpen,
     setRenameDialogOpen,
     selectedForRename,

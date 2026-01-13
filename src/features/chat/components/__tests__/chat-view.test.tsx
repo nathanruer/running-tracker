@@ -74,11 +74,9 @@ describe('ChatView', () => {
     it('should display empty state when no conversation is selected', () => {
       render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
 
-      // Should show centered welcome message
       expect(screen.getByText('Quelle est votre demande aujourd\'hui ?')).toBeInTheDocument();
       expect(screen.getByText('Posez une question ou demandez des conseils d\'entraînement')).toBeInTheDocument();
 
-      // Should have input and send button ready (centered)
       expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
@@ -153,12 +151,10 @@ describe('ChatView', () => {
       const input = screen.getByPlaceholderText(/Je voudrais 2 séances/i);
       const sendButton = screen.getByRole('button');
 
-      // Change input value
       await act(async () => {
         fireEvent.change(input, { target: { value: 'Test message' } });
       });
 
-      // Click send button
       await act(async () => {
         fireEvent.click(sendButton);
       });
@@ -180,7 +176,6 @@ describe('ChatView', () => {
 
       fireEvent.click(screen.getByRole('button'));
 
-      // Input is cleared synchronously in handleSendMessage
       expect(input.value).toBe('');
     });
 
@@ -193,12 +188,10 @@ describe('ChatView', () => {
 
       const input = screen.getByPlaceholderText(/Je voudrais 2 séances/i);
 
-      // Change input value
       await act(async () => {
         fireEvent.change(input, { target: { value: 'Test message' } });
       });
 
-      // Press Enter key
       await act(async () => {
         fireEvent.keyDown(input, { key: 'Enter', shiftKey: false });
       });

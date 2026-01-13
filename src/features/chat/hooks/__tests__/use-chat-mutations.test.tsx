@@ -33,10 +33,9 @@ describe('useChatMutations', () => {
         duration_min: 45,
         estimated_distance_km: 8,
         target_pace_min_km: '5:30',
-        target_hr_zone: 'Zone 2',
         target_hr_bpm: 145,
         target_rpe: 6,
-        why_this_session: 'Test session',
+        description: 'Test session',
       };
 
       vi.mocked(fetch).mockResolvedValueOnce({

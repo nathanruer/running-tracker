@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/infrastructure/logger';
 import type { AIResponse, AIRecommendedSession } from '@/lib/types/ai';
-import { parseDuration, validatePaceInput } from '@/lib/utils/duration';
-
+import { validatePaceInput } from '@/lib/utils/duration';
+import { validateAndAdjustDistance } from '@/lib/utils/distance';
 
 /**
  * Validates and fixes AI-generated training recommendations
@@ -13,7 +13,6 @@ import { parseDuration, validatePaceInput } from '@/lib/utils/duration';
  * @returns Validated and corrected response with recommendation IDs
  */
 export function validateAndFixRecommendations(response: AIResponse): AIResponse {
-  // Only process recommendation responses
   if (
     response.responseType !== 'recommendations' ||
     !Array.isArray(response.recommended_sessions)
@@ -44,30 +43,11 @@ export function validateAndFixRecommendations(response: AIResponse): AIResponse 
         return { ...session, recommendation_id: recommendationId };
       }
 
-      const paceSeconds = parseDuration(session.target_pace_min_km);
-      if (paceSeconds === null) {
-        return { ...session, recommendation_id: recommendationId };
-      }
-      const paceMinutesPerKm = paceSeconds / 60;
-      const expectedDistance = session.duration_min / paceMinutesPerKm;
-
-      const diff =
-        Math.abs(session.estimated_distance_km - expectedDistance) /
-        expectedDistance;
-
-      if (diff > 0.05) {
-        logger.warn(
-          {
-            sessionIndex: idx + 1,
-            distanceAI: session.estimated_distance_km,
-            distanceCorrected: expectedDistance,
-          },
-          'Correction distance incohérente IA'
-        );
-
-        session.estimated_distance_km =
-          Math.round(expectedDistance * 100) / 100;
-      }
+      session.estimated_distance_km = validateAndAdjustDistance(
+        session.duration_min,
+        session.estimated_distance_km,
+        session.target_pace_min_km
+      );
 
       return { ...session, recommendation_id: recommendationId };
     }

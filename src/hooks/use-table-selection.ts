@@ -49,16 +49,13 @@ export function useTableSelection<T>(
 
   const toggleSelectAll = () => {
     if (mode === 'single') {
-      // toggleSelectAll not supported in single selection mode
       return;
     }
 
     setSelectedIndices((prev) => {
       if (prev.size === items.length) {
-        // All selected - deselect all
         return new Set();
       } else {
-        // Not all selected - select all
         return new Set(items.map((_, i) => i));
       }
     });
@@ -70,7 +67,6 @@ export function useTableSelection<T>(
 
   const selectIndices = (indices: number[]) => {
     if (mode === 'single' && indices.length > 1) {
-      // In single mode, only select first index
       setSelectedIndices(new Set([indices[0]]));
       return;
     }

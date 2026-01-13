@@ -38,7 +38,6 @@ describe('/api/sessions/planned', () => {
         targetDuration: '01:00:00',
         targetDistance: 10,
         targetPace: '06:00',
-        targetHeartRateZone: 2,
         targetRPE: 6,
         comments: 'Test session',
       };

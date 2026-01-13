@@ -42,6 +42,27 @@ export async function POST(
         prisma.training_sessions.findMany({
           where: { userId },
           orderBy: { date: 'desc' },
+          select: {
+            id: true,
+            sessionNumber: true,
+            week: true,
+            date: true,
+            sessionType: true,
+            duration: true,
+            distance: true,
+            avgPace: true,
+            avgHeartRate: true,
+            comments: true,
+            intervalDetails: true,
+            perceivedExertion: true,
+            status: true,
+            targetPace: true,
+            targetDuration: true,
+            targetDistance: true,
+
+            targetHeartRateBpm: true,
+            targetRPE: true,
+          },
           take: 50,
         }),
       ]);
@@ -130,9 +151,18 @@ export async function POST(
       }
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-      const response = validateAndFixRecommendations(
-        extractJsonFromAI(rawText)
-      );
+      
+      let parsedResponse;
+      try {
+        parsedResponse = extractJsonFromAI(rawText);
+      } catch {
+        parsedResponse = { 
+          responseType: 'conversation' as const, 
+          message: "Erreur de format de réponse." 
+        };
+      }
+
+      const response = validateAndFixRecommendations(parsedResponse);
 
       const assistantMessage = await prisma.chat_messages.create({
         data: {

@@ -276,7 +276,6 @@ describe('MessageList', () => {
     it('should have scroll anchor element', () => {
       const { container } = render(<MessageList {...defaultProps} />);
 
-      // The messagesEndRef div should exist
       const scrollAnchor = container.querySelector('div[class*="flex-1"] > div:last-child');
       expect(scrollAnchor).toBeInTheDocument();
     });

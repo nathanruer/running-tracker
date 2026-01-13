@@ -282,8 +282,8 @@ export function CalendarView({ sessions }: CalendarViewProps) {
                       <p className="text-2xl font-bold">
                         {session.type === 'completed'
                           ? `${session.avgHeartRate ?? '--'}`
-                          : (session.targetHeartRateBpm || session.targetHeartRateZone)
-                            ? `${session.targetHeartRateBpm || session.targetHeartRateZone}`
+                          : session.targetHeartRateBpm
+                            ? `${session.targetHeartRateBpm}`
                             : '--'
                         }
                       </p>

@@ -68,29 +68,24 @@ export function useTableSort<T>(
       const aValue = getValue(a, sortColumn);
       const bValue = getValue(b, sortColumn);
 
-      //  null/undefined values
       if (aValue == null && bValue == null) return 0;
       if (aValue == null) return 1;
       if (bValue == null) return -1;
 
-      // Handle dates
       if (aValue instanceof Date && bValue instanceof Date) {
         const diff = aValue.getTime() - bValue.getTime();
         return sortDirection === 'desc' ? -diff : diff;
       }
 
-      // Handle strings (case-insensitive)
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         const comparison = aValue.toLowerCase().localeCompare(bValue.toLowerCase());
         return sortDirection === 'desc' ? -comparison : comparison;
       }
 
-      // Handle numbers
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortDirection === 'desc' ? bValue - aValue : aValue - bValue;
       }
 
-      // Fallback to string comparison
       const comparison = String(aValue).localeCompare(String(bValue));
       return sortDirection === 'desc' ? -comparison : comparison;
     });

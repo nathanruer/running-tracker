@@ -53,8 +53,6 @@ describe('useDateRangeFilter', () => {
             result.current.setDateRange('12weeks');
         });
         
-        // 12 weeks = 84 days.
-        // Item 4 is 92 days ago. Excluded.
         expect(result.current.filteredItems).toHaveLength(3);
         expect(result.current.filteredItems.map(i => i.id)).toEqual(expect.arrayContaining([1, 2, 3]));
     });

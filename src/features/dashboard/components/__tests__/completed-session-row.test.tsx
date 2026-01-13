@@ -102,22 +102,18 @@ describe('CompletedSessionRow', () => {
     });
 
     it('colors RPE appropriately based on value', () => {
-      // Low RPE (green)
       const { unmount: unmount1 } = renderRow({ ...mockSession, perceivedExertion: 3 });
       expect(screen.getByText('3/10')).toHaveClass('text-green-500');
       unmount1();
 
-      // Medium RPE (yellow)
       const { unmount: unmount2 } = renderRow({ ...mockSession, perceivedExertion: 5 });
       expect(screen.getByText('5/10')).toHaveClass('text-yellow-500');
       unmount2();
 
-      // High RPE (orange)
       const { unmount: unmount3 } = renderRow({ ...mockSession, perceivedExertion: 7 });
       expect(screen.getByText('7/10')).toHaveClass('text-orange-500');
       unmount3();
 
-      // Very high RPE (red + bold)
       renderRow({ ...mockSession, perceivedExertion: 9 });
       const rpe = screen.getByText('9/10');
       expect(rpe).toHaveClass('text-red-500');
@@ -161,11 +157,9 @@ describe('CompletedSessionRow', () => {
 
   describe('Edge cases', () => {
     it('handles missing data gracefully', () => {
-      // Null week
       renderRow({ ...mockSession, week: null });
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);
 
-      // Null date
       renderRow({ ...mockSession, date: null });
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);
     });

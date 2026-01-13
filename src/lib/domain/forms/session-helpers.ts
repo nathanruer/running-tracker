@@ -73,9 +73,6 @@ export function buildPlannedSessionPayload(
     targetDuration: durationInMinutes,
     targetDistance: values.distance ?? null,
     targetPace: values.avgPace || null,
-    targetHeartRateZone: values.avgHeartRate
-      ? `Zone ${Math.ceil(values.avgHeartRate / 40)}`
-      : null,
     targetHeartRateBpm: values.avgHeartRate
       ? `${values.avgHeartRate}`
       : null,

@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type IntervalDetails, type IntervalStep } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils/intervals';
+import { type IntervalDetails } from '@/lib/types';
+import { generateIntervalStructure, calculateIntervalTotals, cleanIntervalSteps } from '@/lib/utils/intervals';
 import { secondsToPace } from '@/lib/utils/formatters/pace';
-import { parseDuration, normalizeDurationFormat, normalizePaceFormat } from '@/lib/utils/duration';
+import { parseDuration, normalizeDurationFormat, normalizePaceFormat, formatDuration } from '@/lib/utils/duration';
+import { estimateEffectiveDistance } from '@/lib/utils/distance';
+import { extractStepHR } from '@/lib/utils/hr';
+import { getStepLabelAuto, filterStepsByType } from '@/lib/utils/step';
 import { Target, ListChecks } from 'lucide-react';
 
 interface IntervalDetailsViewProps {
@@ -23,76 +26,49 @@ export function IntervalDetailsView({
   const {
     targetEffortPace,
     targetEffortHR,
-    steps = [],
   } = intervalDetails;
 
-  const filteredSteps = steps.filter((step) => {
-    if (filter === 'all') return true;
-    return step.stepType === filter;
-  });
+  const steps = cleanIntervalSteps(intervalDetails.steps || []);
 
-  const calculateWeightedAverages = (items: IntervalStep[]) => {
-    let totalDistance = 0;
-    let totalSeconds = 0;
-    let totalWeightedHR = 0;
-    let hrSeconds = 0;
-    let totalWeightedPaceSec = 0;
-    let paceDistance = 0;
-
-    items.forEach(step => {
-      const durationSec = parseDuration(step.duration) || 0;
-      const stepPaceSec = parseDuration(step.pace);
-
-      if (durationSec > 0) {
-        totalSeconds += durationSec;
-        const dist = step.distance || 0;
-        totalDistance += dist;
-
-        if (stepPaceSec && dist > 0) {
-          totalWeightedPaceSec += stepPaceSec * dist;
-          paceDistance += dist;
-        }
-
-        if (step.hr) {
-          totalWeightedHR += step.hr * durationSec;
-          hrSeconds += durationSec;
-        }
-      }
-    });
-
-    const avgPaceSec = paceDistance > 0
-      ? totalWeightedPaceSec / paceDistance
-      : (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
-
-    const avgHR = hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null;
-
-    return {
-      avgPace: secondsToPace(avgPaceSec),
-      avgHR,
-      totalDist: totalDistance.toFixed(2),
-      totalTime: secondsToPace(totalSeconds)
-    };
-  };
+  const filteredSteps = filter === 'all'
+    ? steps
+    : steps.filter((step) => step.stepType === filter);
 
   const getAverages = () => {
-    const calculated = calculateWeightedAverages(filteredSteps);
-    return calculated;
+    const totals = calculateIntervalTotals(filteredSteps);
+    return {
+      avgPace: totals.avgPaceFormatted || '-',
+      avgHR: totals.avgBpm,
+      totalDist: totals.totalDistanceKm > 0 ? totals.totalDistanceKm.toFixed(2) : "0.00",
+      totalTime: formatDuration(Math.round(totals.totalDurationMin * 60)) || '-'
+    };
   };
 
   const averages = getAverages();
 
-  const getStepLabel = (step: IntervalStep) => {
-    const typeSteps = steps.filter((s) => s.stepType === step.stepType);
-    const index = typeSteps.findIndex((s) => s.stepNumber === step.stepNumber);
-
-    switch (step.stepType) {
-      case 'effort': return `E${index + 1}`;
-      case 'recovery': return `R${index + 1}`;
-      case 'warmup': return 'Échauf.';
-      case 'cooldown': return 'Retour';
-      default: return step.stepType;
+  const getTargetEffortHR = (): string | null => {
+    if (targetEffortHR) {
+      return `${targetEffortHR}`;
     }
+
+    const effortSteps = filterStepsByType(steps, 'effort');
+    if (effortSteps.length === 0) return null;
+
+    const hrValues = effortSteps
+      .map(step => step.hrRange || (step.hr ? `${step.hr}` : null))
+      .filter(Boolean);
+
+    if (hrValues.length === 0) return null;
+
+    const uniqueValues = [...new Set(hrValues)];
+    if (uniqueValues.length === 1) {
+      return uniqueValues[0] as string;
+    }
+
+    return null;
   };
+
+  const targetHRDisplay = getTargetEffortHR();
 
   const displayStructure = generateIntervalStructure(intervalDetails) || '-';
 
@@ -111,8 +87,8 @@ export function IntervalDetailsView({
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
                 Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'} mn/km</span>
-                {targetEffortHR ? <span className="ml-1.5 opacity-40">|</span> : ''}
-                {targetEffortHR ? <span className="ml-1.5 font-bold text-orange-400/80">{targetEffortHR} bpm</span> : ''}
+                {targetHRDisplay ? <span className="ml-1.5 opacity-40">|</span> : ''}
+                {targetHRDisplay ? <span className="ml-1.5 font-bold text-orange-400/80">{targetHRDisplay} bpm</span> : ''}
               </span>
             </div>
           </div>
@@ -163,12 +139,29 @@ export function IntervalDetailsView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20">
-                {filteredSteps.map((step) => (
-                  <tr 
-                    key={step.stepNumber} 
-                    className={`hover:bg-muted/10 transition-colors ${
-                      step.stepType === 'effort' ? 'bg-violet-500/[0.02]' : ''
-                    }`}
+                {filteredSteps.map((step, index) => {
+                  const durationSec = parseDuration(step.duration) || 0;
+                  const paceSec = parseDuration(step.pace) || 0;
+
+                  const distanceResult = estimateEffectiveDistance(
+                    durationSec,
+                    paceSec > 0 ? paceSec : null,
+                    step.distance || null
+                  );
+                  const displayDistance = distanceResult.distance;
+
+                  let displayPace = step.pace;
+
+                  if (!displayPace && durationSec > 0 && displayDistance > 0) {
+                     const estimatedPaceSec = durationSec / displayDistance;
+                     displayPace = secondsToPace(estimatedPaceSec);
+                  }
+
+
+                  return (
+                  <tr
+                    key={`${step.stepNumber}-${index}`}
+                    className={index % 2 === 0 ? 'bg-violet-500/[0.02]' : ''}
                   >
                     <td className="py-2 px-4 text-left">
                       <div className="flex items-center gap-2">
@@ -176,31 +169,39 @@ export function IntervalDetailsView({
                           step.stepType === 'effort' ? 'bg-violet-500' : 
                           step.stepType === 'recovery' ? 'bg-green-500' : 'bg-muted-foreground'
                         }`} />
-                        <span className="font-semibold text-muted-foreground">{getStepLabel(step)}</span>
+                        <span className="font-semibold text-muted-foreground">{getStepLabelAuto(step, steps)}</span>
                       </div>
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
                       {step.duration === '00:00' || step.duration === '00:00:00' ? '-' : (normalizeDurationFormat(step.duration || '') || step.duration || '-')}
                     </td>
                     <td className="py-2 px-4 text-center font-mono">
-                      {step.distance && step.distance > 0 ? (
+                      {displayDistance && displayDistance > 0 ? (
                         <>
-                          {step.distance.toFixed(2)} <span className="text-xs text-muted-foreground">km</span>
+                          {displayDistance.toFixed(2)} <span className="text-xs text-muted-foreground">km</span>
                         </>
                       ) : '-'}
                     </td>
                     <td className="py-2 px-4 text-center font-mono font-bold text-foreground underline decoration-violet-500/20 underline-offset-4">
-                      {step.pace ? (normalizePaceFormat(step.pace) || step.pace) : '-'} <span className="text-xs text-muted-foreground">mn/km</span>
-                    </td>
-                    <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
-                      {step.hr ? (
-                        <>
-                          {step.hr} <span className="text-xs text-muted-foreground">bpm</span>
-                        </>
+                      {displayPace ? (
+                          <>
+                           {(normalizePaceFormat(displayPace) || displayPace)} 
+                           <span className="text-xs text-muted-foreground ml-1">mn/km</span>
+                          </>
                       ) : '-'}
                     </td>
+                    <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
+                      {(() => {
+                        const hrValue = extractStepHR(step);
+                        return hrValue ? (
+                          <>
+                            {step.hrRange || Math.round(hrValue)} <span className="text-xs text-muted-foreground">bpm</span>
+                          </>
+                        ) : '-';
+                      })()}
+                    </td>
                   </tr>
-                ))}
+                );})}
                 {filteredSteps.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-muted-foreground italic text-sm">

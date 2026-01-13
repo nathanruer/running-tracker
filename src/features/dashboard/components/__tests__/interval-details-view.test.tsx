@@ -38,4 +38,20 @@ describe('IntervalDetailsView', () => {
     render(<IntervalDetailsView intervalDetails={details} isPlanned={true} />);
     expect(screen.getAllByText('04:15').length).toBeGreaterThan(0);
   });
+
+  it('should extract target HR from effort steps when not in intervalDetails', () => {
+    const detailsWithHRRange = {
+      ...mockIntervalDetails,
+      targetEffortHR: null,
+      steps: [
+        { stepNumber: 1, stepType: 'warmup' as const, duration: '10:00', distance: 1.5, pace: '06:40', hr: null, hrRange: '150-160' },
+        { stepNumber: 2, stepType: 'effort' as const, duration: '08:00', distance: 1.6, pace: '05:00', hr: null, hrRange: '162-174' },
+        { stepNumber: 3, stepType: 'recovery' as const, duration: '02:00', distance: 0.3, pace: '06:40', hr: null, hrRange: '158-166' },
+        { stepNumber: 4, stepType: 'effort' as const, duration: '08:00', distance: 1.6, pace: '05:00', hr: null, hrRange: '162-174' },
+      ]
+    };
+    render(<IntervalDetailsView intervalDetails={detailsWithHRRange} isPlanned={true} />);
+    // Should display the HR range from effort steps in the "Cible" section
+    expect(screen.getByText(/162-174 bpm/i)).toBeInTheDocument();
+  });
 });

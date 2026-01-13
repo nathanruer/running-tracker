@@ -60,7 +60,6 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
   const [includeWeather, setIncludeWeather] = useState(true);
   const [period, setPeriod] = useState<PeriodOption>('all');
   
-  // Custom date range
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
 
@@ -147,7 +146,6 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
           }
         }
       } else {
-        // detailed mode
         if (format === 'json') {
           const rows = formatSessionsDetailedJSON(filteredSessions, includeWeather);
           const content = generateJSON(rows);

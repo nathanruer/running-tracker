@@ -64,7 +64,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   const { handleError, handleSuccess } = useApiErrorHandler();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Default messages
   const defaultMessages = {
     deleteSuccess: 'Élément supprimé',
     deleteSuccessDescription: "L'élément a été supprimé avec succès.",
@@ -75,7 +74,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     ...messages,
   };
 
-  // Default sort function: by date DESC
   const defaultSortFn = (a: T, b: T) => {
     const dateA = a.date ? new Date(a.date).getTime() : 0;
     const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -84,7 +82,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 
   const sortEntities = sortFn || defaultSortFn;
 
-  // Helper to build query keys
   const buildQueryKey = (variant: 'all' | 'paginated', type: string): QueryKey => [
     baseQueryKey,
     variant,
@@ -95,7 +92,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
    * Update cache by removing entities matching the predicate
    */
   const removeFromCache = (predicate: (entity: T) => boolean) => {
-    // Update current filter cache
     queryClient.setQueryData(
       buildQueryKey('all', filterType),
       (old: T[] | undefined) => old?.filter((item) => !predicate(item))
@@ -112,7 +108,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
       }
     );
 
-    // Update 'all' filter if current filter is specific
     if (filterType !== 'all') {
       queryClient.setQueryData(
         buildQueryKey('all', 'all'),
@@ -137,14 +132,11 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
    * @param id Entity ID to delete
    */
   const handleDelete = async (id: string) => {
-    // Save previous data for rollback
     const previousAllData = queryClient.getQueryData(buildQueryKey('all', filterType));
     const previousPaginatedData = queryClient.getQueryData(buildQueryKey('paginated', filterType));
 
-    // Cancel in-flight queries
     await queryClient.cancelQueries({ queryKey: [baseQueryKey] });
 
-    // Optimistically remove from cache
     removeFromCache((item) => item.id === id);
 
     setIsDeleting(true);
@@ -153,13 +145,11 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     try {
       await deleteEntity(id);
 
-      // Invalidate related queries
       await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
       relatedQueryKeys.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: [key] });
       });
     } catch (error) {
-      // Rollback on error
       queryClient.setQueryData(buildQueryKey('all', filterType), previousAllData);
       queryClient.setQueryData(buildQueryKey('paginated', filterType), previousPaginatedData);
       handleError(error, defaultMessages.deleteError);
@@ -177,21 +167,17 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
       throw new Error('bulkDeleteEntities function not provided');
     }
 
-    // Save previous data for rollback
     const previousAllData = queryClient.getQueryData(buildQueryKey('all', filterType));
     const previousPaginatedData = queryClient.getQueryData(buildQueryKey('paginated', filterType));
 
-    // Cancel in-flight queries
     await queryClient.cancelQueries({ queryKey: [baseQueryKey] });
 
-    // Optimistically remove from cache
     removeFromCache((item) => ids.includes(item.id));
 
     try {
       setIsDeleting(true);
       await bulkDeleteEntities(ids);
 
-      // Invalidate related queries
       await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
       relatedQueryKeys.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: [key] });
@@ -202,7 +188,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
         defaultMessages.bulkDeleteSuccess(ids.length)
       );
     } catch (error) {
-      // Rollback on error
       queryClient.setQueryData(buildQueryKey('all', filterType), previousAllData);
       queryClient.setQueryData(buildQueryKey('paginated', filterType), previousPaginatedData);
       handleError(error, defaultMessages.bulkDeleteError);
@@ -216,7 +201,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
    * @param savedEntity Newly created or updated entity
    */
   const handleEntitySuccess = (savedEntity: T) => {
-    // Update 'all' cache
     queryClient.setQueryData(
       buildQueryKey('all', filterType),
       (old: T[] | undefined) => {
@@ -224,22 +208,18 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 
         const exists = old.find((item) => item.id === savedEntity.id);
         if (exists) {
-          // Update existing entity
           return old.map((item) => (item.id === savedEntity.id ? savedEntity : item));
         } else {
-          // Add new entity and sort
           return [savedEntity, ...old].sort(sortEntities);
         }
       }
     );
 
-    // Update paginated cache
     queryClient.setQueryData(
       buildQueryKey('paginated', filterType),
       (old: InfiniteData<T[]> | undefined) => {
         if (!old) return old;
 
-        // Try to update existing entity in pages
         const newPages = old.pages.map((page) => {
           const index = page.findIndex((item) => item.id === savedEntity.id);
           if (index !== -1) {
@@ -250,7 +230,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
           return page;
         });
 
-        // If entity doesn't exist in pages, add to first page
         const existsInPages = old.pages.some((p) => p.some((item) => item.id === savedEntity.id));
         if (!existsInPages && newPages.length > 0) {
           newPages[0] = [savedEntity, ...newPages[0]];
@@ -260,7 +239,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
       }
     );
 
-    // Invalidate to ensure consistency
     queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
     relatedQueryKeys.forEach((key) => {
       queryClient.invalidateQueries({ queryKey: [key] });

@@ -1,6 +1,6 @@
 import type { BuildContextParams, Session, IntervalDetails } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils/intervals';
-import { normalizePaceFormat } from '@/lib/utils/duration';
+import { generateIntervalStructure, getEffortPace } from '@/lib/utils/intervals';
+import { normalizePaceFormat, parseDuration, formatDuration } from '@/lib/utils/duration';
 
 function isIntervalDetails(value: unknown): value is IntervalDetails {
   return typeof value === 'object' && value !== null;
@@ -27,6 +27,84 @@ function getSessionData(s: Session) {
     comments: s.comments,
     intervalDetails: s.intervalDetails,
   };
+}
+
+function calculateSessionTypeStats(sessions: Session[]): string {
+  const sessionsByType: Record<string, Session[]> = {};
+  const sessionsWithIntervals: Session[] = [];
+
+  sessions.forEach(s => {
+    const type = s.sessionType || 'Autre';
+    if (type === 'Fractionné' || type === 'VMA' || type === 'Seuil' || type === 'Tempo') {
+        sessionsWithIntervals.push(s);
+    } else {
+        if (!sessionsByType[type]) sessionsByType[type] = [];
+        sessionsByType[type].push(s);
+    }
+  });
+
+  let stats = '';
+
+  let hasStandardStats = false;
+  const standardStatsStr = Object.entries(sessionsByType)
+    .sort(([, a], [, b]) => b.length - a.length)
+    .map(([type, typeSessions]) => {
+      const recent = typeSessions.slice(0, 10);
+      if (recent.length === 0) return null;
+      hasStandardStats = true;
+
+      const count = recent.length;
+      const totalDist = recent.reduce((sum, s) => sum + s.distance, 0);
+      const avgDist = totalDist / count;
+
+      const totalDurationSec = recent.reduce((sum, s) => sum + (parseDuration(s.duration) || 0), 0);
+      const avgDurationSec = totalDurationSec / count;
+
+      let avgPaceStr = '00:00';
+        if (totalDist > 0 && totalDurationSec > 0) {
+            const paceSec = totalDurationSec / totalDist;
+            avgPaceStr = formatDuration(paceSec);
+        }
+
+      const sessionsWithHR = recent.filter(s => s.avgHeartRate > 0);
+      const avgHR = sessionsWithHR.length > 0 
+         ? sessionsWithHR.reduce((sum, s) => sum + s.avgHeartRate, 0) / sessionsWithHR.length 
+         : 0;
+
+      let line = `- ${type} (${count} dern.): moy. ${avgDist.toFixed(1)}km, ${formatDuration(avgDurationSec)}, ${avgPaceStr}/km`;
+      if (avgHR > 0) line += `, FC ${Math.round(avgHR)}`;
+      return line;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  if (hasStandardStats) {
+      stats += '** Statistiques (Endurance/Standard) :**\n' + standardStatsStr + '\n';
+  }
+
+  if (sessionsWithIntervals.length > 0) {
+      stats += '\n** Dernières séances de qualité (Fractionné/VMA) :**\n';
+      const recentIntervals = sessionsWithIntervals.slice(0, 10); 
+      
+      recentIntervals.forEach((s) => {
+          const d = getSessionData(s);
+          let structure = '';
+          let effortPace = '';
+          
+          if (d.intervalDetails && isIntervalDetails(d.intervalDetails)) {
+              structure = generateIntervalStructure(d.intervalDetails) || '';
+              const pace = getEffortPace(d.intervalDetails);
+              if (pace) effortPace = ` @ ${pace}/km (efforts)`;
+          }
+          
+          stats += `- ${d.date} (${d.type}): ${d.distance}km (Moy. ${d.avgPace})`;
+          if (structure) stats += `\n  Structure: ${structure}${effortPace}`;
+          if (d.comments) stats += `\n  Note: ${d.comments.slice(0, 100).replace(/\n/g, ' ')}`;
+          stats += '\n';
+      });
+  }
+  
+  return stats;
 }
 
 export function buildContextMessage({
@@ -77,12 +155,10 @@ export function buildContextMessage({
       }
       if (sessionData.intervalDetails && isIntervalDetails(sessionData.intervalDetails)) {
         const structure = generateIntervalStructure(sessionData.intervalDetails);
-        if (structure) {
-          context += `   Structure: ${structure}\n`;
-        }
+        if (structure) context += `   Structure: ${structure}\n`;
       }
       if (sessionData.comments && sessionData.comments.trim()) {
-        context += `   Sensations/Notes: ${sessionData.comments}\n`;
+        context += `   Sensations: ${sessionData.comments}\n`;
       }
     });
     context += '\n';
@@ -91,75 +167,27 @@ export function buildContextMessage({
   }
 
   if (hasHistory) {
-    context += '** Historique complet des entraînements :**\n';
+    context += '** Historique global :**\n';
     
-    const totalDistance = allSessions.reduce((sum, s) => sum + s.distance, 0);
     const totalSessions = allSessions.length;
-    const avgDistance = totalDistance / totalSessions;
+    const totalDistance = allSessions.reduce((sum, s) => sum + s.distance, 0);
 
-    const totalMinutes = allSessions.reduce((sum, s) => {
-      if (!s.duration || typeof s.duration !== 'string') {
-        return sum;
-      }
-      const parts = s.duration.split(':');
-      if (parts.length !== 3) {
-        return sum;
-      }
-      const [hours, minutes, seconds] = parts.map(Number);
-      return sum + hours * 60 + minutes + seconds / 60;
-    }, 0);
+    context += `- ${totalSessions} séances totales, ${totalDistance.toFixed(1)} km au total.\n`;
 
-    const avgDuration = totalMinutes / totalSessions;
-    const avgHR = allSessions
-      .filter((s) => s.avgHeartRate > 0)
-      .reduce((sum, s, _, arr) => sum + s.avgHeartRate / arr.length, 0);
+    context += '\n' + calculateSessionTypeStats(allSessions);
 
-    context += `- Nombre total de séances : ${totalSessions}\n`;
-    context += `- Distance totale : ${totalDistance.toFixed(1)} km\n`;
-    context += `- Distance moyenne par séance : ${avgDistance.toFixed(1)} km\n`;
-    context += `- Durée moyenne : ${Math.floor(avgDuration)} minutes\n`;
-    if (avgHR > 0) {
-      context += `- FC moyenne globale : ${Math.round(avgHR)} bpm\n`;
-    }
-
-    const sessionTypes = allSessions.reduce(
-      (acc, s) => {
-        acc[s.sessionType] = (acc[s.sessionType] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    context += '\n** Répartition des types de séances :**\n';
-    Object.entries(sessionTypes)
-      .sort(([, a], [, b]) => (b as number) - (a as number))
-      .forEach(([type, count]) => {
-        context += `- ${type} : ${count} séance(s)\n`;
-      });
-
-    const numberOfDetailedSessions = Math.min(20, allSessions.length);
-    context += `\n** Dernières séances (${numberOfDetailedSessions} plus récentes) :**\n`;
-    const recentSessions = [...allSessions].slice(-numberOfDetailedSessions);
+    const numberOfDetailedSessions = Math.min(3, allSessions.length);
+    context += `\n** 3 Dernières séances (détail) :**\n`;
+    const recentSessions = [...allSessions].slice(0, numberOfDetailedSessions); 
     recentSessions.forEach((s, index) => {
       const sessionData = getSessionData(s);
       context += `${index + 1}. ${sessionData.date} - ${sessionData.type}\n`;
-      context += `   ${sessionData.duration}, ${sessionData.distance}km @ ${sessionData.avgPace}/km`;
-      if (sessionData.avgHeartRate > 0) {
-        context += `, FC: ${sessionData.avgHeartRate} bpm`;
-      }
-      if (sessionData.perceivedExertion && sessionData.perceivedExertion > 0) {
-        context += `, RPE: ${sessionData.perceivedExertion}/10`;
+      context += `   ${sessionData.duration}, ${sessionData.distance}km @ ${sessionData.avgPace}/km, FC ${sessionData.avgHeartRate}`;
+      if (sessionData.intervalDetails && isIntervalDetails(sessionData.intervalDetails)) {
+         const st = generateIntervalStructure(sessionData.intervalDetails);
+         if (st) context += `, Structure: ${st}`;
       }
       context += '\n';
-      if (sessionData.intervalDetails && isIntervalDetails(sessionData.intervalDetails)) {
-        const structure = generateIntervalStructure(sessionData.intervalDetails);
-        if (structure) {
-          context += `   Structure: ${structure}\n`;
-        }
-      }
-      if (sessionData.comments && sessionData.comments.trim()) {
-        context += `   Sensations/Notes: ${sessionData.comments}\n`;
-      }
     });
   } else {
     context += '** Historique :** Aucune séance enregistrée\n';

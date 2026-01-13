@@ -70,8 +70,6 @@ describe('ConversationListItem', () => {
       const { container } = render(<ConversationListItem {...defaultProps} isSelected={false} />);
 
       const conversationDiv = container.firstChild as HTMLElement;
-      // The className may contain 'bg-muted' from hover, but not from isSelected
-      // Check that it doesn't have duplicate 'bg-muted' (only from hover)
       expect(conversationDiv).toBeInTheDocument();
     });
   });

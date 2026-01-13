@@ -35,7 +35,8 @@ const LeafletRoute = dynamic(
 import { WeatherWidget } from './weather-widget';
 import { StreamsSection } from './streams-section';
 import { formatCadence } from '@/lib/utils/strava/cadence';
-import { normalizeDurationFormat } from '@/lib/utils/duration';
+import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
+import { calculateIntervalTotals } from '@/lib/utils/intervals';
 
 interface SessionDetailsSheetProps {
   session: TrainingSession | null;
@@ -61,6 +62,34 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
 
   const hasStravaData = session.source === 'strava' && stravaData !== null;
   const hasRoute = decodedCoordinates.length > 0 && mapPath;
+
+  const totals = calculateIntervalTotals(session.intervalDetails?.steps);
+
+  const displayDistance = session.distance
+    ? session.distance
+    : totals.totalDistanceKm > 0
+    ? totals.totalDistanceKm
+    : session.targetDistance || null;
+
+  const displayDuration = session.duration
+    ? session.duration
+    : totals.totalDurationMin > 0
+    ? formatDuration(totals.totalDurationMin * 60)
+    : session.targetDuration
+    ? formatDuration(session.targetDuration * 60)
+    : null;
+
+  const displayPace = session.avgPace
+    ? session.avgPace
+    : totals.avgPaceFormatted
+    ? totals.avgPaceFormatted
+    : session.targetPace || null;
+
+  const displayHR = session.avgHeartRate
+    ? session.avgHeartRate
+    : totals.avgBpm
+    ? totals.avgBpm
+    : session.targetHeartRateBpm || null;
 
   return (
     <>
@@ -135,48 +164,46 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
 
             <div className="px-6 py-6 space-y-6 pb-10">
               <div className="grid grid-cols-2 gap-3">
-                <StatCard 
-                  label="Distance" 
-                  value={session.distance 
-                    ? session.distance 
-                    : session.targetDistance 
-                      ? `~${session.targetDistance}` 
-                      : '-'
-                  } 
-                  unit="km" 
+                <StatCard
+                  label="Distance"
+                  value={displayDistance
+                    ? session.distance
+                      ? displayDistance
+                      : `~${displayDistance.toFixed(2)}`
+                    : '-'
+                  }
+                  unit="km"
                   highlight
                 />
                 <StatCard
                   label="Durée"
-                  value={session.duration
-                    ? (normalizeDurationFormat(session.duration) || session.duration)
-                    : session.targetDuration
-                      ? `~${session.targetDuration} min`
-                      : '-'
+                  value={displayDuration
+                    ? session.duration
+                      ? (normalizeDurationFormat(displayDuration) || displayDuration)
+                      : `~${displayDuration}`
+                    : '-'
                   }
                   highlight
                 />
-                <StatCard 
-                  label="Allure" 
-                  value={session.avgPace 
-                    ? session.avgPace 
-                    : session.targetPace 
-                      ? `~${session.targetPace}` 
-                      : '-'
-                  } 
+                <StatCard
+                  label="Allure"
+                  value={displayPace
+                    ? session.avgPace
+                      ? displayPace
+                      : `~${displayPace}`
+                    : '-'
+                  }
                   unit="min/km"
                 />
-                <StatCard 
-                  label="FC moyenne" 
-                  value={session.avgHeartRate 
-                    ? session.avgHeartRate 
-                    : session.targetHeartRateBpm 
-                      ? `~${session.targetHeartRateBpm}` 
-                      : session.targetHeartRateZone 
-                        ? `Zone ${session.targetHeartRateZone}` 
-                        : '-'
-                  } 
-                  unit={session.avgHeartRate || session.targetHeartRateBpm ? "bpm" : undefined}
+                <StatCard
+                  label="FC moyenne"
+                  value={displayHR
+                    ? session.avgHeartRate
+                      ? displayHR
+                      : `~${displayHR}`
+                    : '-'
+                  }
+                  unit={displayHR ? "bpm" : undefined}
                 />
               </div>
 

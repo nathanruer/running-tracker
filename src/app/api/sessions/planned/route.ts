@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
         targetDuration,
         targetDistance,
         targetPace,
-        targetHeartRateZone,
         targetHeartRateBpm,
         targetRPE,
         intervalDetails,
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
           targetDuration,
           targetDistance,
           targetPace,
-          targetHeartRateZone,
+
           targetHeartRateBpm: targetHeartRateBpm?.toString(),
           targetRPE,
           intervalDetails: intervalDetails || Prisma.JsonNull,

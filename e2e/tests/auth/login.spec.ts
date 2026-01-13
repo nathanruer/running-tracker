@@ -40,18 +40,15 @@ test.describe('Login Flow', () => {
     currentUserEmail = generateTestEmail('login-valid');
     const testUser = { email: currentUserEmail, password: TEST_PASSWORD };
 
-    // First register a user
     await authPage.switchToRegister();
     await authPage.register(testUser);
     await dashboardPage.assertDashboardLoaded();
 
-    // Logout
     await dashboardPage.goToProfile();
     await profilePage.clickLogoutButton();
     await profilePage.confirmLogout();
     await page.waitForURL('**/', { timeout: 10000 });
 
-    // Now login
     await authPage.fillForm(testUser);
     await authPage.submit();
     await authPage.assertLoginSuccessful();

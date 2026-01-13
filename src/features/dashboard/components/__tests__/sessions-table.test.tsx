@@ -135,7 +135,6 @@ describe('SessionsTable', () => {
     render(<SessionsTable {...defaultProps} />);
 
     const checkboxes = screen.getAllByRole('checkbox');
-    // First checkbox is "select all", so skip it
     const firstSessionCheckbox = checkboxes[1];
 
     await user.click(firstSessionCheckbox);
@@ -157,13 +156,11 @@ describe('SessionsTable', () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
-    // Select all
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
     expect(screen.getByText('3 séances sélectionnées')).toBeInTheDocument();
 
-    // Clear selection
     const cancelButton = screen.getByRole('button', { name: /annuler/i });
     await user.click(cancelButton);
 
@@ -174,15 +171,12 @@ describe('SessionsTable', () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
-    // Select sessions
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
-    // Click delete button
     const deleteButton = screen.getByTestId('bulk-delete-button');
     await user.click(deleteButton);
 
-    // Dialog should appear
     expect(screen.getByText('Supprimer les séances sélectionnées')).toBeInTheDocument();
     expect(screen.getByText(/Êtes-vous sûr de vouloir supprimer 3 séances/)).toBeInTheDocument();
   });
@@ -193,15 +187,12 @@ describe('SessionsTable', () => {
 
     render(<SessionsTable {...defaultProps} />);
 
-    // Select sessions
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
-    // Open dialog
     const deleteButton = screen.getByTestId('bulk-delete-button');
     await user.click(deleteButton);
 
-    // Confirm deletion
     const confirmButton = screen.getByRole('button', { name: /^supprimer$/i });
     await user.click(confirmButton);
 

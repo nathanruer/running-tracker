@@ -27,7 +27,7 @@ model training_sessions {
   targetPace        String?
   targetDuration    Int?
   targetDistance    Float?
-  targetHeartRateZone String?
+
   targetHeartRateBpm String?
   targetRPE         Int?
   recommendationId  String?

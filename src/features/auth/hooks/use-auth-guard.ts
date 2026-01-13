@@ -32,7 +32,6 @@ export function useAuthGuard(redirectTo: string = '/') {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      // User is not authenticated, redirect to login
       router.replace(redirectTo);
     }
   }, [user, isLoading, router, redirectTo]);

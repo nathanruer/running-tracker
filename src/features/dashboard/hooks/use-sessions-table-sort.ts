@@ -54,8 +54,6 @@ export function useSessionsTableSort(sessions: TrainingSession[]) {
           bValue = b.sessionType.toLowerCase();
           break;
         case 'duration':
-          // For completed sessions, use duration string converted to seconds
-          // For planned sessions, use targetDuration (in minutes) converted to seconds
           if (a.status === 'planned') {
             aValue = a.targetDuration ? a.targetDuration * 60 : null;
           } else {
@@ -123,8 +121,6 @@ export function useSessionsTableSort(sessions: TrainingSession[]) {
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
 
-      // Special case for pace: we want to show faster runs (lower seconds) first when sorting DESC
-      // This is because users perceive faster pace as a "higher" performance
       if (sortColumn === 'avgPace') {
         if (aValue < bValue) return sortDirection === 'desc' ? -1 : 1;
         if (aValue > bValue) return sortDirection === 'desc' ? 1 : -1;

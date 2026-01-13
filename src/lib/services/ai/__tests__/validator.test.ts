@@ -176,7 +176,7 @@ describe('validateAndFixRecommendations', () => {
           duration_min: 60,
           estimated_distance_km: 10.9,
           session_type: 'Footing',
-          target_hr_zone: 'Z2',
+
         },
       ],
     };
@@ -186,7 +186,7 @@ describe('validateAndFixRecommendations', () => {
     if (result.responseType === 'recommendations') {
       expect(result.recommended_sessions[0]).toMatchObject({
         session_type: 'Footing',
-        target_hr_zone: 'Z2',
+
       });
     }
   });

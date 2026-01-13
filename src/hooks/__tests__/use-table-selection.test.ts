@@ -270,7 +270,6 @@ describe('useTableSelection', () => {
         result.current.selectIndices([0, 1, 2]);
       });
 
-      // In single mode, only first index should be selected
       expect(result.current.selectedCount).toBe(1);
       expect(result.current.getSelectedItems()).toEqual([testItems[0]]);
     });
@@ -282,7 +281,6 @@ describe('useTableSelection', () => {
         result.current.toggleSelectAll();
       });
 
-      // toggleSelectAll not supported in single mode
       expect(result.current.selectedCount).toBe(0);
     });
   });

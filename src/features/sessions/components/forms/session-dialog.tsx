@@ -77,7 +77,6 @@ const SessionDialog = ({
 
   const watchedSessionType = form.watch('sessionType');
 
-  // Scroll to first error on each submission attempt
   useScrollToError(form.formState.errors, form.formState.submitCount);
 
   return (

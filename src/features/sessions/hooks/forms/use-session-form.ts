@@ -197,7 +197,6 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       let resultSession: TrainingSession;
 
       if (mode === 'complete' && session) {
-        // Complete a planned session
         const sessionData: TrainingSessionPayload = {
           date: values.date,
           sessionType: values.sessionType,
@@ -236,7 +235,6 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         resultSession = data;
         handleSuccess('Séance enregistrée', `Votre sortie ${type}${dist} a été enregistrée !`);
       } else if (mode === 'edit' && session) {
-        // Edit existing session (planned or completed)
         const isPlanned = session.status === 'planned';
         const editData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlanned
           ? buildPlannedSessionPayload(values, normalizedValues, intervalDetails, session.recommendationId)
@@ -245,7 +243,6 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         resultSession = await updateSession(session.id, editData);
         handleSuccess('Séance modifiée', `Votre séance ${type}${dist} a été mise à jour avec succès.`);
       } else {
-        // Create new session
         const sessionData: TrainingSessionPayload = {
           date: values.date,
           sessionType: values.sessionType,

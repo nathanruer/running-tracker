@@ -242,7 +242,6 @@ describe('Entity Schemas', () => {
         targetDuration: 45,
         targetDistance: 8,
         targetPace: '5:30',
-        targetHeartRateZone: 'Z3',
         targetRPE: 7,
       };
       const result = trainingSessionEntitySchema.safeParse(session);

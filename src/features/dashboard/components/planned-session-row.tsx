@@ -3,8 +3,9 @@ import { ChevronDown } from 'lucide-react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type TrainingSession } from '@/lib/types';
-import { generateIntervalStructure } from '@/lib/utils/intervals';
-import { normalizePaceFormat, parseDuration, formatDuration } from '@/lib/utils/duration';
+import { generateIntervalStructure, calculateIntervalTotals } from '@/lib/utils/intervals';
+import { normalizePaceFormat, formatDuration } from '@/lib/utils/duration';
+import { formatHRDisplay } from '@/lib/utils/hr';
 import { IntervalDetailsView } from './interval-details-view';
 import { CommentCell } from './comment-cell';
 import { SessionRowActions } from './session-row-actions';
@@ -37,90 +38,25 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
     }
   };
 
-  const getSessionTotals = () => {
-    if (session.intervalDetails?.steps?.length) {
-      let totalSeconds = 0;
-      let totalDistance = 0;
-      let totalWeightedHR = 0;
-      let hrSeconds = 0;
+  const totals = calculateIntervalTotals(session.intervalDetails?.steps);
 
-      session.intervalDetails.steps.forEach(step => {
-        const durationSec = parseDuration(step.duration) || 0;
-        
-        totalSeconds += durationSec;
-        totalDistance += step.distance || 0;
-        
-        if (step.hr && durationSec > 0) {
-          totalWeightedHR += step.hr * durationSec;
-          hrSeconds += durationSec;
-        }
-      });
+  const displayDuration = totals.totalDurationMin > 0 
+    ? totals.totalDurationMin 
+    : session.targetDuration || 0;
 
-      return {
-        duration: totalSeconds / 60,
-        distance: totalDistance,
-        avgHR: hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null,
-        isCalculated: true
-      };
-    }
+  const displayDistance = totals.totalDistanceKm > 0 
+    ? totals.totalDistanceKm 
+    : session.targetDistance || 0;
 
-    return {
-      duration: session.targetDuration || 0,
-      distance: session.targetDistance || 0,
-      avgHR: session.targetHeartRateBpm || session.targetHeartRateZone || null,
-      isCalculated: false
-    };
-  };
+  const globalPace = totals.avgPaceFormatted 
+    ? `~${totals.avgPaceFormatted}` 
+    : (normalizePaceFormat(session.targetPace || '') ? `~${normalizePaceFormat(session.targetPace || '')}` : '-');
 
-  const totals = getSessionTotals();
-
-  const calculateGlobalPace = () => {
-    if (session.intervalDetails?.steps?.length) {
-      let totalWeightedPaceSec = 0;
-      let paceDistance = 0;
-      let totalDistance = 0;
-      let totalSeconds = 0;
-
-      session.intervalDetails.steps.forEach(step => {
-        const durationSec = parseDuration(step.duration) || 0;
-        
-        const stepPaceSec = parseDuration(step.pace);
-
-        if (durationSec > 0) {
-          totalSeconds += durationSec;
-          const dist = step.distance || 0;
-          totalDistance += dist;
-          
-          if (stepPaceSec && dist > 0) {
-            totalWeightedPaceSec += stepPaceSec * dist;
-            paceDistance += dist;
-          }
-        }
-      });
-
-      const avgPaceSec = paceDistance > 0 
-        ? totalWeightedPaceSec / paceDistance 
-        : (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
-
-      if (avgPaceSec) {
-        const roundedPace = Math.round(avgPaceSec);
-        const mins = Math.floor(roundedPace / 60);
-        const secs = roundedPace % 60;
-        return `~${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-      }
-    }
-
-    const normalizedPace = normalizePaceFormat(session.targetPace || '');
-    return normalizedPace ? `~${normalizedPace}` : '-';
-  };
-
-  const globalPace = calculateGlobalPace();
-  const globalHRDisplay = totals.avgHR
-    ? `~${totals.avgHR}`
-    : '-';
-
-  const displayDuration = totals.duration;
-  const displayDistance = totals.distance;
+  const globalHRDisplay = formatHRDisplay(
+    totals.avgBpm,
+    session.targetHeartRateBpm,
+    { useApproximation: true, includeUnit: false }
+  );
 
   return (
     <>
@@ -166,7 +102,7 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
               )}
             </div>
             {(session.intervalDetails?.workoutType || session.intervalDetails) && (
-              <span className="text-xs text-gradient font-medium">
+              <span className="text-xs text-gradient font-medium pr-1">
                 {session.intervalDetails?.workoutType || generateIntervalStructure(session.intervalDetails)}
               </span>
             )}

@@ -21,7 +21,6 @@ export default function ChatPage() {
   const conversationId = params.id as string;
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
 
-  // Load conversations for the sidebar
   const { isLoading: conversationsLoading } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
@@ -31,7 +30,6 @@ export default function ChatPage() {
     },
   });
 
-  // Load current conversation
   const { isLoading: conversationLoading } = useQuery({
     queryKey: ['conversation', conversationId],
     queryFn: async () => {

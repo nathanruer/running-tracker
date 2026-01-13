@@ -208,7 +208,6 @@ export function normalizeDurationToMMSS(
 
   const trimmed = input.trim();
 
-  // Handle apostrophe notation (e.g., "5'00")
   if (trimmed.includes("'")) {
     const parts = trimmed.split("'");
     if (parts.length === 2) {
@@ -223,18 +222,14 @@ export function normalizeDurationToMMSS(
     }
   }
 
-  // Handle colon notation (MM:SS or HH:MM:SS)
   if (trimmed.includes(':')) {
-    // Remove any decimal seconds (e.g., "05:30.5" → "05:30")
     const cleanDuration = trimmed.split('.')[0];
     const parts = cleanDuration.split(':').map(part => parseInt(part, 10));
 
-    // Validate all parts are numbers
     if (parts.some(part => isNaN(part) || part < 0)) {
       return null;
     }
 
-    // MM:SS format
     if (parts.length === 2) {
       const [minutes, seconds] = parts;
 
@@ -244,8 +239,6 @@ export function normalizeDurationToMMSS(
 
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
-
-    // HH:MM:SS format
     if (parts.length === 3) {
       const [hours, minutes, seconds] = parts;
 
@@ -254,11 +247,9 @@ export function normalizeDurationToMMSS(
       }
 
       if (options?.convertHoursToMinutes) {
-        // Convert hours to minutes (e.g., "01:30:00" → "90:00")
         const totalMinutes = hours * 60 + minutes;
         return `${totalMinutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       } else {
-        // HH:MM:SS not allowed without conversion
         return null;
       }
     }
@@ -266,7 +257,6 @@ export function normalizeDurationToMMSS(
     return null;
   }
 
-  // Handle plain numbers (interpreted as minutes)
   const cleaned = trimmed.replace(/['"]/g, '');
   const minutes = parseInt(cleaned, 10);
 
@@ -300,14 +290,6 @@ export function calculatePaceFromDurationAndDistance(durationStr: string, distan
 
   const paceSeconds = durationSeconds / distance;
   
-  // Pace is minutes per km. formatDuration returns MM:SS or HH:MM:SS.
-  // We want MM:SS. If pace is > 1 hour/km (walking very slow), formatDuration handles it.
-  
-  // formatDuration checks if seconds < 3600 (1 hour). For pace, it usually is.
-  // 06:00 min/km = 360 seconds.
-  
-  // Pace is minutes per km. 
-  // formatDuration automatically handles < 1h (MM:SS) and >= 1h (HH:MM:SS)
   return formatDuration(paceSeconds);
 }
 

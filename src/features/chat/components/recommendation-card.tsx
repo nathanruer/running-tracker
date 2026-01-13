@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import { formatDurationChat } from '@/lib/utils/chat/formatters';
+import { calculateIntervalTotals } from '@/lib/utils/intervals';
 
 interface RecommendationCardProps {
   session: AIRecommendedSession;
@@ -26,6 +27,12 @@ export function RecommendationCard({
   onDelete,
   getAddedSessionId,
 }: RecommendationCardProps) {
+  const totals = calculateIntervalTotals(session.interval_details?.steps);
+  
+  const displayDistance = totals.totalDistanceKm > 0 ? totals.totalDistanceKm : session.estimated_distance_km;
+  const displayDuration = totals.totalDurationMin > 0 ? totals.totalDurationMin : session.duration_min;
+  const isCalculated = totals.totalDistanceKm > 0 || totals.totalDurationMin > 0;
+
   return (
     <div className="bg-card rounded-lg p-4 border border-border space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -42,7 +49,13 @@ export function RecommendationCard({
                   : typeof session.interval_structure === 'object'
                   ? JSON.stringify(session.interval_structure)
                   : String(session.interval_structure);
-                return `${sessionType}: ${intervalStr}`;
+                
+                const targets = [];
+                if (session.target_pace_min_km) targets.push(`${session.target_pace_min_km}/km`);
+                if (session.target_hr_range) targets.push(`${session.target_hr_range} bpm`);
+                else if (session.target_hr_bpm) targets.push(`${session.target_hr_bpm} bpm`);
+                
+                return `${sessionType}: ${intervalStr}${targets.length > 0 ? ` (@ ${targets.join(', ')})` : ''}`;
               }
               return sessionType;
             })()}
@@ -87,19 +100,29 @@ export function RecommendationCard({
       </div>
 
       <div className="flex items-center gap-3 flex-wrap text-sm">
-        <span className="font-semibold">{session.estimated_distance_km} km</span>
+        <span className="font-semibold">
+             {isCalculated && <span className="opacity-70">~</span>}
+             {displayDistance} km
+        </span>
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {formatDurationChat(session.duration_min)}
+          {isCalculated && <span className="opacity-70">~</span>}
+          {formatDurationChat(displayDuration)}
         </span>
+        
         <span className="flex items-center gap-1">
           <Activity className="h-3 w-3" />
-          {session.target_pace_min_km} /km
+          {(totals.avgPaceFormatted) ? `~${totals.avgPaceFormatted}` : session.target_pace_min_km} /km
         </span>
+        
         <span>•</span>
+        
         <span className="text-sm">
-          FC: {session.target_hr_bpm || session.target_hr_zone}
-          {session.target_hr_bpm && ' bpm'}
+          FC: {totals.avgBpm ? `~${totals.avgBpm} bpm` : (
+            session.target_hr_bpm ? `${session.target_hr_bpm} bpm` :
+            session.target_hr_range ? `${session.target_hr_range} bpm` :
+            '-'
+          )}
         </span>
         {session.target_rpe && (
           <span className="text-sm">
@@ -109,7 +132,7 @@ export function RecommendationCard({
       </div>
 
       <p className="text-sm bg-muted/30 rounded px-3 py-2 border-l-2 border-primary">
-        {session.why_this_session}
+        {session.description}
       </p>
     </div>
   );

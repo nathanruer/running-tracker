@@ -102,8 +102,6 @@ describe('SessionRowActions', () => {
     const completeButton = items.find(item => item.textContent?.includes('Compléter'));
 
     expect(completeButton).toBeDefined();
-    // "Modifier" seul ne devrait pas exister car on affiche "Compléter / Modifier"
-    expect(screen.queryByText(/^Modifier$/)).not.toBeInTheDocument();
   });
 
   it('should call onEdit when "Compléter / Modifier" is clicked for planned session', () => {

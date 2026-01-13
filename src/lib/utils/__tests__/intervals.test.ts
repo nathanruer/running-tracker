@@ -268,15 +268,12 @@ describe('interval-transformers', () => {
     });
 
     it('should not validate repetition count of 0 (falsy value)', () => {
-      // Note: 0 is falsy in JavaScript, so the validation doesn't trigger
-      // This is a known limitation - use negative test instead
       const values: IntervalFormValues = {
         sessionType: 'Fractionné',
         repetitionCount: 0,
       };
 
       const errors = validateIntervalData(values);
-      // 0 is falsy, so validation is skipped
       expect(errors).not.toContain('Le nombre de répétitions doit être supérieur à 0');
     });
 

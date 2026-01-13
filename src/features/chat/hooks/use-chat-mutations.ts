@@ -15,7 +15,7 @@ export function useChatMutations(conversationId: string | null) {
 
   const acceptSessionMutation = useMutation({
     mutationFn: async (session: AIRecommendedSession) => {
-      const recommendationText = session.why_this_session || '';
+      const recommendationText = session.description || '';
       const comments = recommendationText ? `Séance recommandée : ${recommendationText}` : '';
 
       const sessionType = session.session_type;
@@ -33,8 +33,7 @@ export function useChatMutations(conversationId: string | null) {
           targetDuration: session.duration_min,
           targetDistance: session.estimated_distance_km,
           targetPace: session.target_pace_min_km,
-          targetHeartRateZone: session.target_hr_zone,
-          targetHeartRateBpm: session.target_hr_bpm,
+          targetHeartRateBpm: session.target_hr_range || session.target_hr_bpm,
           targetRPE: session.target_rpe,
           intervalDetails,
           recommendationId: session.recommendation_id,

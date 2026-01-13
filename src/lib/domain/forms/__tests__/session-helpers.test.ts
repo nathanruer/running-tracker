@@ -86,7 +86,6 @@ describe('buildPlannedSessionPayload', () => {
     expect(result.targetDuration).toBe(45);
     expect(result.targetDistance).toBe(10);
     expect(result.targetPace).toBe('04:30');
-    expect(result.targetHeartRateZone).toBe('Zone 4');
     expect(result.targetHeartRateBpm).toBe('150');
     expect(result.targetRPE).toBe(5);
     expect(result.comments).toBe('Session planifiée');
@@ -115,7 +114,7 @@ describe('buildPlannedSessionPayload', () => {
 
     expect(result.targetDistance).toBeNull();
     expect(result.targetPace).toBeNull();
-    expect(result.targetHeartRateZone).toBeNull();
+
     expect(result.targetHeartRateBpm).toBeNull();
     expect(result.targetRPE).toBeNull();
     expect(result.recommendationId).toBeUndefined();

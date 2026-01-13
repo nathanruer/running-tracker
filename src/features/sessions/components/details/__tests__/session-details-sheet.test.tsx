@@ -119,8 +119,42 @@ describe('SessionDetailsSheet', () => {
 
   it('should render comments when present', () => {
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
-    
+
     expect(screen.getByText('Notes')).toBeInTheDocument();
     expect(screen.getByText('Test session')).toBeInTheDocument();
+  });
+
+  it('should format target duration consistently (HH:MM:SS for >= 60min)', () => {
+    const plannedSession: TrainingSession = {
+      ...mockSession,
+      duration: null,
+      targetDuration: 63, // 63 minutes = 01:03:00
+      date: null,
+      status: 'planned',
+      intervalDetails: null,
+    };
+
+    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={plannedSession} />);
+
+    // Should display as ~01:03:00 (HH:MM:SS) not ~63 min
+    expect(screen.getByText(/~01:03:00/i)).toBeInTheDocument();
+    expect(screen.queryByText(/63 min/i)).not.toBeInTheDocument();
+  });
+
+  it('should format target duration consistently (MM:SS for < 60min)', () => {
+    const plannedSession: TrainingSession = {
+      ...mockSession,
+      duration: null,
+      targetDuration: 45, // 45 minutes = 45:00
+      date: null,
+      status: 'planned',
+      intervalDetails: null,
+    };
+
+    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={plannedSession} />);
+
+    // Should display as ~45:00 (MM:SS) not ~45 min
+    expect(screen.getByText(/~45:00/i)).toBeInTheDocument();
+    expect(screen.queryByText(/45 min/i)).not.toBeInTheDocument();
   });
 });

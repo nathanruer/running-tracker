@@ -1,5 +1,8 @@
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { parseDuration, normalizeDurationFormat } from './duration';
+import { estimateEffectiveDistance } from './distance';
+import { extractStepHR } from './hr';
+import { filterStepsWithProperty, filterWorkSteps } from './step';
 
 export interface IntervalFormValues {
   sessionType: string;
@@ -253,7 +256,9 @@ function isValidPace(pace: string): boolean {
  * @returns Average duration in seconds
  */
 export function calculateAverageDuration(steps: IntervalStep[]): number {
-  const stepsWithDuration = steps.filter(step => step.stepType !== 'warmup' && step.stepType !== 'cooldown' && step.duration);
+  // Filter work steps (excluding warmup/cooldown) that have duration
+  const workSteps = filterWorkSteps(steps);
+  const stepsWithDuration = filterStepsWithProperty(workSteps, 'duration');
 
   if (stepsWithDuration.length === 0) return 0;
 
@@ -296,8 +301,15 @@ export function autoFillIntervalDurations(
   steps: IntervalStep[],
   setFormValue: (name: 'effortDuration' | 'recoveryDuration', value: string) => void
 ) {
-  const effortSteps = steps.filter(step => step.stepType === 'effort' && step.duration);
-  const recoverySteps = steps.filter(step => step.stepType === 'recovery' && step.duration);
+  // Use step utilities for filtering
+  const effortSteps = filterStepsWithProperty(
+    steps.filter(step => step.stepType === 'effort'),
+    'duration'
+  );
+  const recoverySteps = filterStepsWithProperty(
+    steps.filter(step => step.stepType === 'recovery'),
+    'duration'
+  );
 
   if (effortSteps.length > 0) {
     const avgEffortSeconds = calculateAverageDuration(effortSteps);
@@ -310,3 +322,157 @@ export function autoFillIntervalDurations(
   }
 }
 
+// ============================================================================
+// ANALYSIS
+// ============================================================================
+
+/**
+ * Extracts average effort pace from interval details
+ * Looks for steps with type 'effort' or 'work' and calculates average pace
+ * 
+ * @param details Interval details object
+ * @returns Formatted pace string (MM:SS) or null if no effort steps found
+ */
+export function getEffortPace(details: IntervalDetails | null): string | null {
+  if (!details?.steps || !Array.isArray(details.steps)) return null;
+  
+  interface LooseStep {
+    stepType?: string;
+    type?: string;
+    pace?: string;
+    allure?: string;
+    target?: { pace?: string };
+  }
+
+  const efforts = details.steps.filter(s => {
+    const ls = s as unknown as LooseStep;
+    return s.stepType === 'effort' || 
+           ls.stepType === 'work' || 
+           ls.type === 'work' || 
+           ls.type === 'Effort';
+  });
+
+  if (efforts.length === 0) return null;
+
+  const pToS = (p: string) => {
+    const parts = p.split(':').map(Number);
+    return parts.length === 2 ? parts[0] * 60 + parts[1] : 0;
+  };
+
+  let totalPaceSec = 0;
+  let count = 0;
+
+  for (const e of efforts) {
+      const ls = e as unknown as LooseStep;
+      const paceStr = ls.pace || ls.allure || ls.target?.pace; 
+      if (paceStr && typeof paceStr === 'string' && paceStr.includes(':')) {
+          const s = pToS(paceStr);
+          if (s > 0) {
+              totalPaceSec += s;
+              count++;
+          }
+      }
+  }
+
+  if (count === 0) return null;
+  const avgPaceSec = totalPaceSec / count;
+  
+  return formatDurationAlwaysMMSS(avgPaceSec);
+}
+
+// ============================================================================
+// GLOBAL SESSION CALCULATIONS
+// ============================================================================
+
+export interface IntervalTotals {
+  totalDurationMin: number;
+  totalDistanceKm: number;
+  avgPaceSec: number | null;
+  avgPaceFormatted: string | null;
+  avgBpm: number | null;
+  isEstimated: boolean;
+}
+
+/**
+ * Cleans interval steps by removing redundant recovery steps
+ * Rule: Remove 'recovery' if it is the last step OR immediately followed by 'cooldown'
+ */
+export function cleanIntervalSteps(steps: IntervalStep[]): IntervalStep[] {
+  if (!steps?.length) return [];
+  
+  return steps.filter((step, index, arr) => {
+    if (step.stepType === 'recovery') {
+      const nextStep = arr[index + 1];
+      if (!nextStep) return false; 
+      if (nextStep.stepType === 'cooldown') return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Calculates global totals for an interval session (Duration, Distance, Pace, HR)
+ * Handles estimated distances if missing (Duration / Pace)
+ * Unifies logic between Dashboard and AI Chat
+ */
+export function calculateIntervalTotals(rawSteps: IntervalStep[] | undefined | null): IntervalTotals {
+  const steps = cleanIntervalSteps(rawSteps || []);
+  
+  if (!steps.length) {
+    return { totalDurationMin: 0, totalDistanceKm: 0, avgPaceSec: null, avgPaceFormatted: null, avgBpm: null, isEstimated: false };
+  }
+
+  let totalSeconds = 0;
+  let totalDistance = 0;
+  let totalWeightedHR = 0;
+  let hrSeconds = 0;
+  let hasEstimations = false;
+
+  steps.forEach(step => {
+    const durationSec = parseDuration(step.duration) || 0;
+    const stepPaceSec = parseDuration(step.pace);
+    const stepDistance = Number(step.distance) || 0;
+
+    if (durationSec > 0) {
+      const distanceResult = estimateEffectiveDistance(
+        durationSec,
+        stepPaceSec,
+        stepDistance > 0 ? stepDistance : null
+      );
+
+      if (distanceResult.isEstimated) {
+        hasEstimations = true;
+      }
+
+      totalSeconds += durationSec;
+      totalDistance += distanceResult.distance;
+
+      const hrValue = extractStepHR(step);
+
+      if (hrValue) {
+        totalWeightedHR += hrValue * durationSec;
+        hrSeconds += durationSec;
+      }
+    }
+  });
+
+  const avgPaceSec = (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
+  const avgBpm = hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null;
+
+  let avgPaceFormatted = null;
+  if (avgPaceSec) {
+    const rounded = Math.round(avgPaceSec);
+    const mins = Math.floor(rounded / 60);
+    const secs = rounded % 60;
+    avgPaceFormatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  return {
+    totalDurationMin: totalSeconds / 60,
+    totalDistanceKm: Number(totalDistance.toFixed(2)),
+    avgPaceSec,
+    avgPaceFormatted,
+    avgBpm,
+    isEstimated: hasEstimations
+  };
+}

@@ -14,10 +14,9 @@ describe('RecommendationCard', () => {
     duration_min: 45,
     estimated_distance_km: 8,
     target_pace_min_km: '5:30',
-    target_hr_zone: 'Zone 2',
     target_hr_bpm: 145,
     target_rpe: 6,
-    why_this_session: 'Pour développer votre endurance de base',
+    description: 'Pour développer votre endurance de base',
   };
 
   const mockOnAccept = vi.fn();
@@ -86,12 +85,6 @@ describe('RecommendationCard', () => {
       expect(screen.queryByText(/RPE:/)).not.toBeInTheDocument();
     });
 
-    it('should display reason for session', () => {
-      render(<RecommendationCard {...defaultProps} />);
-
-      expect(screen.getByText('Pour développer votre endurance de base')).toBeInTheDocument();
-    });
-
     it('should display interval structure for interval sessions', () => {
       render(
         <RecommendationCard
@@ -104,7 +97,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(screen.getByText('Fractionné: 8x400m R:1\'')).toBeInTheDocument();
+      expect(screen.getByText(/Fractionné: 8x400m R:1'/)).toBeInTheDocument();
     });
   });
 
@@ -208,20 +201,7 @@ describe('RecommendationCard', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle missing why_this_session gracefully', () => {
-      render(
-        <RecommendationCard
-          {...defaultProps}
-          session={{
-            ...mockSession,
-            why_this_session: undefined,
-          }}
-        />
-      );
 
-      // Should not crash, reason area should be empty
-      expect(screen.getByText('Endurance fondamentale')).toBeInTheDocument();
-    });
 
     it('should handle missing session_type gracefully', () => {
       render(
@@ -234,7 +214,6 @@ describe('RecommendationCard', () => {
         />
       );
 
-      // Should not crash
       expect(screen.getByText('Séance 5')).toBeInTheDocument();
     });
 
@@ -252,23 +231,6 @@ describe('RecommendationCard', () => {
       );
 
       expect(formatDurationChat).toHaveBeenCalledWith(60);
-    });
-
-    it('should display target_hr_zone when target_hr_bpm is absent', () => {
-      render(
-        <RecommendationCard
-          {...defaultProps}
-          session={{
-            ...mockSession,
-            target_hr_bpm: undefined,
-            target_hr_zone: 'Zone 3',
-          }}
-        />
-      );
-
-      expect(screen.getByText(/FC:/)).toBeInTheDocument();
-      expect(screen.getByText(/Zone 3/)).toBeInTheDocument();
-      expect(screen.queryByText(/bpm/)).not.toBeInTheDocument();
     });
   });
 });

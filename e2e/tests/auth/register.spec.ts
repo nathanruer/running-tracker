@@ -243,7 +243,6 @@ test.describe('Register Flow - Complete User Journey', () => {
     await authPage.assertSuccessToastVisible(/compte créé/i);
     await dashboardPage.assertDashboardLoaded();
 
-    // Webkit stabilization
     await page.waitForTimeout(500);
 
     await profilePage.goto();

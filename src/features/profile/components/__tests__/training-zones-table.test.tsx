@@ -66,7 +66,6 @@ describe('TrainingZonesTable', () => {
     render(<TrainingZonesTable vma={14} />);
 
     const rows = screen.getAllByRole('row');
-    // Skip header row, check data rows
     rows.slice(1).forEach((row) => {
       expect(row).toHaveTextContent('--');
     });
@@ -76,7 +75,6 @@ describe('TrainingZonesTable', () => {
     render(<TrainingZonesTable maxHeartRate={180} />);
 
     const rows = screen.getAllByRole('row');
-    // Each row should have "--" in the pace column
     rows.slice(1).forEach((row) => {
       expect(row).toHaveTextContent('--');
     });

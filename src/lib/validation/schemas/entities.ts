@@ -34,6 +34,7 @@ export const intervalStepEntitySchema = z.object({
   distance: nullablePositiveNumberSchema,
   pace: nullablePaceSchema,
   hr: nullableHeartRateSchema,
+  hrRange: z.string().nullable().optional(),
 });
 
 // ============================================================================
@@ -139,7 +140,7 @@ export const trainingSessionEntitySchema = z.object({
   targetPace: z.string().nullable().optional(),
   targetDuration: z.number().nullable().optional(),
   targetDistance: z.number().nullable().optional(),
-  targetHeartRateZone: z.string().nullable().optional(),
+
   targetHeartRateBpm: z.string().nullable().optional(),
   targetRPE: z.number().nullable().optional(),
   recommendationId: z.string().nullable().optional(),
@@ -176,7 +177,7 @@ export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
  */
 export type TrainingSessionPayload = Omit<
   TrainingSession,
-  'id' | 'userId' | 'sessionNumber' | 'week' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetHeartRateZone' | 'targetRPE'
+  'id' | 'userId' | 'sessionNumber' | 'week' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE'
 >;
 
 /**
@@ -203,7 +204,7 @@ export type PlannedSessionPayload = {
   targetDuration: number | null;
   targetDistance: number | null;
   targetPace: string | null;
-  targetHeartRateZone: string | null;
+
   targetHeartRateBpm: string | null;
   targetRPE: number | null;
   intervalDetails?: IntervalDetails | null;

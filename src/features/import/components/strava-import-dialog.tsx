@@ -106,7 +106,6 @@ export function StravaImportDialog({
         onOpenChange(false);
         clearSelection();
       } else if (selectedIndices.size === 1) {
-        // Single activity import - fills session form
         const activity = selectedActivities[0];
         const response = await fetch(`/api/strava/activities/${activity.id}`);
 
@@ -119,7 +118,6 @@ export function StravaImportDialog({
         onOpenChange(false);
         clearSelection();
       } else {
-        // Bulk import mode (multiple activities)
         const activityPromises = selectedActivities.map(async (activity) => {
           try {
             const response = await fetch(`/api/strava/activities/${activity.id}`);
