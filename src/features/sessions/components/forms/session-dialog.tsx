@@ -1,4 +1,5 @@
 'use client';
+
 import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -24,6 +25,8 @@ import { SessionDialogActions } from './session-dialog-actions';
 import { SessionDialogHeader } from './session-dialog-header';
 import { useSessionForm } from '../../hooks/forms/use-session-form';
 import { useScrollToError } from '@/hooks/use-scroll-to-error';
+import { useToast } from '@/hooks/use-toast';
+import { parseGarminCSV } from '@/features/import/parsers/garmin-csv';
 
 // Helper functions to adapt the main form to interval fields
 const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {
@@ -58,6 +61,7 @@ const SessionDialog = ({
   onRequestStravaImport,
   onSuccess,
 }: SessionDialogProps) => {
+  const { toast } = useToast();
   const {
     form,
     loading,
@@ -79,14 +83,61 @@ const SessionDialog = ({
 
   useScrollToError(form.formState.errors, form.formState.submitCount);
 
+  const handleCsvImport = (content: string) => {
+    try {
+      const intervalDetails = parseGarminCSV(content);
+
+      if (!intervalDetails) {
+        toast({
+          title: 'Format invalide',
+          description: 'Impossible de lire le fichier CSV Garmin. Vérifiez le format.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      form.setValue('sessionType', 'Fractionné');
+      form.setValue('steps', intervalDetails.steps);
+      form.setValue('workoutType', intervalDetails.workoutType || undefined);
+      form.setValue('repetitionCount', intervalDetails.repetitionCount);
+      form.setValue('effortDuration', intervalDetails.effortDuration || undefined);
+      form.setValue('recoveryDuration', intervalDetails.recoveryDuration || undefined);
+      form.setValue('effortDistance', intervalDetails.effortDistance);
+      form.setValue('recoveryDistance', intervalDetails.recoveryDistance);
+      if (intervalDetails.targetEffortPace) {
+        form.setValue('targetEffortPace', intervalDetails.targetEffortPace);
+      }
+      if (intervalDetails.targetEffortHR) {
+        form.setValue('targetEffortHR', intervalDetails.targetEffortHR);
+      }
+      if (intervalDetails.targetRecoveryPace) {
+        form.setValue('targetRecoveryPace', intervalDetails.targetRecoveryPace);
+      }
+      
+      setIsCustomSessionType(false);
+      
+      toast({
+        title: 'Import réussi',
+        description: `${intervalDetails.steps.length} étapes importées depuis le fichier Garmin.`,
+      });
+    } catch {
+      toast({
+        title: 'Erreur d\'import',
+        description: 'Une erreur est survenue lors de l\'analyse du fichier.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-        <SessionDialogHeader mode={mode} onReset={resetForm} />
-        <FileImportButtons
-          mode={mode}
-          onStravaClick={onRequestStravaImport}
-        />
+      <DialogContent hideClose className="sm:max-w-[640px] rounded-xl border border-border/50 shadow-2xl p-0 overflow-hidden bg-card/95 backdrop-blur-xl">
+        <div className="max-h-[95vh] overflow-y-auto p-8 space-y-8">
+          <SessionDialogHeader mode={mode} onReset={resetForm} />
+          <FileImportButtons
+            mode={mode}
+            onStravaClick={onRequestStravaImport}
+          />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <FormField
@@ -94,7 +145,7 @@ const SessionDialog = ({
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Date de la séance</FormLabel>
                   <FormControl>
                     <DatePicker
                       date={field.value ? new Date(field.value + 'T00:00:00') : undefined}
@@ -147,6 +198,7 @@ const SessionDialog = ({
                 setValue={createIntervalSetValue(form.setValue)}
                 watch={createIntervalWatch(form.watch)}
                 disableAutoRegeneration={mode === 'edit' && session?.status === 'completed'}
+                onCsvImport={handleCsvImport}
               />
             )}
             <SessionFormFields control={form.control} />
@@ -162,6 +214,7 @@ const SessionDialog = ({
             />
           </form>
         </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

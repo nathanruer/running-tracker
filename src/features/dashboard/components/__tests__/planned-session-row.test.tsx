@@ -86,14 +86,9 @@ describe('PlannedSessionRow', () => {
 
     it('displays target RPE', () => {
       renderRow();
-      expect(screen.getByText('5/10')).toBeInTheDocument();
+      expect(screen.getByText('5')).toBeInTheDocument();
     });
 
-    it('shows italic styling for planned rows', () => {
-      const { container } = renderRow();
-      const row = container.querySelector('tr');
-      expect(row?.className).toContain('italic');
-    });
   });
 
   describe('Fractionné planned sessions', () => {
@@ -148,10 +143,12 @@ describe('PlannedSessionRow', () => {
 
     it('formats target duration correctly', () => {
       renderRow({ ...mockPlannedSession, targetDuration: 30 });
-      expect(screen.getByText('~30:00')).toBeInTheDocument();
+      expect(screen.getAllByText('~')[0]).toBeInTheDocument();
+      expect(screen.getByText('30:00')).toBeInTheDocument();
 
       renderRow({ ...mockPlannedSession, targetDuration: 120 });
-      expect(screen.getByText('~02:00:00')).toBeInTheDocument();
+      expect(screen.getAllByText('~').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('02:00:00')).toBeInTheDocument();
     });
   });
 

@@ -30,7 +30,7 @@ export function getSessionDisplayData(session: TrainingSession) {
       ? (session.targetPace || '') 
       : (session.avgPace || ''),
     avgHeartRate: isPlanned 
-      ? (session.targetHeartRateBpm ? parseInt(session.targetHeartRateBpm) : 0) 
+      ? (session.targetHeartRateBpm ? (typeof session.targetHeartRateBpm === 'string' ? parseInt(session.targetHeartRateBpm, 10) : session.targetHeartRateBpm) : 0) 
       : (session.avgHeartRate || 0),
     rpe: isPlanned 
       ? (session.targetRPE || null) 
@@ -73,9 +73,7 @@ export function buildPlannedSessionPayload(
     targetDuration: durationInMinutes,
     targetDistance: values.distance ?? null,
     targetPace: values.avgPace || null,
-    targetHeartRateBpm: values.avgHeartRate
-      ? `${values.avgHeartRate}`
-      : null,
+    targetHeartRateBpm: values.avgHeartRate ?? null,
     targetRPE: values.perceivedExertion ?? null,
     intervalDetails,
     comments: values.comments,
@@ -110,7 +108,7 @@ export function buildCompletedSessionPayload(
  */
 export function transformStepsData(
   steps: Array<{
-    stepNumber: number;
+    stepNumber?: number;
     stepType: 'warmup' | 'effort' | 'recovery' | 'cooldown';
     duration: string | null;
     distance: number | null;
@@ -118,7 +116,7 @@ export function transformStepsData(
     hr: number | null;
   }> | undefined
 ): Array<{
-  stepNumber: number;
+  stepNumber?: number;
   stepType: 'warmup' | 'effort' | 'recovery' | 'cooldown';
   duration: string | null;
   distance: number | null;
@@ -127,8 +125,8 @@ export function transformStepsData(
 }> {
   if (!steps) return [];
 
-  return steps.map(s => ({
-    stepNumber: s.stepNumber,
+  return steps.map((s, index) => ({
+    stepNumber: s.stepNumber ?? (index + 1),
     stepType: s.stepType,
     duration: s.duration || null,
     distance: s.distance ?? null,

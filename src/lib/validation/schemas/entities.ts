@@ -28,7 +28,7 @@ export const stepTypeEnum = z.enum(['warmup', 'effort', 'recovery', 'cooldown'])
  * Schema for individual interval steps within a workout
  */
 export const intervalStepEntitySchema = z.object({
-  stepNumber: z.number().min(1, { message: VALIDATION_MESSAGES.STEP_NUMBER_REQUIRED }),
+  stepNumber: z.number().min(1, { message: VALIDATION_MESSAGES.STEP_NUMBER_REQUIRED }).optional(),
   stepType: stepTypeEnum,
   duration: nullableDurationSchema,
   distance: nullablePositiveNumberSchema,
@@ -140,8 +140,7 @@ export const trainingSessionEntitySchema = z.object({
   targetPace: z.string().nullable().optional(),
   targetDuration: z.number().nullable().optional(),
   targetDistance: z.number().nullable().optional(),
-
-  targetHeartRateBpm: z.string().nullable().optional(),
+  targetHeartRateBpm: z.union([z.string(), z.number()]).nullable().optional(),
   targetRPE: z.number().nullable().optional(),
   recommendationId: z.string().nullable().optional(),
   externalId: z.string().nullable().optional(),
@@ -205,7 +204,7 @@ export type PlannedSessionPayload = {
   targetDistance: number | null;
   targetPace: string | null;
 
-  targetHeartRateBpm: string | null;
+  targetHeartRateBpm: string | number | null;
   targetRPE: number | null;
   intervalDetails?: IntervalDetails | null;
   comments: string;

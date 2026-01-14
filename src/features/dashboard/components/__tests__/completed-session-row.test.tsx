@@ -29,7 +29,7 @@ describe('CompletedSessionRow', () => {
 
   const mockSession: TrainingSession = {
     id: '1',
-    sessionNumber: 5,
+    sessionNumber: 1,
     week: 2,
     date: '2024-01-15T10:00:00.000Z',
     sessionType: 'Footing',
@@ -67,16 +67,16 @@ describe('CompletedSessionRow', () => {
     it('displays basic session information', () => {
       renderRow();
 
-      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('1')).toBeInTheDocument();
       expect(screen.getByText('Footing')).toBeInTheDocument();
       expect(screen.getByText('01:00:00')).toBeInTheDocument();
       expect(screen.getByText('5:42')).toBeInTheDocument();
-      expect(screen.getByText('6/10')).toBeInTheDocument();
+      expect(screen.getByText('6')).toBeInTheDocument();
     });
 
     it('formats large distances correctly', () => {
       renderRow();
-      expect(screen.getByText('10.50')).toBeInTheDocument();
+      expect(screen.getByText('10.5')).toBeInTheDocument();
       expect(screen.getByText('km')).toBeInTheDocument();
     });
 
@@ -103,20 +103,20 @@ describe('CompletedSessionRow', () => {
 
     it('colors RPE appropriately based on value', () => {
       const { unmount: unmount1 } = renderRow({ ...mockSession, perceivedExertion: 3 });
-      expect(screen.getByText('3/10')).toHaveClass('text-green-500');
+      expect(screen.getByText('3')).toHaveClass('text-emerald-500/90');
       unmount1();
 
       const { unmount: unmount2 } = renderRow({ ...mockSession, perceivedExertion: 5 });
-      expect(screen.getByText('5/10')).toHaveClass('text-yellow-500');
+      expect(screen.getByText('5')).toHaveClass('text-amber-500/90');
       unmount2();
 
       const { unmount: unmount3 } = renderRow({ ...mockSession, perceivedExertion: 7 });
-      expect(screen.getByText('7/10')).toHaveClass('text-orange-500');
+      expect(screen.getByText('7')).toHaveClass('text-orange-500/90');
       unmount3();
 
       renderRow({ ...mockSession, perceivedExertion: 9 });
-      const rpe = screen.getByText('9/10');
-      expect(rpe).toHaveClass('text-red-500');
+      const rpe = screen.getByText('9');
+      expect(rpe).toHaveClass('text-rose-500/90');
       expect(rpe).toHaveClass('font-bold');
     });
   });

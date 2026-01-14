@@ -86,7 +86,7 @@ describe('buildPlannedSessionPayload', () => {
     expect(result.targetDuration).toBe(45);
     expect(result.targetDistance).toBe(10);
     expect(result.targetPace).toBe('04:30');
-    expect(result.targetHeartRateBpm).toBe('150');
+    expect(result.targetHeartRateBpm).toBe(150);
     expect(result.targetRPE).toBe(5);
     expect(result.comments).toBe('Session planifiée');
     expect(result.recommendationId).toBe('rec-123');

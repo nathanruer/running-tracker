@@ -8,6 +8,7 @@ import SessionDialog from '@/features/sessions/components/forms/session-dialog';
 import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
 import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
+import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -194,28 +195,7 @@ const DashboardPage = () => {
   }
 
   if (showGlobalLoading) {
-    return (
-      <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
-        <div className="mx-auto max-w-[90rem]">
-          <h1 className="text-3xl font-extrabold text-gradient mb-6 md:hidden px-1">Dashboard</h1>
-
-          <SessionsTable
-            sessions={[]}
-            availableTypes={[]}
-            selectedType="all"
-            onTypeChange={() => {}}
-            viewMode="paginated"
-            onViewModeChange={() => {}}
-            actions={{
-              onEdit: () => {},
-              onDelete: () => {},
-              onBulkDelete: async () => {},
-            }}
-            initialLoading={true}
-          />
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!user) {
@@ -282,7 +262,7 @@ const DashboardPage = () => {
       className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12"
     >
       <div className="mx-auto max-w-[90rem]">
-        <h1 data-testid="dashboard-title-mobile" className="text-3xl font-extrabold text-gradient mb-6 md:hidden px-1">Dashboard</h1>
+        <h1 data-testid="dashboard-title-mobile" className="text-4xl font-black tracking-tight text-gradient mb-8 md:hidden px-1">Dashboard</h1>
 
         {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
           <SessionsTable

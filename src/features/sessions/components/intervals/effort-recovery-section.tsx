@@ -39,7 +39,7 @@ export function EffortRecoverySection({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">{label}</h4>
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">{label}</h4>
         <ModeToggleButton mode={mode} onChange={onModeChange} />
       </div>
 
@@ -50,9 +50,9 @@ export function EffortRecoverySection({
             name={durationField}
             render={({ field }) => (
               <FormItem className={hasExtraFields ? "" : "w-full"}>
-                <FormLabel>Durée</FormLabel>
+                <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Durée</FormLabel>
                 <FormControl>
-                  <Input placeholder="00:00" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-background/50" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -64,12 +64,13 @@ export function EffortRecoverySection({
             name={distanceField}
             render={({ field }) => (
               <FormItem className={hasExtraFields ? "" : "w-full"}>
-                <FormLabel>Distance (km)</FormLabel>
+                <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Distance (km)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     step="0.01"
                     placeholder="0"
+                    className="rounded-xl h-10 border-border/50 bg-background/50"
                     value={(field.value as number) ?? ''}
                     onChange={(e) =>
                       field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
@@ -88,9 +89,9 @@ export function EffortRecoverySection({
             name={paceField}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Allure cible</FormLabel>
+                <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Allure cible</FormLabel>
                 <FormControl>
-                  <Input placeholder="00:00" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-background/50" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -104,11 +105,12 @@ export function EffortRecoverySection({
             name={hrField}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>FC cible</FormLabel>
+                <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">FC cible</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     placeholder="0"
+                    className="rounded-xl h-10 border-border/50 bg-background/50"
                     value={(field.value as number) ?? ''}
                     onChange={(e) =>
                       field.onChange(e.target.value === '' ? null : parseInt(e.target.value))

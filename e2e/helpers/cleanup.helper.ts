@@ -14,6 +14,10 @@ export async function deleteCurrentUser(page: Page, email?: string): Promise<boo
   try {
     let response = await page.request.delete(`${API_BASE_URL}/api/auth/delete-account`);
     
+    if (response.ok()) {
+      return true;
+    }
+    
     if (response.status() === 401 && email) {
       const loginResponse = await page.request.post(`${API_BASE_URL}/api/auth/login`, {
         data: { email, password: TEST_PASSWORD }
@@ -21,12 +25,11 @@ export async function deleteCurrentUser(page: Page, email?: string): Promise<boo
       
       if (loginResponse.ok()) {
         response = await page.request.delete(`${API_BASE_URL}/api/auth/delete-account`);
-      } else {
-        return false;
+        return response.ok();
       }
     }
 
-    return response.ok();
+    return false;
   } catch {
     return false;
   }

@@ -79,17 +79,17 @@ export function SortableIntervalStep({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-md border border-border/50 p-4 space-y-3 bg-background/50 ${
-        isDragging ? 'shadow-lg ring-2 ring-primary/20 bg-background' : ''
+      className={`rounded-2xl border border-border/40 p-5 space-y-4 bg-background/40 hover:bg-background/60 transition-all ${
+        isDragging ? 'shadow-md ring-1 ring-violet-500/20 bg-background z-50' : ''
       }`}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-6 w-6 cursor-grab active:cursor-grabbing text-muted-foreground hover:bg-muted"
+            className="h-8 w-8 rounded-xl cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-foreground hover:bg-muted"
             {...attributes}
             {...listeners}
           >
@@ -101,24 +101,24 @@ export function SortableIntervalStep({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-9 px-3 rounded-xl font-medium text-sm hover:bg-muted/50 active:scale-95 transition-all"
+                className="h-8 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-95 transition-all border border-transparent hover:border-border/50"
               >
                 {STEP_TYPE_LABELS[step.stepType as keyof typeof STEP_TYPE_LABELS] || step.stepType}
                 {step.stepType === 'effort' && ` ${calculateEffortNumber()}`}
-                <ChevronDown className="ml-1 h-3 w-3" />
+                <ChevronDown className="ml-1.5 h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="rounded-xl">
-              <DropdownMenuItem onClick={() => handleTypeChange('warmup')}>
+            <DropdownMenuContent align="start" className="rounded-xl border-border/50 shadow-xl overflow-hidden min-w-[140px]">
+              <DropdownMenuItem className="text-xs font-medium py-2.5 focus:bg-violet-500 focus:text-white cursor-pointer" onClick={() => handleTypeChange('warmup')}>
                 {STEP_TYPE_LABELS.warmup}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleTypeChange('effort')}>
+              <DropdownMenuItem className="text-xs font-medium py-2.5 focus:bg-violet-500 focus:text-white cursor-pointer" onClick={() => handleTypeChange('effort')}>
                 {STEP_TYPE_LABELS.effort}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleTypeChange('recovery')}>
+              <DropdownMenuItem className="text-xs font-medium py-2.5 focus:bg-violet-500 focus:text-white cursor-pointer" onClick={() => handleTypeChange('recovery')}>
                 {STEP_TYPE_LABELS.recovery}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleTypeChange('cooldown')}>
+              <DropdownMenuItem className="text-xs font-medium py-2.5 focus:bg-violet-500 focus:text-white cursor-pointer" onClick={() => handleTypeChange('cooldown')}>
                 {STEP_TYPE_LABELS.cooldown}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -129,7 +129,7 @@ export function SortableIntervalStep({
           variant="ghost"
           size="icon"
           onClick={() => onRemove(index)}
-          className="h-8 w-8 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
+          className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-red-500 hover:bg-red-500/5 active:scale-95 transition-all"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

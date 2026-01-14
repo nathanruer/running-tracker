@@ -9,8 +9,8 @@ vi.mock('../../hooks/use-truncation-detection', () => ({
 }));
 
 vi.mock('@/components/ui/table', () => ({
-  TableCell: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <td className={className}>{children}</td>
+  TableCell: ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
+    <td className={className} onClick={onClick}>{children}</td>
   ),
 }));
 
@@ -19,7 +19,7 @@ describe('CommentCell', () => {
     vi.clearAllMocks();
   });
 
-  it('should show "-" when comment is empty', () => {
+  it('should show "—" when comment is empty', () => {
     vi.mocked(TruncationHook.useTruncationDetection).mockReturnValue({
       isTruncated: false,
       elementRef: { current: null }
@@ -34,7 +34,7 @@ describe('CommentCell', () => {
         </tbody>
       </table>
     );
-    expect(screen.getByText('-')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('should show full comment when not truncated', () => {
@@ -55,7 +55,7 @@ describe('CommentCell', () => {
     expect(screen.getByText('Simple comment')).toBeInTheDocument();
   });
 
-  it('should show "Afficher plus" when truncated and onShowMore is provided', () => {
+  it('should make cell interactive when truncated and onShowMore is provided', () => {
     vi.mocked(TruncationHook.useTruncationDetection).mockReturnValue({
       isTruncated: true,
       elementRef: { current: null }
@@ -73,7 +73,7 @@ describe('CommentCell', () => {
       </table>
     );
     expect(screen.getByText('Long comment')).toBeInTheDocument();
-    expect(screen.getByText('Afficher plus')).toBeInTheDocument();
+    expect(screen.queryByText('Afficher plus')).not.toBeInTheDocument();
   });
 
   it('should not show "Afficher plus" when truncated but no onShowMore callback', () => {
@@ -95,7 +95,7 @@ describe('CommentCell', () => {
     expect(screen.queryByText('Afficher plus')).not.toBeInTheDocument();
   });
 
-  it('should call onShowMore when button is clicked', () => {
+  it('should call onShowMore when cell is clicked', () => {
     vi.mocked(TruncationHook.useTruncationDetection).mockReturnValue({
       isTruncated: true,
       elementRef: { current: null }
@@ -113,8 +113,8 @@ describe('CommentCell', () => {
       </table>
     );
     
-    const button = screen.getByRole('button');
-    fireEvent.click(button);
+    const cell = screen.getByText('Truncated comment').closest('td');
+    if (cell) fireEvent.click(cell);
     
     expect(mockOnShowMore).toHaveBeenCalledTimes(1);
   });

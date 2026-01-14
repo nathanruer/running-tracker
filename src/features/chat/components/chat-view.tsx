@@ -86,17 +86,21 @@ export function ChatView({ conversationId }: ChatViewProps) {
   if (!conversationId) {
     if (optimisticMessages.length === 0) {
       return (
-        <Card className="h-full flex flex-col items-center justify-center p-8">
-          <div className="w-full max-w-2xl space-y-8">
-            <div className="text-center text-muted-foreground">
-              <h3 className="text-2xl font-medium mb-3">Quelle est votre demande aujourd&apos;hui ?</h3>
-              <p className="text-sm">Posez une question ou demandez des conseils d&apos;entraînement</p>
+        <Card className="h-full flex flex-col items-center justify-center p-8 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
+          <div className="w-full max-w-2xl space-y-12">
+            <div className="text-center space-y-4">
+              <h3 className="text-4xl font-extrabold tracking-tighter text-foreground">
+                Comment puis-je vous aider ?
+              </h3>
+              <p className="text-muted-foreground/60 font-medium max-w-md mx-auto">
+                Votre coach personnel est là pour optimiser chaque kilomètre de votre progression.
+              </p>
             </div>
 
-            <div className="relative">
+            <div className="relative group">
               <Input
                 data-testid="chat-input"
-                placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
+                placeholder="Ex: Programme moi 4 séances pour cette semaine..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -106,19 +110,19 @@ export function ChatView({ conversationId }: ChatViewProps) {
                   }
                 }}
                 disabled={isWaitingForResponse}
-                className="pr-12"
+                className="pr-16 h-16 rounded-2xl bg-muted/20 border-border/40 focus:border-violet-500/50 focus:ring-violet-500/20 text-lg px-6 transition-all"
               />
               <Button
                 data-testid="chat-send-button"
                 onClick={handleSendMessage}
                 disabled={isWaitingForResponse || isSending || !input.trim()}
                 size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg active:scale-95 transition-all"
+                className="absolute right-2 top-2 h-12 w-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all"
               >
                 {isWaitingForResponse ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 )}
               </Button>
             </div>
@@ -128,9 +132,12 @@ export function ChatView({ conversationId }: ChatViewProps) {
     }
 
     return (
-      <Card className="h-full flex flex-col">
-        <div className="border-b p-4">
-          <h2 className="text-lg font-semibold truncate">Nouvelle conversation</h2>
+      <Card className="h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="border-b border-border/40 px-8 py-6">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-1">Coach IA</span>
+            <h2 className="text-xl font-bold tracking-tight truncate">Nouvelle conversation</h2>
+          </div>
         </div>
 
         <MessageList
@@ -143,11 +150,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
           onDeleteSession={() => {}}
         />
 
-        <div className="border-t p-4">
+        <div className="border-t border-border/40 px-8 py-6">
           <div className="relative">
             <Input
               data-testid="chat-input"
-              placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
+              placeholder="Envoyez un message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -157,14 +164,14 @@ export function ChatView({ conversationId }: ChatViewProps) {
                 }
               }}
               disabled={isWaitingForResponse}
-              className="pr-12"
+              className="pr-16 h-14 rounded-2xl bg-muted/20 border-border/40 focus:border-violet-500/50 focus:ring-violet-500/20 text-base px-6 transition-all"
             />
             <Button
               data-testid="chat-send-button"
               onClick={handleSendMessage}
               disabled={isWaitingForResponse || !input.trim()}
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg active:scale-95 transition-all"
+              className="absolute right-2 top-2 h-10 w-10 rounded-xl bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
             >
               {isWaitingForResponse ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -179,9 +186,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <div className="border-b p-4">
-        <h2 className="text-lg font-semibold truncate">{conversation?.title}</h2>
+    <Card className="h-full flex flex-col rounded-[2.5rem] border-none bg-card overflow-hidden">
+      <div className="border-b border-border/40 px-8 py-6">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-bold tracking-tight truncate">{conversation?.title}</h2>
+        </div>
       </div>
 
       <MessageList
@@ -194,11 +203,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
         onDeleteSession={deleteSession}
       />
 
-      <div className="border-t p-4">
+      <div className="border-t border-border/40 px-8 py-6">
         <div className="relative">
           <Input
             data-testid="chat-input"
-            placeholder="Ex: Je voudrais 2 séances en plus pour cette semaine..."
+            placeholder="Envoyez un message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -208,14 +217,14 @@ export function ChatView({ conversationId }: ChatViewProps) {
               }
             }}
             disabled={isSending}
-            className="pr-12"
+            className="pr-16 h-14 rounded-2xl bg-muted/20 border-border/40 focus:border-violet-500/50 focus:ring-violet-500/20 text-base px-6 transition-all"
           />
           <Button
             data-testid="chat-send-button"
             onClick={handleSendMessage}
             disabled={isSending || !input.trim()}
             size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg active:scale-95 transition-all"
+            className="absolute right-2 top-2 h-10 w-10 rounded-xl bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

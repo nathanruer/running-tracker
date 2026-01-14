@@ -74,10 +74,10 @@ describe('ChatView', () => {
     it('should display empty state when no conversation is selected', () => {
       render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Quelle est votre demande aujourd\'hui ?')).toBeInTheDocument();
-      expect(screen.getByText('Posez une question ou demandez des conseils d\'entraînement')).toBeInTheDocument();
+      expect(screen.getByText('Comment puis-je vous aider ?')).toBeInTheDocument();
+      expect(screen.getByText(/Votre coach personnel est là pour optimiser chaque kilomètre/)).toBeInTheDocument();
 
-      expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Ex: Programme moi 4 séances pour cette semaine...')).toBeInTheDocument();
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
   });
@@ -123,7 +123,7 @@ describe('ChatView', () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Envoyez un message...')).toBeInTheDocument();
         expect(screen.getByRole('button')).toBeInTheDocument();
       });
     });
@@ -145,10 +145,10 @@ describe('ChatView', () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Envoyez un message...')).toBeInTheDocument();
       });
 
-      const input = screen.getByPlaceholderText(/Je voudrais 2 séances/i);
+      const input = screen.getByPlaceholderText('Envoyez un message...');
       const sendButton = screen.getByRole('button');
 
       await act(async () => {
@@ -166,10 +166,10 @@ describe('ChatView', () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Envoyez un message...')).toBeInTheDocument();
       });
 
-      const input = screen.getByPlaceholderText(/Je voudrais 2 séances/i) as HTMLInputElement;
+      const input = screen.getByPlaceholderText('Envoyez un message...') as HTMLInputElement;
 
       fireEvent.change(input, { target: { value: 'Test message' } });
       expect(input.value).toBe('Test message');
@@ -183,10 +183,10 @@ describe('ChatView', () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Envoyez un message...')).toBeInTheDocument();
       });
 
-      const input = screen.getByPlaceholderText(/Je voudrais 2 séances/i);
+      const input = screen.getByPlaceholderText('Envoyez un message...');
 
       await act(async () => {
         fireEvent.change(input, { target: { value: 'Test message' } });
@@ -203,10 +203,10 @@ describe('ChatView', () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Envoyez un message...')).toBeInTheDocument();
       });
 
-      const input = screen.getByPlaceholderText(/Je voudrais 2 séances/i);
+      const input = screen.getByPlaceholderText('Envoyez un message...');
 
       fireEvent.change(input, { target: { value: 'Test message' } });
       fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
@@ -219,7 +219,7 @@ describe('ChatView', () => {
 
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
-      expect(screen.getByPlaceholderText(/Je voudrais 2 séances/i)).toBeDisabled();
+      expect(screen.getByPlaceholderText('Envoyez un message...')).toBeDisabled();
       expect(screen.getByRole('button')).toBeDisabled();
     });
 

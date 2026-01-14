@@ -19,7 +19,7 @@ import { RPE } from '@/lib/constants/validation';
 // ============================================================================
 
 const intervalStepSchema = z.object({
-  stepNumber: z.number(),
+  stepNumber: z.number().optional(),
   stepType: z.enum(['warmup', 'effort', 'recovery', 'cooldown']),
   duration: nullableDurationSchema,
   distance: z.number().nullable(),
@@ -97,7 +97,15 @@ export type IntervalFormValues = {
   targetEffortHR?: number | null;
   actualEffortPace?: string | null;
   actualEffortHR?: number | null;
-  steps?: z.infer<typeof intervalStepSchema>[];
+  targetRecoveryPace?: string | null;
+  steps?: {
+    stepNumber?: number;
+    stepType: 'warmup' | 'effort' | 'recovery' | 'cooldown';
+    duration: string | null;
+    distance: number | null;
+    pace: string | null;
+    hr: number | null;
+  }[];
 };
 
 export { formSchema, intervalStepSchema };

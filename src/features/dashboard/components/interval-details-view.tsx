@@ -29,6 +29,8 @@ export function IntervalDetailsView({
   } = intervalDetails;
 
   const steps = cleanIntervalSteps(intervalDetails.steps || []);
+  const hasEffortSteps = steps.some((step) => step.stepType === 'effort');
+  const hasRecoverySteps = steps.some((step) => step.stepType === 'recovery');
 
   const filteredSteps = filter === 'all'
     ? steps
@@ -99,7 +101,7 @@ export function IntervalDetailsView({
                 {displayStructure}
               </span>
               <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'} /km</span>
+                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'}/km</span>
                 {targetHRDisplay ? <span className="ml-1.5 opacity-40">|</span> : ''}
                 {targetHRDisplay ? <span className="ml-1.5 font-bold text-orange-400/80">{targetHRDisplay} bpm</span> : ''}
               </span>
@@ -112,13 +114,19 @@ export function IntervalDetailsView({
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
               {isPlanned ? 'Moy. Prévue' : 'Moy. Réelle'} ({filter === 'all' ? 'Totale' : filter === 'effort' ? 'Efforts' : 'Récups'})
             </span>
-            <div className="flex items-baseline gap-2 text-xl font-black font-mono text-foreground tracking-tighter">
-              <span>{averages.avgPace}</span>
-              <span className="text-xs font-normal text-muted-foreground">/km</span>
+            <div className="flex items-baseline text-xl font-black font-mono text-foreground tracking-tighter">
+              {averages.avgPace !== '-' ? (
+                <>
+                  <span>{averages.avgPace}</span>
+                  <span className="text-xs font-normal text-muted-foreground">/km</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground/30 font-medium">--:--</span>
+              )}
               {averages.avgHR ? (
                 <>
-                  <span className="text-sm font-normal opacity-30 ml-1">|</span>
-                  <span className="text-xs font-bold text-orange-400/80 ml-1">
+                  <span className="text-sm font-normal opacity-30 ml-3">|</span>
+                  <span className="text-xs font-bold text-orange-400/80 ml-3">
                     {averages.avgHR} <span className="text-xs text-muted-foreground">bpm</span>
                   </span>
                 </>
@@ -131,8 +139,8 @@ export function IntervalDetailsView({
           <Tabs value={filter} onValueChange={(v) => setFilter(v as 'all' | 'effort' | 'recovery')} className="w-[180px]">
             <TabsList className="grid grid-cols-3 h-9 bg-background/50 border border-border/40 p-1">
               <TabsTrigger value="all" className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-muted/60">Toutes</TabsTrigger>
-              <TabsTrigger value="effort" className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-violet-500/10 data-[state=active]:text-violet-500">Effort</TabsTrigger>
-              <TabsTrigger value="recovery" className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-green-500/10 data-[state=active]:text-green-500">Récup</TabsTrigger>
+              <TabsTrigger value="effort" disabled={!hasEffortSteps} className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-violet-500/10 data-[state=active]:text-violet-500">Effort</TabsTrigger>
+              <TabsTrigger value="recovery" disabled={!hasRecoverySteps} className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-green-500/10 data-[state=active]:text-green-500">Récup</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -198,8 +206,8 @@ export function IntervalDetailsView({
                     <td className="py-2 px-4 text-center font-mono font-bold text-foreground underline decoration-violet-500/20 underline-offset-4">
                       {displayPace ? (
                           <>
-                           {(normalizePaceFormat(displayPace) || displayPace)} 
-                           <span className="text-xs text-muted-foreground ml-1">/km</span>
+                           {(normalizePaceFormat(displayPace) || displayPace)}
+                           <span className="text-xs text-muted-foreground">/km</span>
                           </>
                       ) : '-'}
                     </td>

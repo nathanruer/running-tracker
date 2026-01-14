@@ -36,7 +36,7 @@ export function PerceivedExertionField({
 }: PerceivedExertionFieldProps) {
   return (
     <FormItem className="flex-1">
-      <FormLabel>RPE (1-10)</FormLabel>
+      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">RPE (Effort)</FormLabel>
       <Select
         onValueChange={(val) => {
           const numVal = parseInt(val);
@@ -45,7 +45,7 @@ export function PerceivedExertionField({
         value={value ? value.toString() : undefined}
       >
         <FormControl>
-          <SelectTrigger data-testid="select-rpe">
+          <SelectTrigger data-testid="select-rpe" className="rounded-xl h-11 border-border/50">
             <SelectValue placeholder="Note" />
           </SelectTrigger>
         </FormControl>

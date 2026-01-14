@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { ChevronDown } from 'lucide-react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,48 +62,57 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
   return (
     <>
       <TableRow
-        className={`text-muted-foreground/70 italic transition-colors ${
-          hasIntervalDetails && isOpen
-            ? 'bg-muted/20 border-b-0 cursor-pointer'
+        className={cn(
+          "transition-colors text-muted-foreground/60 group/row",
+          isSelected
+            ? 'bg-violet-500/5'
+            : hasIntervalDetails && isOpen
+            ? 'bg-muted/30 border-b-0 cursor-pointer'
             : hasIntervalDetails
-            ? 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30 cursor-pointer'
-            : 'bg-muted/10 border-b-2 border-dashed border-muted-foreground/30'
-        }`}
+            ? 'bg-muted/10 border-b border-dashed border-border/40 cursor-pointer'
+            : 'bg-muted/10 border-b border-dashed border-border/40'
+        )}
         onClick={handleRowClick}
       >
-        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+        <TableCell className="w-12 px-6" onClick={(e) => e.stopPropagation()}>
           {showCheckbox && (
             <Checkbox
               checked={isSelected}
               onCheckedChange={onToggleSelect}
-              className="border-muted-foreground/50 data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground"
+              className={cn(
+                "rounded-md transition-all duration-300",
+                isSelected 
+                  ? "border-violet-500/50 data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500" 
+                  : "border-muted-foreground/30 data-[state=checked]:bg-muted-foreground/40 data-[state=checked]:border-muted-foreground/40"
+              )}
               aria-label={`Sélectionner la séance ${session.sessionNumber}`}
             />
           )}
         </TableCell>
-        <TableCell className="font-medium text-center whitespace-nowrap">
+        <TableCell className="font-semibold text-center whitespace-nowrap text-muted-foreground/40">
           {session.sessionNumber}
         </TableCell>
-        <TableCell className="text-center whitespace-nowrap">{session.week ?? '-'}</TableCell>
-        <TableCell className="text-center whitespace-nowrap">
-          {session.date ? new Date(session.date).toLocaleDateString('fr-FR') : (
-            <span className="text-muted-foreground/60">À planifier</span>
+        <TableCell className="text-center font-semibold whitespace-nowrap text-muted-foreground/30 tracking-tight">{session.week ?? '-'}</TableCell>
+        <TableCell className="text-center font-semibold tracking-tight whitespace-nowrap text-muted-foreground/40">
+          {session.date ? new Date(session.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.') : (
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">À planifier</span>
           )}
         </TableCell>
-        <TableCell className="text-center whitespace-nowrap">
+        <TableCell className="text-center whitespace-nowrap px-4">
           <div className="flex flex-col gap-0.5 items-center">
-            <div className="flex items-center gap-1">
-              <span>{session.sessionType}</span>
+            <div className="flex items-center gap-1.5 group/title">
+              <span className="font-bold tracking-tight text-muted-foreground/70">{session.sessionType}</span>
               {hasIntervalDetails && (
                 <ChevronDown
-                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                    isOpen ? 'rotate-180' : ''
-                  }`}
+                  className={cn(
+                    "h-3.5 w-3.5 text-muted-foreground/20 transition-all duration-300 group-hover/title:text-muted-foreground/40",
+                    isOpen ? 'rotate-180 text-muted-foreground/40' : ''
+                  )}
                 />
               )}
             </div>
             {(session.intervalDetails?.workoutType || session.intervalDetails) && (
-              <span className="text-xs text-gradient font-medium pr-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/30">
                 {session.intervalDetails?.workoutType || generateIntervalStructure(session.intervalDetails)}
               </span>
             )}
@@ -110,52 +120,61 @@ export const PlannedSessionRow = React.memo(function PlannedSessionRow({
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {displayDuration > 0 ? (
-            <span>
-              ~{formatDuration(Math.round(displayDuration) * 60)}
-            </span>
+            <div className="flex items-baseline justify-center gap-0.5">
+              <span className="text-muted-foreground/20 mr-1 italic">~</span>
+              <span className="font-semibold tabular-nums text-muted-foreground/70 text-[15px]">{formatDuration(Math.round(displayDuration) * 60)}</span>
+            </div>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {displayDistance > 0 ? (
-            <>
-              ~{displayDistance.toFixed(2)} <span className="text-xs">km</span>
-            </>
+            <div className="flex items-baseline justify-center gap-0.5 group/metric">
+              <span className="text-muted-foreground/20 mr-1 italic">~</span>
+              <span className="font-semibold tabular-nums text-muted-foreground/70 text-[15px]">{displayDistance.toFixed(1)}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 group-hover/metric:text-muted-foreground/50 transition-colors">km</span>
+            </div>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {globalPace !== '-' ? (
-            <>
-              {globalPace} <span className="text-xs">/km</span>
-            </>
+            <div className="flex items-baseline justify-center gap-0.5 group/metric">
+              <span className="font-semibold tabular-nums text-muted-foreground/70 text-[15px]">{globalPace}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 group-hover/metric:text-muted-foreground/50 transition-colors">/km</span>
+            </div>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {globalHRDisplay !== '-' ? (
-            <>
-              {globalHRDisplay} <span className="text-xs">bpm</span>
-            </>
+            <div className="flex items-baseline justify-center gap-0.5 group/metric">
+              <span className="font-semibold tabular-nums text-muted-foreground/70 text-[15px]">{globalHRDisplay}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 group-hover/metric:text-muted-foreground/50 transition-colors">bpm</span>
+            </div>
           ) : '-'}
         </TableCell>
         <TableCell className="text-center whitespace-nowrap">
           {session.targetRPE ? (
-            <span className="text-muted-foreground/80">
-              {session.targetRPE}/10
-            </span>
+            <div className="flex items-center justify-center">
+              <span className="text-[15px] font-bold tracking-tight text-muted-foreground/50">
+                {session.targetRPE}
+              </span>
+            </div>
           ) : '-'}
         </TableCell>
         <CommentCell
           comment={session.comments}
-          className="text-muted-foreground/70"
+          className="text-muted-foreground/40"
           onShowMore={() => onView?.(session)}
         />
-        <TableCell onClick={(e) => e.stopPropagation()}>
-          <SessionRowActions
-            session={session}
-            onView={onView}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            isPlanned={true}
-          />
+        <TableCell className="px-6" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-center opacity-40 group-hover/row:opacity-100 transition-opacity">
+            <SessionRowActions
+              session={session}
+              onView={onView}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              isPlanned={true}
+            />
+          </div>
         </TableCell>
       </TableRow>
 

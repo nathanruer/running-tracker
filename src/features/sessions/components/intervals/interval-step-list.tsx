@@ -113,60 +113,63 @@ export function IntervalStepList({
           variant="ghost"
           size="sm"
           onClick={() => setShowDetails(!showDetails)}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground/80 hover:bg-muted transition-all rounded-xl"
         >
           <ChevronDown
-            className={`mr-2 h-4 w-4 transition-transform ${showDetails ? 'rotate-180' : ''}`}
+            className={`mr-2 h-3.5 w-3.5 transition-transform duration-300 ${showDetails ? 'rotate-180' : ''}`}
           />
-          {showDetails ? 'Masquer les détails avancés' : 'Afficher les détails avancés'}
+          {showDetails ? 'Masquer les détails' : 'Détails avancés'}
         </Button>
       </div>
 
       <Collapsible open={showDetails} onOpenChange={setShowDetails}>
-        <CollapsibleContent className="space-y-6 pt-2">
-          <div className="space-y-4 rounded-md bg-muted/30 p-4">
-            <h4 className="text-sm font-medium text-muted-foreground">Objectifs</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={control}
-                name="targetEffortPace"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Allure cible effort (mn/km)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00:00" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="targetEffortHR"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>FC cible effort (bpm)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        {...field}
-                        value={field.value || ''}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <CollapsibleContent className="space-y-6 pt-4">
+          <div className="space-y-6 rounded-2xl bg-muted/30 p-6 border border-border/40">
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Objectifs de séance</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={control}
+                  name="targetEffortPace"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Allure cible effort</FormLabel>
+                      <FormControl>
+                        <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-background/50" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="targetEffortHR"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">FC cible effort</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          className="rounded-xl h-10 border-border/50 bg-background/50"
+                          {...field}
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 pt-4 border-t border-border/40">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  Étapes ({fields.length})
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+                  Étapes détaillée ({fields.length})
                 </h4>
                 <Button
                   data-testid="btn-add-interval-step"
@@ -174,7 +177,7 @@ export function IntervalStepList({
                   variant="ghost"
                   size="icon"
                   onClick={handleAddManualInterval}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 rounded-xl text-muted-foreground/40 hover:text-violet-600 hover:bg-violet-500/5 transition-all"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>

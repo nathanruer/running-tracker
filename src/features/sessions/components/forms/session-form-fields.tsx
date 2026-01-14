@@ -23,9 +23,9 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="duration"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Durée</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Durée</FormLabel>
               <FormControl>
-                <Input data-testid="input-duration" placeholder="00:00:00" {...field} />
+                <Input data-testid="input-duration" placeholder="00:00:00" className="rounded-xl h-11 border-border/50" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -36,13 +36,14 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="distance"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Distance (km)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Distance (km)</FormLabel>
               <FormControl>
                 <Input
                   data-testid="input-distance"
                   type="number"
                   step="0.01"
                   placeholder="0"
+                  className="rounded-xl h-11 border-border/50"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => {
@@ -72,9 +73,9 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="avgPace"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Allure moy (mn/km)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Allure moy (mn/km)</FormLabel>
               <FormControl>
-                <Input data-testid="input-avgpace" placeholder="00:00" {...field} />
+                <Input data-testid="input-avgpace" placeholder="00:00" className="rounded-xl h-11 border-border/50" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -85,12 +86,13 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="avgHeartRate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>FC moy (bpm)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">FC moy (bpm)</FormLabel>
               <FormControl>
                 <Input
                   data-testid="input-avgheartrate"
                   type="number"
                   placeholder="0"
+                  className="rounded-xl h-11 border-border/50"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) =>
@@ -110,12 +112,12 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
         name="comments"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Commentaires</FormLabel>
+            <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Commentaires</FormLabel>
             <FormControl>
               <Textarea
                 data-testid="input-comments"
                 placeholder="Comment s'est passée votre séance ?"
-                className="resize-none"
+                className="resize-none rounded-2xl border-border/50 min-h-[100px]"
                 {...field}
               />
             </FormControl>

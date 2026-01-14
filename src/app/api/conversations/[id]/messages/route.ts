@@ -164,16 +164,18 @@ export async function POST(
 
       const response = validateAndFixRecommendations(parsedResponse);
 
+      const assistantContent = (() => {
+        if (response.responseType === 'conversation') {
+          return response.message || "Je n'ai pas pu générer une réponse complète.";
+        }
+        return response.week_summary ?? response.rationale ?? "Voici vos recommandations.";
+      })();
+
       const assistantMessage = await prisma.chat_messages.create({
         data: {
           conversationId,
           role: 'assistant',
-          content:
-            response.responseType === 'conversation'
-              ? response.message
-              : response.week_summary ??
-                response.rationale ??
-                "Voici vos recommandations.",
+          content: assistantContent,
           recommendations:
             response.responseType === 'recommendations' ? (response as unknown as Prisma.InputJsonValue) : undefined,
           model: GROQ_MODEL,

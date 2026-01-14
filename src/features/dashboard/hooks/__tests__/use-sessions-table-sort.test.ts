@@ -246,7 +246,7 @@ describe('useSessionsTableSort', () => {
       const sorted = result.current.sortedSessions;
       const heartRates = sorted.map(s => 
         s.status === 'planned' 
-          ? (s.targetHeartRateBpm ? parseFloat(s.targetHeartRateBpm) : null)
+          ? (s.targetHeartRateBpm ? (typeof s.targetHeartRateBpm === 'number' ? s.targetHeartRateBpm : parseFloat(s.targetHeartRateBpm)) : null)
           : s.avgHeartRate
       );
       expect(heartRates).toEqual([160, 155, 150, 140]);

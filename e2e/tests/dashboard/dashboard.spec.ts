@@ -119,6 +119,6 @@ test.describe('Dashboard - Core Functionality', () => {
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText(/9\/10/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell').getByText('9', { exact: true })).toBeVisible({ timeout: 10000 });
   });
 });

@@ -16,13 +16,13 @@ export function SessionDialogActions({
   onUpdate,
 }: SessionDialogActionsProps) {
   return (
-    <div className="flex gap-3 pt-4">
+    <div className="flex gap-4 pt-6">
       <Button
         data-testid="btn-session-cancel"
         type="button"
-        variant="outline"
+        variant="ghost"
         onClick={onCancel}
-        className="flex-1 font-semibold active:scale-95 transition-all mb-4 sm:mb-0"
+        className="flex-1 h-11 px-6 rounded-2xl font-bold text-muted-foreground hover:bg-muted active:scale-95 transition-all"
       >
         Annuler
       </Button>
@@ -33,18 +33,28 @@ export function SessionDialogActions({
             type="button"
             variant="secondary"
             onClick={onUpdate}
-            className="flex-1 font-semibold active:scale-95 transition-all"
+            className="flex-1 h-11 px-6 rounded-2xl font-bold active:scale-95 transition-all"
             disabled={loading}
           >
             {loading ? 'Modification...' : 'Modifier'}
           </Button>
-          <Button data-testid="btn-session-submit" type="submit" className="flex-2 font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" disabled={loading}>
-            {loading ? 'Enregistrement...' : 'Modifier et marquer comme réalisé'}
+          <Button 
+            data-testid="btn-session-submit" 
+            type="submit" 
+            className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" 
+            disabled={loading}
+          >
+            {loading ? 'Enregistrement...' : 'Valider la séance'}
           </Button>
         </>
       ) : (
-        <Button data-testid="btn-session-submit" type="submit" className="flex-1 font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" disabled={loading}>
-          {loading ? 'Enregistrement...' : hasSession ? 'Modifier' : 'Enregistrer'}
+        <Button 
+          data-testid="btn-session-submit" 
+          type="submit" 
+          className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" 
+          disabled={loading}
+        >
+          {loading ? 'Enregistrement...' : hasSession ? 'Mettre à jour' : 'Enregistrer la séance'}
         </Button>
       )}
     </div>

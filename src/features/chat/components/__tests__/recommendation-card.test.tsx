@@ -13,9 +13,7 @@ describe('RecommendationCard', () => {
     session_type: 'Endurance fondamentale',
     duration_min: 45,
     estimated_distance_km: 8,
-    target_pace_range: '5:25-5:35',
     target_pace_min_km: '5:30',
-    target_hr_range: '140-150',
     target_hr_bpm: 145,
     target_rpe: 6,
     description: 'Pour développer votre endurance de base',
@@ -51,32 +49,32 @@ describe('RecommendationCard', () => {
     it('should display session type', () => {
       render(<RecommendationCard {...defaultProps} />);
 
-      expect(screen.getByText('Endurance fondamentale')).toBeInTheDocument();
+      const badges = screen.getAllByText('Endurance fondamentale');
+      expect(badges.length).toBeGreaterThan(0);
     });
 
-    it('should display session metrics with ranges', () => {
+    it('should display session metrics', () => {
       render(<RecommendationCard {...defaultProps} />);
 
       expect(screen.getByText('8 km')).toBeInTheDocument();
       expect(screen.getByText('45 min')).toBeInTheDocument();
-      expect(screen.getByText(/5:25-5:35/)).toBeInTheDocument();
+      expect(screen.getByText(/5:30/)).toBeInTheDocument();
     });
 
-    it('should display heart rate range', () => {
+    it('should display heart rate', () => {
       render(<RecommendationCard {...defaultProps} />);
 
-      expect(screen.getByText(/FC:/)).toBeInTheDocument();
-      expect(screen.getByText(/140-150/)).toBeInTheDocument();
-      expect(screen.getByText(/bpm/)).toBeInTheDocument();
+      expect(screen.getByText(/145/)).toBeInTheDocument();
+      expect(screen.getByText(/bpm/i)).toBeInTheDocument();
     });
 
     it('should display RPE when present', () => {
       render(<RecommendationCard {...defaultProps} />);
 
-      expect(screen.getByText('RPE: 6/10')).toBeInTheDocument();
+      expect(screen.getByText('6/10')).toBeInTheDocument();
     });
 
-    it('should not display RPE when absent', () => {
+    it('should display RPE placeholder when absent', () => {
       render(
         <RecommendationCard
           {...defaultProps}
@@ -84,7 +82,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(screen.queryByText(/RPE:/)).not.toBeInTheDocument();
+      expect(screen.getByText('-/10')).toBeInTheDocument();
     });
 
     it('should display interval structure for interval sessions', () => {
@@ -94,12 +92,13 @@ describe('RecommendationCard', () => {
           session={{
             ...mockSession,
             session_type: 'Fractionné',
-            interval_structure: '8x400m R:1\'',
+            interval_structure: "8x400m R:1'",
           }}
         />
       );
 
-      expect(screen.getByText(/Fractionné: 8x400m R:1'/)).toBeInTheDocument();
+      // The structure is displayed as title when present
+      expect(screen.getByText("8x400m R:1'")).toBeInTheDocument();
     });
   });
 
@@ -142,7 +141,7 @@ describe('RecommendationCard', () => {
   });
 
   describe('Added but not completed state', () => {
-    it('should show "Supprimer" button when added but not completed', () => {
+    it('should show delete button when added but not completed', () => {
       render(
         <RecommendationCard
           {...defaultProps}
@@ -151,11 +150,11 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: /supprimer/i })).toBeInTheDocument();
+      expect(screen.getByTestId('recommendation-delete')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /ajouter/i })).not.toBeInTheDocument();
     });
 
-    it('should call onDelete with correct params when "Supprimer" is clicked', () => {
+    it('should call onDelete with correct params when delete button is clicked', () => {
       render(
         <RecommendationCard
           {...defaultProps}
@@ -164,7 +163,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /supprimer/i }));
+      fireEvent.click(screen.getByTestId('recommendation-delete'));
 
       expect(mockGetAddedSessionId).toHaveBeenCalledWith(mockSession);
       expect(mockOnDelete).toHaveBeenCalledWith({
@@ -173,7 +172,7 @@ describe('RecommendationCard', () => {
       });
     });
 
-    it('should disable "Supprimer" button when loading', () => {
+    it('should disable delete button when loading', () => {
       render(
         <RecommendationCard
           {...defaultProps}
@@ -182,7 +181,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: /supprimer/i })).toBeDisabled();
+      expect(screen.getByTestId('recommendation-delete')).toBeDisabled();
     });
   });
 
@@ -233,13 +232,12 @@ describe('RecommendationCard', () => {
       expect(formatDurationChat).toHaveBeenCalledWith(60);
     });
 
-    it('should fallback to single pace value when range is missing', () => {
+    it('should display pace value correctly', () => {
       render(
         <RecommendationCard
           {...defaultProps}
           session={{
             ...mockSession,
-            target_pace_range: undefined,
             target_pace_min_km: '5:30',
           }}
         />
@@ -248,19 +246,19 @@ describe('RecommendationCard', () => {
       expect(screen.getByText(/5:30/)).toBeInTheDocument();
     });
 
-    it('should fallback to single HR value when range is missing', () => {
+    it('should display HR value correctly', () => {
       render(
         <RecommendationCard
           {...defaultProps}
           session={{
             ...mockSession,
-            target_hr_range: undefined,
             target_hr_bpm: 145,
           }}
         />
       );
 
-      expect(screen.getByText(/145 bpm/)).toBeInTheDocument();
+      expect(screen.getByText(/145/)).toBeInTheDocument();
+      expect(screen.getByText(/bpm/i)).toBeInTheDocument();
     });
   });
 });

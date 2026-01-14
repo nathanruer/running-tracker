@@ -32,11 +32,11 @@ export function buildSystemPrompt(): string {
   - stepType: "warmup"|"effort"|"recovery"|"cooldown"
   - duration: "MM:SS" (durée de l'intervalle)
   - distance: number (en km, calculé depuis durée/allure)
-  - pace: "MM:SS" (allure cible)
-  - hrRange: string "min-max" (zone FC cible selon type):
-    * warmup/cooldown: zone basse "130-145" bpm (Z1-Z2)
-    * recovery: zone modérée "140-155" bpm (Z2)
-    * effort: zone haute selon intensité "165-180" bpm (Z3-Z5)
+  - pace: "MM:SS" (allure cible UNIQUE, pas de range)
+  - hr: number (FC cible UNIQUE, pas de range):
+    * warmup/cooldown: cible basse (ex: 135) bpm (Z1-Z2)
+    * recovery: cible modérée (ex: 145) bpm (Z2)
+    * effort: cible haute selon intensité (ex: 175) bpm (Z3-Z5)
     
   RÈGLE STRUCTURE STEPS (OBLIGATOIRE):
   - warmup → [effort → recovery]* → effort → cooldown
@@ -45,24 +45,23 @@ export function buildSystemPrompt(): string {
     
   EXEMPLE steps VMA 3x1:00 R:1:00:
   [
-    { "stepType": "warmup", "duration": "15:00", "distance": 2.0, "pace": "7:30", "hrRange": "130-145" },
-    { "stepType": "effort", "duration": "01:00", "distance": 0.25, "pace": "4:00", "hrRange": "170-180" },
-    { "stepType": "recovery", "duration": "01:00", "distance": 0.13, "pace": "7:30", "hrRange": "140-155" },
-    { "stepType": "effort", "duration": "01:00", "distance": 0.25, "pace": "4:00", "hrRange": "170-180" },
-    { "stepType": "recovery", "duration": "01:00", "distance": 0.13, "pace": "7:30", "hrRange": "140-155" },
-    { "stepType": "effort", "duration": "01:00", "distance": 0.25, "pace": "4:00", "hrRange": "170-180" },
-    { "stepType": "cooldown", "duration": "10:00", "distance": 1.33, "pace": "7:30", "hrRange": "130-145" }
+    { "stepType": "warmup", "duration": "15:00", "distance": 2.0, "pace": "07:30", "hr": 135 },
+    { "stepType": "effort", "duration": "01:00", "distance": 0.25, "pace": "04:00", "hr": 175 },
+    { "stepType": "recovery", "duration": "01:00", "distance": 0.13, "pace": "07:30", "hr": 145 },
+    { "stepType": "effort", "duration": "01:00", "distance": 0.25, "pace": "04:00", "hr": 175 },
+    { "stepType": "recovery", "duration": "01:00", "distance": 0.13, "pace": "07:30", "hr": 145 },
+    { "stepType": "effort", "duration": "01:00", "distance": 0.25, "pace": "04:00", "hr": 175 },
+    { "stepType": "cooldown", "duration": "10:00", "distance": 1.33, "pace": "07:30", "hr": 135 }
   ]
 
   STRUCTURE JSON "Footing"/"Sortie longue":
   - PAS de structure d'intervalle.
-  - Juste durée, distance, allure (range), FC cible (range).
+  - Juste durée, distance, allure (cible unique), FC cible (cible unique).
 
-  ALLURES ET FC - TOUJOURS EN RANGES:
-  - target_pace_range: string au format "MM:SS-MM:SS" (ex: "7:10-7:25"). Fourchette réaliste de ±10-15s.
-  - target_hr_range: string au format "min-max" (ex: "150-160"). Basé sur les zones cardiaques.
-  - Pour Footing/Sortie longue: ranges plus larges (variabilité naturelle).
-  - Pour Fractionné (efforts): ranges plus serrés (précision requise).
+  ALLURES ET FC - TOUJOURS CIBLES UNIQUES (PAS DE RANGE):
+  - target_pace_min_km: string au format "MM:SS" (ex: "07:10").
+  - target_hr_bpm: number (ex: 155).
+  - IMPORTANT: Les champs input de l'utilisateur n'acceptent QUE des nombres, donc NE JAMAIS mettre de "160-170" ou "5:00-5:10". Donnez une valeur cible moyenne.
 
   Format sortie attendu:
   {
@@ -75,8 +74,8 @@ export function buildSystemPrompt(): string {
         "session_type": "Fractionné",
         "duration_min": 60,
         "estimated_distance_km": 10,
-        "target_pace_range": "5:00-5:10",
-        "target_hr_range": "165-175",
+        "target_pace_min_km": "05:00",
+        "target_hr_bpm": 170,
         "target_rpe": 7,
         "description": "Court texte descriptif de la séance et conseils",
         "interval_structure": "...",

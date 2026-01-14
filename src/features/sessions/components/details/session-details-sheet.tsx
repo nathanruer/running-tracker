@@ -244,7 +244,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
               )}
 
               {session.comments && (
-                <div className="space-y-2">
+                <div id="session-notes" className="space-y-2 scroll-mt-20">
                   <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                     Notes
                   </h3>

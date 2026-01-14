@@ -87,25 +87,25 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
 
   return (
     <>
-      <Card className={`${isMobile ? 'w-full border-0 shadow-none' : 'w-80'} h-full flex flex-col p-4`}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Conversations</h2>
+      <Card className={`${isMobile ? 'w-full border-0 shadow-none' : 'w-80'} h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden`}>
+        <div className="flex items-center justify-between px-6 py-6 border-b border-border/40 mb-2">
+          <h2 className="text-xl font-bold tracking-tight">Conversations</h2>
           <Button
             size="sm"
             onClick={() => createConversation()}
             disabled={isCreating || disableCreate}
-            className="h-9 w-9 rounded-xl active:scale-95 transition-all p-0"
+            className="h-9 w-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all p-0 shadow-lg shadow-violet-500/10"
           >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2 p-4 pt-2">
           {!isLoading && conversations.length === 0 && (
             <div className="text-center text-muted-foreground py-8">
-              <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Aucune conversation</p>
-              <p className="text-xs mt-1">Créez-en une pour commencer</p>
+              <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-10" />
+              <p className="text-sm font-medium">Aucune conversation</p>
+              <p className="text-xs mt-1 text-muted-foreground/50">Créez-en une pour commencer</p>
             </div>
           )}
 

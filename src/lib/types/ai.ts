@@ -19,9 +19,7 @@ export interface AIRecommendedSession {
   duration_min: number;
   estimated_distance_km: number;
   target_pace_min_km?: string;
-  target_pace_range?: string;
   target_hr_bpm?: number;
-  target_hr_range?: string;
   description?: string;
   target_rpe?: number;
   interval_structure?: string | null;

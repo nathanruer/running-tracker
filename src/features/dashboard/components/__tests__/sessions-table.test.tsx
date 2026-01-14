@@ -103,7 +103,7 @@ describe('SessionsTable', () => {
       return cells.length > 0 && cells[0].querySelector('.animate-pulse');
     });
 
-    expect(skeletons.length).toBe(5);
+    expect(skeletons.length).toBe(6);
   });
 
   it('should render "Ajouter une séance" button when onNewSession is provided', () => {

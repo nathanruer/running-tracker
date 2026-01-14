@@ -58,7 +58,7 @@ describe('initializeFormForEdit', () => {
       targetDuration: 45,
       targetDistance: 10,
       targetPace: '04:30',
-      targetHeartRateBpm: '150',
+      targetHeartRateBpm: 150,
       targetRPE: 5,
       comments: 'Session planifiée',
       externalId: null,

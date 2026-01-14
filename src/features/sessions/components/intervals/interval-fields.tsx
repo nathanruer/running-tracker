@@ -2,7 +2,9 @@
 
 import { Control, UseFormWatch, UseFormSetValue, useFieldArray } from 'react-hook-form';
 import { useState, useMemo } from 'react';
+import { FileText } from 'lucide-react';
 import { type IntervalStep } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 import { WORKOUT_TYPES } from './workout-type-field';
 import { IntervalConfig } from './interval-config';
 import { IntervalStepList } from './interval-step-list';
@@ -29,6 +31,7 @@ interface IntervalFieldsProps {
   watch: UseFormWatch<FormValues>;
   setValue?: UseFormSetValue<FormValues>;
   disableAutoRegeneration?: boolean;
+  onCsvImport?: (content: string) => void;
 }
 
 export function IntervalFields({
@@ -37,6 +40,7 @@ export function IntervalFields({
   watch,
   setValue,
   disableAutoRegeneration = false,
+  onCsvImport,
 }: IntervalFieldsProps) {
   const { fields, replace, move, remove, append } = useFieldArray({
     control,
@@ -54,13 +58,56 @@ export function IntervalFields({
 
   useIntervalSync({ watch, replace, onEntryModeChange, disableAutoRegeneration });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content && onCsvImport) {
+        onCsvImport(content);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
-    <div className="space-y-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4">
-      <IntervalConfig
-        control={control}
-        isCustomType={isCustomType}
-        onCustomTypeChange={setIsCustomType}
-      />
+    <div className="space-y-6 rounded-[2rem] border border-border/50 bg-muted/20 p-6 md:p-8">
+      {onCsvImport && (
+        <div className="flex items-center justify-between gap-4 mb-2">
+           <div className="flex flex-col gap-0.5">
+             <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Type Fractionné</span>
+             <span className="text-xs text-muted-foreground font-medium italic">Configurez vos intervalles</span>
+           </div>
+           <Button
+             variant="secondary"
+             size="sm"
+             className="h-8 px-4 font-black text-[10px] uppercase tracking-widest bg-blue-600/10 text-blue-700 hover:bg-blue-600/20 active:scale-95 transition-all border border-blue-600/20"
+             asChild
+           >
+             <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <FileText className="mr-2 h-3.5 w-3.5" />
+                Garmin CSV
+             </label>
+           </Button>
+        </div>
+      )}
+
+      <div className="pt-4 border-t border-border/40">
+        <IntervalConfig
+          control={control}
+          isCustomType={isCustomType}
+          onCustomTypeChange={setIsCustomType}
+        />
+      </div>
 
       <IntervalStepList
         control={control}

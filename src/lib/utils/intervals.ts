@@ -16,7 +16,7 @@ export interface IntervalFormValues {
   targetEffortHR?: number | null;
   targetRecoveryPace?: string | null;
   steps?: Array<{
-    stepNumber: number;
+    stepNumber?: number;
     stepType: 'warmup' | 'effort' | 'recovery' | 'cooldown';
     duration?: string | null;
     distance?: number | null;
@@ -130,8 +130,8 @@ export function transformIntervalData(
     targetRecoveryPace: values.targetRecoveryPace || null,
     steps:
       entryMode === 'detailed' && values.steps
-        ? values.steps.map((step): IntervalStep => ({
-            stepNumber: step.stepNumber,
+        ? values.steps.map((step, index): IntervalStep => ({
+            stepNumber: step.stepNumber ?? (index + 1),
             stepType: step.stepType,
             duration: step.duration || null,
             distance: step.distance ?? null,
@@ -428,24 +428,34 @@ export function calculateIntervalTotals(rawSteps: IntervalStep[] | undefined | n
   let hrSeconds = 0;
   let hasEstimations = false;
 
+  let totalWeightedPaceSec = 0;
+  let totalDistanceForPace = 0;
+
   steps.forEach(step => {
     const durationSec = parseDuration(step.duration) || 0;
     const stepPaceSec = parseDuration(step.pace);
-    const stepDistance = Number(step.distance) || 0;
+    const stepDistanceRaw = Number(step.distance) || 0;
 
     if (durationSec > 0) {
       const distanceResult = estimateEffectiveDistance(
         durationSec,
         stepPaceSec,
-        stepDistance > 0 ? stepDistance : null
+        stepDistanceRaw > 0 ? stepDistanceRaw : null
       );
 
       if (distanceResult.isEstimated) {
         hasEstimations = true;
       }
 
+      const stepDistance = distanceResult.distance;
       totalSeconds += durationSec;
-      totalDistance += distanceResult.distance;
+      totalDistance += stepDistance;
+
+      const paceToWeight = stepPaceSec || (stepDistance > 0 ? durationSec / stepDistance : null);
+      if (paceToWeight && stepDistance > 0) {
+        totalWeightedPaceSec += paceToWeight * stepDistance;
+        totalDistanceForPace += stepDistance;
+      }
 
       const hrValue = extractStepHR(step);
 
@@ -456,7 +466,7 @@ export function calculateIntervalTotals(rawSteps: IntervalStep[] | undefined | n
     }
   });
 
-  const avgPaceSec = (totalDistance > 0 && totalSeconds > 0) ? totalSeconds / totalDistance : null;
+  const avgPaceSec = totalDistanceForPace > 0 ? totalWeightedPaceSec / totalDistanceForPace : null;
   const avgBpm = hrSeconds > 0 ? Math.round(totalWeightedHR / hrSeconds) : null;
 
   let avgPaceFormatted = null;

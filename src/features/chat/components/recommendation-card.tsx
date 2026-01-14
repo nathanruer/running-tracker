@@ -1,6 +1,6 @@
-import { Check, Trash2, Clock, Activity } from 'lucide-react';
+import { Check, Trash2, Clock, Activity, MapPin, Heart, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import { formatDurationChat } from '@/lib/utils/chat/formatters';
 import { calculateIntervalTotals } from '@/lib/utils/intervals';
@@ -33,116 +33,155 @@ export function RecommendationCard({
   const displayDuration = totals.totalDurationMin > 0 ? totals.totalDurationMin : session.duration_min;
   const isCalculated = totals.totalDistanceKm > 0 || totals.totalDurationMin > 0;
 
+  const sessionInfo = (() => {
+    const sessionType = session.session_type;
+    let structure = '';
+    let technicalTargets = '';
+
+    if (sessionType === 'Fractionné' && session.interval_structure) {
+      structure = typeof session.interval_structure === 'string'
+        ? session.interval_structure
+        : typeof session.interval_structure === 'object'
+        ? JSON.stringify(session.interval_structure)
+        : String(session.interval_structure);
+      
+      const parts: string[] = [];
+      const paceDisplay = session.target_pace_min_km;
+      const hrDisplay = session.target_hr_bpm ? String(session.target_hr_bpm) : null;
+      
+      if (paceDisplay) parts.push(`${paceDisplay} /km`);
+      if (hrDisplay) parts.push(`${hrDisplay} bpm`);
+      
+      if (parts.length > 0) {
+        technicalTargets = `Cible : ${parts.join(' | ')}`;
+      }
+    }
+
+    return { structure, technicalTargets };
+  })();
+
   return (
-    <div className="bg-card rounded-lg p-4 border border-border space-y-3" data-testid="recommendation-card">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="default" className="font-semibold">
-            Séance {displaySessionNumber}
-          </Badge>
-          <Badge variant="outline" className="font-medium">
-            {(() => {
-              const sessionType = session.session_type;
-              if (sessionType === 'Fractionné' && session.interval_structure) {
-                const intervalStr = typeof session.interval_structure === 'string'
-                  ? session.interval_structure
-                  : typeof session.interval_structure === 'object'
-                  ? JSON.stringify(session.interval_structure)
-                  : String(session.interval_structure);
-                
-                const targets: string[] = [];
-                const paceDisplay = session.target_pace_range || session.target_pace_min_km;
-                const hrDisplay = session.target_hr_range || (session.target_hr_bpm ? String(session.target_hr_bpm) : null);
-                if (paceDisplay) targets.push(`${paceDisplay}/km`);
-                if (hrDisplay) targets.push(`${hrDisplay} bpm`);
-                
-                return `${sessionType}: ${intervalStr}${targets.length > 0 ? ` (@ ${targets.join(', ')})` : ''}`;
-              }
-              return sessionType;
-            })()}
-          </Badge>
+    <div 
+      className={cn(
+        "relative bg-card rounded-2xl p-6 border border-border/40 transition-all",
+        isCompleted && "bg-green-500/5 border-green-500/10"
+      )} 
+      data-testid="recommendation-card"
+    >
+      <div className="flex flex-col gap-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-violet-600 bg-violet-500/10 px-2 py-0.5 rounded-md">
+                Séance {displaySessionNumber}
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 border border-border/40 px-2 py-0.5 rounded-md">
+                {session.session_type}
+              </span>
+              {isCompleted && (
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-md">
+                  Réalisée
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <h4 className="text-lg font-bold text-foreground tracking-tight leading-tight">
+                {sessionInfo.structure || session.session_type}
+              </h4>
+              {sessionInfo.technicalTargets && (
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mt-1">
+                  {sessionInfo.technicalTargets}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
+            {!isAdded ? (
+              <Button
+                data-testid="recommendation-accept"
+                size="sm"
+                onClick={() => onAccept(session)}
+                disabled={loadingSessionId === session.recommendation_id}
+                className="bg-violet-600 hover:bg-violet-700 text-white font-black rounded-2xl h-10 px-5 text-xs tracking-tight active:scale-95 transition-all shadow-lg shadow-violet-500/10"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Ajouter
+              </Button>
+            ) : isCompleted ? (
+              <div className="h-10 w-10 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20">
+                <Check className="h-5 w-5" />
+              </div>
+            ) : (
+              <Button
+                data-testid="recommendation-delete"
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  const sessionId = getAddedSessionId(session);
+                  if (sessionId && session.recommendation_id) {
+                    onDelete({ sessionId, recommendationId: session.recommendation_id });
+                  }
+                }}
+                disabled={loadingSessionId === session.recommendation_id}
+                className="h-10 w-10 rounded-2xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
-        {!isAdded ? (
-          <Button
-            data-testid="recommendation-accept"
-            size="sm"
-            variant="default"
-            onClick={() => onAccept(session)}
-            disabled={loadingSessionId === session.recommendation_id}
-            className="shrink-0 font-bold active:scale-95 transition-all bg-violet-600 hover:bg-violet-700 text-white"
-          >
-            <Check className="h-4 w-4 mr-2" />
-            Ajouter
-          </Button>
-        ) : isCompleted ? (
-          <Badge
-            data-testid="recommendation-completed-badge"
-            variant="secondary"
-            className="shrink-0 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800"
-          >
-            <Check className="h-3 w-3 mr-1" />
-            Réalisée
-          </Badge>
-        ) : (
-          <Button
-            data-testid="recommendation-delete"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const sessionId = getAddedSessionId(session);
-              if (sessionId && session.recommendation_id) {
-                onDelete({ sessionId, recommendationId: session.recommendation_id });
-              }
-            }}
-            disabled={loadingSessionId === session.recommendation_id}
-            className="shrink-0 font-semibold active:scale-95 transition-all text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Supprimer
-          </Button>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Distance</span>
+            <div className="flex items-center gap-1.5 text-sm font-bold">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground/40" />
+              <span>{isCalculated && "~"}{displayDistance} km</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Durée</span>
+            <div className="flex items-center gap-1.5 text-sm font-bold">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground/40" />
+              <span>{isCalculated && "~"}{formatDurationChat(displayDuration)}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Allure</span>
+            <div className="flex items-center gap-1.5 text-sm font-bold">
+              <Activity className="h-3.5 w-3.5 text-muted-foreground/40" />
+              <span>{totals.avgPaceFormatted || session.target_pace_min_km || '-'} /km</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Pulsations</span>
+            <div className="flex items-center gap-1.5 text-sm font-bold">
+              <Heart className="h-3.5 w-3.5 text-muted-foreground/40" />
+              <span>{totals.avgBpm || session.target_hr_bpm || '-'} bpm</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Effort (RPE)</span>
+            <div className="flex items-center gap-1.5 text-sm font-bold">
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground/40" />
+              <span>{session.target_rpe || '-'}/10</span>
+            </div>
+          </div>
+        </div>
+
+        {session.description && (
+          <div className="pt-4 border-t border-border/40">
+            <p className="text-xs text-muted-foreground/70 leading-relaxed italic">
+              « {session.description} »
+            </p>
+          </div>
         )}
       </div>
-
-      <div className="flex items-center gap-3 flex-wrap text-sm">
-        <span className="font-semibold">
-             {isCalculated && <span className="opacity-70">~</span>}
-             {displayDistance} km
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {isCalculated && <span className="opacity-70">~</span>}
-          {formatDurationChat(displayDuration)}
-        </span>
-        
-        <span className="flex items-center gap-1">
-          <Activity className="h-3 w-3" />
-          {totals.avgPaceFormatted 
-            ? `~${totals.avgPaceFormatted}` 
-            : (session.target_pace_range || session.target_pace_min_km || '-')
-          } /km
-        </span>
-        
-        <span>•</span>
-        
-        <span className="text-sm">
-          FC: {totals.avgBpm 
-            ? `~${totals.avgBpm} bpm` 
-            : (session.target_hr_range 
-                ? `${session.target_hr_range} bpm`
-                : (session.target_hr_bpm ? `${session.target_hr_bpm} bpm` : '-')
-              )
-          }
-        </span>
-        {session.target_rpe && (
-          <span className="text-sm">
-            RPE: {session.target_rpe}/10
-          </span>
-        )}
-      </div>
-
-      <p className="text-sm bg-muted/30 rounded px-3 py-2 border-l-2 border-primary">
-        {session.description}
-      </p>
     </div>
   );
 }

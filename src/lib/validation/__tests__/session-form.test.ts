@@ -559,8 +559,8 @@ describe('session-form validation', () => {
 
     it('should reject missing required fields', () => {
       const invalidStep = {
-        stepType: 'effort',
-        // Missing stepNumber
+        stepNumber: 1,
+        // Missing stepType
         duration: '05:00',
         distance: 1.0,
         pace: '04:00',
@@ -569,6 +569,19 @@ describe('session-form validation', () => {
 
       const result = intervalStepSchema.safeParse(invalidStep);
       expect(result.success).toBe(false);
+    });
+
+    it('should accept step without stepNumber (optional field)', () => {
+      const stepWithoutNumber = {
+        stepType: 'effort',
+        duration: '05:00',
+        distance: 1.0,
+        pace: '04:00',
+        hr: 170,
+      };
+
+      const result = intervalStepSchema.safeParse(stepWithoutNumber);
+      expect(result.success).toBe(true);
     });
   });
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Bot, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import { RecommendationCard } from './recommendation-card';
 import {
@@ -46,35 +47,49 @@ export function MessageList({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isSending]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto px-4 py-8 space-y-8 scroll-smooth no-scrollbar">
       {messages.map((message) => (
-        <div key={message.id}>
-          {message.role === 'user' && (
-            <div className="flex justify-end" data-testid="user-message">
-              <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-[80%]">
-                <p className="text-sm">{message.content}</p>
+        <div key={message.id} className={cn(
+          "flex w-full gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300",
+          message.role === 'user' ? "justify-end" : "justify-start"
+        )}>
+          {message.role !== 'user' && (
+            <div className="flex-shrink-0 flex items-end mb-1">
+              <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <Bot className="h-4 w-4 text-white" />
               </div>
             </div>
           )}
 
-          {message.role === 'assistant' && (
-            <div className="space-y-3" data-testid="assistant-message">
-              <div className="bg-muted/50 rounded-lg p-4 border border-border/30">
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {message.content}
-                </p>
-              </div>
+          <div className={cn(
+            "flex flex-col max-w-[85%] md:max-w-[75%] space-y-2",
+            message.role === 'user' ? "items-end" : "items-start"
+          )}>
+            <div className={cn(
+              "relative px-5 py-3.5 text-sm transition-all",
+              message.role === 'user' 
+                ? "bg-violet-600 text-white rounded-2xl shadow-lg shadow-violet-500/10" 
+                : "bg-muted/50 border border-border/40 text-foreground rounded-2xl"
+            )} data-testid={message.role === 'assistant' ? "assistant-message" : "user-message"}>
+              <p className="leading-relaxed whitespace-pre-line font-medium opacity-95">
+                {message.content}
+              </p>
+            </div>
 
-              {message.recommendations?.recommended_sessions && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">
-                    {message.recommendations.recommended_sessions.length === 1
-                      ? 'Séance recommandée :'
-                      : `${message.recommendations.recommended_sessions.length} séances recommandées :`}
-                  </p>
+            {message.role === 'assistant' && message.recommendations?.recommended_sessions && (
+              <div className="w-full space-y-5 pt-3">
+                <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-1">
+                  <div className="h-px flex-1 bg-border/40" />
+                  {message.recommendations.recommended_sessions.length === 1
+                    ? '1 Recommandation du coach'
+                    : `${message.recommendations.recommended_sessions.length} Recommandations du coach`}
+                  <div className="h-px flex-1 bg-border/40" />
+                </div>
+                
+                <div className="space-y-4">
                   {message.recommendations.recommended_sessions.map((session: AIRecommendedSession, idx: number) => {
                     const isAdded = isSessionAlreadyAdded(session, allSessions);
                     const isCompleted_ = isSessionCompleted(session, allSessions);
@@ -106,30 +121,51 @@ export function MessageList({
                     );
                   })}
                 </div>
-              )}
+              </div>
+            )}
 
-              {message.model && (
-                <p className="text-xs text-muted-foreground/60 mt-2">
-                  Réponse générée par {message.model}
-                </p>
-              )}
+            {message.role === 'assistant' && message.model && (
+              <p className="text-[9px] text-muted-foreground/30 font-black uppercase tracking-[0.15em] px-2">
+                Modèle: {message.model}
+              </p>
+            )}
+          </div>
+
+          {message.role === 'user' && (
+            <div className="flex-shrink-0 flex items-end mb-1">
+              <div className="h-8 w-8 rounded-full bg-muted border border-border/40 flex items-center justify-center">
+                <User className="h-4 w-4 text-muted-foreground/50" />
+              </div>
             </div>
           )}
         </div>
       ))}
 
       {isSending && (
-        <div className="flex justify-start" data-testid="chat-loading-indicator">
-          <div className="bg-muted/50 rounded-lg p-4 border border-border/30">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <p className="text-sm text-muted-foreground">Le coach analyse vos données...</p>
+        <div className="flex gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300" data-testid="chat-loading-indicator">
+          <div className="flex-shrink-0 flex items-end">
+            <div className="h-8 w-8 rounded-full bg-violet-600/10 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-violet-600 animate-pulse" />
+            </div>
+          </div>
+          <div className="flex flex-col space-y-2 max-w-[85%] md:max-w-[75%]">
+            <div className="bg-muted/50 border border-border/20 rounded-2xl px-5 py-3.5">
+              <div className="flex items-center gap-4">
+                <div className="flex gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce [animation-delay:-0.3s]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce [animation-delay:-0.15s]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce" />
+                </div>
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
+                  Le coach réfléchit...
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      <div ref={messagesEndRef} />
+      <div ref={messagesEndRef} className="h-4" />
     </div>
   );
 }

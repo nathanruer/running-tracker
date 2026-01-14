@@ -60,14 +60,14 @@ describe('MessageList', () => {
         />
       );
 
-      const userMessage = container.querySelector('.bg-primary');
+      const userMessage = container.querySelector('.bg-violet-600');
       expect(userMessage).toBeInTheDocument();
     });
 
     it('should display sending indicator when isSending is true', () => {
       render(<MessageList {...defaultProps} isSending={true} />);
 
-      expect(screen.getByText('Le coach analyse vos données...')).toBeInTheDocument();
+      expect(screen.getByText('Le coach réfléchit...')).toBeInTheDocument();
     });
   });
 
@@ -162,7 +162,7 @@ describe('MessageList', () => {
         />
       );
 
-      expect(screen.getByText('Réponse générée par gpt-4')).toBeInTheDocument();
+      expect(screen.getByText('Modèle: gpt-4')).toBeInTheDocument();
     });
   });
 
@@ -192,7 +192,7 @@ describe('MessageList', () => {
         />
       );
 
-      expect(screen.getByText('Séance recommandée :')).toBeInTheDocument();
+      expect(screen.getByText('1 Recommandation du coach')).toBeInTheDocument();
       expect(screen.getByTestId('recommendation-rec-1')).toBeInTheDocument();
     });
 
@@ -228,7 +228,7 @@ describe('MessageList', () => {
         />
       );
 
-      expect(screen.getByText('2 séances recommandées :')).toBeInTheDocument();
+      expect(screen.getByText('2 Recommandations du coach')).toBeInTheDocument();
       expect(screen.getByTestId('recommendation-rec-1')).toBeInTheDocument();
       expect(screen.getByTestId('recommendation-rec-2')).toBeInTheDocument();
     });

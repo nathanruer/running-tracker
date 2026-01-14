@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Plus, MoreVertical, FilterX } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { PlannedSessionRow } from './planned-session-row';
@@ -79,38 +80,38 @@ export function SessionsTable({
 
   return (
     <>
-      <Card className="border-border/50">        
-        <CardHeader className="flex flex-col gap-4 space-y-0">
+      <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">        
+        <CardHeader className="flex flex-col gap-6 px-8 py-8 border-b border-border/40">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">Historique des séances</CardTitle>
+            <CardTitle className="text-xl font-bold tracking-tight">Historique des séances</CardTitle>
             {initialLoading ? (
-              <div className="h-10 w-10 md:w-[168px] animate-pulse rounded-md bg-muted shrink-0" />
+              <div className="h-11 w-10 md:w-[180px] animate-pulse rounded-xl bg-muted shrink-0" />
             ) : actions.onNewSession ? (
               <Button
                 data-testid="btn-new-session"
                 onClick={actions.onNewSession}
-                className="bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all font-bold shrink-0"
+                className="h-11 px-6 rounded-xl bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all font-semibold shrink-0"
                 title="Nouvelle séance"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-4.5 w-4.5 mr-1.5" />
                 <span className="hidden md:inline">Ajouter une séance</span>
               </Button>
             ) : null}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             {initialLoading ? (
               <>
-                <div className="h-8 w-full sm:w-[180px] animate-pulse rounded-md bg-muted" />
-                <div className="h-8 w-full sm:w-[180px] animate-pulse rounded-md bg-muted" />
+                <div className="h-10 w-full sm:w-[180px] animate-pulse rounded-xl bg-muted" />
+                <div className="h-10 w-full sm:w-[180px] animate-pulse rounded-xl bg-muted" />
               </>
             ) : (
               <>
                 <Select value={selectedType} onValueChange={onTypeChange}>
-                  <SelectTrigger data-testid="filter-session-type" className="w-full sm:w-[180px]">
+                  <SelectTrigger data-testid="filter-session-type" className="w-full sm:w-[200px] h-10 rounded-xl bg-muted/10 border-border/40 focus:ring-0">
                     <SelectValue placeholder="Type de séance" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-border/40 shadow-none">
                     <SelectItem value="all">Tous les types</SelectItem>
                     {availableTypes.map((type) => (
                       <SelectItem key={type} value={type}>
@@ -123,10 +124,10 @@ export function SessionsTable({
                   value={viewMode}
                   onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
                 >
-                  <SelectTrigger data-testid="filter-view-mode" className="w-full sm:w-[180px]">
+                  <SelectTrigger data-testid="filter-view-mode" className="w-full sm:w-[180px] h-10 rounded-xl bg-muted/10 border-border/40 focus:ring-0">
                     <SelectValue placeholder="Affichage" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-border/40 shadow-none">
                     <SelectItem value="paginated">10 dernières</SelectItem>
                     <SelectItem value="all">Tout afficher</SelectItem>
                   </SelectContent>
@@ -144,111 +145,109 @@ export function SessionsTable({
             />
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table className="table-auto">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">
+              <TableHeader className="bg-muted/5">
+                <TableRow className="border-border/40 hover:bg-transparent">
+                  <TableHead className="w-12 px-6">
                     <Checkbox
                       checked={isAllSelected}
                       onCheckedChange={toggleSelectAll}
-                      className="border-muted-foreground/50 data-[state=checked]:bg-muted-foreground data-[state=checked]:border-muted-foreground"
+                      className="border-muted-foreground/30 data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 rounded-md"
                       aria-label="Sélectionner toutes les séances"
                     />
                   </TableHead>
-                  <TableHead className="whitespace-nowrap text-center">#</TableHead>
-                  <TableHead className="whitespace-nowrap text-center">Sem.</TableHead>
-                  <TableHead className="whitespace-nowrap text-center">Date</TableHead>
-                  <TableHead className="whitespace-nowrap text-center">Séance</TableHead>
-                  <TableHead className="whitespace-nowrap text-center">
+                  <TableHead className="w-16 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">#</TableHead>
+                  <TableHead className="w-16 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Sem.</TableHead>
+                  <TableHead className="w-32 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Date</TableHead>
+                  <TableHead className="whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Séance</TableHead>
+                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
                     <button
                       data-testid="sort-duration"
                       onClick={() => handleSort('duration')}
-                      className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                      className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
                       <SortIcon column="duration" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={sortColumn === 'duration' ? 'text-foreground' : ''}>Durée</span>
+                      <span className={cn("transition-colors uppercase", sortColumn === 'duration' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Durée</span>
                     </button>
                   </TableHead>
-                  <TableHead className="whitespace-nowrap text-center">
+                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
                     <button
                       data-testid="sort-distance"
                       onClick={() => handleSort('distance')}
-                      className="flex items-center justify-center hover:text-foreground transition-colors w-full"
+                      className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
                       <SortIcon column="distance" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Dist.</span>
+                      <span className={cn("transition-colors uppercase", sortColumn === 'distance' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Dist.</span>
                     </button>
                   </TableHead>
-                  <TableHead className="whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        data-testid="sort-avgPace"
-                        onClick={() => handleSort('avgPace')}
-                        className="flex items-center hover:text-foreground transition-colors"
-                      >
-                        <SortIcon column="avgPace" sortColumn={sortColumn} sortDirection={sortDirection} />
-                        <span className={sortColumn === 'avgPace' ? 'text-foreground' : ''}>Allure</span>
-                      </button>
-                    </div>
+                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                    <button
+                      data-testid="sort-avgPace"
+                      onClick={() => handleSort('avgPace')}
+                      className="flex items-center justify-center hover:text-foreground transition-all w-full group"
+                    >
+                      <SortIcon column="avgPace" sortColumn={sortColumn} sortDirection={sortDirection} />
+                      <span className={cn("transition-colors uppercase", sortColumn === 'avgPace' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Allure</span>
+                    </button>
                   </TableHead>
-                  <TableHead className="whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        data-testid="sort-avgHeartRate"
-                        onClick={() => handleSort('avgHeartRate')}
-                        className="flex items-center hover:text-foreground transition-colors"
-                      >
-                        <SortIcon column="avgHeartRate" sortColumn={sortColumn} sortDirection={sortDirection} />
-                        <span className={sortColumn === 'avgHeartRate' ? 'text-foreground' : ''}>FC</span>
-                      </button>
-                    </div>
+                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                    <button
+                      data-testid="sort-avgHeartRate"
+                      onClick={() => handleSort('avgHeartRate')}
+                      className="flex items-center justify-center hover:text-foreground transition-all w-full group"
+                    >
+                      <SortIcon column="avgHeartRate" sortColumn={sortColumn} sortDirection={sortDirection} />
+                      <span className={cn("transition-colors uppercase", sortColumn === 'avgHeartRate' ? 'text-foreground' : 'group-hover:text-foreground/80')}>FC</span>
+                    </button>
                   </TableHead>
-                  <TableHead className="whitespace-nowrap text-center">
+                  <TableHead className="w-20 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
                     <button
                       data-testid="sort-perceivedExertion"
                       onClick={() => handleSort('perceivedExertion')}
-                      className="flex items-center justify-center w-full hover:text-foreground transition-colors"
+                      className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
                       <SortIcon column="perceivedExertion" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={sortColumn === 'perceivedExertion' ? 'text-foreground' : ''}>RPE</span>
+                      <span className={cn("transition-colors uppercase", sortColumn === 'perceivedExertion' ? 'text-foreground' : 'group-hover:text-foreground/80')}>RPE</span>
                     </button>
                   </TableHead>
-                  <TableHead className="max-w-[40ch]">Commentaires</TableHead>
-                  <TableHead className="w-10 text-center">
-                    <MoreVertical className="h-4 w-4 mx-auto text-muted-foreground" />
+                  <TableHead className="max-w-[40ch] text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Commentaires</TableHead>
+                  <TableHead className="w-14 text-center">
+                    <div className="flex justify-center">
+                      <MoreVertical className="h-4 w-4 text-muted-foreground/20" />
+                    </div>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {initialLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-8 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-12 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-24 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                  [...Array(6)].map((_, i) => (
+                    <TableRow key={i} className="border-border/20 p-8">
+                      <TableCell className="px-6"><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-8 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-8 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-24 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1 items-center">
-                          <div className="h-5 w-24 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                          <div className="h-3 w-16 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                        <div className="flex flex-col gap-1.5 items-center">
+                          <div className="h-5 w-32 animate-pulse rounded-lg bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                          <div className="h-3 w-20 animate-pulse rounded-lg bg-muted/50" style={{ animationDelay: `${i * 100}ms` }} />
                         </div>
                       </TableCell>
-                      <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-20 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-16 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-12 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell className="min-w-[320px]">
+                      <TableCell><div className="h-6 w-16 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-16 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-16 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-16 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell><div className="h-6 w-10 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell className="min-w-[320px] px-8">
                         <div className="flex flex-col gap-2">
-                          <div className="h-4 w-80 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
-                          <div className="h-4 w-72 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                          <div className="h-3.5 w-[90%] animate-pulse rounded-full bg-muted/60" style={{ animationDelay: `${i * 100}ms` }} />
+                          <div className="h-3.5 w-[75%] animate-pulse rounded-full bg-muted/40" style={{ animationDelay: `${i * 100}ms` }} />
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-center">
-                          <div className="h-8 w-8 animate-pulse rounded bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
+                          <div className="h-10 w-10 animate-pulse rounded-xl bg-muted" style={{ animationDelay: `${i * 100}ms` }} />
                         </div>
                       </TableCell>
                     </TableRow>

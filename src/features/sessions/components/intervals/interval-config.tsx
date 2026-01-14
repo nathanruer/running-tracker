@@ -32,7 +32,7 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
   const [recoveryMode, setRecoveryMode] = useState<'time' | 'distance'>('time');
 
   return (
-    <>
+    <div className="space-y-8">
       <div className="grid grid-cols-2 gap-4">
         <FormField
           control={control}
@@ -51,12 +51,13 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
           name="repetitionCount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre de répétitions</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Nombre de répétitions</FormLabel>
               <FormControl>
                 <Input
                   type="number"
                   min="1"
                   placeholder="0"
+                  className="rounded-xl h-11 border-border/50"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) =>
@@ -90,6 +91,6 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
           showHeartRate={false}
         />
       </div>
-    </>
+    </div>
   );
 }

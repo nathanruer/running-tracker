@@ -21,6 +21,7 @@ import { TrainingZonesTable } from '@/features/profile/components/account/traini
 import { AnalyticsView } from '@/features/profile/components/analytics-view';
 import { ActivityHistory } from '@/features/profile/components/history/activity-history';
 import { StravaAccountCard } from '@/features/profile/components/account/strava-account-card';
+import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton';
 import { getCurrentUser, getSessions } from '@/lib/services/api-client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -80,11 +81,7 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return (
-      <div className="w-full py-6 md:py-8 px-4 md:px-6 xl:px-12 text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!user) return null;
