@@ -277,7 +277,10 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
+    <div 
+      data-testid="dashboard-container"
+      className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12"
+    >
       <div className="mx-auto max-w-[90rem]">
         <h1 data-testid="dashboard-title-mobile" className="text-3xl font-extrabold text-gradient mb-6 md:hidden px-1">Dashboard</h1>
 

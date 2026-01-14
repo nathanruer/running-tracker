@@ -90,7 +90,7 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
 
     await expect(dialog).not.toBeVisible();
     await expect(page.getByText(comment)).not.toBeVisible();
-    await expect(page.getByText(/aucune séance/i)).toBeVisible();
+    await expect(page.locator('[data-testid="sessions-empty-state"]')).toBeVisible();
   });
 
   test('should cancel deletion', async ({ page }) => {

@@ -9,7 +9,9 @@ interface SessionsEmptyStateProps {
 
 export function SessionsEmptyState({ onAction, className }: SessionsEmptyStateProps) {
   return (
-    <div className={cn(
+    <div 
+      data-testid="sessions-empty-state"
+      className={cn(
       "relative overflow-hidden rounded-[2.5rem] border border-border/50 bg-card/30 p-12 text-center backdrop-blur-sm",
       "before:absolute before:inset-0 before:-z-10 before:bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.05),transparent)]",
       className
@@ -42,6 +44,7 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
           
           <div className="pt-6">
             <Button 
+              data-testid="btn-add-first-session"
               onClick={onAction} 
               className="h-14 px-8 rounded-2xl font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 active:scale-95 transition-all group overflow-hidden relative"
             >

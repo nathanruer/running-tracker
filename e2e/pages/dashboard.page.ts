@@ -32,14 +32,7 @@ export class DashboardPage extends BasePage {
 
   async assertDashboardLoaded(): Promise<void> {
     await this.waitForUrl(/\/dashboard/);
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForLoadState('networkidle');
-
-    try {
-      await expect(this.pageHeading).toBeVisible({ timeout: 10000 });
-    } catch {
-      await expect(this.page.getByText('Aucune séance enregistrée')).toBeVisible({ timeout: 10000 });
-    }
+    await expect(this.page.locator('[data-testid="dashboard-container"]')).toBeVisible({ timeout: 15000 });
   }
 
   async assertSessionsTableVisible(): Promise<void> {
@@ -52,24 +45,8 @@ export class DashboardPage extends BasePage {
 
   async clickNewSession(): Promise<void> {
     await this.page.waitForLoadState('networkidle');
-
-    const mainButton = this.page.locator('[data-testid="btn-new-session"]').first();
-    const emptyStateButton = this.page.getByRole('button', { name: /ajouter.*première|première.*séance/i });
-
-    const visibleButton = await Promise.race([
-      mainButton.waitFor({ state: 'visible', timeout: 10000 }).then(() => mainButton),
-      emptyStateButton.waitFor({ state: 'visible', timeout: 10000 }).then(() => emptyStateButton),
-    ]).catch(() => null);
-
-    if (visibleButton) {
-      await visibleButton.click();
-    } else if (await mainButton.isVisible()) {
-      await mainButton.click();
-    } else if (await emptyStateButton.isVisible()) {
-      await emptyStateButton.click();
-    } else {
-      throw new Error('No "New Session" button found');
-    }
+    const addButton = this.page.locator('[data-testid="btn-new-session"], [data-testid="btn-add-first-session"]').first();
+    await addButton.click();
   }
 
   async goToProfile(): Promise<void> {

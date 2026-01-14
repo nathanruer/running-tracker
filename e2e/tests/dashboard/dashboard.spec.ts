@@ -45,7 +45,7 @@ test.describe('Dashboard - Display', () => {
 
   test('should display sessions or empty state', async ({ page }) => {
     const hasTable = await page.getByText(/historique des séances/i).isVisible().catch(() => false);
-    const hasEmptyState = await page.getByText(/aucune séance/i).isVisible().catch(() => false);
+    const hasEmptyState = await page.locator('[data-testid="sessions-empty-state"]').isVisible().catch(() => false);
     expect(hasTable || hasEmptyState).toBe(true);
   });
 
@@ -83,7 +83,7 @@ test.describe('Dashboard - Empty State', () => {
 
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText(/aucune séance/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="sessions-empty-state"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('should show add first session button in empty state', async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe('Dashboard - Empty State', () => {
     await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
 
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
-    const addButton = page.getByRole('button', { name: /ajouter.*première|première.*séance/i });
+    const addButton = page.locator('[data-testid="btn-add-first-session"]');
     await expect(addButton).toBeVisible({ timeout: 10000 });
   });
 });
@@ -194,9 +194,12 @@ test.describe('Dashboard - RPE Display', () => {
     await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
     await dashboardPage.assertDashboardLoaded();
 
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
     await page.request.post(`${API_BASE_URL}/api/sessions`, {
       data: {
-        date: new Date().toISOString().split('T')[0],
+        date: localDate,
         sessionType: 'Fractionné',
         duration: '01:00:00',
         distance: 12,

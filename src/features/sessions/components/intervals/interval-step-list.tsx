@@ -169,6 +169,7 @@ export function IntervalStepList({
                   Étapes ({fields.length})
                 </h4>
                 <Button
+                  data-testid="btn-add-interval-step"
                   type="button"
                   variant="ghost"
                   size="icon"

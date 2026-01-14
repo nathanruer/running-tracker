@@ -13,9 +13,15 @@ export async function createTestSession(
   page: Page,
   data: Partial<typeof defaultSessionData> & { date?: string; comments?: string }
 ): Promise<void> {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const localDate = `${year}-${month}-${day}`;
+
   const payload = {
     ...defaultSessionData,
-    date: data.date || new Date().toISOString().split('T')[0],
+    date: data.date || localDate,
     ...data,
   };
 

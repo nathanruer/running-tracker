@@ -282,7 +282,7 @@ test.describe('Session Form - Create Session', () => {
 
     await page.getByText('Afficher les détails avancés').click();
     
-    const addStepBtn = page.locator('button:has(svg.lucide-plus)');
+    const addStepBtn = page.locator('[data-testid="btn-add-interval-step"]');
     
     await addStepBtn.click();
     await addStepBtn.click();
@@ -322,7 +322,7 @@ test.describe('Session Form - Create Session', () => {
     
     await page.getByText('Afficher les détails avancés').click();
 
-    const addStepBtn = page.locator('button:has(svg.lucide-plus)');
+    const addStepBtn = page.locator('[data-testid="btn-add-interval-step"]');
     await addStepBtn.click();
     
     const durationInput = page.locator('input[name="steps.0.duration"]');
