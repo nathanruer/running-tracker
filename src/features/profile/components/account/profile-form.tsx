@@ -188,7 +188,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           </div>
 
           <div className='pt-4'>
-            <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white h-10 rounded-xl font-bold uppercase tracking-widest text-xs active:scale-95 transition-all" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold uppercase tracking-widest text-xs active:scale-95 transition-all" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

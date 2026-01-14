@@ -89,7 +89,7 @@ export function SessionsTable({
               <Button
                 data-testid="btn-new-session"
                 onClick={actions.onNewSession}
-                className="bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all h-10 rounded-xl px-6 font-bold shrink-0"
+                className="bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all font-bold shrink-0"
                 title="Nouvelle séance"
               >
                 <Plus className="h-5 w-5" />
@@ -296,7 +296,7 @@ export function SessionsTable({
                           variant="ghost"
                           size="sm"
                           onClick={() => onTypeChange('all')}
-                          className="mt-2 text-[10px] font-black uppercase tracking-widest text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 rounded-xl h-8 px-4"
+                          className="mt-2 text-[10px] font-black uppercase tracking-widest text-violet-600 hover:text-violet-700 hover:bg-violet-600/5"
                         >
                           Réinitialiser les filtres
                         </Button>
@@ -320,12 +320,12 @@ export function SessionsTable({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel data-testid="bulk-delete-session-cancel" disabled={isDeletingBulk} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogCancel data-testid="bulk-delete-session-cancel" disabled={isDeletingBulk} className="px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
             <AlertDialogAction
               data-testid="bulk-delete-session-confirm"
               onClick={() => handleBulkDelete(Array.from(selectedSessions), clearSelection)}
               disabled={isDeletingBulk}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-6 font-bold active:scale-95 transition-all"
             >
               {isDeletingBulk ? 'Suppression...' : 'Confirmer la suppression'}
             </AlertDialogAction>

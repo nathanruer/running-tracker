@@ -70,11 +70,11 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={previousMonth} className="h-9 w-9 rounded-full hover:bg-violet-500/10 hover:text-violet-500 border-border/50 transition-colors">
+          <Button variant="outline" size="icon" onClick={previousMonth} className="rounded-full hover:bg-violet-500/10 hover:text-violet-500 border-border/50 transition-colors">
             <span className="sr-only">Mois précédent</span>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={nextMonth} className="h-9 w-9 rounded-full hover:bg-violet-500/10 hover:text-violet-500 border-border/50 transition-colors">
+          <Button variant="outline" size="icon" onClick={nextMonth} className="rounded-full hover:bg-violet-500/10 hover:text-violet-500 border-border/50 transition-colors">
             <span className="sr-only">Mois suivant</span>
             <ChevronRight className="h-4 w-4" />
           </Button>

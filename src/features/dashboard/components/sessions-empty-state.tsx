@@ -46,7 +46,8 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
             <Button 
               data-testid="btn-add-first-session"
               onClick={onAction} 
-              className="h-14 px-8 rounded-2xl font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 active:scale-95 transition-all group overflow-hidden relative"
+              size="lg"
+              className="font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 active:scale-95 transition-all group overflow-hidden relative"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />

@@ -141,7 +141,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
             }}
           />
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleRenameCancel} className="h-10 px-6 rounded-xl font-semibold active:scale-95 transition-all">
+            <Button variant="outline" onClick={handleRenameCancel} className="font-semibold active:scale-95 transition-all">
               Annuler
             </Button>
             <Button

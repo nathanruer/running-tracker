@@ -69,7 +69,7 @@ export function RecommendationCard({
             variant="default"
             onClick={() => onAccept(session)}
             disabled={loadingSessionId === session.recommendation_id}
-            className="shrink-0 h-9 px-4 rounded-xl font-bold active:scale-95 transition-all bg-violet-600 hover:bg-violet-700 text-white"
+            className="shrink-0 font-bold active:scale-95 transition-all bg-violet-600 hover:bg-violet-700 text-white"
           >
             <Check className="h-4 w-4 mr-2" />
             Ajouter
@@ -95,7 +95,7 @@ export function RecommendationCard({
               }
             }}
             disabled={loadingSessionId === session.recommendation_id}
-            className="shrink-0 h-9 px-4 rounded-xl font-semibold active:scale-95 transition-all text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
+            className="shrink-0 font-semibold active:scale-95 transition-all text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Supprimer

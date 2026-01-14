@@ -17,7 +17,7 @@ npm test -- --run
 
 echo ""
 echo "E2E Tests..."                                                                                                         
-npm run test:e2e      
+npm run test:e2e:full      
 
 echo ""
 echo "Build check..."

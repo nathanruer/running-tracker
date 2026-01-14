@@ -92,7 +92,7 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
             variant="outline"
             onClick={() => setShowDisconnectDialog(true)}
             disabled={isDisconnectingStrava}
-            className="w-full h-10 px-5 text-sm font-semibold text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all rounded-xl"
+            className="w-full px-5 text-sm font-semibold text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Déconnecter Strava
@@ -109,11 +109,11 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel disabled={isDisconnectingStrava} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDisconnectingStrava} className="px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDisconnectStrava}
               disabled={isDisconnectingStrava}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-6 font-bold active:scale-95 transition-all"
             >
               {isDisconnectingStrava ? (
                 <>

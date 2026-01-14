@@ -106,7 +106,7 @@ const LoginCard = () => {
           <Button
             data-testid="login-submit"
             type="submit"
-            className="w-full h-10 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
+            className="w-full font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
             disabled={loading}
           >
             {loading

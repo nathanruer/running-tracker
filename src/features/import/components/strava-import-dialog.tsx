@@ -260,7 +260,7 @@ export function StravaImportDialog({
             <div className="w-full space-y-4">
               <Button
                 onClick={connectToStrava}
-                className="w-full h-12 rounded-2xl font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-lg shadow-[#FC4C02]/20 active:scale-95 transition-all text-base"
+                className="w-full font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-lg shadow-[#FC4C02]/20 active:scale-95 transition-all text-base"
                 disabled={loading}
               >
                 {loading ? (
@@ -421,13 +421,13 @@ export function StravaImportDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="flex-1 h-11 rounded-2xl font-bold active:scale-95 transition-all"
+                className="flex-1 font-bold active:scale-95 transition-all"
               >
                 Annuler
               </Button>
               <Button 
                 onClick={handleImportSelected} 
-                className="flex-[2] h-11 rounded-2xl font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all"
+                className="flex-[2] font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all"
                 disabled={importing || selectedIndices.size === 0}
               >
                 {importing ? (

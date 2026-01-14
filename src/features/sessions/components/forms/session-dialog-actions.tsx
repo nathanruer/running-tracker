@@ -22,7 +22,7 @@ export function SessionDialogActions({
         type="button"
         variant="outline"
         onClick={onCancel}
-        className="flex-1 h-10 rounded-xl font-semibold active:scale-95 transition-all mb-4 sm:mb-0"
+        className="flex-1 font-semibold active:scale-95 transition-all mb-4 sm:mb-0"
       >
         Annuler
       </Button>
@@ -33,17 +33,17 @@ export function SessionDialogActions({
             type="button"
             variant="secondary"
             onClick={onUpdate}
-            className="flex-1 h-10 rounded-xl font-semibold active:scale-95 transition-all"
+            className="flex-1 font-semibold active:scale-95 transition-all"
             disabled={loading}
           >
             {loading ? 'Modification...' : 'Modifier'}
           </Button>
-          <Button data-testid="btn-session-submit" type="submit" className="flex-2 h-10 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" disabled={loading}>
+          <Button data-testid="btn-session-submit" type="submit" className="flex-2 font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" disabled={loading}>
             {loading ? 'Enregistrement...' : 'Modifier et marquer comme réalisé'}
           </Button>
         </>
       ) : (
-        <Button data-testid="btn-session-submit" type="submit" className="flex-1 h-10 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" disabled={loading}>
+        <Button data-testid="btn-session-submit" type="submit" className="flex-1 font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" disabled={loading}>
           {loading ? 'Enregistrement...' : hasSession ? 'Modifier' : 'Enregistrer'}
         </Button>
       )}
