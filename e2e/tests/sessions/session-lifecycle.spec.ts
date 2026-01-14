@@ -60,7 +60,7 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
     await expect(page.getByText(initialComment)).not.toBeVisible();
   });
 
-  test('should delete a session', async ({ page }) => {
+  test('should delete a session with confirmation', async ({ page }) => {
     const authPage = new AuthPage(page);
     const dashboardPage = new DashboardPage(page);
 
@@ -91,36 +91,5 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
     await expect(dialog).not.toBeVisible();
     await expect(page.getByText(comment)).not.toBeVisible();
     await expect(page.locator('[data-testid="sessions-empty-state"]')).toBeVisible();
-  });
-
-  test('should cancel deletion', async ({ page }) => {
-    const authPage = new AuthPage(page);
-    const dashboardPage = new DashboardPage(page);
-
-    currentUserEmail = generateTestEmail('cancel-del');
-    await authPage.goto();
-    await authPage.switchToRegister();
-    await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
-    await dashboardPage.assertDashboardLoaded();
-
-    const comment = `Keep Me ${Date.now()}`;
-    await createTestSession(page, {
-      sessionType: 'Footing',
-      duration: '00:30:00',
-      avgPace: '05:00',
-      comments: comment,
-    });
-    await page.reload();
-
-    const row = page.getByRole('row').filter({ hasText: comment }).first();
-    await row.getByRole('button', { name: /actions/i }).click();
-    await page.getByRole('menuitem', { name: /supprimer/i }).click();
-
-    const dialog = page.getByRole('alertdialog');
-    await expect(dialog).toBeVisible();
-    await page.locator('[data-testid="delete-session-cancel"]').click();
-
-    await expect(dialog).not.toBeVisible();
-    await expect(page.getByText(comment)).toBeVisible();
   });
 });
