@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { useBulkDelete } from '../use-bulk-delete';
 
@@ -79,29 +79,37 @@ describe('useBulkDelete', () => {
         await result.current.handleBulkDelete(sessionIds, mockClearSelection);
       });
       
-      await waitFor(() => {
-        expect(result.current.showBulkDeleteDialog).toBe(false);
-      });
+      // Dialog should be closed after successful delete
+      expect(result.current.showBulkDeleteDialog).toBe(false);
     });
 
     it('should set isDeletingBulk to true during delete', async () => {
-      const mockOnBulkDelete = vi.fn().mockImplementation(
-        () => new Promise(resolve => setTimeout(resolve, 100))
-      );
+      // Use a deferred promise to control timing
+      let resolveDelete: () => void;
+      const deletePromise = new Promise<void>(resolve => {
+        resolveDelete = resolve;
+      });
+      const mockOnBulkDelete = vi.fn().mockImplementation(() => deletePromise);
       const mockClearSelection = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
       
       const sessionIds = ['1'];
       
+      // Start the delete (don't await)
       act(() => {
         result.current.handleBulkDelete(sessionIds, mockClearSelection);
       });
       
+      // Check isDeletingBulk is true during the operation
       expect(result.current.isDeletingBulk).toBe(true);
       
-      await waitFor(() => {
-        expect(result.current.isDeletingBulk).toBe(false);
+      // Resolve and wait for completion
+      await act(async () => {
+        resolveDelete!();
+        await deletePromise;
       });
+      
+      expect(result.current.isDeletingBulk).toBe(false);
     });
 
     it('should set isDeletingBulk to false after delete completes', async () => {
@@ -134,5 +142,3 @@ describe('useBulkDelete', () => {
     });
   });
 });
-
-

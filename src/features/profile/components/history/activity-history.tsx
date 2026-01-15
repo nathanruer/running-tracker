@@ -17,8 +17,9 @@ import {
 import { ActivityHeatmap } from './activity-heatmap';
 import { CalendarViewInline } from './calendar-view-inline';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
-import { formatMinutesToHHMMSS } from '@/lib/utils/duration';
-import { capitalize, formatDisplayDuration, formatDisplayPace } from '@/lib/utils/formatters';
+import { formatMinutesToHHMMSS, formatDisplayDuration } from '@/lib/utils/duration';
+import { formatDisplayPace } from '@/lib/utils/pace';
+import { capitalize } from '@/lib/utils/text';
 
 interface ActivityHistoryProps {
   sessions: TrainingSession[];

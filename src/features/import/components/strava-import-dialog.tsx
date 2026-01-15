@@ -23,19 +23,19 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { bulkImportSessions } from '@/lib/services/api-client';
+import { bulkImportSessions, getStravaActivityDetails, type StravaActivityDetails } from '@/lib/services/api-client';
 import { useStravaActivities, type StravaActivity } from '../hooks/use-strava-activities';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { formatDuration } from '@/lib/utils/duration';
-import { calculatePaceString } from '@/lib/utils/formatters';
-import { StravaBadge } from '@/components/ui/strava-badge';
+import { calculatePaceString } from '@/lib/utils/pace';
+import { StravaBadge } from './strava-badge';
 
 interface StravaImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (data: Record<string, unknown>) => void;
+  onImport: (data: StravaActivityDetails) => void;
   mode?: 'create' | 'edit' | 'complete';
   queryClient?: QueryClient;
   onBulkImportSuccess?: () => void;
@@ -121,42 +121,26 @@ export function StravaImportDialog({
 
       if (mode === 'complete') {
         const activity = selectedActivities[0];
-        const response = await fetch(`/api/strava/activities/${activity.id}`);
-
-        if (!response.ok) {
-          throw new Error('Échec de la récupération');
-        }
-
-        const data = await response.json();
+        const data = await getStravaActivityDetails(activity.id.toString());
         onImport(data);
         onOpenChange(false);
         clearSelection();
       } else if (selectedIndices.size === 1) {
         const activity = selectedActivities[0];
-        const response = await fetch(`/api/strava/activities/${activity.id}`);
-
-        if (!response.ok) {
-          throw new Error('Échec de la récupération');
-        }
-
-        const data = await response.json();
+        const data = await getStravaActivityDetails(activity.id.toString());
         onImport(data);
         onOpenChange(false);
         clearSelection();
       } else {
         const activityPromises = selectedActivities.map(async (activity) => {
           try {
-            const response = await fetch(`/api/strava/activities/${activity.id}`);
-            if (response.ok) {
-              return await response.json();
-            }
-            return null;
+            return await getStravaActivityDetails(activity.id.toString());
           } catch {
             return null;
           }
         });
 
-        const fetchedActivities = (await Promise.all(activityPromises)).filter(Boolean);
+        const fetchedActivities = (await Promise.all(activityPromises)).filter(Boolean) as StravaActivityDetails[];
 
         if (fetchedActivities.length === 0) {
           handleError(null, "Aucune activité n'a pu être récupérée depuis Strava");

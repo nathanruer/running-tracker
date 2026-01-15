@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/database';
 import { partialSessionSchema } from '@/lib/validation';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
-import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
+import { findSessionByIdAndUser } from '@/lib/utils/api';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 

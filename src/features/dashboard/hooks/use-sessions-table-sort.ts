@@ -3,8 +3,7 @@ import { type TrainingSession } from '@/lib/types/session';
 import { 
   parseDuration,
 } from '@/lib/utils/duration';
-import { extractHeartRateValue } from '@/lib/utils/formatters';
-
+import { extractHeartRateValue } from '@/lib/utils/heart-rate';
 
 type SortColumn = 'sessionNumber' | 'week' | 'date' | 'sessionType' | 'duration' | 'distance' | 'avgPace' | 'avgHeartRate' | 'perceivedExertion';
 type SortDirection = 'asc' | 'desc' | null;

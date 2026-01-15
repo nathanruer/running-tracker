@@ -2,28 +2,12 @@ import { useEffect, useRef } from 'react';
 import { Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
+import type { Message } from '@/lib/services/api-client';
 import { RecommendationCard } from './recommendation-card';
 import {
-  isSessionAlreadyAdded,
-  isSessionCompleted,
   getAddedSessionId,
-  getCompletedSession,
   getNextSessionNumber,
 } from '@/lib/domain/sessions/helpers';
-
-interface Recommendations {
-  recommended_sessions?: AIRecommendedSession[];
-  [key: string]: unknown;
-}
-
-interface Message {
-  id: string;
-  role: string;
-  content: string;
-  recommendations: Recommendations | null;
-  model?: string;
-  createdAt: string;
-}
 
 interface MessageListProps {
   messages: Message[];
@@ -50,7 +34,7 @@ export function MessageList({
   }, [messages, isSending]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8 space-y-8 scroll-smooth no-scrollbar">
+    <div className="flex-1 overflow-y-auto px-4 pt-6 pb-32 space-y-4 scroll-smooth no-scrollbar">
       {messages.map((message) => (
         <div key={message.id} className={cn(
           "flex w-full gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300",
@@ -58,7 +42,7 @@ export function MessageList({
         )}>
           {message.role !== 'user' && (
             <div className="flex-shrink-0 flex items-end mb-1">
-              <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center border border-violet-500/20">
                 <Bot className="h-4 w-4 text-white" />
               </div>
             </div>
@@ -71,7 +55,7 @@ export function MessageList({
             <div className={cn(
               "relative px-5 py-3.5 text-sm transition-all",
               message.role === 'user' 
-                ? "bg-violet-600 text-white rounded-2xl shadow-lg shadow-violet-500/10" 
+                ? "bg-violet-600 text-white rounded-2xl border border-violet-500/20" 
                 : "bg-muted/50 border border-border/40 text-foreground rounded-2xl"
             )} data-testid={message.role === 'assistant' ? "assistant-message" : "user-message"}>
               <p className="leading-relaxed whitespace-pre-line font-medium opacity-95">
@@ -80,7 +64,7 @@ export function MessageList({
             </div>
 
             {message.role === 'assistant' && message.recommendations?.recommended_sessions && (
-              <div className="w-full space-y-5 pt-3">
+              <div className="w-full space-y-4 pt-1">
                 <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-1">
                   <div className="h-px flex-1 bg-border/40" />
                   {message.recommendations.recommended_sessions.length === 1
@@ -91,18 +75,20 @@ export function MessageList({
                 
                 <div className="space-y-4">
                   {message.recommendations.recommended_sessions.map((session: AIRecommendedSession, idx: number) => {
-                    const isAdded = isSessionAlreadyAdded(session, allSessions);
-                    const isCompleted_ = isSessionCompleted(session, allSessions);
-                    const completedSession = isCompleted_ ? getCompletedSession(session, allSessions) : null;
+                    const matchedSession = allSessions.find(s => s.recommendationId === session.recommendation_id);
+                    const isAdded = !!matchedSession;
+                    const isCompleted_ = matchedSession?.status === 'completed';
+                    const completedSession = isCompleted_ ? matchedSession : null;
 
                     const notAddedSessionsBeforeThis = (message.recommendations?.recommended_sessions ?? [])
                       .slice(0, idx)
-                      .filter((s) => !isSessionAlreadyAdded(s, allSessions))
+                      .filter((s) => !allSessions.some(as => as.recommendationId === s.recommendation_id))
                       .length;
+                    
                     const dynamicSessionNumber = getNextSessionNumber(allSessions) + notAddedSessionsBeforeThis;
 
-                    const displaySessionNumber = isAdded
-                      ? (completedSession?.sessionNumber || session.sessionNumber || dynamicSessionNumber)
+                    const displaySessionNumber = matchedSession 
+                      ? matchedSession.sessionNumber 
                       : dynamicSessionNumber;
 
                     return (
@@ -165,7 +151,7 @@ export function MessageList({
         </div>
       )}
 
-      <div ref={messagesEndRef} className="h-4" />
+      <div ref={messagesEndRef} className="h-px" />
     </div>
   );
 }

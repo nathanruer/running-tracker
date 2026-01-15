@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { PATCH } from '../[id]/complete/route';
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
+import { findSessionByIdAndUser } from '@/lib/utils/api';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 
 vi.mock('@/lib/database', () => ({
@@ -20,8 +20,8 @@ vi.mock('@/lib/auth', () => ({
   getUserIdFromRequest: vi.fn(),
 }));
 
-vi.mock('@/lib/utils/api-helpers', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/utils/api-helpers')>();
+vi.mock('@/lib/utils/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/utils/api')>();
   return {
     ...actual,
     findSessionByIdAndUser: vi.fn(),

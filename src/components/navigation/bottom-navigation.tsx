@@ -2,10 +2,13 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, MessageSquare, User } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { prefetchDataForRoute } from '@/lib/services/prefetch';
 
 export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,6 +33,8 @@ export function BottomNavigation() {
             <button
               key={item.href}
               onClick={() => router.push(item.href)}
+              onMouseEnter={() => prefetchDataForRoute(queryClient, item.href)}
+              onTouchStart={() => prefetchDataForRoute(queryClient, item.href)}
               className={`flex flex-col items-center justify-center gap-1 flex-1 h-full active:scale-95 transition-all ${
                 active
                   ? 'text-primary'

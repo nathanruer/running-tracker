@@ -5,6 +5,7 @@ import type { AIRecommendedSession } from '@/lib/types';
 import {
   sendMessage as apiSendMessage,
   deleteSession,
+  addPlannedSession,
   type ConversationWithMessages,
 } from '@/lib/services/api-client';
 
@@ -25,24 +26,17 @@ export function useChatMutations(conversationId: string | null) {
         throw new Error("Impossible d'ajouter la séance : L'IA n'a pas généré les étapes détaillées. Veuillez demander à l'IA de régénérer la séance.");
       }
 
-      const response = await fetch('/api/sessions/planned', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionType,
-          targetDuration: session.duration_min,
-          targetDistance: session.estimated_distance_km,
-          targetPace: session.target_pace_min_km,
-          targetHeartRateBpm: session.target_hr_bpm,
-          targetRPE: session.target_rpe,
-          intervalDetails,
-          recommendationId: session.recommendation_id,
-          comments,
-        }),
+      return await addPlannedSession({
+        sessionType,
+        targetDuration: session.duration_min,
+        targetDistance: session.estimated_distance_km,
+        targetPace: session.target_pace_min_km,
+        targetHeartRateBpm: session.target_hr_bpm,
+        targetRPE: session.target_rpe,
+        intervalDetails,
+        recommendationId: session.recommendation_id,
+        comments,
       });
-
-      if (!response.ok) throw new Error('Erreur lors de l\'ajout de la séance');
-      return response.json();
     },
     onMutate: (session: AIRecommendedSession) => {
       setLoadingSessionId(session.recommendation_id ?? null);

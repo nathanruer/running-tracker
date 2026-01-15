@@ -5,17 +5,14 @@ import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
 import { ChatView } from '@/features/chat/components/chat-view';
 import { ChatSkeleton } from '@/features/chat/components/chat-skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '@/lib/services/api-client';
 
 export default function ChatPage() {
   const router = useRouter();
 
   const { isLoading } = useQuery({
     queryKey: ['conversations'],
-    queryFn: async () => {
-      const response = await fetch('/api/conversations');
-      if (!response.ok) throw new Error('Erreur lors du chargement des conversations');
-      return response.json();
-    },
+    queryFn: getConversations,
   });
 
   if (isLoading) {

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import { createConversation, sendMessage } from '@/lib/services/api-client';
 import type { Message } from '../components/chat-view';
 
 interface UseConversationCreationProps {
@@ -13,12 +14,16 @@ export function useConversationCreation({ conversationId }: UseConversationCreat
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  useEffect(() => {
-    if (conversationId && optimisticMessages.length > 0) {
+  const [prevId, setPrevId] = useState(conversationId);
+  if (conversationId !== prevId) {
+    setPrevId(conversationId);
+    if (optimisticMessages.length > 0) {
       setOptimisticMessages([]);
+    }
+    if (isWaitingForResponse) {
       setIsWaitingForResponse(false);
     }
-  }, [conversationId, optimisticMessages.length]);
+  }
 
   const createConversationWithMessage = async (userMessage: string) => {
     const optimisticUserMessage: Message = {
@@ -36,26 +41,10 @@ export function useConversationCreation({ conversationId }: UseConversationCreat
         ? userMessage.substring(0, 50) + '...'
         : userMessage;
 
-      const response = await fetch('/api/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-
-      if (!response.ok) throw new Error('Erreur lors de la création de la conversation');
-
-      const newConversation = await response.json();
+      const newConversation = await createConversation(title);
       const newConversationId = newConversation.id;
 
-      const messageResponse = await fetch(`/api/conversations/${newConversationId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: userMessage }),
-      });
-
-      if (!messageResponse.ok) throw new Error('Erreur lors de l\'envoi du message');
-
-      const messageData = await messageResponse.json();
+      const messageData = await sendMessage(newConversationId, userMessage);
 
       queryClient.setQueryData(['conversation', newConversationId], {
         id: newConversationId,

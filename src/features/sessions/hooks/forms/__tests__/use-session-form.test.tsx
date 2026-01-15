@@ -196,7 +196,7 @@ describe('useSessionForm', () => {
     });
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await Promise.resolve();
     });
 
     expect(result.current.form.formState.errors.date).toBeDefined();
@@ -217,7 +217,7 @@ describe('useSessionForm', () => {
     });
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await Promise.resolve();
     });
 
     expect(result.current.form.formState.errors.date).toBeDefined();

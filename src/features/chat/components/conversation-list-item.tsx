@@ -6,16 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface Conversation {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  _count: {
-    chat_messages: number;
-  };
-}
+import type { Conversation } from '@/lib/services/api-client';
 
 interface ConversationListItemProps {
   conversation: Conversation;
@@ -52,7 +43,7 @@ export function ConversationListItem({
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{conversation.title}</p>
         <p className="text-xs text-muted-foreground">
-          {conversation._count.chat_messages} message(s)
+          {conversation._count?.chat_messages ?? 0} message(s)
         </p>
       </div>
       <DropdownMenu>

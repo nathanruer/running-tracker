@@ -63,12 +63,12 @@ export function RecommendationCard({
   return (
     <div 
       className={cn(
-        "relative bg-card rounded-2xl p-6 border border-border/40 transition-all",
+        "relative bg-card rounded-2xl p-5 border border-border/40 transition-all",
         isCompleted && "bg-green-500/5 border-green-500/10"
       )} 
       data-testid="recommendation-card"
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export function RecommendationCard({
                 size="sm"
                 onClick={() => onAccept(session)}
                 disabled={loadingSessionId === session.recommendation_id}
-                className="bg-violet-600 hover:bg-violet-700 text-white font-black rounded-2xl h-10 px-5 text-xs tracking-tight active:scale-95 transition-all shadow-lg shadow-violet-500/10"
+                className="bg-violet-600 hover:bg-violet-700 text-white font-black rounded-2xl h-10 px-5 text-xs tracking-tight active:scale-95 transition-all"
               >
                 <Check className="h-4 w-4 mr-2" />
                 Ajouter

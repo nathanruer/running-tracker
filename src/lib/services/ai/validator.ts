@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/infrastructure/logger';
 import type { AIResponse, AIRecommendedSession } from '@/lib/types/ai';
-import { validatePaceInput } from '@/lib/utils/duration';
+import { validatePaceInput } from '@/lib/utils/pace';
 import { validateAndAdjustDistance } from '@/lib/utils/distance';
 
 /**

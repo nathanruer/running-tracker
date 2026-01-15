@@ -8,7 +8,7 @@ import {
 import type { FormValues } from '@/lib/validation/session-form';
 
 describe('normalizeFormValues', () => {
-  it('normalise les durées au format HH:MM:SS', () => {
+  it('normalizes durations to HH:MM:SS format', () => {
     const input = {
       duration: '45:30',
       effortDuration: '2:00',
@@ -24,7 +24,7 @@ describe('normalizeFormValues', () => {
     expect(result.steps?.[0].duration).toBe('00:05:00');
   });
 
-  it('gère les durées vides', () => {
+  it('handles empty durations', () => {
     const input = {
       duration: '',
       effortDuration: '',
@@ -39,7 +39,7 @@ describe('normalizeFormValues', () => {
     expect(result.recoveryDuration).toBe('');
   });
 
-  it('préserve les autres champs du formulaire', () => {
+  it('preserves other form fields', () => {
     const input = {
       date: '2024-01-15',
       sessionType: 'Footing',
@@ -60,7 +60,7 @@ describe('normalizeFormValues', () => {
 });
 
 describe('buildPlannedSessionPayload', () => {
-  it('construit un payload valide pour session planifiée', () => {
+  it('builds a valid payload for planned session', () => {
     const values = {
       date: '2024-01-15',
       sessionType: 'Footing',
@@ -93,7 +93,7 @@ describe('buildPlannedSessionPayload', () => {
     expect(result.intervalDetails).toBeNull();
   });
 
-  it('gère les valeurs optionnelles nulles', () => {
+  it('handles null optional values', () => {
     const values = {
       date: '2024-01-15',
       sessionType: 'Footing',
@@ -122,7 +122,7 @@ describe('buildPlannedSessionPayload', () => {
 });
 
 describe('buildCompletedSessionPayload', () => {
-  it('construit un payload valide pour session complétée', () => {
+  it('builds a valid payload for completed session', () => {
     const values = {
       sessionType: 'Footing',
       duration: '45:00',
@@ -151,7 +151,7 @@ describe('buildCompletedSessionPayload', () => {
     expect(result.intervalDetails).toBeNull();
   });
 
-  it('gère les valeurs optionnelles', () => {
+  it('handles optional values', () => {
     const values = {
       sessionType: 'Footing',
       duration: '45:00',
@@ -176,7 +176,7 @@ describe('buildCompletedSessionPayload', () => {
 });
 
 describe('transformStepsData', () => {
-  it('transforme les steps de la base de données', () => {
+  it('transforms steps from the database', () => {
     const steps = [
       {
         stepNumber: 1,
@@ -217,11 +217,11 @@ describe('transformStepsData', () => {
     });
   });
 
-  it('retourne un tableau vide si steps undefined', () => {
+  it('returns an empty array if steps is undefined', () => {
     expect(transformStepsData(undefined)).toEqual([]);
   });
 
-  it('gère les steps avec valeurs null', () => {
+  it('handles steps with null values', () => {
     const steps = [
       {
         stepNumber: 1,

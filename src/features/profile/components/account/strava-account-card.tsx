@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { StravaBadge } from "@/components/ui/strava-badge"
+import { StravaBadge } from "@/features/import/components/strava-badge"
 import {
   AlertDialog,
   AlertDialogAction,

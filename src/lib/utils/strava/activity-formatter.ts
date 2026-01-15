@@ -1,5 +1,5 @@
 import type { StravaActivity } from '@/lib/types';
-import { formatDateToISO } from '@/lib/utils/formatters';
+import { formatDateToISO } from '@/lib/utils/date';
 
 export function formatStravaActivity(activity: StravaActivity) {
   const hours = Math.floor(activity.moving_time / 3600);

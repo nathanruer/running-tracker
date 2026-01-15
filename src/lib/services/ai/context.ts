@@ -1,6 +1,7 @@
 import type { BuildContextParams, Session, IntervalDetails } from '@/lib/types';
 import { generateIntervalStructure, getEffortPace } from '@/lib/utils/intervals';
-import { normalizePaceFormat, parseDuration, formatDuration } from '@/lib/utils/duration';
+import { normalizePaceFormat } from '@/lib/utils/pace';
+import { parseDuration, formatDuration } from '@/lib/utils/duration';
 
 function isIntervalDetails(value: unknown): value is IntervalDetails {
   return typeof value === 'object' && value !== null;

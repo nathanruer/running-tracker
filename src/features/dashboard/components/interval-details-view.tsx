@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type IntervalDetails } from '@/lib/types';
+import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { generateIntervalStructure, calculateIntervalTotals, cleanIntervalSteps } from '@/lib/utils/intervals';
-import { secondsToPace } from '@/lib/utils/formatters/pace';
-import { parseDuration, normalizeDurationFormat, normalizePaceFormat, formatDuration } from '@/lib/utils/duration';
+import { secondsToPace, normalizePaceFormat } from '@/lib/utils/pace';
+import { parseDuration, normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { estimateEffectiveDistance } from '@/lib/utils/distance';
-import { extractStepHR } from '@/lib/utils/hr';
-import { getStepLabelAuto, filterStepsByType } from '@/lib/utils/step';
+import { extractStepHR } from '@/lib/utils/heart-rate';
+import { getStepLabelAuto, filterStepsByType } from '@/lib/utils/intervals';
 import { Target, ListChecks } from 'lucide-react';
 
 interface IntervalDetailsViewProps {
@@ -28,7 +28,7 @@ export function IntervalDetailsView({
     targetEffortHR,
   } = intervalDetails;
 
-  const steps = cleanIntervalSteps(intervalDetails.steps || []);
+  const steps: IntervalStep[] = cleanIntervalSteps(intervalDetails.steps || []);
   const hasEffortSteps = steps.some((step) => step.stepType === 'effort');
   const hasRecoverySteps = steps.some((step) => step.stepType === 'recovery');
 
@@ -52,7 +52,7 @@ export function IntervalDetailsView({
     const effortSteps = filterStepsByType(steps, 'effort');
     if (effortSteps.length > 0) {
       const hrRanges = effortSteps
-        .map(step => step.hrRange)
+        .map((step: IntervalStep) => step.hrRange)
         .filter(Boolean);
 
       if (hrRanges.length > 0) {
@@ -69,7 +69,7 @@ export function IntervalDetailsView({
 
     if (effortSteps.length > 0) {
       const hrValues = effortSteps
-        .map(step => step.hr ? `${step.hr}` : null)
+        .map((step: IntervalStep) => step.hr ? `${step.hr}` : null)
         .filter(Boolean);
 
       if (hrValues.length > 0) {
@@ -160,7 +160,7 @@ export function IntervalDetailsView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20">
-                {filteredSteps.map((step, index) => {
+                {filteredSteps.map((step: IntervalStep, index: number) => {
                   const durationSec = parseDuration(step.duration) || 0;
                   const paceSec = parseDuration(step.pace) || 0;
 

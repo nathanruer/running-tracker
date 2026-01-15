@@ -1,8 +1,10 @@
+import { fetchWithTimeout } from '@/lib/utils/api/fetch';
+
 export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(endpoint, {
+  const response = await fetchWithTimeout(endpoint, {
     ...options,
     credentials: 'include',
     headers: {

@@ -8,6 +8,7 @@ import { calculateSessionPosition } from '@/lib/domain/sessions/position';
 import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/lib/services/strava';
+import { toPrismaJson } from '@/lib/utils/api';
 
 export const runtime = 'nodejs';
 
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
           intervalDetails: intervalDetails || Prisma.JsonNull,
           stravaData: stravaData || Prisma.JsonNull,
           weather: weather ?? Prisma.JsonNull,
-          stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+          stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : Prisma.JsonNull,
           date: sessionDate,
           sessionNumber,
           week,

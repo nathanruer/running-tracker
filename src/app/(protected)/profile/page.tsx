@@ -22,7 +22,7 @@ import { AnalyticsView } from '@/features/profile/components/analytics-view';
 import { ActivityHistory } from '@/features/profile/components/history/activity-history';
 import { StravaAccountCard } from '@/features/profile/components/account/strava-account-card';
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton';
-import { getCurrentUser, getSessions } from '@/lib/services/api-client';
+import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
@@ -39,25 +39,24 @@ export default function ProfilePage() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: sessions = [] } = useQuery({
+  const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
     queryKey: ['sessions', 'all'],
     queryFn: () => getSessions(),
-    enabled: !!user,
+    enabled: !!user && (activeView === 'analytics' || activeView === 'history'),
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,
   });
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && user === null) {
       router.replace('/');
-      return;
     }
   }, [user, loading, router]);
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await logoutUser();
       queryClient.setQueryData(['user'], null);
       queryClient.clear();
       window.location.href = '/';
@@ -135,11 +134,29 @@ export default function ProfilePage() {
         </div>
 
         {activeView === 'analytics' && (
-          <AnalyticsView sessions={sessions} />
+          isSessionsLoading ? (
+            <div className="space-y-8 animate-pulse">
+              <div className="h-12 w-64 bg-muted/40 rounded-2xl" />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="h-32 bg-muted/40 rounded-3xl" />
+                <div className="h-32 bg-muted/40 rounded-3xl" />
+                <div className="h-32 bg-muted/40 rounded-3xl" />
+              </div>
+              <div className="h-80 bg-muted/40 rounded-3xl" />
+            </div>
+          ) : (
+            <AnalyticsView sessions={sessions} />
+          )
         )}
 
         {activeView === 'history' && (
-          <ActivityHistory sessions={sessions} />
+          isSessionsLoading ? (
+            <div className="space-y-6 animate-pulse">
+              <div className="h-96 bg-muted/40 rounded-3xl" />
+            </div>
+          ) : (
+            <ActivityHistory sessions={sessions} />
+          )
         )}
 
         {activeView === 'profile' && (

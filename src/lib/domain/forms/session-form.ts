@@ -1,6 +1,6 @@
 import type { TrainingSession } from '@/lib/types';
 import type { FormValues } from '@/lib/validation/session-form';
-import { getTodayISO, extractDatePart } from '@/lib/utils/formatters';
+import { getTodayISO, extractDatePart } from '@/lib/utils/date';
 import { transformStepsData, getSessionDisplayData } from '@/lib/domain/forms/session-helpers';
 
 /**

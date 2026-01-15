@@ -34,7 +34,6 @@ describe('Strava client', () => {
         access_token: 'access-token',
         refresh_token: 'refresh-token',
         expires_at: 1234567890,
-        athlete: { id: 123 },
       };
 
       vi.mocked(global.fetch).mockResolvedValue({
@@ -69,7 +68,6 @@ describe('Strava client', () => {
         access_token: 'new-access-token',
         refresh_token: 'new-refresh-token',
         expires_at: 1234567890,
-        athlete: { id: 123 },
       };
 
       vi.mocked(global.fetch).mockResolvedValue({
@@ -98,11 +96,28 @@ describe('Strava client', () => {
     });
   });
 
+  const createMockActivity = (overrides: Partial<{
+    id: number;
+    name: string;
+  }> = {}) => ({
+    id: overrides.id ?? 1,
+    name: overrides.name ?? 'Morning Run',
+    distance: 5000,
+    moving_time: 1800,
+    elapsed_time: 1850,
+    total_elevation_gain: 50,
+    type: 'Run',
+    start_date: '2024-01-15T08:00:00Z',
+    start_date_local: '2024-01-15T09:00:00',
+    average_speed: 2.78,
+    max_speed: 3.5,
+  });
+
   describe('getActivities', () => {
     it('should fetch activities successfully', async () => {
       const mockActivities = [
-        { id: 1, name: 'Run 1' },
-        { id: 2, name: 'Run 2' },
+        createMockActivity({ id: 1, name: 'Run 1' }),
+        createMockActivity({ id: 2, name: 'Run 2' }),
       ];
 
       vi.mocked(global.fetch).mockResolvedValue({
@@ -162,7 +177,7 @@ describe('Strava client', () => {
 
   describe('getActivityDetails', () => {
     it('should fetch activity details successfully', async () => {
-      const mockActivity = { id: 123, name: 'Morning Run' };
+      const mockActivity = createMockActivity({ id: 123, name: 'Morning Run' });
 
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
@@ -197,8 +212,8 @@ describe('Strava client', () => {
   describe('getActivityStreams', () => {
     it('should fetch activity streams successfully', async () => {
       const mockStreams = {
-        velocity_smooth: { data: [2.5, 3.0], series_type: 'distance' },
-        distance: { data: [0, 100], series_type: 'distance' },
+        velocity_smooth: { data: [2.5, 3.0], series_type: 'distance', original_size: 2, resolution: 'high' },
+        distance: { data: [0, 100], series_type: 'distance', original_size: 2, resolution: 'high' },
       };
 
       vi.mocked(global.fetch).mockResolvedValue({

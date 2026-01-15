@@ -239,7 +239,7 @@ describe('useConversationCreation', () => {
     });
 
     expect(error).toBeDefined();
-    expect(error?.message).toBe('Erreur lors de l\'envoi du message');
+    expect(error?.message).toBe('Une erreur est survenue');
     expect(result.current.optimisticMessages).toEqual([]);
     expect(result.current.isWaitingForResponse).toBe(false);
   });

@@ -87,7 +87,7 @@ describe('SessionDetailsSheet', () => {
     expect(screen.getByTestId('sheet')).toBeInTheDocument();
     expect(screen.getByText(/Séance sans date|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/i)).toBeInTheDocument();
     
-    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('10.00')).toBeInTheDocument();
     expect(screen.getByText('01:00:00')).toBeInTheDocument();
   });
 
@@ -120,7 +120,7 @@ describe('SessionDetailsSheet', () => {
   it('should render comments when present', () => {
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
 
-    expect(screen.getByText('Notes')).toBeInTheDocument();
+    expect(screen.getByText('Notes de séance')).toBeInTheDocument();
     expect(screen.getByText('Test session')).toBeInTheDocument();
   });
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
+import { findSessionByIdAndUser } from '@/lib/utils/api';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 

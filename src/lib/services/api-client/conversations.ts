@@ -1,4 +1,5 @@
 import { apiRequest } from './client';
+import type { AIRecommendedSession } from '@/lib/types/ai';
 
 export interface Conversation {
   id: string;
@@ -10,11 +11,16 @@ export interface Conversation {
   };
 }
 
+export interface MessageRecommendations {
+  recommended_sessions?: AIRecommendedSession[];
+  [key: string]: unknown;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  recommendations: unknown;
+  recommendations: MessageRecommendations | null;
   model?: string;
   createdAt: string;
 }

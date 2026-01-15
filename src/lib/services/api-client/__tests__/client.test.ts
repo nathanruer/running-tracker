@@ -21,12 +21,15 @@ describe('apiRequest', () => {
 
     await apiRequest('/api/test');
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/test', {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/test',
+      expect.objectContaining({
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    );
   });
 
   it('makes a POST request with body', async () => {
@@ -41,14 +44,17 @@ describe('apiRequest', () => {
       body,
     });
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', {
-      method: 'POST',
-      body,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/auth/login',
+      expect.objectContaining({
+        method: 'POST',
+        body,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    );
   });
 
   it('returns parsed JSON data on success', async () => {
@@ -105,13 +111,16 @@ describe('apiRequest', () => {
       },
     });
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/test', {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Custom-Header': 'custom-value',
-      },
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/test',
+      expect.objectContaining({
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Custom-Header': 'custom-value',
+        },
+      })
+    );
   });
 
   it('handles DELETE request', async () => {
@@ -124,13 +133,16 @@ describe('apiRequest', () => {
       method: 'DELETE',
     });
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/sessions/123', {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/sessions/123',
+      expect.objectContaining({
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    );
   });
 
   it('handles PUT request with body', async () => {
@@ -145,13 +157,16 @@ describe('apiRequest', () => {
       body: updates,
     });
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/sessions/123', {
-      method: 'PUT',
-      body: updates,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/sessions/123',
+      expect.objectContaining({
+        method: 'PUT',
+        body: updates,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    );
   });
 });

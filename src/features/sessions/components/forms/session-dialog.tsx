@@ -26,7 +26,7 @@ import { SessionDialogHeader } from './session-dialog-header';
 import { useSessionForm } from '../../hooks/forms/use-session-form';
 import { useScrollToError } from '@/hooks/use-scroll-to-error';
 import { useToast } from '@/hooks/use-toast';
-import { parseGarminCSV } from '@/features/import/parsers/garmin-csv';
+import { parseGarminCSV } from '@/features/import/utils/garmin-csv';
 
 // Helper functions to adapt the main form to interval fields
 const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {

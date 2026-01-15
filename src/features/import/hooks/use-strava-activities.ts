@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import { getStravaActivities } from '@/lib/services/api-client';
 
 export interface StravaActivity {
   id: number;
@@ -43,32 +44,27 @@ export function useStravaActivities(open: boolean) {
     }
 
     try {
-      const response = await fetch(`/api/strava/activities?page=${pageToLoad}&per_page=50`);
+      const data = await getStravaActivities(pageToLoad, 50);
+      
+      if (pageToLoad === 1) {
+        setActivities(data.activities);
+      } else {
+        setActivities(prev => {
+          const existingIds = new Set(prev.map(a => a.id));
+          const newActivities = data.activities.filter((a: StravaActivity) => !existingIds.has(a.id));
+          return [...prev, ...newActivities];
+        });
+      }
 
-      if (response.status === 400 || response.status === 401) {
+      setIsConnected(true);
+      setHasMore(data.hasMore);
+      setPage(pageToLoad);
+    } catch (error) {
+      if (error instanceof Error && (error.message.includes('401') || error.message.includes('400'))) {
         setIsConnected(false);
         setActivities([]);
         setHasMore(false);
-      } else if (response.ok) {
-        const data = await response.json();
-        
-        if (pageToLoad === 1) {
-          setActivities(data.activities);
-        } else {
-          setActivities(prev => {
-            const existingIds = new Set(prev.map(a => a.id));
-            const newActivities = data.activities.filter((a: StravaActivity) => !existingIds.has(a.id));
-            return [...prev, ...newActivities];
-          });
-        }
-
-        setIsConnected(true);
-        setHasMore(data.hasMore);
-        setPage(pageToLoad);
-      } else {
-        throw new Error('Échec de la récupération');
       }
-    } catch (error) {
       handleError(error, 'Impossible de récupérer les activités Strava');
     } finally {
       setLoading(false);

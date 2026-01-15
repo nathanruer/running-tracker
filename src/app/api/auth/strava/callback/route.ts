@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     if (error || !code) {
       return NextResponse.redirect(
-        new URL(`/error/strava?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
+        new URL(`/error?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
       );
     }
 
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
           (errorData.errors && errorData.errors.some((e: { code: string }) => e.code === 'Rate Limit Exceeded')) ||
           (errorData.message && errorData.message.includes('rate limit'))) {
         return NextResponse.redirect(
-          new URL(`/error/strava?error=${STRAVA_ERRORS.API_LIMIT}`, request.url)
+          new URL(`/error?error=${STRAVA_ERRORS.API_LIMIT}`, request.url)
         );
       }
       
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
         }, 'Strava account already linked to a different user');
 
         return NextResponse.redirect(
-          new URL(`/error/strava?error=${STRAVA_ERRORS.ALREADY_LINKED}`, request.url)
+          new URL(`/error?error=${STRAVA_ERRORS.ALREADY_LINKED}`, request.url)
         );
       }
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         }, 'User already has a Strava account linked');
 
         return NextResponse.redirect(
-          new URL(`/error/strava?error=${STRAVA_ERRORS.ALREADY_LINKED}`, request.url)
+          new URL(`/error?error=${STRAVA_ERRORS.ALREADY_LINKED}`, request.url)
         );
       }
 
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ error }, 'Strava OAuth callback failed');
     return NextResponse.redirect(
-      new URL(`/error/strava?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
+      new URL(`/error?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
     );
   }
 }

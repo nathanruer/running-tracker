@@ -54,7 +54,7 @@ export interface ChatMessage {
   id: string;
   role: string;
   content: string;
-  recommendations?: unknown;
+  recommendations?: AIRecommendedSession[] | null;
   createdAt: Date;
 }
 

@@ -1,7 +1,13 @@
 import type { StravaTokens, StravaActivity, StravaStreamSet, StravaStreamType } from '@/lib/types';
+import {
+  stravaTokensSchema,
+  stravaActivityStoredSchema,
+  stravaStreamSetSchema,
+} from '@/lib/types/strava';
 import { logger } from '@/lib/infrastructure/logger';
 import { STRAVA_URLS } from '@/lib/constants/strava';
 import { GRANT_TYPES } from '@/lib/constants/auth';
+import { z } from 'zod';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
@@ -27,7 +33,8 @@ export async function exchangeCodeForTokens(code: string): Promise<StravaTokens>
     throw new Error('Failed to exchange code for tokens');
   }
 
-  return response.json();
+  const data = await response.json();
+  return stravaTokensSchema.parse(data);
 }
 
 /**
@@ -51,7 +58,8 @@ export async function refreshAccessToken(refreshToken: string): Promise<StravaTo
     throw new Error('Failed to refresh access token');
   }
 
-  return response.json();
+  const data = await response.json();
+  return stravaTokensSchema.parse(data);
 }
 
 /**
@@ -78,7 +86,8 @@ export async function getActivities(
     throw new Error('Failed to fetch activities');
   }
 
-  return response.json();
+  const data = await response.json();
+  return z.array(stravaActivityStoredSchema).parse(data);
 }
 
 /**
@@ -111,7 +120,8 @@ export async function getActivityDetails(
     throw new Error(`Failed to fetch activity details: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  return stravaActivityStoredSchema.parse(data);
 }
 
 /**
@@ -152,5 +162,6 @@ export async function getActivityStreams(
     throw new Error(`Failed to fetch activity streams: ${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  return stravaStreamSetSchema.parse(data);
 }

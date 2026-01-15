@@ -7,7 +7,7 @@ import {
 import type { TrainingSession } from '@/lib/types';
 
 describe('initializeFormForCreate', () => {
-  it('retourne les valeurs par défaut sans initialData', () => {
+  it('returns default values without initialData', () => {
     const result = initializeFormForCreate();
 
     expect(result.sessionType).toBe('Footing');
@@ -21,7 +21,7 @@ describe('initializeFormForCreate', () => {
     expect(result.stravaData).toBeNull();
   });
 
-  it('pré-remplit avec initialData si fourni', () => {
+  it('pre-fills with initialData if provided', () => {
     const initialData = {
       sessionType: 'Fractionné',
       duration: '45:00',
@@ -39,7 +39,7 @@ describe('initializeFormForCreate', () => {
     expect(result.comments).toBe('Données importées');
   });
 
-  it('utilise la date fournie ou aujourd\'hui', () => {
+  it('uses provided date or today', () => {
     const withDate = initializeFormForCreate({ date: '2024-01-15' });
     expect(withDate.date).toBe('2024-01-15');
 
@@ -50,7 +50,7 @@ describe('initializeFormForCreate', () => {
 });
 
 describe('initializeFormForEdit', () => {
-  it('initialise pour éditer une session planifiée', () => {
+  it('initializes for editing a planned session', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
@@ -77,7 +77,7 @@ describe('initializeFormForEdit', () => {
     expect(result.comments).toBe('Session planifiée');
   });
 
-  it('initialise pour éditer une session complétée', () => {
+  it('initializes for editing a completed session', () => {
     const session = {
       status: 'completed',
       date: '2024-01-15',
@@ -100,7 +100,7 @@ describe('initializeFormForEdit', () => {
     expect(result.perceivedExertion).toBe(5);
   });
 
-  it('gère les valeurs null et undefined', () => {
+  it('handles null and undefined values', () => {
     const session = {
       status: 'completed',
       date: '2024-01-15',
@@ -122,7 +122,7 @@ describe('initializeFormForEdit', () => {
     expect(result.perceivedExertion).toBeNull();
   });
 
-  it('transforme correctement les données d\'intervalle', () => {
+  it('correctly transforms interval data', () => {
     const session = {
       status: 'completed',
       date: '2024-01-15',
@@ -157,7 +157,7 @@ describe('initializeFormForEdit', () => {
 });
 
 describe('initializeFormForComplete', () => {
-  it('fusionne session planifiée avec données importées', () => {
+  it('merges planned session with imported data', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
@@ -178,7 +178,7 @@ describe('initializeFormForComplete', () => {
     const result = initializeFormForComplete(session, initialData);
 
     expect(result.sessionType).toBe('Footing');
-    expect(result.duration).toBe('48:30'); // Priorité initialData
+    expect(result.duration).toBe('48:30'); // initialData takes priority
     expect(result.distance).toBe(10.5);
     expect(result.avgPace).toBe('04:37');
     expect(result.avgHeartRate).toBe(155);
@@ -186,7 +186,7 @@ describe('initializeFormForComplete', () => {
     expect(result.comments).toBe('Session planifiée');
   });
 
-  it('utilise les valeurs par défaut si pas de données importées', () => {
+  it('uses default values if no imported data', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
@@ -203,7 +203,7 @@ describe('initializeFormForComplete', () => {
     expect(result.avgHeartRate).toBeNull();
   });
 
-  it('pré-remplit les données Strava depuis initialData', () => {
+  it('pre-fills Strava data from initialData', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
@@ -238,7 +238,7 @@ describe('initializeFormForComplete', () => {
     expect(result.elevationGain).toBe(150);
   });
 
-  it('fusionne les steps d\'intervalle correctement', () => {
+  it('correctly merges interval steps', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
@@ -273,7 +273,7 @@ describe('initializeFormForComplete', () => {
 
     const result = initializeFormForComplete(session, initialData);
 
-    // initialData.steps a priorité
+    // initialData.steps takes priority
     expect(result.steps).toEqual(initialData.steps);
   });
 });

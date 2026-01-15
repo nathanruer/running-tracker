@@ -18,7 +18,7 @@ vi.mock('@/lib/domain/sessions/enrichment', () => ({
   enrichSessionWithWeather: vi.fn(),
 }));
 
-vi.mock('@/lib/utils/api-helpers', () => ({
+vi.mock('@/lib/utils/api', () => ({
   findSessionByIdAndUser: vi.fn(),
 }));
 
@@ -28,7 +28,7 @@ vi.mock('@/lib/services/api-handlers', () => ({
   }),
 }));
 
-import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
+import { findSessionByIdAndUser } from '@/lib/utils/api';
 
 describe('PATCH /api/sessions/[id]/weather', () => {
   const mockSessionId = 'session-123';

@@ -61,7 +61,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
   });
 
@@ -75,7 +75,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
   });
 
@@ -175,7 +175,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.ALREADY_LINKED}`);
   });
 
@@ -203,7 +203,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.ALREADY_LINKED}`);
   });
 
@@ -306,7 +306,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
   });
 
@@ -330,7 +330,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.API_LIMIT}`);
   });
 
@@ -346,7 +346,7 @@ describe('/api/auth/strava/callback', () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get('location');
-    expect(location).toContain('/error/strava');
+    expect(location).toContain('/error');
     expect(location).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
   });
 });

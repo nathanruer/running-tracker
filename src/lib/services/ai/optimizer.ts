@@ -1,6 +1,13 @@
 import { prisma } from '@/lib/database';
 import { logger } from '@/lib/infrastructure/logger';
-import type { ChatMessage } from '@/lib/types';
+import type { JsonValue } from '@prisma/client/runtime/library';
+
+interface PrismaMessage {
+  role: string;
+  content: string;
+  recommendations: JsonValue;
+  createdAt: Date;
+}
 
 export const OPTIMIZATION_CONFIG = {
   RECENT_MESSAGES_COUNT: 5,
@@ -10,7 +17,7 @@ function estimateTokenCount(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-async function summarizeMessages(messages: ChatMessage[]): Promise<string> {
+async function summarizeMessages(messages: PrismaMessage[]): Promise<string> {
   if (messages.length === 0) return '';
   
   const keyPoints: string[] = [];

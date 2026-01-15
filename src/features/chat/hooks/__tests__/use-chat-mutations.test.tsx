@@ -53,11 +53,14 @@ describe('useChatMutations', () => {
         expect(result.current.isAccepting).toBe(false);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/sessions/planned', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('rec-1'),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/sessions/planned',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: expect.stringContaining('rec-1'),
+        })
+      );
     });
 
     it('should set loading state during acceptance', async () => {
@@ -69,19 +72,12 @@ describe('useChatMutations', () => {
         target_pace_min_km: '5:30',
       };
 
-      vi.mocked(fetch).mockImplementationOnce(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(
-              () =>
-                resolve({
-                  ok: true,
-                  json: async () => ({ id: 'session-1' }),
-                } as Response),
-              100
-            )
-          )
-      );
+      let resolveResponse: (value: Response) => void;
+      const responsePromise = new Promise<Response>((resolve) => {
+        resolveResponse = resolve;
+      });
+      
+      vi.mocked(fetch).mockImplementationOnce(() => responsePromise);
 
       const { result } = renderHook(() => useChatMutations('conv-1'), {
         wrapper: createWrapper(),
@@ -92,6 +88,11 @@ describe('useChatMutations', () => {
       await waitFor(() => {
         expect(result.current.loadingSessionId).toBe('rec-1');
       });
+
+      resolveResponse!({
+        ok: true,
+        json: async () => ({ id: 'session-1' }),
+      } as Response);
 
       await waitFor(() => {
         expect(result.current.loadingSessionId).toBe(null);
@@ -116,11 +117,14 @@ describe('useChatMutations', () => {
         expect(result.current.isDeleting).toBe(false);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/sessions/session-1', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/sessions/session-1',
+        expect.objectContaining({
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
   });
 
@@ -146,12 +150,15 @@ describe('useChatMutations', () => {
         expect(result.current.isSending).toBe(false);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/conversations/conv-1/messages', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: 'Hello' }),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/conversations/conv-1/messages',
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: 'Hello' }),
+        })
+      );
     });
 
     it('should throw error when no conversation is selected', async () => {

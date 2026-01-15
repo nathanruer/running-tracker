@@ -63,7 +63,13 @@ describe('useStravaActivities', () => {
 
     expect(result.current.activities).toEqual(mockActivities);
     expect(result.current.isConnected).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=50');
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/strava/activities?page=1&per_page=50',
+      expect.objectContaining({
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
   });
 
   it('should handle 401 unauthorized error', async () => {
@@ -246,7 +252,13 @@ describe('useStravaActivities', () => {
       expect(result.current.hasMore).toBe(false);
     });
 
-    expect(global.fetch).toHaveBeenLastCalledWith('/api/strava/activities?page=2&per_page=50');
+    expect(global.fetch).toHaveBeenLastCalledWith(
+      '/api/strava/activities?page=2&per_page=50',
+      expect.objectContaining({
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
   });
 
   it('should deduplicate activities by ID', async () => {
@@ -317,6 +329,12 @@ describe('useStravaActivities', () => {
       expect(result.current.activities).toEqual(mockActivities);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=50');
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/strava/activities?page=1&per_page=50',
+      expect.objectContaining({
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
   });
 });

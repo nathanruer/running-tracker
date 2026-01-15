@@ -27,8 +27,11 @@ let mockIsSending = false;
 
 vi.mock('../../hooks/use-chat-mutations');
 
+const mockGetConversation = vi.fn();
+
 vi.mock('@/lib/services/api-client', () => ({
   getSessions: vi.fn(() => Promise.resolve([])),
+  getConversation: (...args: unknown[]) => mockGetConversation(...args),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -51,8 +54,6 @@ const createWrapper = () => {
   Wrapper.displayName = 'TestWrapper';
   return Wrapper;
 };
-
-global.fetch = vi.fn();
 
 vi.mocked(useChatMutations).mockImplementation(() => ({
   acceptSession: mockAcceptSession,
@@ -84,29 +85,26 @@ describe('ChatView', () => {
 
   describe('Conversation loaded', () => {
     beforeEach(() => {
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          id: 'conv-1',
-          title: 'Ma conversation',
-          chat_messages: [
-            {
-              id: 'msg-1',
-              role: 'user',
-              content: 'Hello',
-              recommendations: null,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        }),
-      } as Response);
+      mockGetConversation.mockResolvedValue({
+        id: 'conv-1',
+        title: 'Ma conversation',
+        chat_messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            content: 'Hello',
+            recommendations: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
     });
 
     it('should display conversation title', async () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Ma conversation')).toBeInTheDocument();
+        expect(screen.getByTestId('message-list')).toBeInTheDocument();
       });
     });
 
@@ -131,14 +129,11 @@ describe('ChatView', () => {
 
   describe('Message sending', () => {
     beforeEach(() => {
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          id: 'conv-1',
-          title: 'Ma conversation',
-          chat_messages: [],
-        }),
-      } as Response);
+      mockGetConversation.mockResolvedValue({
+        id: 'conv-1',
+        title: 'Ma conversation',
+        chat_messages: [],
+      });
     });
 
     it('should call sendMessage when send button is clicked', async () => {

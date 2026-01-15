@@ -1,6 +1,6 @@
 import type { StravaStreamSet } from '@/lib/types';
 import type { StreamDataPoint, StreamChartConfig } from '@/lib/types/stream-charts';
-import { mpsToSecondsPerKm, mpsToMinPerKm, formatPace } from '@/lib/utils/formatters/pace';
+import { mpsToSecondsPerKm, mpsToMinPerKm, formatPace } from '@/lib/utils/pace';
 
 /**
  * Available stream chart configurations

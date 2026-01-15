@@ -29,6 +29,7 @@ import {
   getSessionTypes,
   deleteSession,
   bulkDeleteSessions,
+  type StravaActivityDetails,
 } from '@/lib/services/api-client';
 import {
   type TrainingSession,
@@ -158,8 +159,8 @@ const DashboardPage = () => {
   const initialLoading = userLoading || (
     !sessions.length && (
       viewMode === 'all' 
-        ? (allSessionsLoading || allSessionsFetching || isDeleting) 
-        : (paginatedSessionsLoading || paginatedSessionsFetching || isDeleting)
+        ? allSessionsLoading 
+        : paginatedSessionsLoading
     )
   );
   
@@ -170,11 +171,11 @@ const DashboardPage = () => {
   };
 
   const showGlobalLoading = userLoading || (
-    !allSessionsData && !paginatedSessionsData && (allSessionsLoading || paginatedSessionsLoading)
+    !sessions.length && (allSessionsLoading || paginatedSessionsLoading)
   );
 
   useEffect(() => {
-    if (!userLoading && !user) {
+    if (!userLoading && user === null) {
       router.replace('/');
     }
   }, [user, userLoading, router]);
@@ -191,15 +192,10 @@ const DashboardPage = () => {
   }, [importedData]);
 
   if (!user && !userLoading) {
-    return null;
-  }
-
-  if (showGlobalLoading) {
     return <DashboardSkeleton />;
   }
-
-  if (!user) {
-    return null;
+  if (showGlobalLoading || !user) {
+    return <DashboardSkeleton />;
   }
 
   const handleDelete = async (id: string) => {
@@ -232,7 +228,7 @@ const DashboardPage = () => {
     setIsDialogOpen(open);
   };
 
-  const handleStravaImport = (data: Record<string, unknown>) => {
+  const handleStravaImport = (data: StravaActivityDetails) => {
     setImportedData(data as TrainingSessionPayload);
     setIsDialogOpen(true);
   };
@@ -240,10 +236,6 @@ const DashboardPage = () => {
   const handleRequestStravaImport = () => {
     setIsStravaDialogOpen(true);
   };
-
-  if (!user) {
-    return null;
-  }
 
   const sessionActions: SessionActions = {
     onEdit: handleEdit,

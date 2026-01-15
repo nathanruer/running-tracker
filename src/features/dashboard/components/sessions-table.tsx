@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Plus, MoreVertical, FilterX } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
-import { PlannedSessionRow } from './planned-session-row';
-import { CompletedSessionRow } from './completed-session-row';
+import { SessionRow } from './session-row';
 import { SortIcon } from './sort-icon';
 import { SelectionBar } from './selection-bar';
 import { Button } from '@/components/ui/button';
@@ -253,31 +252,18 @@ export function SessionsTable({
                     </TableRow>
                   ))
                 ) : sortedSessions.length > 0 ? (
-                  sortedSessions.map((session) =>
-                    session.status === 'planned' ? (
-                      <PlannedSessionRow
-                        key={session.id}
-                        session={session}
-                        onEdit={actions.onEdit}
-                        onDelete={actions.onDelete}
-                        showCheckbox={true}
-                        isSelected={selectedSessions.has(session.id)}
-                        onToggleSelect={() => toggleSessionSelection(session.id)}
-                        onView={actions.onView}
-                      />
-                    ) : (
-                      <CompletedSessionRow
-                        key={session.id}
-                        session={session}
-                        onEdit={actions.onEdit}
-                        onDelete={actions.onDelete}
-                        showCheckbox={true}
-                        isSelected={selectedSessions.has(session.id)}
-                        onToggleSelect={() => toggleSessionSelection(session.id)}
-                        onView={actions.onView}
-                      />
-                    )
-                  )
+                  sortedSessions.map((session) => (
+                    <SessionRow
+                      key={session.id}
+                      session={session}
+                      onEdit={actions.onEdit}
+                      onDelete={actions.onDelete}
+                      showCheckbox={true}
+                      isSelected={selectedSessions.has(session.id)}
+                      onToggleSelect={() => toggleSessionSelection(session.id)}
+                      onView={actions.onView}
+                    />
+                  ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={12} className="h-64 text-center">

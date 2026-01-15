@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { type IntervalFormValues } from '@/lib/validation/session-form';
-import { calculatePaceFromDurationAndDistance } from '@/lib/utils/duration';
+import { calculatePaceFromDurationAndDistance } from '@/lib/utils/pace';
 
 interface IntervalStepFieldsProps {
   stepIndex: number;

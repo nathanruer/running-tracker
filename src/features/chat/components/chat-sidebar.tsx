@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getConversations, getConversation, type Conversation } from '@/lib/services/api-client';
 import {
   Dialog,
   DialogContent,
@@ -15,16 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import { useConversationMutations } from '../hooks/use-conversation-mutations';
 import { ConversationListItem } from './conversation-list-item';
-
-interface Conversation {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  _count: {
-    chat_messages: number;
-  };
-}
 
 interface ChatSidebarProps {
   selectedConversationId: string | null;
@@ -38,11 +29,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ['conversations'],
-    queryFn: async () => {
-      const response = await fetch('/api/conversations');
-      if (!response.ok) throw new Error('Erreur lors du chargement des conversations');
-      return response.json() as Promise<Conversation[]>;
-    },
+    queryFn: getConversations,
   });
 
   const {
@@ -61,7 +48,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
     onConversationCreated: onSelectConversation,
     onConversationDeleted: async (deletedId) => {
       if (selectedConversationId === deletedId) {
-        await queryClient.refetchQueries({ queryKey: ['conversations'] });
+        await queryClient.invalidateQueries({ queryKey: ['conversations'] });
         const updatedConversations = queryClient.getQueryData(['conversations']) as Conversation[] | undefined;
 
         if (updatedConversations && updatedConversations.length > 0) {
@@ -76,11 +63,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
   const handlePrefetch = (id: string) => {
     queryClient.prefetchQuery({
       queryKey: ['conversation', id],
-      queryFn: async () => {
-        const response = await fetch(`/api/conversations/${id}`);
-        if (!response.ok) throw new Error('Erreur lors du chargement de la conversation');
-        return response.json();
-      },
+      queryFn: () => getConversation(id),
       staleTime: 1000 * 60 * 5,
     });
   };

@@ -14,6 +14,8 @@ export {
   bulkImportSessions,
   bulkDeleteSessions,
   getSessionTypes,
+  addPlannedSession,
+  completeSession,
 } from './sessions';
 
 export {
@@ -25,6 +27,7 @@ export {
   sendMessage,
   type Conversation,
   type Message,
+  type MessageRecommendations,
   type ConversationWithMessages,
   type SendMessageResponse,
 } from './conversations';

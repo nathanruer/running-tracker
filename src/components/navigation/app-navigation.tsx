@@ -3,10 +3,13 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { MessageSquare, User, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
+import { prefetchProfileData, prefetchDashboardData, prefetchChatData } from '@/lib/services/prefetch';
 
 export function AppNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const isActive = (href: string) => {
     if (href === '/chat') {
@@ -34,6 +37,7 @@ export function AppNavigation() {
             data-testid="nav-dashboard"
             variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/dashboard')}
+            onMouseEnter={() => prefetchDashboardData(queryClient)}
             className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/dashboard') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -44,6 +48,7 @@ export function AppNavigation() {
             data-testid="nav-chat"
             variant={isActive('/chat') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/chat')}
+            onMouseEnter={() => prefetchChatData(queryClient)}
             className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/chat') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
@@ -54,6 +59,7 @@ export function AppNavigation() {
             data-testid="nav-profile"
             variant={isActive('/profile') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/profile')}
+            onMouseEnter={() => prefetchProfileData(queryClient)}
             className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/profile') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <User className="h-4 w-4 mr-2" />

@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import type { StravaActivity } from '@/lib/types';
+import type { StravaActivity, StravaActivity as StravaActivityEntity, IntervalDetails } from '@/lib/types';
 
 export interface StravaActivityDetails {
   id: string;
@@ -8,16 +8,23 @@ export interface StravaActivityDetails {
   duration: string;
   distance: number;
   avgPace: string;
-  avgHeartRate: number;
+  avgHeartRate: number | null;
   comments: string;
-  intervalDetails?: unknown;
+  intervalDetails?: IntervalDetails | null;
+  externalId?: string;
+  source?: string;
+  stravaData?: StravaActivityEntity | null;
+  elevationGain?: number | null;
+  averageCadence?: number | null;
+  averageTemp?: number | null;
+  calories?: number | null;
 }
 
 /**
- * Fetches Strava activities for the current user
+ * Fetches Strava activities for the current user with pagination support
  */
-export async function getStravaActivities(): Promise<StravaActivity[]> {
-  return apiRequest<StravaActivity[]>('/api/strava/activities');
+export async function getStravaActivities(page: number = 1, perPage: number = 50): Promise<{ activities: StravaActivity[], hasMore: boolean }> {
+  return apiRequest<{ activities: StravaActivity[], hasMore: boolean }>(`/api/strava/activities?page=${page}&per_page=${perPage}`);
 }
 
 /**

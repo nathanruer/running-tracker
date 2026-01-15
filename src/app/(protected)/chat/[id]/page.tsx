@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '@/lib/services/api-client';
 import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
 import { ChatView } from '@/features/chat/components/chat-view';
 import { ChatSkeleton } from '@/features/chat/components/chat-skeleton';
@@ -23,30 +24,11 @@ export default function ChatPage() {
 
   const { isLoading: conversationsLoading } = useQuery({
     queryKey: ['conversations'],
-    queryFn: async () => {
-      const response = await fetch('/api/conversations');
-      if (!response.ok) throw new Error('Erreur lors du chargement des conversations');
-      return response.json();
-    },
+    queryFn: getConversations,
   });
 
-  const { isLoading: conversationLoading } = useQuery({
-    queryKey: ['conversation', conversationId],
-    queryFn: async () => {
-      if (!conversationId) return null;
-      const response = await fetch(`/api/conversations/${conversationId}`);
-      if (!response.ok) throw new Error('Erreur lors du chargement de la conversation');
-      return response.json();
-    },
-    enabled: !!conversationId,
-    staleTime: 0,
-    refetchOnMount: true,
-  });
-
-  const isGlobalLoading = conversationsLoading || conversationLoading;
-
-  if (isGlobalLoading) {
-    return <ChatSkeleton hasConversation={true} />;
+  if (conversationsLoading) {
+    return <ChatSkeleton hasConversation={!!conversationId} />;
   }
 
   return (
@@ -64,7 +46,6 @@ export default function ChatPage() {
           </Button>
         </div>
 
-        {/* Mobile conversations drawer */}
         <Sheet open={isConversationsOpen} onOpenChange={setIsConversationsOpen}>
           <SheetContent side="right" className="w-[85vw] sm:w-[50vw] p-0">
             <SheetHeader className="sr-only">

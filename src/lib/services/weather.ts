@@ -1,5 +1,5 @@
 import type { WeatherData } from '@/lib/types/weather';
-import { fetchWithTimeout } from '@/lib/utils/fetch-with-timeout';
+import { fetchWithTimeout } from '@/lib/utils/api/fetch';
 
 const weatherCache = new Map<string, WeatherData | null>();
 

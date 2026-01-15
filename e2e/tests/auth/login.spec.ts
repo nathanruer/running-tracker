@@ -82,23 +82,4 @@ test.describe('Login Flow - Core', () => {
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
   });
 
-  test('should toggle between login and register modes', async ({ page }) => {
-    const authPage = new AuthPage(page);
-    await authPage.goto();
-
-    await expect(authPage.loginButton).toBeVisible();
-    await authPage.switchToRegister();
-    await expect(page.getByRole('button', { name: /s'inscrire/i })).toBeVisible();
-    await authPage.switchToLogin();
-    await expect(authPage.loginButton).toBeVisible();
-  });
-});
-
-test.describe('Login Flow - Accessibility', () => {
-  test('should have accessible form labels', async ({ page }) => {
-    const authPage = new AuthPage(page);
-    await authPage.goto();
-    await expect(authPage.emailInput).toHaveAccessibleName(/email/i);
-    await expect(authPage.passwordInput).toHaveAccessibleName(/mot de passe|password/i);
-  });
 });

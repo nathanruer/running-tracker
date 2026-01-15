@@ -71,7 +71,7 @@ describe('Strava API', () => {
   });
 
   describe('getStravaActivities', () => {
-    it('fetches all Strava activities', async () => {
+    it('fetches all Strava activities with pagination', async () => {
       const mockActivities = [
         {
           id: 12345678,
@@ -90,20 +90,31 @@ describe('Strava API', () => {
           average_heartrate: 135,
         },
       ];
-      mockApiRequest.mockResolvedValue(mockActivities);
+      mockApiRequest.mockResolvedValue({ activities: mockActivities, hasMore: false });
 
       const result = await getStravaActivities();
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities');
-      expect(result).toEqual(mockActivities);
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=50');
+      expect(result.activities).toEqual(mockActivities);
+      expect(result.hasMore).toBe(false);
     });
 
     it('returns empty array when no activities', async () => {
-      mockApiRequest.mockResolvedValue([]);
+      mockApiRequest.mockResolvedValue({ activities: [], hasMore: false });
 
       const result = await getStravaActivities();
 
-      expect(result).toEqual([]);
+      expect(result.activities).toEqual([]);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('supports custom pagination parameters', async () => {
+      mockApiRequest.mockResolvedValue({ activities: [], hasMore: true });
+
+      const result = await getStravaActivities(2, 25);
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=2&per_page=25');
+      expect(result.hasMore).toBe(true);
     });
   });
 

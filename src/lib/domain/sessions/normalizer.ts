@@ -1,5 +1,5 @@
 import type { NormalizedSession } from './types';
-import { formatDateToISO } from '@/lib/utils/formatters';
+import { formatDateToISO } from '@/lib/utils/date';
 
 /**
  * Normalizes training sessions data for AI processing

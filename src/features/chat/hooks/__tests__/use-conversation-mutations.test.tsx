@@ -47,12 +47,15 @@ describe('useConversationMutations', () => {
         expect(result.current.isCreating).toBe(false);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/conversations', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Nouvelle conversation' }),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/conversations',
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Nouvelle conversation' }),
+        })
+      );
 
       expect(onConversationCreated).toHaveBeenCalledWith('conv-1');
     });
@@ -77,12 +80,15 @@ describe('useConversationMutations', () => {
         expect(result.current.isRenaming).toBe(false);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/conversations/conv-1', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Title' }),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/conversations/conv-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'New Title' }),
+        })
+      );
     });
 
     it('should manage rename dialog state', () => {
@@ -149,11 +155,14 @@ describe('useConversationMutations', () => {
         expect(result.current.isDeleting).toBe(false);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/conversations/conv-1', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/conversations/conv-1',
+        expect.objectContaining({
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
 
       expect(onConversationDeleted).toHaveBeenCalledWith('conv-1');
     });

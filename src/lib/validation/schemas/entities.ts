@@ -114,6 +114,16 @@ export const stravaStreamSchema = z.object({
 export const stravaStreamSetSchema = z.record(z.string(), stravaStreamSchema);
 
 // ============================================================================
+// STRAVA TOKENS SCHEMA (OAuth)
+// ============================================================================
+
+export const stravaTokensSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string(),
+  expires_at: z.number(),
+});
+
+// ============================================================================
 // TRAINING SESSION ENTITY SCHEMA
 // ============================================================================
 

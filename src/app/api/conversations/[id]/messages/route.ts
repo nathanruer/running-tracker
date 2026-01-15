@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/database';
-import { jsonError } from '@/lib/utils/api-helpers';
+import { jsonError, toPrismaJson } from '@/lib/utils/api';
 import { normalizeSessions } from '@/lib/domain/sessions/normalizer';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import {
@@ -177,7 +176,7 @@ export async function POST(
           role: 'assistant',
           content: assistantContent,
           recommendations:
-            response.responseType === 'recommendations' ? (response as unknown as Prisma.InputJsonValue) : undefined,
+            response.responseType === 'recommendations' ? toPrismaJson(response) : undefined,
           model: GROQ_MODEL,
         },
       });

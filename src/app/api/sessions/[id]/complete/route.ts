@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/database';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { findSessionByIdAndUser } from '@/lib/utils/api-helpers';
+import { findSessionByIdAndUser, toPrismaJson } from '@/lib/utils/api';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/lib/services/strava';
@@ -84,13 +83,13 @@ export async function PATCH(
           externalId: externalId ?? undefined,
           source: source ?? undefined,
           stravaData: stravaData ?? undefined,
-          stravaStreams: stravaStreams ? (stravaStreams as unknown as Prisma.InputJsonValue) : undefined,
+          stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : undefined,
           elevationGain: elevationGain ?? undefined,
           averageCadence: averageCadence ?? undefined,
           averageTemp: finalAverageTemp ?? undefined,
           calories: calories ?? undefined,
           weather: weather ?? undefined,
-          intervalDetails: intervalDetails ? (intervalDetails as unknown as Prisma.InputJsonValue) : undefined,
+          intervalDetails: intervalDetails ? toPrismaJson(intervalDetails) : undefined,
         },
       });
 

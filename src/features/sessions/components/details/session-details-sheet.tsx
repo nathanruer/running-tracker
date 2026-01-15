@@ -16,7 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
-import { ExternalLink, Map } from 'lucide-react';
+import { ExternalLink, Map, Calendar, MessageSquare } from 'lucide-react';
 import type { TrainingSession, IntervalStep } from '@/lib/types';
 import { decodePolyline, coordinatesToSVG } from '@/lib/utils/geo/polyline';
 import { cn } from '@/lib/utils/cn';
@@ -25,7 +25,7 @@ import { MAP_DIMENSIONS } from '@/lib/constants/map';
 import dynamic from 'next/dynamic';
 
 const LeafletRoute = dynamic(
-  () => import('@/components/ui/leaflet-route').then((mod) => mod.LeafletRoute),
+  () => import('./leaflet-route').then((mod) => mod.LeafletRoute),
   {
     ssr: false,
     loading: () => <div className="w-full h-full bg-muted/10 animate-pulse" />
@@ -60,6 +60,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
       ).path
     : null;
 
+  const isPlanned = session.status === 'planned';
   const hasStravaData = session.source === 'strava' && stravaData !== null;
   const hasRoute = decodedCoordinates.length > 0 && mapPath;
 
@@ -99,7 +100,6 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
             <div className="relative">
               {hasRoute ? (
                 <div className="h-72 w-full flex items-center justify-center relative overflow-hidden">
-
                   <svg
                     viewBox={`0 0 ${MAP_DIMENSIONS.WIDTH} ${MAP_DIMENSIONS.HEIGHT}`}
                     className="w-full h-full stroke-primary fill-none stroke-[2.5] z-10 opacity-80"
@@ -107,32 +107,41 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                   >
                     <path d={mapPath} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-
                 </div>
               ) : (
-                <div className="h-20" />
+                <div className="h-32 w-full bg-gradient-to-b from-primary/10 to-transparent p-6 flex items-end">
+                   <div className="flex items-center gap-2 text-primary/60">
+                     <Calendar className="w-5 h-5" />
+                     <span className="text-sm font-semibold uppercase tracking-widest">{isPlanned ? 'Séance recommandée' : 'Séance complétée'}</span>
+                   </div>
+                </div>
               )}
               
               <div className={cn(
                 "px-6 pb-4",
                 hasRoute 
                   ? "absolute bottom-0 left-0 right-0 z-20 pt-8" 
-                  : "pt-6"
+                  : "pt-4"
               )}>
-                <SheetHeader className="text-left space-y-2">
+                <SheetHeader className="text-left space-y-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm border-border/50">
+                    <Badge 
+                      variant={isPlanned ? "outline" : "secondary"} 
+                      className={cn(
+                        "bg-background/80 backdrop-blur-sm border-border/50 pointer-events-none",
+                        isPlanned && "border-primary/30 text-primary font-bold"
+                      )}
+                    >
                       {session.sessionType}
                     </Badge>
-
                   </div>
-                  <SheetTitle className="text-2xl font-semibold tracking-tight">
+                  <SheetTitle className="text-3xl font-black tracking-tighter leading-none">
                     {session.date 
                       ? new Date(session.date).toLocaleDateString('fr-FR', { 
                           weekday: 'long', 
                           day: 'numeric', 
                           month: 'long' 
-                        }) 
+                        }).split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
                       : 'Séance à planifier'
                     }
                   </SheetTitle>
@@ -142,19 +151,19 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       href={`https://www.strava.com/activities/${session.externalId}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors font-medium"
                     >
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                       Voir sur Strava
                     </a>
                   ) : <div></div>}
                   {hasRoute && (
                     <button
                       onClick={() => setMapDialogOpen(true)}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors ml-auto"
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors ml-auto font-medium"
                     >
-                      <Map className="w-3 h-3" />
-                      Voir la carte
+                      <Map className="w-3.5 h-3.5" />
+                      Agrandir la carte
                     </button>
                   )}
                 </div>
@@ -162,32 +171,32 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
               </div>
             </div>
 
-            <div className="px-6 py-6 space-y-6 pb-10">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="px-6 py-6 space-y-6 pb-12">
+              <div className="grid grid-cols-2 gap-4">
                 <StatCard
                   label="Distance"
-                  value={displayDistance
+                  value={displayDistance !== null
                     ? session.distance
-                      ? displayDistance
+                      ? displayDistance.toFixed(2)
                       : `~${displayDistance.toFixed(2)}`
                     : '-'
                   }
                   unit="km"
-                  highlight
+                  highlight={!isPlanned}
                 />
                 <StatCard
                   label="Durée"
-                  value={displayDuration
+                  value={displayDuration !== null
                     ? session.duration
                       ? (normalizeDurationFormat(displayDuration) || displayDuration)
                       : `~${displayDuration}`
                     : '-'
                   }
-                  highlight
+                  highlight={!isPlanned}
                 />
                 <StatCard
                   label="Allure"
-                  value={displayPace
+                  value={displayPace !== null
                     ? session.avgPace
                       ? displayPace
                       : `~${displayPace}`
@@ -197,22 +206,39 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                 />
                 <StatCard
                   label="FC moyenne"
-                  value={displayHR
+                  value={displayHR !== null
                     ? session.avgHeartRate
                       ? displayHR
                       : `~${displayHR}`
                     : '-'
                   }
-                  unit={displayHR ? "bpm" : undefined}
+                  unit={displayHR && typeof displayHR === 'number' ? "bpm" : undefined}
                 />
               </div>
 
+              {session.comments && (
+                <div id="session-notes" className="space-y-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MessageSquare className="w-4 h-4" />
+                    <h3 className="text-xs font-bold uppercase tracking-[0.2em]">
+                      {isPlanned ? 'Conseils du Coach' : 'Notes de séance'}
+                    </h3>
+                  </div>
+                  <div className={cn(
+                    "p-5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap relative overflow-hidden",
+                    "bg-muted/30 border border-border/40 text-muted-foreground"
+                  )}>
+                    {session.comments}
+                  </div>
+                </div>
+              )}
+
               {hasStravaData && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                     Données avancées
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {typeof session.elevationGain === 'number' && session.elevationGain > 0 && (
                       <StatCard label="Dénivelé" value={session.elevationGain} unit="m" />
                     )}
@@ -223,10 +249,9 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       <StatCard label="Calories" value={session.calories} unit="kcal" />
                     )}
                     {session.averageTemp && (
-                      <StatCard label="Température" value={session.averageTemp.toFixed(0)} unit="°C" />
+                      <StatCard label="Temp" value={session.averageTemp.toFixed(0)} unit="°C" />
                     )}
                   </div>
-
 
                   {session.weather && (
                     <WeatherWidget weather={session.weather} />
@@ -234,23 +259,12 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                 </div>
               )}
 
-              {hasStravaData && session.stravaStreams !== null && session.stravaStreams !== undefined && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              {hasStravaData && session.stravaStreams && (
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">
                     Analyse de la séance
                   </h3>
                   <StreamsSection streams={session.stravaStreams} />
-                </div>
-              )}
-
-              {session.comments && (
-                <div id="session-notes" className="space-y-2 scroll-mt-20">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    Notes
-                  </h3>
-                  <div className="p-4 rounded-xl bg-muted/20 border border-border/50 text-sm leading-relaxed whitespace-pre-wrap">
-                    {session.comments}
-                  </div>
                 </div>
               )}
 

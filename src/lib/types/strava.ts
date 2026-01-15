@@ -1,12 +1,10 @@
 /**
  * Strava types
- * 
- * Core types (StravaActivity, StravaStream, StravaStreamSet) are now
- * re-exported from Zod schemas for consistency.
- * 
- * Additional types specific to Strava API (StravaTokens, StravaStreamType)
- * are defined here.
+ *
+ * Core types are re-exported from Zod schemas for consistency.
  */
+
+import { z } from 'zod';
 
 export type {
   StravaActivity,
@@ -18,20 +16,12 @@ export {
   stravaActivityStoredSchema,
   stravaStreamSchema,
   stravaStreamSetSchema,
+  stravaTokensSchema,
 } from '@/lib/validation/schemas/entities';
 
-// ============================================================================
-// STRAVA API SPECIFIC TYPES
-// ============================================================================
+import { stravaTokensSchema } from '@/lib/validation/schemas/entities';
 
-/**
- * Strava OAuth tokens
- */
-export interface StravaTokens {
-  access_token: string;
-  refresh_token: string;
-  expires_at: number;
-}
+export type StravaTokens = z.infer<typeof stravaTokensSchema>;
 
 /**
  * Available stream types from Strava API

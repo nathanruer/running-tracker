@@ -9,7 +9,7 @@ export function DashboardSkeleton() {
       <div className="mx-auto max-w-[90rem]">
         <div className="h-10 w-48 bg-muted animate-pulse rounded-lg mb-8 md:hidden mx-1" />
 
-        <Card className="rounded-[2.5rem] border-none bg-card shadow-none overflow-hidden">
+        <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
           <CardHeader className="flex flex-col gap-6 px-8 py-8 border-b border-border/40">
             <div className="flex items-center justify-between">
               <div className="h-7 w-56 bg-muted animate-pulse rounded-lg" />

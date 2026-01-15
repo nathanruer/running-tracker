@@ -1,7 +1,7 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
-import { addSession, updateSession } from '@/lib/services/api-client';
+import { addSession, updateSession, completeSession } from '@/lib/services/api-client';
 import type {
   TrainingSessionPayload,
   TrainingSession,
@@ -12,8 +12,8 @@ import { formSchema, type FormValues } from '@/lib/validation/session-form';
 import { PREDEFINED_TYPES } from '@/features/sessions/components/forms/session-type-selector';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
-import { getTodayISO } from '@/lib/utils/formatters';
-import { calculatePaceFromDurationAndDistance } from '@/lib/utils/duration';
+import { getTodayISO } from '@/lib/utils/date';
+import { calculatePaceFromDurationAndDistance } from '@/lib/utils/pace';
 import {
   normalizeFormValues,
   buildPlannedSessionPayload,
@@ -216,23 +216,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
           calories: values.calories,
         };
 
-        const response = await fetch(`/api/sessions/${session.id}/complete`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sessionData),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          const error = new Error(data.error || 'Erreur lors de l\'enregistrement de la séance') as Error & { details?: unknown };
-          if (data.details) {
-            error.details = data.details;
-          }
-          throw error;
-        }
-
-        resultSession = data;
+        resultSession = await completeSession(session.id, sessionData);
         handleSuccess('Séance enregistrée', `Votre sortie ${type}${dist} a été enregistrée !`);
       } else if (mode === 'edit' && session) {
         const isPlanned = session.status === 'planned';

@@ -1,10 +1,6 @@
-/**
- * Primitive validation schemas - reusable building blocks for complex schemas
- * These schemas enforce consistent validation rules across the application
- */
-
 import { z } from 'zod';
-import { validateDurationInput, validatePaceInput } from '@/lib/utils/duration';
+import { validateDurationInput } from '@/lib/utils/duration';
+import { validatePaceInput } from '@/lib/utils/pace';
 import { HEART_RATE, RPE } from '@/lib/constants/validation';
 import { VALIDATION_MESSAGES } from '@/lib/constants/messages';
 

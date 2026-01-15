@@ -83,3 +83,24 @@ export async function getSessionTypes(): Promise<string[]> {
   const data = await apiRequest<{ types: string[] }>('/api/sessions/types');
   return data.types;
 }
+
+export async function addPlannedSession(
+  session: Record<string, unknown>,
+): Promise<TrainingSession> {
+  const data = await apiRequest<{ session: TrainingSession }>('/api/sessions/planned', {
+    method: 'POST',
+    body: JSON.stringify(session),
+  });
+
+  return data.session;
+}
+
+export async function completeSession(
+  id: string,
+  session: TrainingSessionPayload,
+): Promise<TrainingSession> {
+  return apiRequest<TrainingSession>(`/api/sessions/${id}/complete`, {
+    method: 'PATCH',
+    body: JSON.stringify(session),
+  });
+}
