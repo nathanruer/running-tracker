@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
@@ -29,8 +29,8 @@ const createTestEntity = (overrides: Partial<TestEntity> = {}): TestEntity => ({
 
 describe('useEntityMutations', () => {
   let queryClient: QueryClient;
-  let mockDeleteEntity: ReturnType<typeof vi.fn>;
-  let mockBulkDeleteEntities: ReturnType<typeof vi.fn>;
+  let mockDeleteEntity: MockedFunction<(id: string) => Promise<void>>;
+  let mockBulkDeleteEntities: MockedFunction<(ids: string[]) => Promise<void>>;
 
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
@@ -42,8 +42,8 @@ describe('useEntityMutations', () => {
         mutations: { retry: false },
       },
     });
-    mockDeleteEntity = vi.fn().mockResolvedValue(undefined);
-    mockBulkDeleteEntities = vi.fn().mockResolvedValue(undefined);
+    mockDeleteEntity = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined);
+    mockBulkDeleteEntities = vi.fn<(ids: string[]) => Promise<void>>().mockResolvedValue(undefined);
     vi.clearAllMocks();
   });
 
