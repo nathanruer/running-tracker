@@ -1,22 +1,17 @@
 import { useState } from 'react';
-import { useQueryClient, InfiniteData, QueryKey } from '@tanstack/react-query';
+import { useQueryClient, InfiniteData, QueryKey, useQuery } from '@tanstack/react-query';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import { getCurrentUser } from '@/lib/services/api-client';
 
 /**
  * Configuration options for useEntityMutations hook
  */
 interface UseEntityMutationsOptions<T> {
-  /** Base query key for the entity (e.g., ['sessions'], ['conversations']) */
   baseQueryKey: string;
-  /** Current filter type (e.g., 'all' or specific type) */
   filterType: string;
-  /** Function to delete a single entity */
   deleteEntity: (id: string) => Promise<void>;
-  /** Function to bulk delete entities */
   bulkDeleteEntities?: (ids: string[]) => Promise<void>;
-  /** Additional query keys to invalidate on mutations */
   relatedQueryKeys?: string[];
-  /** Success messages */
   messages?: {
     deleteSuccess?: string;
     deleteSuccessDescription?: string;
@@ -25,7 +20,6 @@ interface UseEntityMutationsOptions<T> {
     deleteError?: string;
     bulkDeleteError?: string;
   };
-  /** Function to sort entities after creation/update (default: by date DESC) */
   sortFn?: (a: T, b: T) => number;
 }
 
@@ -64,6 +58,12 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   const { handleError, handleSuccess } = useApiErrorHandler();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: getCurrentUser,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const defaultMessages = {
     deleteSuccess: 'Élément supprimé',
     deleteSuccessDescription: "L'élément a été supprimé avec succès.",
@@ -86,11 +86,9 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     baseQueryKey,
     variant,
     type,
+    user?.id
   ];
 
-  /**
-   * Update cache by removing entities matching the predicate
-   */
   const removeFromCache = (predicate: (entity: T) => boolean) => {
     queryClient.setQueryData(
       buildQueryKey('all', filterType),

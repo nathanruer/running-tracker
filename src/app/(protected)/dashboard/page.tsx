@@ -11,6 +11,7 @@ import { SessionsEmptyState } from '@/features/dashboard/components/sessions-emp
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
+import { buttonVariants } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -232,11 +233,17 @@ const DashboardPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel data-testid="delete-session-cancel" onClick={() => setDeletingId(null)} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogCancel 
+              data-testid="delete-session-cancel" 
+              onClick={() => setDeletingId(null)} 
+              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
+            >
+              Annuler
+            </AlertDialogCancel>
             <AlertDialogAction
               data-testid="delete-session-confirm"
               onClick={() => deletingId && handleDelete(deletingId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
+              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
             >
               Confirmer la suppression
             </AlertDialogAction>

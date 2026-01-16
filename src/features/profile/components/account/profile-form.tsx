@@ -140,6 +140,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 type="number"
                 step="0.1"
                 {...register('weight')}
+                placeholder="70.5"
                 className="bg-muted/30 border-border/50"
               />
               {errors.weight && (
@@ -149,7 +150,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="age" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Âge</Label>
-              <Input id="age" type="number" {...register('age')} className="bg-muted/30 border-border/50" />
+              <Input id="age" type="number" {...register('age')} placeholder="30" className="bg-muted/30 border-border/50" />
               {errors.age && (
                 <p className="text-xs text-destructive font-medium ml-1">{errors.age.message}</p>
               )}
@@ -161,6 +162,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 id="maxHeartRate"
                 type="number"
                 {...register('maxHeartRate')}
+                placeholder="185"
                 className="bg-muted/30 border-border/50"
               />
               {errors.maxHeartRate && (
@@ -177,6 +179,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 type="number"
                 step="0.1"
                 {...register('vma')}
+                placeholder="16.5"
                 className="bg-muted/30 border-border/50"
               />
               {errors.vma && (
@@ -188,7 +191,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           </div>
 
           <div className='pt-4'>
-            <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold uppercase tracking-widest text-xs active:scale-95 transition-all" disabled={isSubmitting}>
+            <Button type="submit" variant="action" size="xl" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

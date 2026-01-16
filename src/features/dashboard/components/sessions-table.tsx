@@ -5,7 +5,7 @@ import { ExportSessions } from './export-sessions';
 import { SessionRow } from './session-row';
 import { SortIcon } from './sort-icon';
 import { SelectionBar } from './selection-bar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -128,7 +128,7 @@ export function SessionsTable({
               <div className="flex items-center gap-3">
                 <CardTitle className="text-xl font-bold tracking-tight">Historique</CardTitle>
                 {!initialLoading && (
-                  <Badge variant="secondary" className="h-6 px-2 rounded-lg bg-muted/30 text-muted-foreground/70 font-bold border-none">
+                  <Badge variant="secondary" className="h-6 px-2 rounded-lg bg-muted/30 hover:bg-muted/30 text-muted-foreground/70 font-bold border-none">
                     {totalCount}
                   </Badge>
                 )}
@@ -138,7 +138,9 @@ export function SessionsTable({
                 <Button
                   data-testid="btn-new-session"
                   onClick={actions.onNewSession}
-                  className="h-10 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all font-bold shrink-0 text-xs uppercase tracking-wider"
+                  variant="action"
+                  size="xl"
+                  className="shrink-0"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle séance
@@ -196,13 +198,13 @@ export function SessionsTable({
                 <div className="hidden md:flex items-center gap-3 ml-auto">
                   <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-3 py-1.5 gap-2.5 transition-all">
                     <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/30 whitespace-nowrap">
-                      {paginatedCount} / {totalCount}
+                      {paginatedCount} / {totalCount || (isFetching ? '...' : '0')}
                     </span>
-                    {(paginatedCount > 10 || (onShowAll && !isShowingAll && totalCount > paginatedCount)) && (
+                    {(paginatedCount > 10 || (onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore))) && (
                       <div className="w-[1px] h-3 bg-border/40" />
                     )}
                     <div className="flex items-center gap-3">
-                      {onShowAll && !isShowingAll && totalCount > paginatedCount && (
+                      {onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore) && (
                         <button
                           onClick={onShowAll}
                           className="text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
@@ -389,9 +391,10 @@ export function SessionsTable({
       {hasMore && sortedSessions.length > 0 && !searchQuery.trim() && (
         <div className="mt-6 flex justify-center">
           <Button
-            variant="outline"
+            variant="neutral"
+            size="lg"
             onClick={onLoadMore}
-            className="w-full sm:w-auto h-10 px-6 rounded-xl font-bold border-border/40 bg-muted/5 hover:bg-muted/10 active:scale-95 transition-all text-muted-foreground hover:text-foreground text-[11px] uppercase tracking-wider"
+            className="w-full sm:w-auto border-border/40"
             disabled={isFetchingNextPage}
           >
             {isFetchingNextPage ? 'Chargement...' : 'Voir plus'}
@@ -409,12 +412,18 @@ export function SessionsTable({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel data-testid="bulk-delete-session-cancel" disabled={isDeletingBulk} className="px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogCancel 
+              data-testid="bulk-delete-session-cancel" 
+              disabled={isDeletingBulk} 
+              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
+            >
+              Annuler
+            </AlertDialogCancel>
             <AlertDialogAction
               data-testid="bulk-delete-session-confirm"
               onClick={() => handleBulkDelete(Array.from(selectedSessions), clearSelection)}
               disabled={isDeletingBulk}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-6 font-bold active:scale-95 transition-all"
+              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
             >
               {isDeletingBulk ? 'Suppression...' : 'Confirmer la suppression'}
             </AlertDialogAction>

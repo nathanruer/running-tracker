@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { User as UserIcon, BarChart3, LogOut, Loader2, Grid3X3 as ActivityHeatmapIcon } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +56,7 @@ export default function ProfilePage() {
   });
 
   const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
-    queryKey: ['sessions', 'all'],
+    queryKey: ['sessions', 'all', user?.id],
     queryFn: () => getSessions(),
     enabled: !!user && (activeView === 'analytics' || activeView === 'history'),
     staleTime: 5 * 60 * 1000,
@@ -144,10 +144,10 @@ export default function ProfilePage() {
 
           <Button
             data-testid="logout-desktop"
-            variant="outline"
-            size="sm"
+            variant="destructive-premium"
+            size="xl"
             onClick={() => setShowLogoutDialog(true)}
-            className="hidden md:flex shrink-0 h-9 px-5 text-sm font-semibold text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive active:scale-95 transition-all rounded-xl shadow-sm"
+            className="hidden md:flex shrink-0 border-destructive/20 hover:border-destructive"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Se déconnecter
@@ -190,8 +190,9 @@ export default function ProfilePage() {
               <Button
                 data-testid="logout-mobile"
                 onClick={() => setShowLogoutDialog(true)}
-                variant="outline"
-                className="w-full h-12 rounded-xl text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground font-bold transition-all"
+                variant="destructive-premium"
+                size="xl"
+                className="w-full border-destructive/20 hover:border-destructive"
               >
                 <LogOut className="mr-3 h-5 w-5" />
                 Se déconnecter
@@ -202,7 +203,7 @@ export default function ProfilePage() {
       </div>
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent className="border-none shadow-2xl">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-bold">Déconnexion</AlertDialogTitle>
             <AlertDialogDescription className="text-base">
@@ -210,12 +211,18 @@ export default function ProfilePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel data-testid="logout-cancel" disabled={isLoggingOut} className="rounded-xl px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogCancel 
+              data-testid="logout-cancel" 
+              disabled={isLoggingOut} 
+              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
+            >
+              Annuler
+            </AlertDialogCancel>
             <AlertDialogAction
               data-testid="logout-confirm"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl px-6 font-bold active:scale-95 transition-all"
+              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
             >
               {isLoggingOut ? (
                 <>

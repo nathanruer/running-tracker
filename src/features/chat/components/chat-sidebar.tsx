@@ -14,6 +14,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 import { useConversationMutations } from '../hooks/use-conversation-mutations';
 import { ConversationListItem } from './conversation-list-item';
 
@@ -34,7 +45,6 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
 
   const {
     createConversation,
-    deleteConversation,
     isCreating,
     renameDialogOpen,
     setRenameDialogOpen,
@@ -44,6 +54,13 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
     handleRenameSubmit,
     handleRenameCancel,
     isRenaming,
+    
+    deleteDialogOpen,
+    setDeleteDialogOpen,
+    handleDeleteClick,
+    handleDeleteSubmit,
+    handleDeleteCancel,
+    isDeleting,
   } = useConversationMutations({
     onConversationCreated: onSelectConversation,
     onConversationDeleted: async (deletedId) => {
@@ -74,10 +91,11 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
         <div className="flex items-center justify-between px-6 py-6 border-b border-border/40 mb-2">
           <h2 className="text-xl font-bold tracking-tight">Conversations</h2>
           <Button
-            size="sm"
+            size="icon"
             onClick={() => createConversation()}
             disabled={isCreating || disableCreate}
-            className="h-9 w-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all p-0 shadow-none"
+            variant="action"
+            className="h-9 w-9"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -100,7 +118,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
               isMobile={isMobile}
               onSelect={onSelectConversation}
               onRename={handleRenameClick}
-              onDelete={deleteConversation}
+              onDelete={handleDeleteClick}
               onPrefetch={handlePrefetch}
             />
           ))}
@@ -123,20 +141,49 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
               if (e.key === 'Enter') handleRenameSubmit();
             }}
           />
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleRenameCancel} className="font-semibold active:scale-95 transition-all">
+          <DialogFooter className="gap-2 pt-4">
+            <Button variant="neutral" size="xl" onClick={handleRenameCancel} className="flex-1">
               Annuler
             </Button>
             <Button
               onClick={handleRenameSubmit}
               disabled={!newTitle.trim() || isRenaming}
-              className="h-10 px-6 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all"
+              variant="action"
+              size="xl"
+              className="flex-1"
             >
               Renommer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-bold">Supprimer la conversation</AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-muted-foreground/80">
+              Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel 
+              onClick={handleDeleteCancel}
+              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
+              disabled={isDeleting}
+            >
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSubmit}
+              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Suppression...' : 'Confirmer la suppression'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { StravaBadge } from "@/features/import/components/strava-badge"
 import {
@@ -89,10 +89,11 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
           </div>
 
           <Button
-            variant="outline"
+            variant="destructive-premium"
+            size="xl"
             onClick={() => setShowDisconnectDialog(true)}
             disabled={isDisconnectingStrava}
-            className="w-full px-5 text-sm font-semibold text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all"
+            className="w-full border-destructive/20 hover:border-destructive"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Déconnecter Strava
@@ -101,7 +102,7 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
       </Card>
 
       <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-        <AlertDialogContent className="border-none shadow-2xl">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-bold">Déconnexion Strava</AlertDialogTitle>
             <AlertDialogDescription className="text-base">
@@ -109,11 +110,16 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel disabled={isDisconnectingStrava} className="px-6 active:scale-95 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogCancel 
+              disabled={isDisconnectingStrava} 
+              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
+            >
+              Annuler
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDisconnectStrava}
               disabled={isDisconnectingStrava}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-6 font-bold active:scale-95 transition-all"
+              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
             >
               {isDisconnectingStrava ? (
                 <>

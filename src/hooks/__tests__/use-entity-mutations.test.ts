@@ -14,6 +14,12 @@ vi.mock('@/hooks/use-api-error-handler', () => ({
   }),
 }));
 
+vi.mock('@/lib/services/api-client', () => ({
+  getCurrentUser: vi.fn(),
+}));
+
+import { getCurrentUser } from '@/lib/services/api-client';
+
 interface TestEntity {
   id: string;
   date: string;
@@ -44,6 +50,12 @@ describe('useEntityMutations', () => {
     });
     mockDeleteEntity = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined);
     mockBulkDeleteEntities = vi.fn<(ids: string[]) => Promise<void>>().mockResolvedValue(undefined);
+    const mockUser = { id: 'test-user', email: 'test@example.com' };
+    (getCurrentUser as MockedFunction<typeof getCurrentUser>).mockResolvedValue(mockUser);
+    
+    // Pre-populate user in cache for useQuery
+    queryClient.setQueryData(['user'], mockUser);
+    
     vi.clearAllMocks();
   });
 
@@ -54,7 +66,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-2', name: 'Entity 2' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>
@@ -82,7 +94,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-1', name: 'Entity 1' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const deleteError = new Error('Delete failed');
       mockDeleteEntity.mockRejectedValue(deleteError);
@@ -109,7 +121,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-1' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>
@@ -141,7 +153,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-3' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>
@@ -187,7 +199,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-2' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const bulkDeleteError = new Error('Bulk delete failed');
       mockBulkDeleteEntities.mockRejectedValue(bulkDeleteError);
@@ -220,7 +232,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-1', date: '2024-01-10' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], existingEntities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], existingEntities);
 
       const { result } = renderHook(
         () =>
@@ -238,7 +250,7 @@ describe('useEntityMutations', () => {
         result.current.handleEntitySuccess(newEntity);
       });
 
-      const cachedData = queryClient.getQueryData(['entities', 'all', 'all']) as TestEntity[];
+      const cachedData = queryClient.getQueryData(['entities', 'all', 'all', 'test-user']) as TestEntity[];
       expect(cachedData).toHaveLength(2);
       expect(cachedData.find((e) => e.id === 'entity-2')).toBeDefined();
     });
@@ -248,7 +260,7 @@ describe('useEntityMutations', () => {
         createTestEntity({ id: 'entity-1', name: 'Original Name' }),
       ];
 
-      queryClient.setQueryData(['entities', 'all', 'all'], existingEntities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], existingEntities);
 
       const { result } = renderHook(
         () =>
@@ -266,7 +278,7 @@ describe('useEntityMutations', () => {
         result.current.handleEntitySuccess(updatedEntity);
       });
 
-      const cachedData = queryClient.getQueryData(['entities', 'all', 'all']) as TestEntity[];
+      const cachedData = queryClient.getQueryData(['entities', 'all', 'all', 'test-user']) as TestEntity[];
       expect(cachedData).toHaveLength(1);
       expect(cachedData[0].name).toBe('Updated Name');
     });
@@ -281,7 +293,7 @@ describe('useEntityMutations', () => {
       mockDeleteEntity.mockReturnValue(pendingDelete);
 
       const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>
@@ -320,7 +332,7 @@ describe('useEntityMutations', () => {
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
-      queryClient.setQueryData(['entities', 'all', 'all'], entities);
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>

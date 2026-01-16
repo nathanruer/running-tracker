@@ -21,7 +21,7 @@ export function useDashboardData(selectedType: string, isShowingAll: boolean, se
   });
 
   const { data: availableTypes = [] } = useQuery({
-    queryKey: ['sessionTypes'],
+    queryKey: ['sessionTypes', user?.id],
     queryFn: async () => {
       const types = await getSessionTypes();
       return types.sort();
@@ -51,12 +51,12 @@ export function useDashboardData(selectedType: string, isShowingAll: boolean, se
     data: allSessionsData,
     isLoading: allSessionsLoading,
   } = useQuery({
-    queryKey: ['sessions', 'all', selectedType],
+    queryKey: ['sessions', 'all', selectedType, user?.id],
     queryFn: () => getSessions(undefined, undefined, selectedType),
-    enabled: !!user && isShowingAll,
+    enabled: !!user,
     placeholderData: (previousData) => {
       if (previousData) return previousData;
-      const paginatedData = queryClient.getQueryData<InfiniteData<TrainingSession[]>>(['sessions', 'paginated', selectedType]);
+      const paginatedData = queryClient.getQueryData<InfiniteData<TrainingSession[]>>(['sessions', 'paginated', selectedType, user?.id]);
       if (paginatedData) {
         const lastPage = paginatedData.pages[paginatedData.pages.length - 1];
         if (lastPage && lastPage.length < LIMIT) {
@@ -75,7 +75,7 @@ export function useDashboardData(selectedType: string, isShowingAll: boolean, se
     isLoading: paginatedSessionsLoading,
     isFetching: paginatedSessionsFetching
   } = useInfiniteQuery({
-    queryKey: ['sessions', 'paginated', selectedType],
+    queryKey: ['sessions', 'paginated', selectedType, user?.id],
     queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -91,18 +91,18 @@ export function useDashboardData(selectedType: string, isShowingAll: boolean, se
 
   const handleResetPagination = () => {
     setIsShowingAll(false);
-    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
+    queryClient.setQueryData(['sessions', 'paginated', selectedType, user?.id], (old: InfiniteData<TrainingSession[]> | undefined) => {
       if (!old) return old;
       return {
         pages: [old.pages[0]],
         pageParams: [old.pageParams[0]],
       };
     });
-    queryClient.invalidateQueries({ queryKey: ['sessions', 'paginated', selectedType] });
+    queryClient.invalidateQueries({ queryKey: ['sessions', 'paginated', selectedType, user?.id] });
   };
 
   const initialLoading = userLoading || (!sessions.length && paginatedSessionsLoading);
-  const showGlobalLoading = userLoading || (!sessions.length && (allSessionsLoading || paginatedSessionsLoading));
+  const showGlobalLoading = userLoading || (!sessions.length && paginatedSessionsLoading);
 
   return {
     user,

@@ -32,7 +32,7 @@ export function DateRangeSelector({
         <SelectTrigger data-testid="select-date-range" className="h-8 px-2 border-none bg-transparent hover:bg-white/5 data-[state=open]:bg-white/5 rounded-xl shadow-none focus:ring-0 w-[110px] sm:w-[140px] text-[10px] sm:text-[11px] font-bold transition-all">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="bg-card/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
+        <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
           <SelectItem value="4weeks" className="rounded-xl">4 dernières semaines</SelectItem>
           <SelectItem value="12weeks" className="rounded-xl">12 dernières semaines</SelectItem>
           <SelectItem value="all" className="rounded-xl">Toute la période</SelectItem>

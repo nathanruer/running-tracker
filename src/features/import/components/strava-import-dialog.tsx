@@ -194,7 +194,10 @@ export function StravaImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-h-[90vh] overflow-hidden ${isConnected && activities.length > 0 ? 'sm:max-w-[900px]' : 'sm:max-w-[425px]'} rounded-xl border border-border/50 shadow-2xl p-0 bg-card/95 backdrop-blur-xl`}>
+      <DialogContent className={cn(
+        "max-h-[90vh] overflow-hidden p-0", 
+        isConnected && activities.length > 0 ? "sm:max-w-[900px]" : "sm:max-w-[425px]"
+      )}>
         <div className="flex flex-col h-full max-h-[90vh]">
           <DialogHeader className={cn("px-8 pt-8", !isConnected || activities.length === 0 ? "sr-only" : "")}>
             <DialogTitle className="text-2xl font-bold tracking-tight">Importer depuis Strava</DialogTitle>
@@ -245,14 +248,17 @@ export function StravaImportDialog({
 
                 <div className="w-full space-y-4">
                   <Button
+                    key="strava-connect-button"
                     onClick={connectToStrava}
-                    className="w-full font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-none active:scale-95"
+                    variant="action"
+                    size="xl"
+                    className="w-full bg-[#FC4C02] hover:bg-[#E34402] transition-none"
                     disabled={loading}
                   >
                     {loading ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Se connecter'
+                      'Se connecter à Strava'
                     )}
                   </Button>
                   
@@ -276,7 +282,7 @@ export function StravaImportDialog({
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div key="strava-activities-view" className="space-y-6 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold text-muted-foreground/60 uppercase tracking-[0.1em]">
                     {activities.length} activités trouvées
@@ -410,23 +416,27 @@ export function StravaImportDialog({
                   )}
                 </ScrollArea>
 
-                <div className="flex gap-3 pt-6 border-t mt-2">
+                <div className="flex gap-4 pt-6 border-t mt-2">
                   <Button
+                    key="strava-cancel-button"
                     type="button"
-                    variant="outline"
+                    variant="neutral"
+                    size="xl"
                     onClick={() => onOpenChange(false)}
-                    className="flex-1 font-bold active:scale-95 transition-transform rounded-xl hover:bg-muted"
+                    className="flex-1 transition-none"
                   >
                     Annuler
                   </Button>
                   <Button 
                     onClick={handleImportSelected} 
-                    className="flex-[2] font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all rounded-xl"
+                    variant="action"
+                    size="xl"
+                    className="flex-[2] px-8 font-black"
                     disabled={importing || selectedIndices.size === 0}
                   >
                     {importing ? (
                       <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Import en cours...
                       </>
                     ) : (

@@ -20,28 +20,34 @@ export function SessionDialogActions({
       <Button
         data-testid="btn-session-cancel"
         type="button"
-        variant="ghost"
+        variant="neutral"
+        size="xl"
         onClick={onCancel}
-        className="flex-1 h-11 px-6 rounded-2xl font-bold text-muted-foreground hover:bg-muted active:scale-95 transition-all"
+        className="flex-1"
       >
         Annuler
       </Button>
       {mode === 'complete' && onUpdate ? (
         <>
           <Button
+            key="btn-update"
             data-testid="btn-session-update"
             type="button"
             variant="secondary"
+            size="xl"
             onClick={onUpdate}
-            className="flex-1 h-11 px-6 rounded-2xl font-bold active:scale-95 transition-all"
+            className="flex-1 uppercase text-xs tracking-widest transition-none"
             disabled={loading}
           >
             {loading ? 'Modification...' : 'Modifier'}
           </Button>
           <Button 
+            key="btn-submit-complete"
             data-testid="btn-session-submit" 
             type="submit" 
-            className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all" 
+            variant="action"
+            size="xl"
+            className="flex-[2] px-8 transition-none" 
             disabled={loading}
           >
             {loading ? 'Enregistrement...' : 'Valider la séance'}
@@ -49,9 +55,12 @@ export function SessionDialogActions({
         </>
       ) : (
         <Button 
+          key="btn-submit-default"
           data-testid="btn-session-submit" 
           type="submit" 
-          className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all" 
+          variant="action"
+          size="xl"
+          className="flex-[2] px-8 transition-none" 
           disabled={loading}
         >
           {loading ? 'Enregistrement...' : hasSession ? 'Mettre à jour' : 'Enregistrer la séance'}

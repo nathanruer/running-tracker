@@ -94,7 +94,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
                 onClick={handleSendMessage}
                 disabled={isWaitingForResponse || isSending || !input.trim()}
                 size="icon"
-                className="h-10 w-10 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white shrink-0 active:scale-95 transition-all"
+                variant="action"
+                className="h-10 w-10 !rounded-2xl"
               >
                 {isWaitingForResponse ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -142,7 +143,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
             onClick={handleSendMessage}
             disabled={conversationId ? (isSending || !input.trim()) : (isWaitingForResponse || !input.trim())}
             size="icon"
-            className="h-10 w-10 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white shrink-0 active:scale-95 transition-all"
+            variant="action"
+            className="h-10 w-10 !rounded-2xl"
           >
             {(conversationId ? isSending : isWaitingForResponse) ? (
               <Loader2 className="h-4 w-4 animate-spin" />

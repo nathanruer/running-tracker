@@ -24,6 +24,9 @@ export function useConversationMutations({
   const [selectedForRename, setSelectedForRename] = useState<Conversation | null>(null);
   const [newTitle, setNewTitle] = useState('');
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<string | null>(null);
+
   const createMutation = useMutation({
     mutationFn: () => apiCreateConversation(),
     onSuccess: (data) => {
@@ -80,6 +83,8 @@ export function useConversationMutations({
         title: 'Conversation supprimée',
         description: 'La conversation a été supprimée.',
       });
+      setDeleteDialogOpen(false);
+      setSelectedForDelete(null);
     },
     onError: () => {
       toast({
@@ -107,6 +112,21 @@ export function useConversationMutations({
     setNewTitle('');
   };
 
+  const handleDeleteClick = (id: string) => {
+    setSelectedForDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSubmit = () => {
+    if (!selectedForDelete) return;
+    deleteMutation.mutate(selectedForDelete);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setSelectedForDelete(null);
+  };
+
   return {
     createConversation: createMutation.mutate,
     renameConversation: renameMutation.mutate,
@@ -124,5 +144,11 @@ export function useConversationMutations({
     handleRenameClick,
     handleRenameSubmit,
     handleRenameCancel,
+
+    deleteDialogOpen,
+    setDeleteDialogOpen,
+    handleDeleteClick,
+    handleDeleteSubmit,
+    handleDeleteCancel,
   };
 }

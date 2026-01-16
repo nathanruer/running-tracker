@@ -131,7 +131,7 @@ const SessionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideClose className="sm:max-w-[640px] rounded-xl border border-border/50 shadow-2xl p-0 overflow-hidden bg-card/95 backdrop-blur-xl">
+      <DialogContent hideClose className="sm:max-w-[640px] p-0 overflow-hidden">
         <div className="max-h-[95vh] overflow-y-auto p-8 space-y-8">
           <SessionDialogHeader mode={mode} onReset={resetForm} />
           <FileImportButtons
