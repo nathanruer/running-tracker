@@ -25,7 +25,6 @@ describe('RecommendationCard', () => {
 
   const defaultProps = {
     session: mockSession,
-    displaySessionNumber: 5,
     isAdded: false,
     isCompleted: false,
     completedSession: null,
@@ -40,10 +39,10 @@ describe('RecommendationCard', () => {
   });
 
   describe('Display information', () => {
-    it('should display session number', () => {
+    it('should display session type as title', () => {
       render(<RecommendationCard {...defaultProps} />);
 
-      expect(screen.getByText('Séance 5')).toBeInTheDocument();
+      expect(screen.getByText('Endurance fondamentale')).toBeInTheDocument();
     });
 
     it('should display session type', () => {
@@ -71,7 +70,7 @@ describe('RecommendationCard', () => {
     it('should display RPE when present', () => {
       render(<RecommendationCard {...defaultProps} />);
 
-      expect(screen.getByText('6/10')).toBeInTheDocument();
+      expect(screen.getByText('6 /10')).toBeInTheDocument();
     });
 
     it('should display RPE placeholder when absent', () => {
@@ -82,7 +81,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(screen.getByText('-/10')).toBeInTheDocument();
+      expect(screen.getByText('- /10')).toBeInTheDocument();
     });
 
     it('should display interval structure for interval sessions', () => {
@@ -97,8 +96,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      // The structure is displayed as title when present
-      expect(screen.getByText("8x400m R:1'")).toBeInTheDocument();
+      expect(screen.getByText(/8x400m R:1'/)).toBeInTheDocument();
     });
   });
 
@@ -213,7 +211,7 @@ describe('RecommendationCard', () => {
         />
       );
 
-      expect(screen.getByText('Séance 5')).toBeInTheDocument();
+      expect(screen.getByTestId('recommendation-card')).toBeInTheDocument();
     });
 
     it('should use duration_min directly', async () => {

@@ -1,4 +1,5 @@
 import { MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -30,21 +31,24 @@ export function ConversationListItem({
   return (
     <div
       className={`
-        group flex items-center gap-2 p-3 rounded-lg cursor-pointer
-        transition-colors hover:bg-muted
-        ${isSelected ? 'bg-muted' : ''}
+        group flex items-center gap-3 p-3.5 rounded-xl cursor-pointer
+        transition-all active:scale-[0.98]
+        ${isSelected ? 'bg-muted/60' : 'hover:bg-muted/30'}
       `}
       onClick={() => onSelect(conversation.id)}
       onMouseEnter={() => onPrefetch(conversation.id)}
       onFocus={() => onPrefetch(conversation.id)}
       tabIndex={0}
     >
-      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <MessageSquare className={cn(
+        "h-4 w-4 flex-shrink-0 transition-colors",
+        isSelected ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground"
+      )} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{conversation.title}</p>
-        <p className="text-xs text-muted-foreground">
-          {conversation._count?.chat_messages ?? 0} message(s)
-        </p>
+        <p className={cn(
+          "text-sm truncate transition-colors",
+          isSelected ? "font-bold text-foreground" : "font-medium text-muted-foreground/70 group-hover:text-foreground"
+        )}>{conversation.title}</p>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

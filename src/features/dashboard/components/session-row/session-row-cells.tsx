@@ -28,7 +28,7 @@ export function MetricCell({
 }: MetricCellProps) {
   if (value === '-' || value === emptyValue) {
     return (
-      <TableCell className={cn("text-center whitespace-nowrap", className)}>
+      <TableCell className={cn("px-2 md:px-4 text-center whitespace-nowrap", className)}>
         <span className="text-muted-foreground/10">{emptyValue}</span>
       </TableCell>
     );
@@ -38,24 +38,24 @@ export function MetricCell({
   const unitColor = isPlanned ? 'text-muted-foreground/30' : 'text-muted-foreground/40';
 
   return (
-    <TableCell className={cn("text-center whitespace-nowrap", className)}>
+    <TableCell className={cn("px-2 md:px-4 text-center whitespace-nowrap", className)}>
       <div className="flex items-baseline justify-center">
         <div className="relative inline-flex items-baseline group/metric">
           {showApprox && (
             <span className={cn(
-              "absolute right-full mr-0.5 font-bold",
+              "absolute right-full mr-0.5 font-bold text-[10px] md:text-sm",
               isPlanned ? "text-muted-foreground/20" : "text-muted-foreground/40"
             )}>~</span>
           )}
           <span className={cn(
-            "font-medium tabular-nums text-[15px] tracking-tight",
+            "font-medium tabular-nums text-sm md:text-[15px] tracking-tight",
             textColor
           )}>
             {value}
           </span>
           {unit && (
             <span className={cn(
-              "ml-0.5 text-[10px] font-bold uppercase tracking-widest",
+              "ml-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest",
               unitColor
             )}>
               {unit}
@@ -86,7 +86,7 @@ export function CheckboxCell({
 }: CheckboxCellProps) {
   return (
     <TableCell 
-      className={cn("w-12 px-6", className)} 
+      className={cn("w-10 md:w-12 px-2 md:px-6", className)} 
       onClick={(e) => e.stopPropagation()}
     >
       {showCheckbox && (
@@ -134,11 +134,11 @@ export function SessionTypeCell({
   const labelColor = isPlanned ? 'text-muted-foreground/30' : 'text-primary/90';
 
   return (
-    <TableCell className={cn("text-center whitespace-nowrap px-4", className)}>
+    <TableCell className={cn("text-center whitespace-nowrap px-2 md:px-4", className)}>
       <div className="flex flex-col gap-0.5 items-center">
         <div className="flex items-center gap-1.5 group/title">
           <span className={cn(
-            "font-semibold tracking-tighter uppercase text-[13px]",
+            "font-semibold tracking-tighter uppercase text-[11px] md:text-[13px]",
             titleColor
           )}>
             {sessionType}
@@ -178,12 +178,12 @@ interface DateCellProps extends CellProps {
 export function DateCell({ dateDisplay, isPlanned, className }: DateCellProps) {
   return (
     <TableCell className={cn(
-      "text-center font-medium whitespace-nowrap",
+      "px-2 md:px-4 text-center font-medium whitespace-nowrap",
       className
     )}>
       {dateDisplay ? (
         <span className={cn(
-          "text-[13px] tracking-tight tabular-nums",
+          "text-[11px] md:text-[13px] tracking-tight tabular-nums",
           isPlanned ? "text-muted-foreground/30" : "text-muted-foreground/40"
         )}>
           {dateDisplay}
@@ -219,10 +219,13 @@ export function RPECell({ rpe, rpeColor, className }: RPECellProps) {
   }
 
   return (
-    <TableCell className={cn("text-center whitespace-nowrap", className)}>
-      <div className="flex items-center justify-center">
-        <span className={cn("text-[15px] font-semibold tracking-tight", rpeColor)}>
+    <TableCell className={cn("px-2 md:px-4 text-center whitespace-nowrap", className)}>
+      <div className="flex items-baseline justify-center">
+        <span className={cn("text-sm md:text-[15px] font-semibold tracking-tight", rpeColor)}>
           {rpe}
+        </span>
+        <span className="ml-0.5 text-[8px] md:text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+          /10
         </span>
       </div>
     </TableCell>

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Loader2, X } from 'lucide-react';
 import { type QueryClient } from '@tanstack/react-query';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { SearchInput } from '@/components/ui/search-input';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,7 @@ export function StravaImportDialog({
   onBulkImportSuccess,
 }: StravaImportDialogProps) {
   const [importing, setImporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { activities, loading, isConnected, connectToStrava, loadMore, hasMore, isFetchingMore } = useStravaActivities(open);
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -78,11 +80,18 @@ export function StravaImportDialog({
     };
   }, [hasMore, isFetchingMore, isConnected, loadMore]);
   const { handleError, handleSuccess, handleWarning } = useApiErrorHandler();
+  const filteredActivities = useMemo(() => {
+    if (!searchQuery.trim()) return activities;
+    const lowerQuery = searchQuery.toLowerCase();
+    return activities.filter((a) => a.name.toLowerCase().includes(lowerQuery));
+  }, [activities, searchQuery]);
+
   const { handleSort, SortIcon, defaultComparator, sortColumn } = useTableSort<StravaActivity>(
-    activities,
+    filteredActivities,
     null,
     null
   );
+
   const {
     selectedIndices,
     toggleSelect,
@@ -194,49 +203,63 @@ export function StravaImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(
-        "max-h-[90vh] overflow-hidden p-0", 
+      <DialogContent hideClose className={cn(
+        "max-h-[95vh] sm:max-h-[90vh] overflow-hidden p-0 w-[95vw] rounded-2xl", 
         isConnected && activities.length > 0 ? "sm:max-w-[900px]" : "sm:max-w-[425px]"
       )}>
         <div className="flex flex-col h-full max-h-[90vh]">
-          <DialogHeader className={cn("px-8 pt-8", !isConnected || activities.length === 0 ? "sr-only" : "")}>
-            <DialogTitle className="text-2xl font-bold tracking-tight">Importer depuis Strava</DialogTitle>
-            <DialogDescription className="text-base">
+          <DialogHeader className={cn("px-4 md:px-8 pt-6 md:pt-8", !isConnected || activities.length === 0 ? "sr-only" : "relative w-full items-start text-left")}>
+            <div className="flex w-full items-start justify-between gap-4">
+              <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight">Importer depuis Strava</DialogTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-foreground hover:bg-muted transition-all shrink-0 -mt-1"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <DialogDescription className="text-sm md:text-base text-muted-foreground/70 font-medium mt-1">
               {isConnected && activities.length > 0 ? (
                 mode === 'complete'
-                  ? 'Sélectionnez une activité à importer pour cette séance.'
-                  : 'Sélectionnez une ou plusieurs activités à importer.'
+                  ? 'Sélectionnez une activité à importer.'
+                  : 'Sélectionnez vos activités Strava.'
               ) : (
-                'Connectez votre compte Strava pour importer vos activités.'
+                'Connectez votre compte Strava.'
               )}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-8 py-6">
+          <div className="flex-1 min-h-0 flex flex-col">
             {!isConnected ? (
-              <div className="flex flex-col items-center py-6 px-2 text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#FC4C02]/5 border border-[#FC4C02]/10 shadow-inner">
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066l-2.084 4.116z"
-                      fill="#FC4C02"
-                    />
-                    <path
-                      d="M10.233 13.828L7.9 9.111H4.47l5.763 11.38 2.089-4.116-2.089-2.547z"
-                      fill="#FC4C02"
-                      opacity="0.6"
-                    />
-                    <path
-                      d="M7.9 9.111l2.333 4.717 2.089 2.547 2.089-4.116h3.065L12 0 7.9 9.111z"
-                      fill="#FC4C02"
-                    />
-                  </svg>
+              <div key="strava-connect-view" className="flex flex-col items-center py-10 px-6 text-center space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[#FC4C02]/20 blur-2xl rounded-full" />
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-[#FC4C02]/5 border border-[#FC4C02]/10 shadow-inner">
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066l-2.084 4.116z"
+                        fill="#FC4C02"
+                      />
+                      <path
+                        d="M10.233 13.828L7.9 9.111H4.47l5.763 11.38 2.089-4.116-2.089-2.547z"
+                        fill="#FC4C02"
+                        opacity="0.6"
+                      />
+                      <path
+                        d="M7.9 9.111l2.333 4.717 2.089 2.547 2.089-4.116h3.065L12 0 7.9 9.111z"
+                        fill="#FC4C02"
+                      />
+                    </svg>
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
@@ -271,159 +294,185 @@ export function StravaImportDialog({
                 </div>
               </div>
             ) : loading || (activities.length === 0 && loading) ? (
-                  <Loader2 className="h-10 w-10 animate-spin text-violet-600 relative z-10" />
-            ) : activities.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-6 animate-in fade-in duration-500">
-                <div className="bg-muted/30 p-8 rounded-2xl border border-border/50 text-center space-y-3">
-                  <p className="text-base font-bold">Aucune activité trouvée</p>
-                  <p className="text-sm text-muted-foreground max-w-[200px]">
-                    Nous n&apos;avons pas trouvé de séances de course récentes sur votre Strava.
-                  </p>
-                </div>
+              <div key="strava-loading-view" className="flex-1 flex items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-violet-600 relative z-10" />
               </div>
             ) : (
-              <div key="strava-activities-view" className="space-y-6 animate-in fade-in duration-500">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-muted-foreground/60 uppercase tracking-[0.1em]">
-                    {activities.length} activités trouvées
+              <div key="strava-activities-view" className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+                <div className="px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 border-b border-border/10 bg-muted/5">
+                  <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Filtrer par nom..."
+                    className="md:w-[320px]"
+                  />
+                  <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] whitespace-nowrap">
+                    {filteredActivities.length} {filteredActivities.length > 1 ? 'activités trouvées' : 'activité trouvée'}
                   </p>
                 </div>
                 
-                <ScrollArea className="h-[400px] rounded-xl border border-border/40 bg-muted/20">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">
-                          {mode !== 'complete' && (
-                            <Checkbox
-                              checked={activities.length > 0 && isAllSelected()}
-                              onCheckedChange={toggleSelectAll}
-                            />
-                          )}
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <button 
-                            onClick={() => handleSort('date')}
-                            className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full"
-                          >
-                            <SortIcon column="date" />
-                            <span className={sortColumn === 'date' ? 'text-foreground' : ''}>Date</span>
-                          </button>
-                        </TableHead>
-                        <TableHead>Activité</TableHead>
-                        <TableHead className="text-center">
-                          <button 
-                            onClick={() => handleSort('duration')}
-                            className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full"
-                          >
-                            <SortIcon column="duration" />
-                            <span className={sortColumn === 'duration' ? 'text-foreground' : ''}>Durée</span>
-                          </button>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <button 
-                            onClick={() => handleSort('distance')}
-                            className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full"
-                          >
-                            <SortIcon column="distance" />
-                            <span className={sortColumn === 'distance' ? 'text-foreground' : ''}>Distance</span>
-                          </button>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <button
-                            onClick={() => handleSort('pace')}
-                            className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full"
-                          >
-                            <SortIcon column="pace" />
-                            <span className={sortColumn === 'pace' ? 'text-foreground' : ''}>Allure</span>
-                          </button>
-                        </TableHead>
-                        <TableHead className="text-center">
-                          <button 
-                            onClick={() => handleSort('heartRate')}
-                            className="flex items-center justify-center gap-1 hover:text-foreground transition-colors w-full"
-                          >
-                            <SortIcon column="heartRate" />
-                            <span className={sortColumn === 'heartRate' ? 'text-foreground' : ''}>FC moy</span>
-                          </button>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sortedActivities.map((activity) => {
-                        const originalIndex = activities.findIndex((a) => a === activity);
-                        return (
-                          <TableRow
-                            key={activity.id}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => toggleSelect(originalIndex)}
-                          >
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={isSelected(originalIndex)}
-                                onCheckedChange={() => toggleSelect(originalIndex)}
-                              />
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-center text-muted-foreground/40 font-semibold tabular-nums">
-                              {new Date(activity.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
-                            </TableCell>
-                            <TableCell className="font-bold text-foreground/90">{activity.name}</TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-semibold tabular-nums text-foreground/100">{formatDuration(activity.moving_time)}</span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-baseline justify-center gap-0.5 group/metric">
-                                <span className="font-semibold tabular-nums text-foreground/100">{(activity.distance / 1000).toFixed(2)}</span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 group-hover/metric:text-muted-foreground/60 transition-colors">km</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-baseline justify-center gap-0.5 group/metric">
-                                <span className="font-semibold tabular-nums text-foreground/100">{calculatePaceString(activity.distance, activity.moving_time)}</span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 group-hover/metric:text-muted-foreground/60 transition-colors">/km</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {activity.average_heartrate ? (
-                                <div className="flex items-baseline justify-center gap-0.5 group/metric">
-                                  <span className="font-semibold tabular-nums text-foreground/100">{Math.round(activity.average_heartrate)}</span>
-                                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 group-hover/metric:text-muted-foreground/60 transition-colors">bpm</span>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground/20">-</span>
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                  <ScrollArea className="flex-1 bg-muted/5">
+                    <div className="min-w-full overflow-x-auto px-4 md:px-8 py-2">
+                      <Table>
+                        <TableHeader className="bg-transparent border-b border-border/40 sticky top-0 bg-background/95 backdrop-blur-sm z-20">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="w-[40px] md:w-[50px] py-4 px-2 md:px-4">
+                              {mode !== 'complete' && (
+                                <Checkbox
+                                  checked={activities.length > 0 && isAllSelected()}
+                                  onCheckedChange={toggleSelectAll}
+                                  className="border-muted-foreground/30"
+                                />
                               )}
-                            </TableCell>
+                            </TableHead>
+                            <TableHead className="text-center py-4 px-2 md:px-4">
+                              <button 
+                                onClick={() => handleSort('date')}
+                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
+                              >
+                                <SortIcon column="date" />
+                                <span className={cn(
+                                  "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
+                                  sortColumn === 'date' ? 'text-foreground' : 'text-muted-foreground/60 group-hover:text-foreground/80'
+                                )}>Date</span>
+                              </button>
+                            </TableHead>
+                            <TableHead className="py-4 px-2 md:px-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Activité</TableHead>
+                            <TableHead className="text-center py-4 px-2 md:px-4 hidden sm:table-cell">
+                              <button 
+                                onClick={() => handleSort('duration')}
+                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
+                              >
+                                <SortIcon column="duration" />
+                                <span className={cn(
+                                  "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
+                                  sortColumn === 'duration' ? 'text-foreground' : 'text-muted-foreground/60 group-hover:text-foreground/80'
+                                )}>Durée</span>
+                              </button>
+                            </TableHead>
+                            <TableHead className="text-center py-4 px-2 md:px-4">
+                              <button 
+                                onClick={() => handleSort('distance')}
+                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
+                              >
+                                <SortIcon column="distance" />
+                                <span className={cn(
+                                  "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
+                                  sortColumn === 'distance' ? 'text-foreground' : 'text-muted-foreground/60 group-hover:text-foreground/80'
+                                )}>Dist.</span>
+                              </button>
+                            </TableHead>
+                            <TableHead className="text-center py-4 px-2 md:px-4 hidden md:table-cell">
+                              <button
+                                onClick={() => handleSort('pace')}
+                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
+                              >
+                                <SortIcon column="pace" />
+                                <span className={cn(
+                                  "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
+                                  sortColumn === 'pace' ? 'text-foreground' : 'text-muted-foreground/60 group-hover:text-foreground/80'
+                                )}>Allure</span>
+                              </button>
+                            </TableHead>
+                            <TableHead className="text-center py-4 px-2 md:px-4 hidden lg:table-cell">
+                              <button 
+                                onClick={() => handleSort('heartRate')}
+                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
+                              >
+                                <SortIcon column="heartRate" />
+                                <span className={cn(
+                                  "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
+                                  sortColumn === 'heartRate' ? 'text-foreground' : 'text-muted-foreground/60 group-hover:text-foreground/80'
+                                )}>FC</span>
+                              </button>
+                            </TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                  
-                  {hasMore && (
-                    <div 
-                      ref={observerTarget}
-                      className="flex justify-center p-8 w-full min-h-[100px]"
-                    >
-                      {isFetchingMore && (
-                        <div className="flex items-center gap-3 text-muted-foreground animate-in fade-in duration-300">
-                            <Loader2 className="h-5 w-5 animate-spin text-violet-600 relative z-10" />
-                          <span className="text-[10px] font-black uppercase tracking-widest opacity-40">
-                            Synchronisation Strava...
-                          </span>
-                        </div>
-                      )}
+                        </TableHeader>
+                        <TableBody>
+                          {sortedActivities.map((activity) => {
+                            const originalIndex = activities.findIndex((a) => a === activity);
+                            const selected = isSelected(originalIndex);
+                            return (
+                              <TableRow
+                                key={activity.id}
+                                className={cn(
+                                  "cursor-pointer transition-colors group/row",
+                                  selected ? "bg-violet-500/5 hover:bg-violet-500/10" : "hover:bg-muted/30"
+                                )}
+                                onClick={() => toggleSelect(originalIndex)}
+                              >
+                                <TableCell className="py-3 md:py-4 px-2 md:px-4" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={selected}
+                                    onCheckedChange={() => toggleSelect(originalIndex)}
+                                    className={cn(
+                                      "transition-all duration-300",
+                                      selected 
+                                        ? "border-violet-500/50 data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500" 
+                                        : "border-muted-foreground/30"
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-center text-muted-foreground/50 font-medium tabular-nums text-[11px] md:text-[13px] tracking-tight py-3 md:py-4 px-2 md:px-4">
+                                  {new Date(activity.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
+                                </TableCell>
+                                <TableCell className="font-bold text-foreground/90 py-3 md:py-4 px-2 md:px-4 truncate max-w-[120px] md:max-w-[200px] text-xs md:text-sm">{activity.name}</TableCell>
+                                <TableCell className="text-center py-3 md:py-4 px-2 md:px-4 hidden sm:table-cell">
+                                  <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">{formatDuration(activity.moving_time)}</span>
+                                </TableCell>
+                                <TableCell className="text-center py-3 md:py-4 px-2 md:px-4">
+                                  <div className="flex items-baseline justify-center">
+                                    <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">{(activity.distance / 1000).toFixed(2)}</span>
+                                    <span className="ml-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">km</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center py-3 md:py-4 px-2 md:px-4 hidden md:table-cell">
+                                  <div className="flex items-baseline justify-center">
+                                    <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">{calculatePaceString(activity.distance, activity.moving_time)}</span>
+                                    <span className="ml-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">/km</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center py-3 md:py-4 px-2 md:px-4 hidden lg:table-cell">
+                                  {activity.average_heartrate ? (
+                                    <div className="flex items-baseline justify-center">
+                                      <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">{Math.round(activity.average_heartrate)}</span>
+                                      <span className="ml-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">bpm</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground/10 text-[15px]">-</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
-                  )}
-                </ScrollArea>
 
-                <div className="flex gap-4 pt-6 border-t mt-2">
+                    {hasMore && (
+                      <div ref={observerTarget} className="flex justify-center p-8 w-full min-h-[100px]">
+                        {isFetchingMore && (
+                          <div className="flex items-center gap-3 text-muted-foreground animate-in fade-in duration-300">
+                            <Loader2 className="h-5 w-5 animate-spin text-violet-600 relative z-10" />
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40">
+                              Synchronisation Strava...
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 p-4 md:p-8 border-t border-border/40 bg-background/50 backdrop-blur-sm">
                   <Button
                     key="strava-cancel-button"
                     type="button"
                     variant="neutral"
                     size="xl"
                     onClick={() => onOpenChange(false)}
-                    className="flex-1 transition-none"
+                    className="w-full sm:flex-1 transition-none text-xs md:text-sm font-bold"
                   >
                     Annuler
                   </Button>
@@ -431,7 +480,7 @@ export function StravaImportDialog({
                     onClick={handleImportSelected} 
                     variant="action"
                     size="xl"
-                    className="flex-[2] px-8 font-black"
+                    className="w-full sm:flex-[2] px-4 md:px-8 font-black shadow-lg shadow-violet-500/10 text-xs md:text-sm"
                     disabled={importing || selectedIndices.size === 0}
                   >
                     {importing ? (

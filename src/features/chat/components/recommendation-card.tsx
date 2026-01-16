@@ -7,7 +7,6 @@ import { calculateIntervalTotals } from '@/lib/utils/intervals';
 
 interface RecommendationCardProps {
   session: AIRecommendedSession;
-  displaySessionNumber: number;
   isAdded: boolean;
   isCompleted: boolean;
   completedSession: TrainingSession | null;
@@ -19,7 +18,6 @@ interface RecommendationCardProps {
 
 export function RecommendationCard({
   session,
-  displaySessionNumber,
   isAdded,
   isCompleted,
   loadingSessionId,
@@ -63,60 +61,67 @@ export function RecommendationCard({
   return (
     <div 
       className={cn(
-        "relative bg-card rounded-2xl p-5 border border-border/40 transition-all",
+        "relative bg-card/40 rounded-[2.5rem] p-6 md:p-8 border border-border/40 transition-all shadow-none",
         isCompleted && "bg-green-500/5 border-green-500/10"
       )} 
       data-testid="recommendation-card"
     >
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-violet-600 bg-violet-500/10 px-2 py-0.5 rounded-md">
-                Séance {displaySessionNumber}
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 border border-border/40 px-2 py-0.5 rounded-md">
-                {session.session_type}
-              </span>
-              {isCompleted && (
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-md">
-                  Réalisée
-                </span>
-              )}
-            </div>
-            <div className="flex flex-col">
-              <h4 className="text-lg font-bold text-foreground tracking-tight leading-tight">
-                {sessionInfo.structure || session.session_type}
-              </h4>
-              {sessionInfo.technicalTargets && (
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mt-1">
-                  {sessionInfo.technicalTargets}
-                </p>
-              )}
-            </div>
+      <div className="flex flex-col gap-6 md:gap-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-6">
+          <div className="flex flex-col gap-2 flex-1">
+            {sessionInfo.structure && sessionInfo.structure.toLowerCase() !== session.session_type?.toLowerCase() ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-violet-600 bg-violet-600/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+                    {session.session_type}
+                  </span>
+                  {isCompleted && (
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+                      Réalisée
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-xl md:text-2xl font-black text-foreground tracking-tighter leading-tight italic">
+                  « {sessionInfo.structure} »
+                </h4>
+              </>
+            ) : (
+              <div className="flex flex-col gap-1.5 md:gap-2">
+                <h4 className="text-2xl md:text-3xl font-black text-foreground tracking-tighter leading-none uppercase italic">
+                  {session.session_type}
+                </h4>
+                {isCompleted && (
+                  <div className="flex">
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+                      Réalisée
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex-shrink-0">
             {!isAdded ? (
               <Button
                 data-testid="recommendation-accept"
-                size="sm"
                 onClick={() => onAccept(session)}
                 disabled={loadingSessionId === session.recommendation_id}
-                className="bg-violet-600 hover:bg-violet-700 text-white font-black rounded-2xl h-10 px-5 text-xs tracking-tight active:scale-95 transition-all"
+                variant="action"
+                className="rounded-full h-10 md:h-11 px-6 md:px-8 transition-all text-[11px] font-bold shadow-lg shadow-violet-600/20 w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
                 Ajouter
               </Button>
             ) : isCompleted ? (
-              <div className="h-10 w-10 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20">
-                <Check className="h-5 w-5" />
+              <div className="h-10 w-10 md:h-11 md:w-11 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20">
+                <Check className="h-5 w-5 md:h-6 md:w-6" />
               </div>
             ) : (
               <Button
                 data-testid="recommendation-delete"
                 size="icon"
-                variant="ghost"
+                variant="neutral"
                 onClick={() => {
                   const sessionId = getAddedSessionId(session);
                   if (sessionId && session.recommendation_id) {
@@ -124,62 +129,45 @@ export function RecommendationCard({
                   }
                 }}
                 disabled={loadingSessionId === session.recommendation_id}
-                className="h-10 w-10 rounded-2xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
+                className="h-10 w-10 md:h-11 md:w-11 rounded-full text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all border-none bg-transparent"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Distance</span>
-            <div className="flex items-center gap-1.5 text-sm font-bold">
-              <MapPin className="h-3.5 w-3.5 text-muted-foreground/40" />
-              <span>{isCalculated && "~"}{displayDistance} km</span>
-            </div>
+        <div className="flex flex-wrap items-center gap-x-10 gap-y-5 pt-5 border-t border-border/20">
+          <div className="flex items-center gap-2.5">
+            <MapPin className="h-4 w-4 text-violet-500/50" />
+            <span className="text-base font-black tracking-tight">{isCalculated && "~"}{displayDistance} km</span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Durée</span>
-            <div className="flex items-center gap-1.5 text-sm font-bold">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground/40" />
-              <span>{isCalculated && "~"}{formatDurationChat(displayDuration)}</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Clock className="h-4 w-4 text-violet-500/50" />
+            <span className="text-base font-black tracking-tight">{formatDurationChat(displayDuration)}</span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Allure</span>
-            <div className="flex items-center gap-1.5 text-sm font-bold">
-              <Activity className="h-3.5 w-3.5 text-muted-foreground/40" />
-              <span>{totals.avgPaceFormatted || session.target_pace_min_km || '-'} /km</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Activity className="h-4 w-4 text-violet-500/50" />
+            <span className="text-base font-black tracking-tight">{totals.avgPaceFormatted || session.target_pace_min_km || '-'} /km</span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Pulsations</span>
-            <div className="flex items-center gap-1.5 text-sm font-bold">
-              <Heart className="h-3.5 w-3.5 text-muted-foreground/40" />
-              <span>{totals.avgBpm || session.target_hr_bpm || '-'} bpm</span>
-            </div>
+          <div className="hidden sm:flex items-center gap-2.5">
+            <Heart className="h-4 w-4 text-violet-500/50" />
+            <span className="text-base font-black tracking-tight">{totals.avgBpm || session.target_hr_bpm || '-'} bpm</span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">Effort (RPE)</span>
-            <div className="flex items-center gap-1.5 text-sm font-bold">
-              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground/40" />
-              <span>{session.target_rpe || '-'}/10</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <TrendingUp className="h-4 w-4 text-violet-500/50" />
+            <span className="text-base font-black tracking-tight">{session.target_rpe || '-'} /10</span>
           </div>
         </div>
 
         {session.description && (
-          <div className="pt-4 border-t border-border/40">
-            <p className="text-xs text-muted-foreground/70 leading-relaxed italic">
-              « {session.description} »
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground/50 leading-relaxed font-medium max-w-3xl">
+            {session.description}
+          </p>
         )}
       </div>
     </div>

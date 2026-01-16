@@ -68,11 +68,11 @@ export const SessionRow = React.memo(function SessionRow({
           sessionNumber={session.sessionNumber}
         />
         
-        <TableCell className="font-semibold text-center whitespace-nowrap text-muted-foreground/40">
+        <TableCell className="font-semibold text-center whitespace-nowrap text-muted-foreground/40 hidden sm:table-cell">
           {session.sessionNumber}
         </TableCell>
         
-        <TableCell className="text-center font-semibold whitespace-nowrap text-muted-foreground/30 tracking-tight">
+        <TableCell className="text-center font-semibold whitespace-nowrap text-muted-foreground/30 tracking-tight hidden lg:table-cell">
           {session.week ?? '-'}
         </TableCell>
         
@@ -126,6 +126,7 @@ export const SessionRow = React.memo(function SessionRow({
           comment={session.comments}
           isPlanned={data.isPlanned}
           onShowMore={() => onView?.(session)}
+          className="hidden xl:table-cell"
         />
         
         <TableCell className="px-6" onClick={(e) => e.stopPropagation()}>

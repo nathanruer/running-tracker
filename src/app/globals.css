@@ -73,13 +73,9 @@
 
   html,
   body {
-    @apply bg-background text-foreground;
+    @apply h-full overflow-hidden bg-background text-foreground;
     font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
     overscroll-behavior: none;
-  }
-
-  body {
-    overflow-y: scroll;
   }
 }
 

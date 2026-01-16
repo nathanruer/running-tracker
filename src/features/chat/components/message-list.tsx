@@ -4,10 +4,7 @@ import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import type { Message } from '@/lib/services/api-client';
 import { RecommendationCard } from './recommendation-card';
-import {
-  getAddedSessionId,
-  getNextSessionNumber,
-} from '@/lib/domain/sessions/helpers';
+import { getAddedSessionId } from '@/lib/domain/sessions/helpers';
 
 interface MessageListProps {
   messages: Message[];
@@ -34,23 +31,23 @@ export function MessageList({
   }, [messages, isSending]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-6 pb-32 space-y-4 scroll-smooth no-scrollbar">
+    <div className="flex-1 overflow-y-auto px-4 pt-6 pb-6 space-y-6 scroll-smooth scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20">
       {messages.map((message) => (
         <div key={message.id} className={cn(
-          "flex w-full gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300",
+          "flex w-full gap-2.5 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300",
           message.role === 'user' ? "justify-end" : "justify-start"
         )}>
           {message.role !== 'user' && (
-            <div className="flex-shrink-0 flex items-end mb-1">
-              <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center border border-violet-500/20">
-                <Bot className="h-4 w-4 text-white" />
+            <div className="flex-shrink-0 flex items-start mt-1">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-violet-600 flex items-center justify-center border border-violet-500/20 shadow-lg shadow-violet-500/20">
+                <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 text-white" />
               </div>
             </div>
           )}
 
           <div className={cn(
-            "flex flex-col max-w-[85%] md:max-w-[75%] space-y-2",
-            message.role === 'user' ? "items-end" : "items-start"
+            "flex flex-col max-w-[92%] md:max-w-[75%] space-y-2",
+            message.role === 'user' ? "items-end ml-auto" : "items-start"
           )}>
             <div className={cn(
               "relative px-5 py-3.5 text-sm transition-all",
@@ -80,22 +77,10 @@ export function MessageList({
                     const isCompleted_ = matchedSession?.status === 'completed';
                     const completedSession = isCompleted_ ? matchedSession : null;
 
-                    const notAddedSessionsBeforeThis = (message.recommendations?.recommended_sessions ?? [])
-                      .slice(0, idx)
-                      .filter((s) => !allSessions.some(as => as.recommendationId === s.recommendation_id))
-                      .length;
-                    
-                    const dynamicSessionNumber = getNextSessionNumber(allSessions) + notAddedSessionsBeforeThis;
-
-                    const displaySessionNumber = matchedSession 
-                      ? matchedSession.sessionNumber 
-                      : dynamicSessionNumber;
-
                     return (
                       <RecommendationCard
                         key={idx}
                         session={session}
-                        displaySessionNumber={displaySessionNumber}
                         isAdded={isAdded}
                         isCompleted={isCompleted_}
                         completedSession={completedSession ?? null}

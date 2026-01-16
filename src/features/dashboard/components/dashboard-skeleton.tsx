@@ -2,14 +2,14 @@
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PageContainer } from '@/components/layout/page-container';
 
 export function DashboardSkeleton() {
   return (
-    <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
-      <div className="mx-auto max-w-[90rem]">
-        <div className="h-10 w-48 bg-muted animate-pulse rounded-lg mb-8 md:hidden mx-1" />
+    <PageContainer>
+      <div className="h-10 w-48 bg-muted animate-pulse rounded-lg mb-8 md:hidden mx-1" />
 
-        <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
+        <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
           <CardHeader className="flex flex-col gap-6 px-8 py-8 border-b border-border/40">
             <div className="flex items-center justify-between">
               <div className="h-7 w-56 bg-muted animate-pulse rounded-lg" />
@@ -24,7 +24,7 @@ export function DashboardSkeleton() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <Table className="table-auto">
+              <Table data-testid="sessions-table" className="table-auto">
                 <TableHeader className="bg-muted/5 font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
                   <TableRow className="border-border/40 hover:bg-transparent">
                     <TableHead className="w-12 px-6">
@@ -64,7 +64,6 @@ export function DashboardSkeleton() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+    </PageContainer>
   );
 }

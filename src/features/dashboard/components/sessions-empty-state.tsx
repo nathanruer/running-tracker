@@ -12,7 +12,7 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
     <div 
       data-testid="sessions-empty-state"
       className={cn(
-      "relative overflow-hidden rounded-[2.5rem] border-none bg-card p-16 md:p-24 text-center",
+      "relative overflow-hidden rounded-[2.5rem] border-none bg-card p-16 md:p-24 text-center shadow-xl",
       className
     )}>
 
@@ -36,10 +36,12 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
           <Button 
             data-testid="btn-add-first-session"
             onClick={onAction} 
-            className="h-12 px-8 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-none active:scale-95 transition-all group"
+            variant="action"
+            size="xl"
+            className="h-12 px-8 rounded-2xl transition-all group shadow-lg shadow-violet-600/25 hover:shadow-violet-600/40"
           >
-            <Plus className="h-5 w-5 mr-1.5 group-hover:rotate-90 transition-transform duration-300" />
-            Ajouter ma première séance
+            <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300 shrink-0" />
+            <span className="leading-none">Ajouter ma première séance</span>
           </Button>
         </div>
       </div>

@@ -38,22 +38,22 @@ interface TrainingZonesTableProps {
 
 export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProps) {
   return (
-    <Card className="md:col-span-2 border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
-      <CardHeader>
+    <Card className="md:col-span-2 border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+      <CardHeader className="p-4 md:p-6">
         <CardTitle className="text-xl font-semibold">Zones d&apos;entraînement</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs md:text-sm">
           Calculées selon votre FC Max ({maxHeartRate || '--'} bpm) et VMA ({vma || '--'} km/h).
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
         <div className="overflow-x-auto rounded-xl border border-border/50">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="text-xs font-bold uppercase tracking-widest py-4">Zone</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-widest py-4">% FCM</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-widest py-4 text-center">FC Cible</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-widest py-4 text-center">Allure approx.</TableHead>
+                <TableHead className="text-[10px] md:text-xs font-bold uppercase tracking-widest py-3 md:py-4 px-2 md:px-4">Zone</TableHead>
+                <TableHead className="text-[10px] md:text-xs font-bold uppercase tracking-widest py-3 md:py-4 px-2 md:px-4 text-center">% FC</TableHead>
+                <TableHead className="text-[10px] md:text-xs font-bold uppercase tracking-widest py-3 md:py-4 px-2 md:px-4 text-center">BPM</TableHead>
+                <TableHead className="text-[10px] md:text-xs font-bold uppercase tracking-widest py-3 md:py-4 px-2 md:px-4 text-center hidden sm:table-cell">Allure approx.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,16 +74,23 @@ export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProp
 
                 return (
                   <TableRow key={index}>
-                    <TableCell className="py-4">
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {zone.name}
-                       </span>
+                    <TableCell className="py-3 md:py-4 px-2 md:px-4">
+                       <div className="flex flex-col">
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-tight text-foreground">
+                          {zone.name.split(' - ')[0]}
+                        </span>
+                        <span className="text-[9px] font-medium text-muted-foreground hidden md:inline">
+                          {zone.name.split(' - ')[1]}
+                        </span>
+                       </div>
                     </TableCell>
-                    <TableCell className="font-semibold tabular-nums">
+                    <TableCell className="py-3 md:py-4 px-2 md:px-4 font-semibold tabular-nums text-center text-xs md:text-sm">
                       {Math.round(zone.minPct * 100)}–{Math.round(zone.maxPct * 100)}%
                     </TableCell>
-                    <TableCell className="font-semibold tabular-nums text-center">{bpmRange}</TableCell>
-                    <TableCell className="text-muted-foreground font-medium tabular-nums text-center">
+                    <TableCell className="py-3 md:py-4 px-2 md:px-4 font-semibold tabular-nums text-center text-xs md:text-sm">
+                      {bpmRange.replace(' bpm', '')}
+                    </TableCell>
+                    <TableCell className="py-3 md:py-4 px-2 md:px-4 text-muted-foreground font-medium tabular-nums text-center text-xs md:text-sm hidden sm:table-cell">
                       {paceRange}
                     </TableCell>
                   </TableRow>

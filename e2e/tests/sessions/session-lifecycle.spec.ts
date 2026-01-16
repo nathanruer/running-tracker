@@ -4,12 +4,6 @@ import { DashboardPage } from '../../pages/dashboard.page';
 import { SessionFormPage } from '../../pages/session-form.page';
 import { generateTestEmail, TEST_PASSWORD } from '../../fixtures/test-data';
 import { deleteCurrentUser } from '../../helpers/cleanup.helper';
-import { createTestSession } from '../../helpers/sessions.helper';
-
-/**
- * E2E Tests: Session Lifecycle
- * Covers modification and deletion of sessions
- */
 
 test.describe('Session Lifecycle - Edit & Delete', () => {
   let currentUserEmail: string | undefined;
@@ -32,15 +26,19 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
     await dashboardPage.assertDashboardLoaded();
 
     const initialComment = `Original Session ${Date.now()}`;
-    await createTestSession(page, {
+    await dashboardPage.clickNewSession();
+    await formPage.waitForOpen();
+    await formPage.fillForm({
       sessionType: 'Footing',
       duration: '00:30:00',
       distance: 5,
       avgPace: '06:00',
       comments: initialComment,
     });
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await formPage.submit();
+    await formPage.waitForClosed();
+
+    await expect(page.getByText('Footing').first()).toBeVisible({ timeout: 10000 });
 
     const row = page.getByRole('row').filter({ hasText: 'Footing' }).first();
     await row.getByRole('button', { name: /actions/i }).click();
@@ -63,6 +61,7 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
   test('should delete a session with confirmation', async ({ page }) => {
     const authPage = new AuthPage(page);
     const dashboardPage = new DashboardPage(page);
+    const formPage = new SessionFormPage(page);
 
     currentUserEmail = generateTestEmail('delete');
     await authPage.goto();
@@ -71,14 +70,19 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
     await dashboardPage.assertDashboardLoaded();
 
     const comment = `To Delete ${Date.now()}`;
-    await createTestSession(page, {
+    await dashboardPage.clickNewSession();
+    await formPage.waitForOpen();
+    await formPage.fillForm({
       sessionType: 'Footing',
       duration: '00:30:00',
+      distance: 5,
       avgPace: '05:00',
       comments: comment,
     });
-    await page.reload();
-    await expect(page.getByText(comment)).toBeVisible();
+    await formPage.submit();
+    await formPage.waitForClosed();
+
+    await expect(page.getByText(comment)).toBeVisible({ timeout: 10000 });
 
     const row = page.getByRole('row').filter({ hasText: comment }).first();
     await row.getByRole('button', { name: /actions/i }).click();

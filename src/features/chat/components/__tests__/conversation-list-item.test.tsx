@@ -53,10 +53,11 @@ describe('ConversationListItem', () => {
       expect(screen.getByText('Ma conversation de test')).toBeInTheDocument();
     });
 
-    it('should display message count', () => {
+    it('should display message icon', () => {
       render(<ConversationListItem {...defaultProps} />);
 
-      expect(screen.getByText('5 message(s)')).toBeInTheDocument();
+      const icon = document.querySelector('svg');
+      expect(icon).toBeInTheDocument();
     });
 
     it('should apply selected style when isSelected is true', () => {

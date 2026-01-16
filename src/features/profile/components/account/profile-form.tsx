@@ -101,14 +101,14 @@ export function ProfileForm({ user }: ProfileFormProps) {
   };
 
   return (
-    <Card className="md:col-span-1 border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
-      <CardHeader>
+    <Card className="md:col-span-1 border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+      <CardHeader className="p-4 md:p-6">
         <CardTitle className="text-xl font-bold">Informations personnelles</CardTitle>
         <CardDescription> 
           Mettez à jour vos informations pour calculer vos zones d&apos;entraînement.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Email</Label>
@@ -132,7 +132,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             <div className="space-y-2">
               <Label htmlFor="weight" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Poids (kg)</Label>
               <Input

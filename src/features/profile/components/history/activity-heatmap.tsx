@@ -81,7 +81,7 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
   };
 
   return (
-    <div className="rounded-xl border bg-card/50 text-card-foreground shadow-sm w-full overflow-hidden">
+    <div className="rounded-xl border bg-card/50 text-card-foreground shadow-xl w-full overflow-hidden">
       <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-border">
         <div className="flex-1 p-4 lg:p-6 min-w-0">
           <div className="flex flex-col gap-6">

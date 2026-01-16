@@ -72,12 +72,11 @@ export function useConversationMutations({
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiDeleteConversation(id),
     onSuccess: async (_, deletedId) => {
-      onConversationDeleted?.(deletedId);
-
       await queryClient.cancelQueries({ queryKey: ['conversation', deletedId] });
-
+      
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      queryClient.removeQueries({ queryKey: ['conversation', deletedId] });
+
+      onConversationDeleted?.(deletedId);
 
       toast({
         title: 'Conversation supprimée',

@@ -16,14 +16,14 @@ export function SessionDialogActions({
   onUpdate,
 }: SessionDialogActionsProps) {
   return (
-    <div className="flex gap-4 pt-6">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
       <Button
         data-testid="btn-session-cancel"
         type="button"
         variant="neutral"
         size="xl"
         onClick={onCancel}
-        className="flex-1"
+        className="w-full sm:flex-1"
       >
         Annuler
       </Button>
@@ -36,7 +36,7 @@ export function SessionDialogActions({
             variant="secondary"
             size="xl"
             onClick={onUpdate}
-            className="flex-1 uppercase text-xs tracking-widest transition-none"
+            className="w-full sm:flex-1 uppercase text-xs tracking-widest transition-none"
             disabled={loading}
           >
             {loading ? 'Modification...' : 'Modifier'}
@@ -47,7 +47,7 @@ export function SessionDialogActions({
             type="submit" 
             variant="action"
             size="xl"
-            className="flex-[2] px-8 transition-none" 
+            className="w-full sm:flex-[2] px-8 transition-none" 
             disabled={loading}
           >
             {loading ? 'Enregistrement...' : 'Valider la séance'}
@@ -60,7 +60,7 @@ export function SessionDialogActions({
           type="submit" 
           variant="action"
           size="xl"
-          className="flex-[2] px-8 transition-none" 
+          className="w-full sm:flex-[2] px-8 transition-none" 
           disabled={loading}
         >
           {loading ? 'Enregistrement...' : hasSession ? 'Mettre à jour' : 'Enregistrer la séance'}

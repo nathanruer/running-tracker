@@ -131,8 +131,8 @@ const SessionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideClose className="sm:max-w-[640px] p-0 overflow-hidden">
-        <div className="max-h-[95vh] overflow-y-auto p-8 space-y-8">
+      <DialogContent hideClose className="sm:max-w-[640px] p-0 overflow-hidden w-[95vw] md:w-full">
+        <div className="max-h-[90vh] md:max-h-[85vh] overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
           <SessionDialogHeader mode={mode} onReset={resetForm} />
           <FileImportButtons
             mode={mode}
@@ -167,7 +167,7 @@ const SessionDialog = ({
                 </FormItem>
               )}
             />
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <FormField
                 control={form.control}
                 name="sessionType"

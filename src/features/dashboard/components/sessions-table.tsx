@@ -1,22 +1,13 @@
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Plus, MoreVertical, FilterX, Search, X } from 'lucide-react';
+import { Plus, MoreVertical, FilterX } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { SessionRow } from './session-row';
 import { SortIcon } from './sort-icon';
 import { SelectionBar } from './selection-bar';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Card,
   CardContent,
@@ -38,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { type TrainingSession } from '@/lib/types';
 import { useSessionsTableSort } from '../hooks/use-sessions-table-sort';
@@ -121,14 +112,14 @@ export function SessionsTable({
 
   return (
     <>
-      <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden">        
-        <CardHeader className="flex flex-col gap-6 px-8 py-8 border-b border-border/40">
-          <div className="flex flex-col gap-5">
+      <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
+        <CardHeader className="flex flex-col gap-5 px-4 py-5 md:px-8 md:py-8 border-b border-border/40">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-xl font-bold tracking-tight">Historique</CardTitle>
+              <div className="flex items-center gap-2 md:gap-3">
+                <CardTitle className="text-lg md:text-xl font-bold tracking-tight">Historique</CardTitle>
                 {!initialLoading && (
-                  <Badge variant="secondary" className="h-6 px-2 rounded-lg bg-muted/30 hover:bg-muted/30 text-muted-foreground/70 font-bold border-none">
+                  <Badge variant="secondary" className="h-5 md:h-6 px-1.5 md:px-2 rounded-lg bg-muted/30 hover:bg-muted/30 text-muted-foreground/70 font-bold border-none text-[10px] md:text-xs">
                     {totalCount}
                   </Badge>
                 )}
@@ -140,36 +131,23 @@ export function SessionsTable({
                   onClick={actions.onNewSession}
                   variant="action"
                   size="xl"
-                  className="shrink-0"
+                  className="group rounded-2xl w-10 h-10 md:w-auto md:h-12 p-0 md:px-8 transition-all active:scale-95 flex items-center justify-center shadow-lg shadow-violet-600/25 hover:shadow-violet-600/40"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle séance
+                  <Plus className="h-5 w-5 md:h-4 md:w-4 md:mr-2 shrink-0 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+                  <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none">Nouvelle séance</span>
                 </Button>
               )}
             </div>
 
-            <div className="flex flex-col md:flex-row items-center gap-3">
-              <div className="relative w-full md:w-[300px]">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none" />
-                <Input
-                  placeholder="Chercher une séance..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 rounded-xl bg-muted/10 border-border/40 focus:bg-muted/20 transition-all font-medium text-sm"
-                />
-                {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full hover:bg-muted/30 text-muted-foreground/60 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+              />
 
-              <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-2.5 w-full md:w-auto">
                 <Select value={selectedType} onValueChange={onTypeChange}>
-                  <SelectTrigger data-testid="filter-session-type" className="w-full md:w-[180px] h-10 rounded-xl bg-muted/10 border-border/40 font-bold text-[11px] uppercase tracking-wider">
+                  <SelectTrigger data-testid="filter-session-type" className="w-full md:w-[180px] h-9 md:h-10 rounded-xl bg-muted/10 border-border/40 font-bold text-[10px] md:text-[11px] uppercase tracking-wider">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-border/40 shadow-none">
@@ -187,7 +165,7 @@ export function SessionsTable({
                     variant="ghost"
                     size="sm"
                     onClick={handleClearFilters}
-                    className="h-10 px-4 rounded-xl text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all ml-auto md:ml-0"
+                    className="h-9 md:h-10 px-3 md:px-4 rounded-xl text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[9px] md:text-[10px] uppercase tracking-widest active:scale-95 transition-all ml-auto md:ml-0"
                   >
                     Réinitialiser
                   </Button>
@@ -195,27 +173,27 @@ export function SessionsTable({
               </div>
 
               {!initialLoading && (
-                <div className="hidden md:flex items-center gap-3 ml-auto">
-                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-3 py-1.5 gap-2.5 transition-all">
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/30 whitespace-nowrap">
+                <div className="flex md:flex items-center gap-2.5 ml-auto">
+                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-2.5 py-1.5 gap-2.5 transition-all">
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/30 whitespace-nowrap">
                       {paginatedCount} / {totalCount || (isFetching ? '...' : '0')}
                     </span>
                     {(paginatedCount > 10 || (onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore))) && (
                       <div className="w-[1px] h-3 bg-border/40" />
                     )}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       {onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore) && (
                         <button
                           onClick={onShowAll}
-                          className="text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
+                          className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
                         >
-                          Tout afficher
+                          Tout
                         </button>
                       )}
                       {paginatedCount > 10 && (
                         <button
                           onClick={onResetPagination}
-                          className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground transition-colors"
+                          className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground transition-colors"
                         >
                           Réduire
                         </button>
@@ -244,25 +222,25 @@ export function SessionsTable({
           )}
           
           <div className={cn(
-            "overflow-x-auto transition-opacity duration-300",
+            "overflow-x-auto transition-opacity duration-300 scrollbar-thin scrollbar-thumb-muted-foreground/10",
             isFetching && !initialLoading ? "opacity-50" : "opacity-100"
           )}>
-            <Table className="table-auto">
+            <Table data-testid="sessions-table" className="table-auto min-w-[1000px] md:min-w-0">
               <TableHeader className="bg-transparent">
                 <TableRow className="border-border/40 hover:bg-transparent">
-                  <TableHead className="w-12 px-6">
+                  <TableHead className="w-10 md:w-12 px-2 md:px-6">
                     <Checkbox
                       checked={isAllSelected}
                       onCheckedChange={toggleSelectAll}
-                      className="border-muted-foreground/30 data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 rounded-md"
+                      className="border-muted-foreground/30 data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 rounded-md scale-90 md:scale-100"
                       aria-label="Sélectionner toutes les séances"
                     />
                   </TableHead>
-                  <TableHead className="w-16 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">#</TableHead>
-                  <TableHead className="w-16 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Sem.</TableHead>
-                  <TableHead className="w-32 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Date</TableHead>
-                  <TableHead className="whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Séance</TableHead>
-                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                  <TableHead className="w-16 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6 hidden sm:table-cell">#</TableHead>
+                  <TableHead className="w-16 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6 hidden lg:table-cell">Sem.</TableHead>
+                  <TableHead className="w-24 md:w-32 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Date</TableHead>
+                  <TableHead className="whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Séance</TableHead>
+                  <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-duration"
                       onClick={() => handleSort('duration')}
@@ -272,7 +250,7 @@ export function SessionsTable({
                       <span className={cn("transition-colors uppercase", sortColumn === 'duration' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Durée</span>
                     </button>
                   </TableHead>
-                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                  <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-distance"
                       onClick={() => handleSort('distance')}
@@ -282,7 +260,7 @@ export function SessionsTable({
                       <span className={cn("transition-colors uppercase", sortColumn === 'distance' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Dist.</span>
                     </button>
                   </TableHead>
-                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                  <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-avgPace"
                       onClick={() => handleSort('avgPace')}
@@ -292,7 +270,7 @@ export function SessionsTable({
                       <span className={cn("transition-colors uppercase", sortColumn === 'avgPace' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Allure</span>
                     </button>
                   </TableHead>
-                  <TableHead className="w-24 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                  <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-avgHeartRate"
                       onClick={() => handleSort('avgHeartRate')}
@@ -302,7 +280,7 @@ export function SessionsTable({
                       <span className={cn("transition-colors uppercase", sortColumn === 'avgHeartRate' ? 'text-foreground' : 'group-hover:text-foreground/80')}>FC</span>
                     </button>
                   </TableHead>
-                  <TableHead className="w-20 whitespace-nowrap text-center text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">
+                  <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-perceivedExertion"
                       onClick={() => handleSort('perceivedExertion')}
@@ -312,7 +290,7 @@ export function SessionsTable({
                       <span className={cn("transition-colors uppercase", sortColumn === 'perceivedExertion' ? 'text-foreground' : 'group-hover:text-foreground/80')}>RPE</span>
                     </button>
                   </TableHead>
-                  <TableHead className="max-w-[40ch] text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6">Commentaires</TableHead>
+                  <TableHead className="max-w-[40ch] text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6 hidden xl:table-cell">Commentaires</TableHead>
                   <TableHead className="w-14 text-center">
                     <div className="flex justify-center">
                       <MoreVertical className="h-4 w-4 text-muted-foreground/20" />
@@ -325,8 +303,8 @@ export function SessionsTable({
                   [...Array(6)].map((_, i) => (
                     <TableRow key={i} className="border-border/20 p-8">
                       <TableCell className="px-6"><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-8 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell><div className="h-6 w-8 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><div className="h-6 w-8 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><div className="h-6 w-8 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell><div className="h-6 w-24 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1.5 items-center">
@@ -339,7 +317,7 @@ export function SessionsTable({
                       <TableCell><div className="h-6 w-16 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell><div className="h-6 w-16 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
                       <TableCell><div className="h-6 w-10 animate-pulse rounded-lg bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
-                      <TableCell className="min-w-[320px] px-8">
+                      <TableCell className="min-w-[320px] px-8 hidden xl:table-cell">
                         <div className="flex flex-col gap-2">
                           <div className="h-3.5 w-[90%] animate-pulse rounded-full bg-muted/60" style={{ animationDelay: `${i * 100}ms` }} />
                           <div className="h-3.5 w-[75%] animate-pulse rounded-full bg-muted/40" style={{ animationDelay: `${i * 100}ms` }} />
@@ -402,34 +380,17 @@ export function SessionsTable({
         </div>
       )}
 
-      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer les séances sélectionnées</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer {selectedSessions.size} séance{selectedSessions.size > 1 ? 's' : ''} ?
-              Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel 
-              data-testid="bulk-delete-session-cancel" 
-              disabled={isDeletingBulk} 
-              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
-            >
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="bulk-delete-session-confirm"
-              onClick={() => handleBulkDelete(Array.from(selectedSessions), clearSelection)}
-              disabled={isDeletingBulk}
-              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
-            >
-              {isDeletingBulk ? 'Suppression...' : 'Confirmer la suppression'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmationDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+        title="Supprimer les séances sélectionnées"
+        description={`Êtes-vous sûr de vouloir supprimer ${selectedSessions.size} séance${selectedSessions.size > 1 ? 's' : ''} ? Cette action est irréversible.`}
+        confirmLabel="Confirmer la suppression"
+        onConfirm={() => handleBulkDelete(Array.from(selectedSessions), clearSelection)}
+        isLoading={isDeletingBulk}
+        cancelTestId="bulk-delete-session-cancel"
+        confirmTestId="bulk-delete-session-confirm"
+      />
 
       <ExportSessions
         selectedType={selectedType}

@@ -28,30 +28,31 @@ export default function ChatPage() {
   });
 
   if (conversationsLoading) {
-    return <ChatSkeleton hasConversation={!!conversationId} />;
+    return <ChatSkeleton />;
   }
 
   return (
-    <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
-      <div className="mx-auto max-w-[90rem]">
-        <div className="flex items-center justify-between mb-6 md:hidden">
-          <h1 className="text-3xl font-extrabold text-primary px-1">Coach IA</h1>
+    <div className="w-full h-full md:py-8 px-0 md:px-6 xl:px-12 flex flex-col overflow-hidden bg-background">
+      <div className="mx-auto w-full max-w-[90rem] h-full flex flex-col relative min-h-0">
+        <div className="flex items-center justify-between px-6 py-6 md:hidden shrink-0">
+          <h1 className="text-3xl font-black text-primary tracking-tighter">Coach IA</h1>
           <Button
             onClick={() => setIsConversationsOpen(true)}
             size="icon"
-            variant="outline"
+            variant="ghost"
             title="Voir toutes les conversations"
+            className="rounded-full h-11 w-11 text-muted-foreground/30 hover:text-primary hover:bg-muted"
           >
-            <MessageSquare className="h-5 w-5" />
+            <MessageSquare className="h-6 w-6" />
           </Button>
         </div>
 
         <Sheet open={isConversationsOpen} onOpenChange={setIsConversationsOpen}>
-          <SheetContent side="right" className="w-[85vw] sm:w-[50vw] p-0">
+          <SheetContent side="right" className="w-full sm:w-[400px] p-0 border-l border-border/10 bg-background">
             <SheetHeader className="sr-only">
-              <SheetTitle>Coach IA</SheetTitle>
+              <SheetTitle>Conversations</SheetTitle>
             </SheetHeader>
-            <div className="pt-12">
+            <div className="h-full flex flex-col">
               <ChatSidebar
                 selectedConversationId={conversationId}
                 onSelectConversation={(id) => {
@@ -68,7 +69,7 @@ export default function ChatPage() {
           </SheetContent>
         </Sheet>
 
-        <div className="flex h-[calc(100vh-12rem)] gap-6">
+        <div className="flex-1 flex md:h-[calc(100vh-12rem)] gap-6 min-h-0 overflow-hidden">
           {/* Desktop sidebar */}
           <div className="hidden md:block">
             <ChatSidebar
@@ -84,7 +85,7 @@ export default function ChatPage() {
             />
           </div>
 
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             <ChatView conversationId={conversationId} />
           </div>
         </div>

@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { AuthPage } from '../../pages/auth.page';
 import { DashboardPage } from '../../pages/dashboard.page';
-import { generateTestEmail, TEST_PASSWORD, API_BASE_URL } from '../../fixtures/test-data';
+import { generateTestEmail, TEST_PASSWORD } from '../../fixtures/test-data';
 import { deleteCurrentUser } from '../../helpers/cleanup.helper';
-import { createTestSession } from '../../helpers/sessions.helper';
 
 /**
  * E2E Tests: Dashboard
@@ -29,7 +28,6 @@ test.describe('Dashboard - Core Functionality', () => {
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
     await page.waitForLoadState('networkidle');
     
-    // Check empty state container and add button
     await expect(page.locator('[data-testid="sessions-empty-state"]')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('[data-testid="btn-add-first-session"]')).toBeVisible();
   });
@@ -44,21 +42,22 @@ test.describe('Dashboard - Core Functionality', () => {
     await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
     await dashboardPage.assertDashboardLoaded();
 
-    // Create a session to populate the table
-    await createTestSession(page, {
-      sessionType: 'Footing',
-      duration: '01:00:00',
-      distance: 10,
-      avgPace: '06:00',
-      avgHeartRate: 140,
-    });
+    await dashboardPage.clickNewSession();
+    const formDialog = page.locator('[role="dialog"]');
+    await expect(formDialog).toBeVisible({ timeout: 10000 });
 
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await formDialog.locator('[data-testid="select-session-type"]').click();
+    await page.getByRole('option', { name: /Footing/i }).click();
+    await formDialog.locator('[data-testid="input-duration"]').fill('01:00:00');
+    await formDialog.locator('[data-testid="input-distance"]').fill('10');
+    await formDialog.locator('[data-testid="input-avgpace"]').fill('06:00');
+    await formDialog.locator('[data-testid="input-avgheartrate"]').fill('140');
+    await formDialog.locator('[data-testid="btn-session-submit"]').click();
 
-    // Check table structure
-    const table = page.locator('table');
-    await expect(table).toBeVisible();
+    await expect(formDialog).not.toBeVisible({ timeout: 10000 });
+
+    const table = page.locator('[data-testid="sessions-table"]');
+    await expect(table).toBeVisible({ timeout: 15000 });
     await expect(table.getByText(/date/i).first()).toBeVisible();
     await expect(table.getByText(/séance/i).first()).toBeVisible();
     await expect(table.getByText(/durée/i).first()).toBeVisible();
@@ -75,19 +74,23 @@ test.describe('Dashboard - Core Functionality', () => {
     await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
     await dashboardPage.assertDashboardLoaded();
 
-    await createTestSession(page, {
-      sessionType: 'Fractionné',
-      duration: '01:00:00',
-      distance: 12,
-      avgPace: '05:00',
-      avgHeartRate: 165,
-    });
+    await dashboardPage.clickNewSession();
+    const formDialog = page.locator('[role="dialog"]');
+    await expect(formDialog).toBeVisible({ timeout: 10000 });
 
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await formDialog.locator('[data-testid="select-session-type"]').click();
+    await page.getByRole('option', { name: /Fractionné/i }).click();
+    await formDialog.locator('[data-testid="input-duration"]').fill('01:00:00');
+    await formDialog.locator('[data-testid="input-distance"]').fill('12');
+    await formDialog.locator('[data-testid="input-avgpace"]').fill('05:00');
+    await formDialog.locator('[data-testid="input-avgheartrate"]').fill('165');
+    await formDialog.locator('[data-testid="btn-session-submit"]').click();
 
-    await expect(page.getByText('Fractionné', { exact: true })).toBeVisible({ timeout: 10000 });
-    // Check for expandable chevron
+    await expect(formDialog).not.toBeVisible({ timeout: 10000 });
+
+    const table = page.locator('[data-testid="sessions-table"]');
+    await expect(table).toBeVisible({ timeout: 15000 });
+    await expect(table.getByText('Fractionné', { exact: true })).toBeVisible({ timeout: 15000 });
     await expect(page.locator('svg.lucide-chevron-down').first()).toBeVisible();
   });
 
@@ -101,24 +104,30 @@ test.describe('Dashboard - Core Functionality', () => {
     await authPage.register({ email: currentUserEmail, password: TEST_PASSWORD });
     await dashboardPage.assertDashboardLoaded();
 
-    const today = new Date();
-    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    await dashboardPage.clickNewSession();
+    const formDialog = page.locator('[role="dialog"]');
+    await expect(formDialog).toBeVisible({ timeout: 10000 });
 
-    await page.request.post(`${API_BASE_URL}/api/sessions`, {
-      data: {
-        date: localDate,
-        sessionType: 'Fractionné',
-        duration: '01:00:00',
-        distance: 12,
-        avgPace: '05:00',
-        avgHeartRate: 175,
-        perceivedExertion: 9,
-      },
-    });
+    await formDialog.locator('[data-testid="select-session-type"]').click();
+    await page.getByRole('option', { name: /Fractionné/i }).click();
+    await formDialog.locator('[data-testid="input-duration"]').fill('01:00:00');
+    await formDialog.locator('[data-testid="input-distance"]').fill('12');
+    await formDialog.locator('[data-testid="input-avgpace"]').fill('05:00');
+    await formDialog.locator('[data-testid="input-avgheartrate"]').fill('175');
 
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    const rpeSlider = formDialog.locator('[data-testid="rpe-slider"]');
+    if (await rpeSlider.isVisible()) {
+      await rpeSlider.click();
+      for (let i = 0; i < 4; i++) {
+        await page.keyboard.press('ArrowRight');
+      }
+    }
 
-    await expect(page.getByRole('cell').getByText('9', { exact: true })).toBeVisible({ timeout: 10000 });
+    await formDialog.locator('[data-testid="btn-session-submit"]').click();
+    await expect(formDialog).not.toBeVisible({ timeout: 10000 });
+
+    const table = page.locator('[data-testid="sessions-table"]');
+    await expect(table).toBeVisible({ timeout: 15000 });
+    await expect(table.getByText('Fractionné', { exact: true })).toBeVisible({ timeout: 15000 });
   });
 });

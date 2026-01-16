@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { getSessions, getConversation } from '@/lib/services/api-client';
@@ -59,59 +58,59 @@ export function ChatView({ conversationId }: ChatViewProps) {
     sendMessage(userMessage);
   };
 
-  // Case: No conversation selected and no activity yet
   if (!conversationId && optimisticMessages.length === 0) {
     return (
-      <Card className="h-full flex flex-col items-center justify-center p-8 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden relative">
-        <div className="w-full space-y-12">
-          <div className="text-center space-y-4">
-            <h3 className="text-4xl font-extrabold tracking-tighter text-foreground">
-              Comment puis-je vous aider ?
+      <div className="h-full flex flex-col bg-transparent relative">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 text-center">
+          <div className="max-w-md space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h3 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground leading-[0.9]">
+              Comment puis-je <br />
+              <span className="text-violet-500">vous aider ?</span>
             </h3>
-            <p className="text-muted-foreground/60 font-medium max-w-md mx-auto">
+            <p className="text-sm md:text-base text-muted-foreground/50 font-medium max-w-[280px] md:max-w-md mx-auto leading-relaxed">
               Votre coach personnel est là pour optimiser chaque kilomètre de votre progression.
             </p>
           </div>
+        </div>
 
-          <div className="max-w-2xl mx-auto relative group px-16">
-            <div className="relative flex items-center bg-muted/80 backdrop-blur-md rounded-3xl border border-border/40 p-1.5 focus-within:border-violet-500/30 transition-all">
-              <Input
-                data-testid="chat-input"
-                placeholder="Ex: Programme moi 4 séances pour cette semaine..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                disabled={isWaitingForResponse}
-                className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base px-5 h-12"
-              />
-              <Button
-                data-testid="chat-send-button"
-                onClick={handleSendMessage}
-                disabled={isWaitingForResponse || isSending || !input.trim()}
-                size="icon"
-                variant="action"
-                className="h-10 w-10 !rounded-2xl"
-              >
-                {isWaitingForResponse ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+        <div className="shrink-0 w-full p-4 md:p-6 bg-background">
+          <div className="relative w-full max-w-4xl mx-auto flex items-center bg-muted/40 backdrop-blur-xl rounded-full border border-border/20 p-1.5 focus-within:border-violet-500/40 shadow-xl transition-all">
+            <Input
+              data-testid="chat-input"
+              placeholder="Programme moi 4 séances pour cette semaine..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              disabled={isWaitingForResponse}
+              className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm md:text-base px-5 h-10 md:h-12"
+            />
+            <Button
+              data-testid="chat-send-button"
+              onClick={handleSendMessage}
+              disabled={isWaitingForResponse || isSending || !input.trim()}
+              size="icon"
+              variant="action"
+              className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0 shadow-lg shadow-violet-600/20"
+            >
+              {isWaitingForResponse ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
           </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden relative">
+    <div className="h-full flex flex-col bg-transparent relative overflow-hidden">
       <MessageList
         messages={conversationId ? (conversation?.chat_messages || []) : optimisticMessages}
         isLoading={conversationId ? isConversationLoading : false}
@@ -122,8 +121,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
         onDeleteSession={conversationId ? deleteSession : () => {}}
       />
 
-      <div className="absolute bottom-6 left-0 right-0 px-6 md:px-16 pointer-events-none flex justify-center">
-        <div className="relative w-full max-w-4xl flex items-center bg-muted rounded-3xl border border-border/40 p-1.5 focus-within:border-violet-500/40 transition-all pointer-events-auto">
+      <div className="shrink-0 w-full p-4 md:p-6 bg-background">
+        <div className="relative w-full max-w-4xl mx-auto flex items-center bg-muted/40 backdrop-blur-xl rounded-full border border-border/20 p-1.5 focus-within:border-violet-500/40 shadow-xl transition-all">
           <Input
             data-testid="chat-input"
             placeholder="Envoyez un message..."
@@ -136,7 +135,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
               }
             }}
             disabled={conversationId ? isSending : isWaitingForResponse}
-            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base px-5 h-12"
+            className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm md:text-base px-5 h-10 md:h-12"
           />
           <Button
             data-testid="chat-send-button"
@@ -144,7 +143,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
             disabled={conversationId ? (isSending || !input.trim()) : (isWaitingForResponse || !input.trim())}
             size="icon"
             variant="action"
-            className="h-10 w-10 !rounded-2xl"
+            className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0 shadow-lg shadow-violet-600/20"
           >
             {(conversationId ? isSending : isWaitingForResponse) ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -154,6 +153,6 @@ export function ChatView({ conversationId }: ChatViewProps) {
           </Button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

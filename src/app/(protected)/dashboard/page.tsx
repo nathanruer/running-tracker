@@ -11,17 +11,8 @@ import { SessionsEmptyState } from '@/features/dashboard/components/sessions-emp
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
-import { buttonVariants } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
 import {
   type StravaActivityDetails,
@@ -163,35 +154,28 @@ const DashboardPage = () => {
   };
 
   return (
-    <div 
-      data-testid="dashboard-container"
-      className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12"
-    >
-      <div className="mx-auto max-w-[90rem]">
-        <h1 data-testid="dashboard-title-mobile" className="text-4xl font-black tracking-tight text-primary mb-8 md:hidden px-1">Dashboard</h1>
-
-        {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
-          <SessionsTable
-            sessions={sessions}
-            availableTypes={availableTypes}
-            selectedType={selectedType}
-            onTypeChange={handleTypeChange}
-            actions={sessionActions}
-            initialLoading={initialLoading}
-            paginatedCount={sessions.length}
-            totalCount={allSessionsData?.length || 0}
-            onResetPagination={handleResetPagination}
-            hasMore={hasMore && !isShowingAll}
-            isFetchingNextPage={isFetchingNextPage || (isShowingAll && allSessionsLoading)}
-            onLoadMore={fetchNextPage}
-            isFetching={isFetchingData || allSessionsLoading}
-            isShowingAll={isShowingAll}
-            onShowAll={() => setIsShowingAll(true)}
-          />
-        ) : (
-          <SessionsEmptyState onAction={openNewSession} />
-        )}
-      </div>
+    <PageContainer testId="dashboard-container" mobileTitle="Dashboard">
+      {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
+        <SessionsTable
+          sessions={sessions}
+          availableTypes={availableTypes}
+          selectedType={selectedType}
+          onTypeChange={handleTypeChange}
+          actions={sessionActions}
+          initialLoading={initialLoading}
+          paginatedCount={sessions.length}
+          totalCount={allSessionsData?.length || 0}
+          onResetPagination={handleResetPagination}
+          hasMore={hasMore && !isShowingAll}
+          isFetchingNextPage={isFetchingNextPage || (isShowingAll && allSessionsLoading)}
+          onLoadMore={fetchNextPage}
+          isFetching={isFetchingData || allSessionsLoading}
+          isShowingAll={isShowingAll}
+          onShowAll={() => setIsShowingAll(true)}
+        />
+      ) : (
+        <SessionsEmptyState onAction={openNewSession} />
+      )}
 
       <SessionDialog
         open={isDialogOpen}
@@ -223,34 +207,18 @@ const DashboardPage = () => {
         }}
       />
 
-      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette séance ? Cette action est
-              irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel 
-              data-testid="delete-session-cancel" 
-              onClick={() => setDeletingId(null)} 
-              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
-            >
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="delete-session-confirm"
-              onClick={() => deletingId && handleDelete(deletingId)}
-              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
-            >
-              Confirmer la suppression
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      <ConfirmationDialog
+        open={!!deletingId}
+        onOpenChange={(open) => !open && setDeletingId(null)}
+        title="Confirmer la suppression"
+        description="Êtes-vous sûr de vouloir supprimer cette séance ? Cette action est irréversible."
+        confirmLabel="Confirmer la suppression"
+        onConfirm={() => deletingId && handleDelete(deletingId)}
+        onCancel={() => setDeletingId(null)}
+        cancelTestId="delete-session-cancel"
+        confirmTestId="delete-session-confirm"
+      />
+    </PageContainer>
   );
 };
 

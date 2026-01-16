@@ -17,7 +17,7 @@ export class DashboardPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.pageHeading = this.getByRole('heading', { name: /historique des séances|dashboard/i });
-    this.sessionsTable = this.page.getByRole('table');
+    this.sessionsTable = this.page.locator('[data-testid="sessions-table"]');
     this.newSessionButton = this.page.locator('[data-testid="btn-new-session"]');
     this.profileLink = this.page.locator('[data-testid="nav-profile"]');
     this.chatLink = this.page.locator('[data-testid="nav-chat"]');

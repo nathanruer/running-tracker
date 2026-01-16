@@ -26,7 +26,7 @@ export function WeeklyEvolutionChart({
   chartData,
 }: WeeklyEvolutionChartProps) {
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 shadow-xl">
       <CardHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

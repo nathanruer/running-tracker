@@ -214,6 +214,13 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                   }
                   unit={displayHR && typeof displayHR === 'number' ? "bpm" : undefined}
                 />
+                {(isPlanned ? session.targetRPE : session.perceivedExertion) && (
+                  <StatCard
+                    label={isPlanned ? "RPE cible" : "Effort (RPE)"}
+                    value={isPlanned ? (session.targetRPE ?? '-') : (session.perceivedExertion ?? '-')}
+                    unit="/10"
+                  />
+                )}
               </div>
 
               {session.comments && (

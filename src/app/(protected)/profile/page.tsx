@@ -5,17 +5,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { User as UserIcon, BarChart3, LogOut, Loader2, Grid3X3 as ActivityHeatmapIcon } from 'lucide-react';
 
-import { Button, buttonVariants } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { PageContainer } from '@/components/layout/page-container';
 import { ProfileForm } from '@/features/profile/components/account/profile-form';
 import { TrainingZonesTable } from '@/features/profile/components/account/training-zones-table';
 import { StravaAccountCard } from '@/features/profile/components/account/strava-account-card';
@@ -107,37 +99,34 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
-      <div className="mx-auto max-w-[90rem]">
-        <h1 data-testid="profile-title-mobile" className="text-3xl font-extrabold text-primary mb-6 md:hidden px-1">Profil</h1>
-
-        <div className="mb-8 flex items-center justify-center sm:justify-between gap-4">
-          <div className="flex gap-1 p-1 bg-muted/20 backdrop-blur-md rounded-2xl w-fit border border-border/40 font-medium shadow-sm">
+    <PageContainer mobileTitle="Profil" className="px-4 md:px-6 xl:px-12">
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-6 md:gap-4 font-medium">
+          <div className="flex gap-1 p-1 bg-muted/20 backdrop-blur-md rounded-2xl w-full sm:w-fit border border-border/40 font-medium shadow-sm">
             <Button
               data-testid="tab-profile"
               variant={activeView === 'profile' ? 'default' : 'ghost'}
               onClick={() => setActiveView('profile')}
-              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'profile' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
+              className={`flex-1 sm:flex-initial rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-[11px] sm:text-sm ${activeView === 'profile' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
             >
-              <UserIcon className="mr-2 h-4 w-4 shrink-0" />
+              <UserIcon className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" />
               Compte
             </Button>
             <Button
               data-testid="tab-analytics"
               variant={activeView === 'analytics' ? 'default' : 'ghost'}
               onClick={() => setActiveView('analytics')}
-              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'analytics' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
+              className={`flex-1 sm:flex-initial rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-[11px] sm:text-sm ${activeView === 'analytics' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
             >
-              <BarChart3 className="mr-2 h-4 w-4 shrink-0" />
+              <BarChart3 className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" />
               Analyses
             </Button>
             <Button
               data-testid="tab-history"
               variant={activeView === 'history' ? 'default' : 'ghost'}
               onClick={() => setActiveView('history')}
-              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'history' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
+              className={`flex-1 sm:flex-initial rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-[11px] sm:text-sm ${activeView === 'history' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
             >
-              <ActivityHeatmapIcon className="mr-2 h-4 w-4 shrink-0" />
+              <ActivityHeatmapIcon className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" />
               Historique
             </Button>
           </div>
@@ -200,42 +189,18 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
-      </div>
 
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold">Déconnexion</AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              Êtes-vous sûr de vouloir fermer votre session ?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel 
-              data-testid="logout-cancel" 
-              disabled={isLoggingOut} 
-              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
-            >
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="logout-confirm"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
-            >
-              {isLoggingOut ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Déconnexion...
-                </>
-              ) : (
-                'Confirmer la déconnexion'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      <ConfirmationDialog
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        title="Déconnexion"
+        description="Êtes-vous sûr de vouloir fermer votre session ?"
+        confirmLabel="Confirmer la déconnexion"
+        onConfirm={handleLogout}
+        isLoading={isLoggingOut}
+        cancelTestId="logout-cancel"
+        confirmTestId="logout-confirm"
+      />
+    </PageContainer>
   );
 }

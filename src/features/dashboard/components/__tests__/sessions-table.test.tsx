@@ -257,12 +257,12 @@ describe('SessionsTable', () => {
     expect(screen.getByText('10 / 50')).toBeInTheDocument();
   });
 
-  it('should show "Tout afficher" button in badge when applicable', async () => {
+  it('should show "Tout" button in badge when applicable', async () => {
     const user = userEvent.setup();
     const mockOnShowAll = vi.fn();
     render(<SessionsTable {...defaultProps} paginatedCount={10} totalCount={50} onShowAll={mockOnShowAll} isShowingAll={false} />);
-    
-    const showAllButton = screen.getByRole('button', { name: /tout afficher/i });
+
+    const showAllButton = screen.getByRole('button', { name: /^tout$/i });
     expect(showAllButton).toBeInTheDocument();
     await user.click(showAllButton);
     expect(mockOnShowAll).toHaveBeenCalledTimes(1);
@@ -271,10 +271,10 @@ describe('SessionsTable', () => {
   it('should filter sessions based on search query', async () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
-    
-    const searchInput = screen.getByPlaceholderText(/chercher une séance/i);
+
+    const searchInput = screen.getByPlaceholderText(/chercher/i);
     await user.type(searchInput, 'Hard');
-    
+
     expect(screen.getByText('Hard session')).toBeInTheDocument();
     expect(screen.queryByText('Good run')).not.toBeInTheDocument();
   });

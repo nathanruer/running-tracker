@@ -33,7 +33,7 @@ export function StatsCards({ totalKm, totalSessions, averageKmPerWeek }: StatsCa
       {stats.map((stat, i) => (
         <div 
           key={i}
-          className="group relative flex flex-col justify-center p-6 md:p-8 rounded-[2rem] border border-border/40 bg-card/20 backdrop-blur-sm transition-all hover:border-border/60"
+          className="group relative flex flex-col justify-center p-6 md:p-8 rounded-[2rem] border border-border/40 bg-card/20 backdrop-blur-sm transition-all hover:border-border/60 shadow-xl"
         >
           <div className={cn(
             "absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 rounded-r-full transition-all duration-500 group-hover:h-20",

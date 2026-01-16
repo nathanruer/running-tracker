@@ -75,10 +75,11 @@ describe('ChatView', () => {
     it('should display empty state when no conversation is selected', () => {
       render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Comment puis-je vous aider ?')).toBeInTheDocument();
+      expect(screen.getByText(/Comment puis-je/)).toBeInTheDocument();
+      expect(screen.getByText(/vous aider/)).toBeInTheDocument();
       expect(screen.getByText(/Votre coach personnel est là pour optimiser chaque kilomètre/)).toBeInTheDocument();
 
-      expect(screen.getByPlaceholderText('Ex: Programme moi 4 séances pour cette semaine...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Programme moi 4 séances pour cette semaine...')).toBeInTheDocument();
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
   });

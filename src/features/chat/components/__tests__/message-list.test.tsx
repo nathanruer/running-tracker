@@ -6,12 +6,11 @@ import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 HTMLElement.prototype.scrollIntoView = vi.fn();
 
 vi.mock('../recommendation-card', () => ({
-  RecommendationCard: ({ session, displaySessionNumber }: {
+  RecommendationCard: ({ session }: {
     session: AIRecommendedSession;
-    displaySessionNumber: number;
   }) => (
     <div data-testid={`recommendation-${session.recommendation_id}`}>
-      Session {displaySessionNumber}: {session.session_type}
+      {session.session_type}
     </div>
   ),
 }));

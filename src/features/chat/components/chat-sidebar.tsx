@@ -1,8 +1,8 @@
 'use client';
 
-import { Plus, MessageSquare } from 'lucide-react';
+import { SquarePen, MessageSquare } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getConversations, getConversation, type Conversation } from '@/lib/services/api-client';
@@ -14,17 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { buttonVariants } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useConversationMutations } from '../hooks/use-conversation-mutations';
 import { ConversationListItem } from './conversation-list-item';
 
@@ -44,8 +34,6 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
   });
 
   const {
-    createConversation,
-    isCreating,
     renameDialogOpen,
     setRenameDialogOpen,
     newTitle,
@@ -63,13 +51,13 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
     isDeleting,
   } = useConversationMutations({
     onConversationCreated: onSelectConversation,
-    onConversationDeleted: async (deletedId) => {
+    onConversationDeleted: (deletedId) => {
       if (selectedConversationId === deletedId) {
-        await queryClient.invalidateQueries({ queryKey: ['conversations'] });
         const updatedConversations = queryClient.getQueryData(['conversations']) as Conversation[] | undefined;
+        const remainingConversations = updatedConversations?.filter(c => c.id !== deletedId) || [];
 
-        if (updatedConversations && updatedConversations.length > 0) {
-          onSelectConversation(updatedConversations[0].id);
+        if (remainingConversations.length > 0) {
+          onSelectConversation(remainingConversations[0].id);
         } else {
           onSelectConversation('');
         }
@@ -87,18 +75,32 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
 
   return (
     <>
-      <Card className={`${isMobile ? 'w-full border-0 shadow-none' : 'w-80'} h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden`}>
-        <div className="flex items-center justify-between px-6 py-6 border-b border-border/40 mb-2">
+      <div className={cn(
+        isMobile ? 'w-full bg-background' : 'w-80 shrink-0 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm',
+        "h-full flex flex-col shadow-none overflow-hidden"
+      )}>
+        <div className={cn(
+          "flex items-center px-4 py-6 md:px-6 shrink-0",
+          isMobile && "pr-14"
+        )}>
           <h2 className="text-xl font-bold tracking-tight">Conversations</h2>
+        </div>
+
+        <div className="px-4 mb-4">
           <Button
-            size="icon"
-            onClick={() => createConversation()}
-            disabled={isCreating || disableCreate}
+            data-testid="btn-new-conversation"
+            onClick={() => onSelectConversation('')}
+            disabled={disableCreate}
             variant="action"
-            className="h-9 w-9"
+            className="w-full rounded-2xl h-11 px-4 transition-all active:scale-[0.98] flex items-center justify-center gap-2.5 shadow-xl shadow-violet-600/20 font-bold text-sm"
           >
-            <Plus className="h-4 w-4" />
+            <SquarePen className="h-4 w-4" />
+            <span>Nouveau chat</span>
           </Button>
+        </div>
+
+        <div className="px-4 mb-2">
+          <div className="h-px w-full bg-border/40" />
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-2 p-4 pt-2">
@@ -123,7 +125,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
             />
           ))}
         </div>
-      </Card>
+      </div>
 
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
@@ -158,32 +160,16 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold">Supprimer la conversation</AlertDialogTitle>
-            <AlertDialogDescription className="text-base text-muted-foreground/80">
-              Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel 
-              onClick={handleDeleteCancel}
-              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
-              disabled={isDeleting}
-            >
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteSubmit}
-              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Suppression...' : 'Confirmer la suppression'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Supprimer la conversation"
+        description="Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible."
+        confirmLabel="Confirmer la suppression"
+        onConfirm={handleDeleteSubmit}
+        onCancel={handleDeleteCancel}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

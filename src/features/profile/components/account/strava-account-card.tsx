@@ -1,20 +1,11 @@
 import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { StravaBadge } from "@/features/import/components/strava-badge"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { LogOut, Loader2 } from "lucide-react"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { LogOut } from "lucide-react"
 import { disconnectStrava } from "@/lib/services/api-client/auth"
 import { type User } from "@/lib/types"
 
@@ -72,14 +63,14 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
 
   return (
     <>
-      <Card className="border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
-        <CardHeader>
+      <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="p-4 md:p-6">
           <CardTitle className="text-xl font-bold">Services Connectés</CardTitle>
           <CardDescription>
             Gérez votre connexion avec les applications tierces.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0 space-y-6">
           <div className="flex items-center justify-between p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
             <div className="flex flex-col gap-1">
               <span className="text-sm font-black text-orange-600 uppercase tracking-widest">Strava</span>
@@ -101,38 +92,15 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
         </CardContent>
       </Card>
 
-      <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold">Déconnexion Strava</AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              Êtes-vous sûr de vouloir déconnecter votre compte Strava ? Vous ne pourrez plus importer vos activités automatiquement.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel 
-              disabled={isDisconnectingStrava} 
-              className={buttonVariants({ variant: 'neutral', size: 'xl' })}
-            >
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDisconnectStrava}
-              disabled={isDisconnectingStrava}
-              className={buttonVariants({ variant: 'destructive-premium', size: 'xl' })}
-            >
-              {isDisconnectingStrava ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Déconnexion...
-                </>
-              ) : (
-                'Confirmer la déconnexion'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmationDialog
+        open={showDisconnectDialog}
+        onOpenChange={setShowDisconnectDialog}
+        title="Déconnexion Strava"
+        description="Êtes-vous sûr de vouloir déconnecter votre compte Strava ? Vous ne pourrez plus importer vos activités automatiquement."
+        confirmLabel="Confirmer la déconnexion"
+        onConfirm={handleDisconnectStrava}
+        isLoading={isDisconnectingStrava}
+      />
     </>
   )
 }

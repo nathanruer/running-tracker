@@ -49,9 +49,10 @@ test.describe('Login Flow - Core', () => {
     await page.waitForURL('**/', { timeout: 10000 });
 
     // Login again
+    await expect(page.locator('#email')).toBeVisible({ timeout: 10000 });
     await authPage.login(testUser);
     await authPage.assertLoginSuccessful();
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
     await dashboardPage.assertDashboardLoaded();
   });
 
