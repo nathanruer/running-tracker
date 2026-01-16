@@ -20,7 +20,10 @@ export const Providers = ({ children }: ProvidersProps) => {
     () =>
       new QueryClient({
         queryCache: new QueryCache({
-          onError: (error) => {
+          onError: (error, query) => {
+            if (query.meta?.silentError) {
+              return;
+            }
             toast({
               title: 'Erreur de chargement',
               description: error.message || 'Une erreur inattendue est survenue.',

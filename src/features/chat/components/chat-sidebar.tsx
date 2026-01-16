@@ -4,8 +4,8 @@ import { SquarePen, MessageSquare } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getConversations, getConversation, type Conversation } from '@/lib/services/api-client';
+import { useQueryClient } from '@tanstack/react-query';
+import { getConversation } from '@/lib/services/api-client';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useConversationMutations } from '../hooks/use-conversation-mutations';
+import { useConversations } from '../hooks/use-conversations';
 import { ConversationListItem } from './conversation-list-item';
 
 interface ChatSidebarProps {
@@ -28,10 +29,7 @@ interface ChatSidebarProps {
 export function ChatSidebar({ selectedConversationId, onSelectConversation, isMobile = false, disableCreate = false }: ChatSidebarProps) {
   const queryClient = useQueryClient();
 
-  const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ['conversations'],
-    queryFn: getConversations,
-  });
+  const { conversations, isLoading } = useConversations();
 
   const {
     renameDialogOpen,
@@ -53,14 +51,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
     onConversationCreated: onSelectConversation,
     onConversationDeleted: (deletedId) => {
       if (selectedConversationId === deletedId) {
-        const updatedConversations = queryClient.getQueryData(['conversations']) as Conversation[] | undefined;
-        const remainingConversations = updatedConversations?.filter(c => c.id !== deletedId) || [];
-
-        if (remainingConversations.length > 0) {
-          onSelectConversation(remainingConversations[0].id);
-        } else {
-          onSelectConversation('');
-        }
+        onSelectConversation('');
       }
     },
   });

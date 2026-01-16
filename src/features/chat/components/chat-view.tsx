@@ -34,6 +34,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
     enabled: !!conversationId && conversationId !== '',
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,
+    meta: { silentError: true },
   });
 
   const {

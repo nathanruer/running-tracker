@@ -13,19 +13,15 @@ import {
 import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
 import { ChatView } from '@/features/chat/components/chat-view';
 import { ChatSkeleton } from '@/features/chat/components/chat-skeleton';
-import { useQuery } from '@tanstack/react-query';
-import { getConversations } from '@/lib/services/api-client';
+import { useConversations } from '@/features/chat/hooks/use-conversations';
 
 export default function ChatPage() {
   const router = useRouter();
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
 
-  const { isLoading } = useQuery({
-    queryKey: ['conversations'],
-    queryFn: getConversations,
-  });
+  const { showSkeleton } = useConversations();
 
-  if (isLoading) {
+  if (showSkeleton) {
     return <ChatSkeleton />;
   }
 

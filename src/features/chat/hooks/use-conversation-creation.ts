@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { createConversation, sendMessage } from '@/lib/services/api-client';
+import { createConversation, sendMessage, type Conversation } from '@/lib/services/api-client';
 import type { Message } from '../components/chat-view';
 
 interface UseConversationCreationProps {
@@ -52,9 +52,17 @@ export function useConversationCreation({ conversationId }: UseConversationCreat
         chat_messages: [messageData.userMessage, messageData.assistantMessage],
       });
 
-      router.replace(`/chat/${newConversationId}`, { scroll: false });
+      queryClient.setQueryData(['conversations'], (old: Conversation[] | undefined) => {
+        const newConvSync: Conversation = {
+          id: newConversationId,
+          title,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        return old ? [newConvSync, ...old] : [newConvSync];
+      });
 
-      await queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      router.push(`/chat/${newConversationId}`);
     } catch (error) {
       setOptimisticMessages([]);
       setIsWaitingForResponse(false);

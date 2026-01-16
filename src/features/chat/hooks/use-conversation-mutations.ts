@@ -71,21 +71,34 @@ export function useConversationMutations({
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiDeleteConversation(id),
-    onSuccess: async (_, deletedId) => {
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: ['conversations'] });
       await queryClient.cancelQueries({ queryKey: ['conversation', deletedId] });
-      
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
 
+      const previousConversations = queryClient.getQueryData<Conversation[]>(['conversations']);
+
+      queryClient.setQueryData<Conversation[]>(['conversations'], (old) =>
+        old?.filter((c) => c.id !== deletedId) ?? []
+      );
+
+      queryClient.removeQueries({ queryKey: ['conversation', deletedId] });
+
+      setDeleteDialogOpen(false);
+      setSelectedForDelete(null);
       onConversationDeleted?.(deletedId);
 
+      return { previousConversations, deletedId };
+    },
+    onSuccess: () => {
       toast({
         title: 'Conversation supprimée',
         description: 'La conversation a été supprimée.',
       });
-      setDeleteDialogOpen(false);
-      setSelectedForDelete(null);
     },
-    onError: () => {
+    onError: (_, __, context) => {
+      if (context?.previousConversations) {
+        queryClient.setQueryData(['conversations'], context.previousConversations);
+      }
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer la conversation.',

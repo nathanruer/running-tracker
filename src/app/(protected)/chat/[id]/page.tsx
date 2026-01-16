@@ -10,11 +10,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useQuery } from '@tanstack/react-query';
-import { getConversations } from '@/lib/services/api-client';
 import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
 import { ChatView } from '@/features/chat/components/chat-view';
 import { ChatSkeleton } from '@/features/chat/components/chat-skeleton';
+import { useConversations } from '@/features/chat/hooks/use-conversations';
 
 export default function ChatPage() {
   const router = useRouter();
@@ -22,12 +21,9 @@ export default function ChatPage() {
   const conversationId = params.id as string;
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
 
-  const { isLoading: conversationsLoading } = useQuery({
-    queryKey: ['conversations'],
-    queryFn: getConversations,
-  });
+  const { showSkeleton } = useConversations();
 
-  if (conversationsLoading) {
+  if (showSkeleton) {
     return <ChatSkeleton />;
   }
 
@@ -70,7 +66,6 @@ export default function ChatPage() {
         </Sheet>
 
         <div className="flex-1 flex md:h-[calc(100vh-12rem)] gap-6 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
           <div className="hidden md:block">
             <ChatSidebar
               selectedConversationId={conversationId}
