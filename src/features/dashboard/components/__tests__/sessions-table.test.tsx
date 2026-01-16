@@ -56,7 +56,6 @@ const mockSessions: TrainingSession[] = [
 
 describe('SessionsTable', () => {
   const mockOnTypeChange = vi.fn();
-  const mockOnViewModeChange = vi.fn();
   const mockOnEdit = vi.fn();
   const mockOnDelete = vi.fn();
   const mockOnBulkDelete = vi.fn();
@@ -76,10 +75,11 @@ describe('SessionsTable', () => {
     availableTypes: ['Endurance', 'Fractionné', 'Récupération'],
     selectedType: 'all',
     onTypeChange: mockOnTypeChange,
-    viewMode: 'all' as const,
-    onViewModeChange: mockOnViewModeChange,
     actions: defaultActions,
     initialLoading: false,
+    paginatedCount: mockSessions.length,
+    totalCount: mockSessions.length,
+    onResetPagination: vi.fn(),
   };
 
   beforeEach(() => {
@@ -89,7 +89,7 @@ describe('SessionsTable', () => {
   it('should render table with sessions', () => {
     render(<SessionsTable {...defaultProps} />);
 
-    expect(screen.getByText('Historique des séances')).toBeInTheDocument();
+    expect(screen.getByText('Historique')).toBeInTheDocument();
     expect(screen.getByText('Good run')).toBeInTheDocument();
     expect(screen.getByText('Hard session')).toBeInTheDocument();
     expect(screen.getByText('Easy')).toBeInTheDocument();
@@ -106,25 +106,25 @@ describe('SessionsTable', () => {
     expect(skeletons.length).toBe(6);
   });
 
-  it('should render "Ajouter une séance" button when onNewSession is provided', () => {
+  it('should render "Nouvelle séance" button when onNewSession is provided', () => {
     render(<SessionsTable {...defaultProps} />);
 
-    const addButton = screen.getByRole('button', { name: /ajouter une séance/i });
+    const addButton = screen.getByRole('button', { name: /nouvelle séance/i });
     expect(addButton).toBeInTheDocument();
   });
 
-  it('should not render "Ajouter une séance" button when onNewSession is not provided', () => {
+  it('should not render "Nouvelle séance" button when onNewSession is not provided', () => {
     const actionsWithoutNewSession = { ...defaultActions, onNewSession: undefined };
     render(<SessionsTable {...defaultProps} actions={actionsWithoutNewSession} />);
 
-    expect(screen.queryByRole('button', { name: /ajouter une séance/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /nouvelle séance/i })).not.toBeInTheDocument();
   });
 
   it('should call onNewSession when add button is clicked', async () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
-    const addButton = screen.getByRole('button', { name: /ajouter une séance/i });
+    const addButton = screen.getByRole('button', { name: /nouvelle séance/i });
     await user.click(addButton);
 
     expect(mockOnNewSession).toHaveBeenCalledTimes(1);
@@ -139,7 +139,7 @@ describe('SessionsTable', () => {
 
     await user.click(firstSessionCheckbox);
 
-    expect(screen.getByText('1 séance sélectionnée')).toBeInTheDocument();
+    expect(screen.getByText('1 sélectionnée')).toBeInTheDocument();
   });
 
   it('should select all sessions', async () => {
@@ -149,7 +149,7 @@ describe('SessionsTable', () => {
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
-    expect(screen.getByText('3 séances sélectionnées')).toBeInTheDocument();
+    expect(screen.getByText('3 sélectionnées')).toBeInTheDocument();
   });
 
   it('should clear selection when cancel button is clicked', async () => {
@@ -159,12 +159,12 @@ describe('SessionsTable', () => {
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
-    expect(screen.getByText('3 séances sélectionnées')).toBeInTheDocument();
+    expect(screen.getByText('3 sélectionnées')).toBeInTheDocument();
 
     const cancelButton = screen.getByRole('button', { name: /annuler/i });
     await user.click(cancelButton);
 
-    expect(screen.queryByText(/séances sélectionnées/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sélectionnées/)).not.toBeInTheDocument();
   });
 
   it('should open bulk delete dialog when delete button is clicked', async () => {
@@ -244,18 +244,17 @@ describe('SessionsTable', () => {
   it('should render view mode select', () => {
     render(<SessionsTable {...defaultProps} />);
 
-    expect(screen.getByText('Tout afficher')).toBeInTheDocument();
+    expect(screen.getByText('Tous les types')).toBeInTheDocument();
   });
 
   it('should handle empty sessions array', () => {
     render(<SessionsTable {...defaultProps} sessions={[]} />);
 
-    expect(screen.getByText('Historique des séances')).toBeInTheDocument();
+    expect(screen.getByText('Historique')).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
     expect(rows.length).toBe(2);
     expect(screen.getByText('Aucun résultat trouvé')).toBeInTheDocument();
-    expect(screen.getByText('Réinitialiser les filtres')).toBeInTheDocument();
   });
 
   it('should show correct session types in table', () => {

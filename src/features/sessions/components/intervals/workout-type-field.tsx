@@ -36,7 +36,7 @@ export function WorkoutTypeField({
 }: WorkoutTypeFieldProps) {
   return (
     <FormItem>
-      <FormLabel>Type de séance</FormLabel>
+      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Type de séance</FormLabel>
       {!isCustomType ? (
         <Select
           onValueChange={(newValue) => {
@@ -50,7 +50,7 @@ export function WorkoutTypeField({
           value={value || ''}
         >
           <FormControl>
-            <SelectTrigger>
+            <SelectTrigger className="rounded-xl h-10 border-border/50 bg-[#141414]">
               <SelectValue placeholder="Type de fractionné" />
             </SelectTrigger>
           </FormControl>
@@ -70,6 +70,7 @@ export function WorkoutTypeField({
               placeholder="Type personnalisé"
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
+              className="rounded-xl h-10 border-border/50 bg-[#141414]"
             />
           </FormControl>
           <Button

@@ -18,12 +18,27 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ProfileForm } from '@/features/profile/components/account/profile-form';
 import { TrainingZonesTable } from '@/features/profile/components/account/training-zones-table';
-import { AnalyticsView } from '@/features/profile/components/analytics-view';
-import { ActivityHistory } from '@/features/profile/components/history/activity-history';
 import { StravaAccountCard } from '@/features/profile/components/account/strava-account-card';
-import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton';
+import { ProfileSkeleton, AnalyticsSkeleton, HistorySkeleton } from '@/features/profile/components/profile-skeleton';
 import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
 import { useToast } from '@/hooks/use-toast';
+import dynamic from 'next/dynamic';
+
+const AnalyticsView = dynamic(
+  () => import('@/features/profile/components/analytics-view').then(mod => mod.AnalyticsView),
+  {
+    loading: () => <AnalyticsSkeleton />,
+    ssr: false
+  }
+);
+
+const ActivityHistory = dynamic(
+  () => import('@/features/profile/components/history/activity-history').then(mod => mod.ActivityHistory),
+  {
+    loading: () => <HistorySkeleton />,
+    ssr: false
+  }
+);
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -88,7 +103,7 @@ export default function ProfilePage() {
   return (
     <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
       <div className="mx-auto max-w-[90rem]">
-        <h1 data-testid="profile-title-mobile" className="text-3xl font-extrabold text-gradient mb-6 md:hidden px-1">Mon Profil</h1>
+        <h1 data-testid="profile-title-mobile" className="text-3xl font-extrabold text-foreground mb-6 md:hidden px-1">Mon Profil</h1>
 
         <div className="mb-8 flex items-center justify-center sm:justify-between gap-4">
           <div className="flex gap-1 p-1 bg-muted/20 backdrop-blur-md rounded-2xl w-fit border border-border/40 font-medium shadow-sm">
@@ -96,7 +111,7 @@ export default function ProfilePage() {
               data-testid="tab-profile"
               variant={activeView === 'profile' ? 'default' : 'ghost'}
               onClick={() => setActiveView('profile')}
-              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'profile' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-lg shadow-violet-500/20' : 'text-muted-foreground hover:bg-white/5'}`}
+              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'profile' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
             >
               <UserIcon className="mr-2 h-4 w-4 shrink-0" />
               Compte
@@ -105,7 +120,7 @@ export default function ProfilePage() {
               data-testid="tab-analytics"
               variant={activeView === 'analytics' ? 'default' : 'ghost'}
               onClick={() => setActiveView('analytics')}
-              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'analytics' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-lg shadow-violet-500/20' : 'text-muted-foreground hover:bg-white/5'}`}
+              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'analytics' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
             >
               <BarChart3 className="mr-2 h-4 w-4 shrink-0" />
               Analyses
@@ -114,7 +129,7 @@ export default function ProfilePage() {
               data-testid="tab-history"
               variant={activeView === 'history' ? 'default' : 'ghost'}
               onClick={() => setActiveView('history')}
-              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'history' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-lg shadow-violet-500/20' : 'text-muted-foreground hover:bg-white/5'}`}
+              className={`rounded-xl h-9 px-3 sm:px-5 active:scale-95 transition-all text-xs sm:text-sm ${activeView === 'history' ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-none' : 'text-muted-foreground hover:bg-white/5'}`}
             >
               <ActivityHeatmapIcon className="mr-2 h-4 w-4 shrink-0" />
               Historique
@@ -135,15 +150,7 @@ export default function ProfilePage() {
 
         {activeView === 'analytics' && (
           isSessionsLoading ? (
-            <div className="space-y-8 animate-pulse">
-              <div className="h-12 w-64 bg-muted/40 rounded-2xl" />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="h-32 bg-muted/40 rounded-3xl" />
-                <div className="h-32 bg-muted/40 rounded-3xl" />
-                <div className="h-32 bg-muted/40 rounded-3xl" />
-              </div>
-              <div className="h-80 bg-muted/40 rounded-3xl" />
-            </div>
+            <AnalyticsSkeleton />
           ) : (
             <AnalyticsView sessions={sessions} />
           )
@@ -151,9 +158,7 @@ export default function ProfilePage() {
 
         {activeView === 'history' && (
           isSessionsLoading ? (
-            <div className="space-y-6 animate-pulse">
-              <div className="h-96 bg-muted/40 rounded-3xl" />
-            </div>
+            <HistorySkeleton />
           ) : (
             <ActivityHistory sessions={sessions} />
           )

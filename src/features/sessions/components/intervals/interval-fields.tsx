@@ -2,7 +2,7 @@
 
 import { Control, UseFormWatch, UseFormSetValue, useFieldArray } from 'react-hook-form';
 import { useState, useMemo } from 'react';
-import { FileText } from 'lucide-react';
+import { Watch } from 'lucide-react';
 import { type IntervalStep } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { WORKOUT_TYPES } from './workout-type-field';
@@ -78,13 +78,13 @@ export function IntervalFields({
       {onCsvImport && (
         <div className="flex items-center justify-between gap-4 mb-2">
            <div className="flex flex-col gap-0.5">
-             <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Type Fractionné</span>
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Type Fractionné</span>
              <span className="text-xs text-muted-foreground font-medium italic">Configurez vos intervalles</span>
            </div>
            <Button
              variant="secondary"
              size="sm"
-             className="h-8 px-4 font-black text-[10px] uppercase tracking-widest bg-blue-600/10 text-blue-700 hover:bg-blue-600/20 active:scale-95 transition-all border border-blue-600/20"
+              className="h-8 px-4 font-black text-[10px] uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white active:scale-95 transition-all border-none"
              asChild
            >
              <label className="cursor-pointer">
@@ -94,7 +94,7 @@ export function IntervalFields({
                   onChange={handleFileChange}
                   className="hidden"
                 />
-                <FileText className="mr-2 h-3.5 w-3.5" />
+                <Watch className="mr-2 h-3.5 w-3.5" />
                 Garmin CSV
              </label>
            </Button>

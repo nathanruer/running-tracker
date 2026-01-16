@@ -131,7 +131,7 @@ export function SessionTypeCell({
   const chevronColor = isPlanned 
     ? 'text-muted-foreground/20 group-hover/title:text-muted-foreground/30' 
     : 'text-muted-foreground/40 group-hover/title:text-foreground/60';
-  const labelColor = isPlanned ? 'text-muted-foreground/30' : 'text-muted-foreground/40';
+  const labelColor = isPlanned ? 'text-muted-foreground/30' : 'text-primary/90';
 
   return (
     <TableCell className={cn("text-center whitespace-nowrap px-4", className)}>

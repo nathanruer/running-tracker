@@ -38,7 +38,6 @@ import {
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
-  const [viewMode, setViewMode] = useState<'paginated' | 'all'>('paginated');
   const [selectedType, setSelectedType] = useState<string>('all');
   const LIMIT = 10;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -108,26 +107,22 @@ const DashboardPage = () => {
   });
 
 
-  const { 
-    data: allSessionsData, 
+  const {
+    data: allSessionsData,
     isLoading: allSessionsLoading,
-    isFetching: allSessionsFetching
   } = useQuery({
     queryKey: ['sessions', 'all', selectedType],
     queryFn: () => getSessions(undefined, undefined, selectedType),
-    enabled: viewMode === 'all' && !!user,
+    enabled: !!user,
     placeholderData: (previousData) => {
       if (previousData) return previousData;
-      
       const paginatedData = queryClient.getQueryData<InfiniteData<TrainingSession[]>>(['sessions', 'paginated', selectedType]);
-      
       if (paginatedData) {
         const lastPage = paginatedData.pages[paginatedData.pages.length - 1];
         if (lastPage && lastPage.length < LIMIT) {
           return paginatedData.pages.flat();
         }
       }
-      
       return undefined;
     },
   });
@@ -146,25 +141,31 @@ const DashboardPage = () => {
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === LIMIT ? allPages.length * LIMIT : undefined;
     },
-    enabled: viewMode === 'paginated' && !!user,
+    enabled: !!user,
     placeholderData: (previousData) => previousData,
   });
 
-  const sessions = viewMode === 'all'
-    ? (allSessionsData || [])
-    : (paginatedSessionsData?.pages.flat() || []);
+  const handleResetPagination = () => {
+    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
+      if (!old) return old;
+      return {
+        pages: [old.pages[0]],
+        pageParams: [old.pageParams[0]],
+      };
+    });
+    // Invalidate everything but keep the first page
+    queryClient.invalidateQueries({ queryKey: ['sessions', 'paginated', selectedType] });
+  };
 
-  const isFetchingData = viewMode === 'all' ? allSessionsFetching : paginatedSessionsFetching;
+  const sessions = paginatedSessionsData?.pages.flat() || [];
+
+  const isFetchingData = paginatedSessionsFetching;
   
   const initialLoading = userLoading || (
-    !sessions.length && (
-      viewMode === 'all' 
-        ? allSessionsLoading 
-        : paginatedSessionsLoading
-    )
+    !sessions.length && paginatedSessionsLoading
   );
   
-  const hasMore = viewMode === 'paginated' ? hasNextPage : false;
+  const hasMore = hasNextPage;
 
   const loadMoreSessions = () => {
     fetchNextPage();
@@ -179,7 +180,6 @@ const DashboardPage = () => {
       router.replace('/');
     }
   }, [user, userLoading, router]);
-
 
   const sessionDialogInitialData = useMemo(() => {
     if (!importedData) return null;
@@ -262,10 +262,11 @@ const DashboardPage = () => {
             availableTypes={availableTypes}
             selectedType={selectedType}
             onTypeChange={setSelectedType}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
             actions={sessionActions}
             initialLoading={initialLoading}
+            paginatedCount={sessions.length}
+            totalCount={allSessionsData?.length || 0}
+            onResetPagination={handleResetPagination}
           />
         ) : (
           <SessionsEmptyState onAction={openNewSession} />

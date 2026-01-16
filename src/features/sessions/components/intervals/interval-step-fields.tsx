@@ -50,13 +50,13 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
         name={`steps.${stepIndex}.duration`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-xs">Durée (mn)</FormLabel>
+            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">Durée (mn)</FormLabel>
             <FormControl>
               <Input
                 placeholder="00:00"
                 {...field}
                 value={field.value || ''}
-                className="h-9"
+                className="rounded-xl h-10 border-border/50 bg-[#141414]"
               />
             </FormControl>
             <FormMessage />
@@ -68,7 +68,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
         name={`steps.${stepIndex}.distance`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-xs">Distance (km)</FormLabel>
+            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">Distance (km)</FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -79,7 +79,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
                 onChange={(e) =>
                   field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
                 }
-                className="h-9"
+                className="rounded-xl h-10 border-border/50 bg-[#141414]"
               />
             </FormControl>
             <FormMessage />
@@ -91,13 +91,13 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
         name={`steps.${stepIndex}.pace`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-xs">Allure (mn/km)</FormLabel>
+            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">Allure (/km)</FormLabel>
             <FormControl>
               <Input
                 placeholder="00:00"
                 {...field}
                 value={field.value || ''}
-                className="h-9"
+                className="rounded-xl h-10 border-border/50 bg-[#141414]"
               />
             </FormControl>
             <FormMessage />
@@ -109,7 +109,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
         name={`steps.${stepIndex}.hr`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-xs">FC moy (bpm)</FormLabel>
+            <FormLabel className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">FC Moy (bpm)</FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -119,7 +119,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
                 onChange={(e) =>
                   field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
                 }
-                className="h-9"
+                className="rounded-xl h-10 border-border/50 bg-[#141414]"
               />
             </FormControl>
             <FormMessage />

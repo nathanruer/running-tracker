@@ -70,14 +70,14 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
 
   return (
     <>
-      <Card className={`${isMobile ? 'w-full border-0 shadow-none' : 'w-80'} h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden`}>
+      <Card className={`${isMobile ? 'w-full border-0 shadow-none' : 'w-80'} h-full flex flex-col rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden`}>
         <div className="flex items-center justify-between px-6 py-6 border-b border-border/40 mb-2">
           <h2 className="text-xl font-bold tracking-tight">Conversations</h2>
           <Button
             size="sm"
             onClick={() => createConversation()}
             disabled={isCreating || disableCreate}
-            className="h-9 w-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all p-0 shadow-lg shadow-violet-500/10"
+            className="h-9 w-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all p-0 shadow-none"
           >
             <Plus className="h-4 w-4" />
           </Button>

@@ -18,7 +18,7 @@ describe('SelectionBar', () => {
       />
     );
 
-    expect(screen.getByText('1 séance sélectionnée')).toBeInTheDocument();
+    expect(screen.getByText('1 sélectionnée')).toBeInTheDocument();
   });
 
   it('should render with plural text for multiple selected sessions', () => {
@@ -35,7 +35,7 @@ describe('SelectionBar', () => {
       />
     );
 
-    expect(screen.getByText('5 séances sélectionnées')).toBeInTheDocument();
+    expect(screen.getByText('5 sélectionnées')).toBeInTheDocument();
   });
 
   it('should call onClear when cancel button is clicked', async () => {
@@ -115,7 +115,7 @@ describe('SelectionBar', () => {
     );
 
     const selectionBar = container.firstChild;
-    expect(selectionBar).toHaveClass('rounded-md', 'bg-muted/40', 'border', 'border-border');
+    expect(selectionBar).toHaveClass('rounded-xl', 'border');
   });
 
   it('should render all buttons with correct roles', () => {
@@ -154,7 +154,7 @@ describe('SelectionBar', () => {
       />
     );
 
-    expect(screen.getByText('0 séance sélectionnée')).toBeInTheDocument();
+    expect(screen.getByText('0 sélectionnée')).toBeInTheDocument();
   });
 
   it('should handle large selected counts', () => {
@@ -171,6 +171,6 @@ describe('SelectionBar', () => {
       />
     );
 
-    expect(screen.getByText('99 séances sélectionnées')).toBeInTheDocument();
+    expect(screen.getByText('99 sélectionnées')).toBeInTheDocument();
   });
 });

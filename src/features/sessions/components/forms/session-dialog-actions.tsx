@@ -41,7 +41,7 @@ export function SessionDialogActions({
           <Button 
             data-testid="btn-session-submit" 
             type="submit" 
-            className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" 
+            className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all" 
             disabled={loading}
           >
             {loading ? 'Enregistrement...' : 'Valider la séance'}
@@ -51,7 +51,7 @@ export function SessionDialogActions({
         <Button 
           data-testid="btn-session-submit" 
           type="submit" 
-          className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white active:scale-95 transition-all" 
+          className="flex-[2] h-11 px-8 rounded-2xl font-black bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all" 
           disabled={loading}
         >
           {loading ? 'Enregistrement...' : hasSession ? 'Mettre à jour' : 'Enregistrer la séance'}

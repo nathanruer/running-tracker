@@ -84,3 +84,25 @@ export function ProfileSkeleton() {
     </div>
   );
 }
+
+export function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      <div className="h-12 w-64 bg-muted/40 rounded-2xl" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="h-32 bg-muted/40 rounded-3xl" />
+        <div className="h-32 bg-muted/40 rounded-3xl" />
+        <div className="h-32 bg-muted/40 rounded-3xl" />
+      </div>
+      <div className="h-80 bg-muted/40 rounded-3xl" />
+    </div>
+  );
+}
+
+export function HistorySkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-96 bg-muted/40 rounded-3xl" />
+    </div>
+  );
+}

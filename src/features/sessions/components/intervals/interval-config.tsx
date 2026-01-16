@@ -57,7 +57,7 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
                   type="number"
                   min="1"
                   placeholder="0"
-                  className="rounded-xl h-11 border-border/50"
+                  className="rounded-xl h-10 border-border/50 bg-[#141414]"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) =>

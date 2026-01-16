@@ -63,11 +63,11 @@ const LoginCard = () => {
   return (
     <Card className="w-full max-w-md border-border/50 shadow-xl">
       <CardHeader className="space-y-4 flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600 shadow-lg shadow-violet-500/30">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600">
           <Zap className="h-8 w-8 text-white fill-white" />
         </div>
         <div className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-gradient">
+          <CardTitle className="text-3xl font-bold text-primary">
             Running Tracker
           </CardTitle>
           <CardDescription>

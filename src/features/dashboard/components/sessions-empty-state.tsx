@@ -15,7 +15,6 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
       "relative overflow-hidden rounded-[2.5rem] border-none bg-card p-16 md:p-24 text-center",
       className
     )}>
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_40%,rgba(139,92,246,0.02),transparent_70%)]" />
 
       <div className="relative z-10 flex flex-col items-center max-w-2xl mx-auto space-y-8">
         <div className="relative">

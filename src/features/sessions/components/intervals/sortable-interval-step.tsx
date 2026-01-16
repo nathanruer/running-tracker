@@ -58,9 +58,9 @@ export function SortableIntervalStep({
   } = useSortable({ id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 1 : 0,
+    transform: CSS.Translate.toString(transform),
+    transition: isDragging ? undefined : transition,
+    zIndex: isDragging ? 50 : 0,
     position: isDragging ? ('relative' as const) : undefined,
   };
 
@@ -79,8 +79,8 @@ export function SortableIntervalStep({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-2xl border border-border/40 p-5 space-y-4 bg-background/40 hover:bg-background/60 transition-all ${
-        isDragging ? 'shadow-md ring-1 ring-violet-500/20 bg-background z-50' : ''
+      className={`rounded-2xl border border-border/40 p-5 space-y-4 bg-background/40 ${
+        isDragging ? 'shadow-xl ring-1 ring-violet-500/20 bg-background !opacity-100 z-50' : ''
       }`}
     >
       <div className="flex items-center justify-between">

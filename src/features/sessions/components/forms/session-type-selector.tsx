@@ -46,7 +46,7 @@ export function SessionTypeSelector({
           value={value}
         >
           <FormControl>
-            <SelectTrigger data-testid="select-session-type" className="rounded-xl h-11 border-border/50">
+            <SelectTrigger data-testid="select-session-type" className="rounded-xl h-10 border-border/50 bg-[#141414]">
               <SelectValue placeholder="Sélectionnez un type" />
             </SelectTrigger>
           </FormControl>
@@ -60,7 +60,7 @@ export function SessionTypeSelector({
       ) : (
         <div className="flex gap-2">
           <FormControl>
-            <Input data-testid="input-custom-session-type" placeholder="Type personnalisé" className="rounded-xl h-11 border-border/50" value={value} onChange={(e) => onChange(e.target.value)} />
+            <Input data-testid="input-custom-session-type" placeholder="Type personnalisé" className="rounded-xl h-10 border-border/50 bg-[#141414]" value={value} onChange={(e) => onChange(e.target.value)} />
           </FormControl>
           <Button
             data-testid="btn-reset-session-type"
@@ -70,7 +70,7 @@ export function SessionTypeSelector({
               onCustomTypeChange(false);
               onChange('');
             }}
-            className="h-11 px-3 rounded-xl border-border/50"
+            className="h-10 px-3 rounded-xl border-border/50"
           >
             <RotateCcw className="h-4 w-4" />
           </Button>

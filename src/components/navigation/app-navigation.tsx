@@ -24,9 +24,13 @@ export function AppNavigation() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/dashboard')}
+            onMouseEnter={() => {
+              prefetchDashboardData(queryClient);
+              router.prefetch('/dashboard');
+            }}
             className="group flex items-center gap-3 active:scale-95 transition-all text-left"
           >
-            <span className="text-2xl font-black text-gradient tracking-tight">
+            <span className="text-2xl font-black text-primary tracking-tight">
               Running Tracker
             </span>
           </button>
@@ -37,7 +41,10 @@ export function AppNavigation() {
             data-testid="nav-dashboard"
             variant={isActive('/dashboard') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/dashboard')}
-            onMouseEnter={() => prefetchDashboardData(queryClient)}
+            onMouseEnter={() => {
+              prefetchDashboardData(queryClient);
+              router.prefetch('/dashboard');
+            }}
             className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/dashboard') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -48,7 +55,10 @@ export function AppNavigation() {
             data-testid="nav-chat"
             variant={isActive('/chat') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/chat')}
-            onMouseEnter={() => prefetchChatData(queryClient)}
+            onMouseEnter={() => {
+              prefetchChatData(queryClient);
+              router.prefetch('/chat');
+            }}
             className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/chat') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
@@ -59,7 +69,10 @@ export function AppNavigation() {
             data-testid="nav-profile"
             variant={isActive('/profile') ? 'secondary' : 'ghost'}
             onClick={() => router.push('/profile')}
-            onMouseEnter={() => prefetchProfileData(queryClient)}
+            onMouseEnter={() => {
+              prefetchProfileData(queryClient);
+              router.prefetch('/profile');
+            }}
             className={`h-11 px-5 rounded-xl font-bold active:scale-95 transition-all border-none ${isActive('/profile') ? 'bg-violet-600/10 text-violet-600' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
           >
             <User className="h-4 w-4 mr-2" />

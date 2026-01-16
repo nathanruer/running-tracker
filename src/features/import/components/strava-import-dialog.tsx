@@ -246,7 +246,7 @@ export function StravaImportDialog({
                 <div className="w-full space-y-4">
                   <Button
                     onClick={connectToStrava}
-                    className="w-full font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-lg shadow-[#FC4C02]/20 active:scale-95 transition-all"
+                    className="w-full font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-none active:scale-95 transition-all"
                     disabled={loading}
                   >
                     {loading ? (
@@ -265,13 +265,7 @@ export function StravaImportDialog({
                 </div>
               </div>
             ) : loading || (activities.length === 0 && loading) ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-6 animate-in fade-in duration-500">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full scale-150 animate-pulse" />
                   <Loader2 className="h-10 w-10 animate-spin text-violet-600 relative z-10" />
-                </div>
-                <p className="text-sm font-medium text-muted-foreground animate-pulse">Récupération de vos séances...</p>
-              </div>
             ) : activities.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-6 animate-in fade-in duration-500">
                 <div className="bg-muted/30 p-8 rounded-2xl border border-border/50 text-center space-y-3">
@@ -406,10 +400,7 @@ export function StravaImportDialog({
                     >
                       {isFetchingMore && (
                         <div className="flex items-center gap-3 text-muted-foreground animate-in fade-in duration-300">
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-violet-500/20 blur-xl rounded-full scale-150 animate-pulse" />
                             <Loader2 className="h-5 w-5 animate-spin text-violet-600 relative z-10" />
-                          </div>
                           <span className="text-[10px] font-black uppercase tracking-widest opacity-40">
                             Synchronisation Strava...
                           </span>
@@ -430,7 +421,7 @@ export function StravaImportDialog({
                   </Button>
                   <Button 
                     onClick={handleImportSelected} 
-                    className="flex-[2] font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all rounded-xl"
+                    className="flex-[2] font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all rounded-xl"
                     disabled={importing || selectedIndices.size === 0}
                   >
                     {importing ? (

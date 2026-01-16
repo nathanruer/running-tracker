@@ -29,16 +29,15 @@ export function DatePicker({
   placeholder = "Choisir une date",
   className,
   allowClear = false,
-  variant = "outline",
 }: DatePickerProps) {
   return (
     <div className="relative flex w-full">
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant={variant}
+            variant="ghost"
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal h-10 rounded-xl border border-border/50 bg-[#141414] px-3 py-2 text-sm hover:bg-[#141414] hover:text-foreground focus:outline-none focus:ring-1 focus:ring-violet-500/50 disabled:cursor-not-allowed disabled:opacity-50",
               !date && "text-muted-foreground",
               allowClear && date && "pr-10",
               className

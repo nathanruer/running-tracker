@@ -63,7 +63,11 @@ export function IntervalStepList({
   const [showDetails, setShowDetails] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -133,9 +137,9 @@ export function IntervalStepList({
                   name="targetEffortPace"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Allure cible effort</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Allure cible effort</FormLabel>
                       <FormControl>
-                        <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-background/50" {...field} value={field.value || ''} />
+                        <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-[#141414]" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -146,12 +150,12 @@ export function IntervalStepList({
                   name="targetEffortHR"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">FC cible effort</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">FC cible effort</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           placeholder="0"
-                          className="rounded-xl h-10 border-border/50 bg-background/50"
+                          className="rounded-xl h-10 border-border/50 bg-[#141414]"
                           {...field}
                           value={field.value || ''}
                           onChange={(e) =>

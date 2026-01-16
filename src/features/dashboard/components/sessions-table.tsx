@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Plus, MoreVertical, FilterX } from 'lucide-react';
+import { Plus, MoreVertical, FilterX, Search, X } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { SessionRow } from './session-row';
 import { SortIcon } from './sort-icon';
@@ -38,6 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { type TrainingSession } from '@/lib/types';
 import { useSessionsTableSort } from '../hooks/use-sessions-table-sort';
 import { useSessionsSelection } from '../hooks/use-sessions-selection';
@@ -56,10 +58,11 @@ interface SessionsTableProps {
   availableTypes: string[];
   selectedType: string;
   onTypeChange: (type: string) => void;
-  viewMode: 'paginated' | 'all';
-  onViewModeChange: (mode: 'paginated' | 'all') => void;
   actions: SessionActions;
   initialLoading: boolean;
+  paginatedCount: number;
+  totalCount: number;
+  onResetPagination: () => void;
 }
 
 export function SessionsTable({
@@ -67,48 +70,86 @@ export function SessionsTable({
   availableTypes,
   selectedType,
   onTypeChange,
-  viewMode,
-  onViewModeChange,
   actions,
   initialLoading,
+  paginatedCount,
+  totalCount,
+  onResetPagination,
 }: SessionsTableProps) {
-  const { sortColumn, sortDirection, handleSort, sortedSessions } = useSessionsTableSort(sessions);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showExportDialog, setShowExportDialog] = useState(false);
+
+  // Filter based on search query
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const lowerQuery = searchQuery.toLowerCase();
+    return sessions.filter(s => 
+      s.sessionType.toLowerCase().includes(lowerQuery) ||
+      (s.comments && s.comments.toLowerCase().includes(lowerQuery))
+    );
+  }, [sessions, searchQuery]);
+
+  const { sortColumn, sortDirection, handleSort, sortedSessions } = useSessionsTableSort(filteredSessions);
   const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sortedSessions);
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
-  const [showExportDialog, setShowExportDialog] = useState(false);
+
+  const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '';
+
+  const handleClearFilters = () => {
+    onTypeChange('all');
+    setSearchQuery('');
+  };
 
   return (
     <>
-      <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">        
+      <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-none overflow-hidden">        
         <CardHeader className="flex flex-col gap-6 px-8 py-8 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold tracking-tight">Historique des séances</CardTitle>
-            {initialLoading ? (
-              <div className="h-11 w-10 md:w-[180px] animate-pulse rounded-xl bg-muted shrink-0" />
-            ) : actions.onNewSession ? (
-              <Button
-                data-testid="btn-new-session"
-                onClick={actions.onNewSession}
-                className="h-11 px-6 rounded-xl bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all font-semibold shrink-0"
-                title="Nouvelle séance"
-              >
-                <Plus className="h-4.5 w-4.5 mr-1.5" />
-                <span className="hidden md:inline">Ajouter une séance</span>
-              </Button>
-            ) : null}
-          </div>
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-xl font-bold tracking-tight">Historique</CardTitle>
+                {!initialLoading && (
+                  <Badge variant="secondary" className="h-6 px-2 rounded-lg bg-muted/30 text-muted-foreground/70 font-bold border-none">
+                    {totalCount}
+                  </Badge>
+                )}
+              </div>
+              
+              {!initialLoading && actions.onNewSession && (
+                <Button
+                  data-testid="btn-new-session"
+                  onClick={actions.onNewSession}
+                  className="h-10 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white shadow-none active:scale-95 transition-all font-bold shrink-0 text-xs uppercase tracking-wider"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle séance
+                </Button>
+              )}
+            </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            {initialLoading ? (
-              <>
-                <div className="h-10 w-full sm:w-[180px] animate-pulse rounded-xl bg-muted" />
-                <div className="h-10 w-full sm:w-[180px] animate-pulse rounded-xl bg-muted" />
-              </>
-            ) : (
-              <>
+            <div className="flex flex-col md:flex-row items-center gap-3">
+              <div className="relative w-full md:w-[300px]">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none" />
+                <Input
+                  placeholder="Chercher une séance..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 rounded-xl bg-muted/10 border-border/40 focus:bg-muted/20 transition-all font-medium text-sm"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full hover:bg-muted/30 text-muted-foreground/60 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
                 <Select value={selectedType} onValueChange={onTypeChange}>
-                  <SelectTrigger data-testid="filter-session-type" className="w-full sm:w-[200px] h-10 rounded-xl bg-muted/10 border-border/40 focus:ring-0">
-                    <SelectValue placeholder="Type de séance" />
+                  <SelectTrigger data-testid="filter-session-type" className="w-full md:w-[180px] h-10 rounded-xl bg-muted/10 border-border/40 font-bold text-[11px] uppercase tracking-wider">
+                    <SelectValue placeholder="Type" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-border/40 shadow-none">
                     <SelectItem value="all">Tous les types</SelectItem>
@@ -119,20 +160,40 @@ export function SessionsTable({
                     ))}
                   </SelectContent>
                 </Select>
-                <Select
-                  value={viewMode}
-                  onValueChange={(value: 'paginated' | 'all') => onViewModeChange(value)}
-                >
-                  <SelectTrigger data-testid="filter-view-mode" className="w-full sm:w-[180px] h-10 rounded-xl bg-muted/10 border-border/40 focus:ring-0">
-                    <SelectValue placeholder="Affichage" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border/40 shadow-none">
-                    <SelectItem value="paginated">10 dernières</SelectItem>
-                    <SelectItem value="all">Tout afficher</SelectItem>
-                  </SelectContent>
-                </Select>
-              </>
-            )}
+
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearFilters}
+                    className="h-10 px-4 rounded-xl text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all ml-auto md:ml-0"
+                  >
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+
+              {!initialLoading && (
+                <div className="hidden md:flex items-center gap-3 ml-auto">
+                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-3 py-1.5 gap-2.5 transition-all">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/30 whitespace-nowrap">
+                      {paginatedCount} / {totalCount}
+                    </span>
+                    {paginatedCount > 10 && (
+                      <>
+                        <div className="w-[1px] h-3 bg-border/40" />
+                        <button
+                          onClick={onResetPagination}
+                          className="text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
+                        >
+                          Réduire
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {selectedSessions.size > 0 && (
@@ -147,7 +208,7 @@ export function SessionsTable({
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table className="table-auto">
-              <TableHeader className="bg-muted/5">
+              <TableHeader className="bg-transparent">
                 <TableRow className="border-border/40 hover:bg-transparent">
                   <TableHead className="w-12 px-6">
                     <Checkbox
@@ -274,17 +335,9 @@ export function SessionsTable({
                         <div className="space-y-1">
                           <p className="text-sm font-bold text-foreground">Aucun résultat trouvé</p>
                           <p className="text-xs text-muted-foreground">
-                            Essayez de modifier vos filtres ou d&apos;afficher tous les types.
+                            Essayez de modifier vos filtres ou utilisez le bouton réinitialiser en haut.
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onTypeChange('all')}
-                          className="mt-2 text-[10px] font-black uppercase tracking-widest text-violet-600 hover:text-violet-700 hover:bg-violet-600/5"
-                        >
-                          Réinitialiser les filtres
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
