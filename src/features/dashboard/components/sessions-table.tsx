@@ -63,6 +63,12 @@ interface SessionsTableProps {
   paginatedCount: number;
   totalCount: number;
   onResetPagination: () => void;
+  hasMore: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
+  isFetching?: boolean;
+  isShowingAll?: boolean;
+  onShowAll?: () => void;
 }
 
 export function SessionsTable({
@@ -75,11 +81,16 @@ export function SessionsTable({
   paginatedCount,
   totalCount,
   onResetPagination,
+  hasMore,
+  isFetchingNextPage,
+  onLoadMore,
+  isFetching,
+  isShowingAll,
+  onShowAll,
 }: SessionsTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  // Filter based on search query
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions;
     const lowerQuery = searchQuery.toLowerCase();
@@ -89,7 +100,15 @@ export function SessionsTable({
     );
   }, [sessions, searchQuery]);
 
-  const { sortColumn, sortDirection, handleSort, sortedSessions } = useSessionsTableSort(filteredSessions);
+  const { sortColumn, sortDirection, handleSort: originalHandleSort, sortedSessions } = useSessionsTableSort(filteredSessions);
+  
+  const handleSort = (column: string) => {
+    if (onShowAll && !isShowingAll) {
+      onShowAll();
+    }
+    originalHandleSort(column);
+  };
+
   const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sortedSessions);
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
 
@@ -179,17 +198,27 @@ export function SessionsTable({
                     <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/30 whitespace-nowrap">
                       {paginatedCount} / {totalCount}
                     </span>
-                    {paginatedCount > 10 && (
-                      <>
-                        <div className="w-[1px] h-3 bg-border/40" />
+                    {(paginatedCount > 10 || (onShowAll && !isShowingAll && totalCount > paginatedCount)) && (
+                      <div className="w-[1px] h-3 bg-border/40" />
+                    )}
+                    <div className="flex items-center gap-3">
+                      {onShowAll && !isShowingAll && totalCount > paginatedCount && (
+                        <button
+                          onClick={onShowAll}
+                          className="text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
+                        >
+                          Tout afficher
+                        </button>
+                      )}
+                      {paginatedCount > 10 && (
                         <button
                           onClick={onResetPagination}
-                          className="text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
+                          className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground transition-colors"
                         >
                           Réduire
                         </button>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -205,8 +234,17 @@ export function SessionsTable({
             />
           )}
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+        <CardContent className="p-0 relative">
+          {isFetching && !initialLoading && (
+            <div className="absolute top-0 left-0 right-0 h-[2px] z-20 overflow-hidden bg-violet-500/10">
+              <div className="h-full w-full bg-violet-500 origin-left animate-loading-bar" />
+            </div>
+          )}
+          
+          <div className={cn(
+            "overflow-x-auto transition-opacity duration-300",
+            isFetching && !initialLoading ? "opacity-50" : "opacity-100"
+          )}>
             <Table className="table-auto">
               <TableHeader className="bg-transparent">
                 <TableRow className="border-border/40 hover:bg-transparent">
@@ -347,6 +385,19 @@ export function SessionsTable({
           </div>
         </CardContent>
       </Card>
+
+      {hasMore && sortedSessions.length > 0 && !searchQuery.trim() && (
+        <div className="mt-6 flex justify-center">
+          <Button
+            variant="outline"
+            onClick={onLoadMore}
+            className="w-full sm:w-auto h-10 px-6 rounded-xl font-bold border-border/40 bg-muted/5 hover:bg-muted/10 active:scale-95 transition-all text-muted-foreground hover:text-foreground text-[11px] uppercase tracking-wider"
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? 'Chargement...' : 'Voir plus'}
+          </Button>
+        </div>
+      )}
 
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>

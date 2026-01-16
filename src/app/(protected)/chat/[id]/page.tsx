@@ -35,7 +35,7 @@ export default function ChatPage() {
     <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
       <div className="mx-auto max-w-[90rem]">
         <div className="flex items-center justify-between mb-6 md:hidden">
-          <h1 className="text-3xl font-extrabold text-gradient px-1">Coach IA</h1>
+          <h1 className="text-3xl font-extrabold text-primary px-1">Coach IA</h1>
           <Button
             onClick={() => setIsConversationsOpen(true)}
             size="icon"

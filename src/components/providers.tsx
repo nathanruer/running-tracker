@@ -8,7 +8,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
-import { CACHE_TIME, GC_TIME, MS_PER_DAY } from '@/lib/constants';
+import { CACHE_TIME, GC_TIME, MS_PER_DAY, CACHE_STORAGE_KEY } from '@/lib/constants';
 import { toast } from '@/hooks/use-toast';
 
 interface ProvidersProps {
@@ -40,11 +40,11 @@ export const Providers = ({ children }: ProvidersProps) => {
       })
   );
 
-  const [persister] = useState(() => 
-    typeof window !== 'undefined' 
+  const [persister] = useState(() =>
+    typeof window !== 'undefined'
       ? createAsyncStoragePersister({
           storage: window.localStorage,
-          key: 'RUNNING_TRACKER_OFFLINE_CACHE',
+          key: CACHE_STORAGE_KEY,
         })
       : null
   );

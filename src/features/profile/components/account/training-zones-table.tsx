@@ -52,8 +52,8 @@ export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProp
               <TableRow>
                 <TableHead className="text-xs font-bold uppercase tracking-widest py-4">Zone</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-widest py-4">% FCM</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-widest py-4">FC Cible</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-widest py-4">Allure approx.</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest py-4 text-center">FC Cible</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-widest py-4 text-center">Allure approx.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,8 +82,8 @@ export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProp
                     <TableCell className="font-semibold tabular-nums">
                       {Math.round(zone.minPct * 100)}–{Math.round(zone.maxPct * 100)}%
                     </TableCell>
-                    <TableCell className="font-semibold tabular-nums">{bpmRange}</TableCell>
-                    <TableCell className="text-muted-foreground font-medium tabular-nums">
+                    <TableCell className="font-semibold tabular-nums text-center">{bpmRange}</TableCell>
+                    <TableCell className="text-muted-foreground font-medium tabular-nums text-center">
                       {paceRange}
                     </TableCell>
                   </TableRow>

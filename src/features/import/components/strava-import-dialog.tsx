@@ -246,7 +246,7 @@ export function StravaImportDialog({
                 <div className="w-full space-y-4">
                   <Button
                     onClick={connectToStrava}
-                    className="w-full font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-none active:scale-95 transition-all"
+                    className="w-full font-bold bg-[#FC4C02] hover:bg-[#E34402] text-white shadow-none active:scale-95"
                     disabled={loading}
                   >
                     {loading ? (
@@ -415,7 +415,7 @@ export function StravaImportDialog({
                     type="button"
                     variant="outline"
                     onClick={() => onOpenChange(false)}
-                    className="flex-1 font-bold active:scale-95 transition-all rounded-xl"
+                    className="flex-1 font-bold active:scale-95 transition-transform rounded-xl hover:bg-muted"
                   >
                     Annuler
                   </Button>

@@ -80,6 +80,11 @@ describe('SessionsTable', () => {
     paginatedCount: mockSessions.length,
     totalCount: mockSessions.length,
     onResetPagination: vi.fn(),
+    hasMore: false,
+    isFetchingNextPage: false,
+    onLoadMore: vi.fn(),
+    isShowingAll: false,
+    onShowAll: vi.fn(),
   };
 
   beforeEach(() => {
@@ -245,6 +250,33 @@ describe('SessionsTable', () => {
     render(<SessionsTable {...defaultProps} />);
 
     expect(screen.getByText('Tous les types')).toBeInTheDocument();
+  });
+
+  it('should render pagination badge', () => {
+    render(<SessionsTable {...defaultProps} paginatedCount={10} totalCount={50} />);
+    expect(screen.getByText('10 / 50')).toBeInTheDocument();
+  });
+
+  it('should show "Tout afficher" button in badge when applicable', async () => {
+    const user = userEvent.setup();
+    const mockOnShowAll = vi.fn();
+    render(<SessionsTable {...defaultProps} paginatedCount={10} totalCount={50} onShowAll={mockOnShowAll} isShowingAll={false} />);
+    
+    const showAllButton = screen.getByRole('button', { name: /tout afficher/i });
+    expect(showAllButton).toBeInTheDocument();
+    await user.click(showAllButton);
+    expect(mockOnShowAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('should filter sessions based on search query', async () => {
+    const user = userEvent.setup();
+    render(<SessionsTable {...defaultProps} />);
+    
+    const searchInput = screen.getByPlaceholderText(/chercher une séance/i);
+    await user.type(searchInput, 'Hard');
+    
+    expect(screen.getByText('Hard session')).toBeInTheDocument();
+    expect(screen.queryByText('Good run')).not.toBeInTheDocument();
   });
 
   it('should handle empty sessions array', () => {

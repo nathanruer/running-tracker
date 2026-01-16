@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/features/sessions/components/forms/session-dialog';
@@ -10,7 +10,7 @@ import { SessionsTable, type SessionActions } from '@/features/dashboard/compone
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
-import { Button } from '@/components/ui/button';
+import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,13 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useEntityMutations } from '@/hooks/use-entity-mutations';
 import {
-  getCurrentUser,
-  getSessions,
-  getSessionTypes,
-  deleteSession,
-  bulkDeleteSessions,
   type StravaActivityDetails,
 } from '@/lib/services/api-client';
 import {
@@ -39,12 +33,36 @@ import {
 const DashboardPage = () => {
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<string>('all');
-  const LIMIT = 10;
+  const [isShowingAll, setIsShowingAll] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSession, setEditingSession] =
-    useState<TrainingSession | null>(null);
+  const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
+  const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
+  const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const {
+    user,
+    userLoading,
+    availableTypes,
+    sessions,
+    initialLoading,
+    showGlobalLoading,
+    isFetchingData,
+    allSessionsLoading,
+    allSessionsData,
+    hasMore,
+    isFetchingNextPage,
+    fetchNextPage,
+    handleResetPagination,
+    mutations,
+  } = useDashboardData(selectedType, isShowingAll, setIsShowingAll);
+
+  const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } = mutations;
 
   useEffect(() => {
     if (!isDetailsSheetOpen) {
@@ -52,40 +70,6 @@ const DashboardPage = () => {
       return () => clearTimeout(timer);
     }
   }, [isDetailsSheetOpen]);
-  const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
-  const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const { toast } = useToast();
-  const router = useRouter();
-
-  const { data: availableTypes = [] } = useQuery({
-    queryKey: ['sessionTypes'],
-    queryFn: async () => {
-      const types = await getSessionTypes();
-      return types.sort();
-    },
-    staleTime: 15 * 60 * 1000,
-  });
-
-
-  const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } =
-    useEntityMutations<TrainingSession>({
-      baseQueryKey: 'sessions',
-      filterType: selectedType,
-      deleteEntity: deleteSession,
-      bulkDeleteEntities: async (ids: string[]) => {
-        await bulkDeleteSessions(ids);
-      },
-      relatedQueryKeys: ['sessionTypes'],
-      messages: {
-        deleteSuccess: 'Séance supprimée',
-        deleteSuccessDescription: 'La séance a été supprimée avec succès.',
-        bulkDeleteSuccessTitle: 'Séances supprimées',
-        bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} ${count > 1 ? 'ont' : 'a'} été supprimée${count > 1 ? 's' : ''} avec succès.`,
-        deleteError: 'Erreur lors de la suppression',
-        bulkDeleteError: 'Erreur lors de la suppression groupée',
-      },
-    });
 
   useEffect(() => {
     const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -100,86 +84,15 @@ const DashboardPage = () => {
     }
   }, [toast, router]);
 
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: getCurrentUser,
-    staleTime: 10 * 60 * 1000,
-  });
-
-
-  const {
-    data: allSessionsData,
-    isLoading: allSessionsLoading,
-  } = useQuery({
-    queryKey: ['sessions', 'all', selectedType],
-    queryFn: () => getSessions(undefined, undefined, selectedType),
-    enabled: !!user,
-    placeholderData: (previousData) => {
-      if (previousData) return previousData;
-      const paginatedData = queryClient.getQueryData<InfiniteData<TrainingSession[]>>(['sessions', 'paginated', selectedType]);
-      if (paginatedData) {
-        const lastPage = paginatedData.pages[paginatedData.pages.length - 1];
-        if (lastPage && lastPage.length < LIMIT) {
-          return paginatedData.pages.flat();
-        }
-      }
-      return undefined;
-    },
-  });
-
-  const {
-    data: paginatedSessionsData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading: paginatedSessionsLoading,
-    isFetching: paginatedSessionsFetching
-  } = useInfiniteQuery({
-    queryKey: ['sessions', 'paginated', selectedType],
-    queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.length === LIMIT ? allPages.length * LIMIT : undefined;
-    },
-    enabled: !!user,
-    placeholderData: (previousData) => previousData,
-  });
-
-  const handleResetPagination = () => {
-    queryClient.setQueryData(['sessions', 'paginated', selectedType], (old: InfiniteData<TrainingSession[]> | undefined) => {
-      if (!old) return old;
-      return {
-        pages: [old.pages[0]],
-        pageParams: [old.pageParams[0]],
-      };
-    });
-    // Invalidate everything but keep the first page
-    queryClient.invalidateQueries({ queryKey: ['sessions', 'paginated', selectedType] });
-  };
-
-  const sessions = paginatedSessionsData?.pages.flat() || [];
-
-  const isFetchingData = paginatedSessionsFetching;
-  
-  const initialLoading = userLoading || (
-    !sessions.length && paginatedSessionsLoading
-  );
-  
-  const hasMore = hasNextPage;
-
-  const loadMoreSessions = () => {
-    fetchNextPage();
-  };
-
-  const showGlobalLoading = userLoading || (
-    !sessions.length && (allSessionsLoading || paginatedSessionsLoading)
-  );
-
   useEffect(() => {
     if (!userLoading && user === null) {
       router.replace('/');
     }
   }, [user, userLoading, router]);
+
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
+  };
 
   const sessionDialogInitialData = useMemo(() => {
     if (!importedData) return null;
@@ -254,35 +167,28 @@ const DashboardPage = () => {
       className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12"
     >
       <div className="mx-auto max-w-[90rem]">
-        <h1 data-testid="dashboard-title-mobile" className="text-4xl font-black tracking-tight text-gradient mb-8 md:hidden px-1">Dashboard</h1>
+        <h1 data-testid="dashboard-title-mobile" className="text-4xl font-black tracking-tight text-primary mb-8 md:hidden px-1">Dashboard</h1>
 
         {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
           <SessionsTable
             sessions={sessions}
             availableTypes={availableTypes}
             selectedType={selectedType}
-            onTypeChange={setSelectedType}
+            onTypeChange={handleTypeChange}
             actions={sessionActions}
             initialLoading={initialLoading}
             paginatedCount={sessions.length}
             totalCount={allSessionsData?.length || 0}
             onResetPagination={handleResetPagination}
+            hasMore={hasMore && !isShowingAll}
+            isFetchingNextPage={isFetchingNextPage || (isShowingAll && allSessionsLoading)}
+            onLoadMore={fetchNextPage}
+            isFetching={isFetchingData || allSessionsLoading}
+            isShowingAll={isShowingAll}
+            onShowAll={() => setIsShowingAll(true)}
           />
         ) : (
           <SessionsEmptyState onAction={openNewSession} />
-        )}
-
-        {hasMore && sessions.length > 0 && (
-          <div className="mt-4 flex justify-center">
-            <Button
-              variant="outline"
-              onClick={loadMoreSessions}
-              className="w-full md:w-auto h-9 px-6 rounded-xl font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
-              disabled={isFetchingNextPage}
-            >
-              {isFetchingNextPage ? 'Chargement...' : 'Voir plus'}
-            </Button>
-          </div>
         )}
       </div>
 

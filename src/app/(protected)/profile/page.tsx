@@ -21,6 +21,7 @@ import { TrainingZonesTable } from '@/features/profile/components/account/traini
 import { StravaAccountCard } from '@/features/profile/components/account/strava-account-card';
 import { ProfileSkeleton, AnalyticsSkeleton, HistorySkeleton } from '@/features/profile/components/profile-skeleton';
 import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
+import { CACHE_STORAGE_KEY } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 
@@ -72,8 +73,13 @@ export default function ProfilePage() {
     try {
       setIsLoggingOut(true);
       await logoutUser();
-      queryClient.setQueryData(['user'], null);
+
       queryClient.clear();
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(CACHE_STORAGE_KEY);
+      }
+
       window.location.href = '/';
     } catch {
       setIsLoggingOut(false);
@@ -103,7 +109,7 @@ export default function ProfilePage() {
   return (
     <div className="w-full py-4 md:py-8 px-3 md:px-6 xl:px-12">
       <div className="mx-auto max-w-[90rem]">
-        <h1 data-testid="profile-title-mobile" className="text-3xl font-extrabold text-foreground mb-6 md:hidden px-1">Mon Profil</h1>
+        <h1 data-testid="profile-title-mobile" className="text-3xl font-extrabold text-primary mb-6 md:hidden px-1">Profil</h1>
 
         <div className="mb-8 flex items-center justify-center sm:justify-between gap-4">
           <div className="flex gap-1 p-1 bg-muted/20 backdrop-blur-md rounded-2xl w-fit border border-border/40 font-medium shadow-sm">
@@ -165,17 +171,19 @@ export default function ProfilePage() {
         )}
 
         {activeView === 'profile' && (
-          <div className="grid gap-8 lg:grid-cols-2 items-start">
-            <div className="space-y-6">
-              <ProfileForm user={user} />
-            </div>
-            
-            <div className="space-y-8">
-              <StravaAccountCard stravaId={user.stravaId} />
-              <TrainingZonesTable
-                maxHeartRate={user.maxHeartRate ?? undefined}
-                vma={user.vma ?? undefined}
-              />
+          <div className="space-y-8">
+            <div className="grid gap-8 lg:grid-cols-2 items-start">
+              <div className="space-y-6 order-1">
+                <ProfileForm user={user} />
+              </div>
+              
+              <div className="space-y-8 order-2">
+                <TrainingZonesTable
+                  maxHeartRate={user.maxHeartRate ?? undefined}
+                  vma={user.vma ?? undefined}
+                />
+                <StravaAccountCard stravaId={user.stravaId} />
+              </div>
             </div>
 
             <div className="md:hidden pt-4">
