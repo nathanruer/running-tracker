@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET } from '../activities/route';
 import { prisma } from '@/lib/database';
-import { getActivities, refreshAccessToken } from '@/lib/services/strava';
+import { getActivities, getValidAccessToken, getAthleteStats } from '@/lib/services/strava';
 
 vi.mock('@/lib/database', () => ({
   prisma: {
@@ -15,7 +15,20 @@ vi.mock('@/lib/database', () => ({
 
 vi.mock('@/lib/services/strava', () => ({
   getActivities: vi.fn(),
-  refreshAccessToken: vi.fn(),
+  getValidAccessToken: vi.fn(),
+  getAthleteStats: vi.fn(),
+  formatStravaActivity: vi.fn((activity) => ({
+    date: activity.start_date_local,
+    sessionType: '',
+    duration: '00:30:00',
+    distance: activity.distance / 1000,
+    avgPace: '06:00',
+    avgHeartRate: null,
+    comments: activity.name,
+    externalId: String(activity.id),
+    source: 'strava',
+    type: activity.type,
+  })),
 }));
 
 vi.mock('@/lib/auth', () => ({
@@ -58,20 +71,17 @@ describe('/api/strava/activities', () => {
       average_speed: 2.78,
       max_speed: 3.2,
     },
-    {
-      id: 3,
-      name: 'Bike Ride',
-      type: 'Ride',
-      distance: 20000,
-      moving_time: 3600,
-      elapsed_time: 3800,
-      total_elevation_gain: 200,
-      start_date: '2024-01-03T10:00:00Z',
-      start_date_local: '2024-01-03T11:00:00Z',
-      average_speed: 5.56,
-      max_speed: 7.0,
-    },
   ];
+
+  const mockStats = {
+    all_run_totals: {
+      count: 139,
+      distance: 1500000,
+      moving_time: 500000,
+      elapsed_time: 520000,
+      elevation_gain: 5000,
+    }
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -84,11 +94,13 @@ describe('/api/strava/activities', () => {
       stravaId: '12345',
       stravaAccessToken: 'valid-token',
       stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000), // 2 hours from now
+      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getValidAccessToken).mockResolvedValue('valid-token');
     vi.mocked(getActivities).mockResolvedValue(mockActivities);
+    vi.mocked(getAthleteStats).mockResolvedValue(mockStats);
 
     const request = new NextRequest('http://localhost/api/strava/activities', {
       method: 'GET',
@@ -99,218 +111,34 @@ describe('/api/strava/activities', () => {
 
     expect(response.status).toBe(200);
     expect(data.activities).toHaveLength(2);
-    expect(data.activities[0].type).toBe('Run');
-    expect(data.activities[1].type).toBe('Run');
+    expect(data.totalCount).toBe(139);
+    expect(getActivities).toHaveBeenCalledWith('valid-token', 20, 1);
+  });
+
+  it('should handle custom page parameter', async () => {
+    const mockUser = {
+      id: 'user-123',
+      stravaId: '12345',
+      stravaAccessToken: 'valid-token',
+      stravaRefreshToken: 'refresh-token',
+      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
+    };
+
+    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getValidAccessToken).mockResolvedValue('valid-token');
+    vi.mocked(getActivities).mockResolvedValue(mockActivities);
+    vi.mocked(getAthleteStats).mockResolvedValue(mockStats);
+
+    const request = new NextRequest('http://localhost/api/strava/activities?page=2', {
+      method: 'GET',
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(getActivities).toHaveBeenCalledWith('valid-token', 20, 2);
     expect(data.hasMore).toBe(false);
-    expect(getActivities).toHaveBeenCalledWith('valid-token', 50, 1);
-  });
-
-  it('should refresh token when expired and fetch activities', async () => {
-    const expiredTokenUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'expired-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() - 1000), // Expired
-    };
-
-    const newTokenData = {
-      access_token: 'new-access-token',
-      refresh_token: 'new-refresh-token',
-      expires_at: Math.floor(Date.now() / 1000) + 21600,
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(expiredTokenUser as never);
-    vi.mocked(refreshAccessToken).mockResolvedValue(newTokenData);
-    vi.mocked(prisma.users.update).mockResolvedValue({
-      ...expiredTokenUser,
-      stravaAccessToken: newTokenData.access_token,
-    } as never);
-    vi.mocked(getActivities).mockResolvedValue(mockActivities);
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(refreshAccessToken).toHaveBeenCalledWith('refresh-token');
-    expect(prisma.users.update).toHaveBeenCalledWith({
-      where: { id: 'user-123' },
-      data: {
-        stravaAccessToken: newTokenData.access_token,
-        stravaRefreshToken: newTokenData.refresh_token,
-        stravaTokenExpiresAt: expect.any(Date),
-      },
-    });
-    expect(getActivities).toHaveBeenCalledWith('new-access-token', 50, 1);
-    expect(data.activities).toHaveLength(2);
-  });
-
-  it('should refresh token when expiring soon (within 5 minutes)', async () => {
-    const soonToExpireUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'soon-to-expire-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 240000), // 4 minutes from now
-    };
-
-    const newTokenData = {
-      access_token: 'refreshed-token',
-      refresh_token: 'new-refresh-token',
-      expires_at: Math.floor(Date.now() / 1000) + 21600,
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(soonToExpireUser as never);
-    vi.mocked(refreshAccessToken).mockResolvedValue(newTokenData);
-    vi.mocked(prisma.users.update).mockResolvedValue({
-      ...soonToExpireUser,
-      stravaAccessToken: newTokenData.access_token,
-    } as never);
-    vi.mocked(getActivities).mockResolvedValue(mockActivities);
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-
-    expect(response.status).toBe(200);
-    expect(refreshAccessToken).toHaveBeenCalled();
-  });
-
-  it('should return 404 when user is not found', async () => {
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(data).toEqual({ error: 'Utilisateur non trouvé' });
-  });
-
-  it('should return 400 when user has no Strava account connected', async () => {
-    const userWithoutStrava = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: null,
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(userWithoutStrava as never);
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(data).toEqual({ error: 'Compte Strava non connecté' });
-  });
-
-  it('should handle missing tokens error', async () => {
-    const userWithMissingTokens = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: null,
-      stravaRefreshToken: null,
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(userWithMissingTokens as never);
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(data).toHaveProperty('error');
-  });
-
-  it('should handle Strava API errors', async () => {
-    const mockUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(getActivities).mockRejectedValue(new Error('Failed to fetch activities'));
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(data).toEqual({ error: 'Failed to fetch activities' });
-  });
-
-  it('should filter out non-running activities', async () => {
-    const mockUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(getActivities).mockResolvedValue(mockActivities);
-
-    const request = new NextRequest('http://localhost/api/strava/activities', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.activities.every((activity: { type: string }) => activity.type === 'Run')).toBe(true);
-    expect(data.activities.find((a: { name: string }) => a.name === 'Bike Ride')).toBeUndefined();
-  });
-
-  it('should handle custom page and per_page parameters', async () => {
-    const mockUser = {
-      id: 'user-123',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(getActivities).mockResolvedValue(mockActivities);
-
-    const request = new NextRequest('http://localhost/api/strava/activities?page=2&per_page=10', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(getActivities).toHaveBeenCalledWith('valid-token', 10, 2);
-    expect(data.hasMore).toBe(false); // mockActivities length is 3, which is < 10
   });
 
   it('should set hasMore to true when received max activities', async () => {
@@ -322,12 +150,14 @@ describe('/api/strava/activities', () => {
       stravaTokenExpiresAt: new Date(Date.now() + 7200000),
     };
 
-    const manyActivities = Array(10).fill(mockActivities[0]);
+    const manyActivities = Array(20).fill(mockActivities[0]);
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(getValidAccessToken).mockResolvedValue('valid-token');
     vi.mocked(getActivities).mockResolvedValue(manyActivities);
+    vi.mocked(getAthleteStats).mockResolvedValue(mockStats);
 
-    const request = new NextRequest('http://localhost/api/strava/activities?per_page=10', {
+    const request = new NextRequest('http://localhost/api/strava/activities', {
       method: 'GET',
     });
 

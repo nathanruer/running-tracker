@@ -71,49 +71,66 @@ describe('Strava API', () => {
   });
 
   describe('getStravaActivities', () => {
-    it('fetches all Strava activities with pagination', async () => {
+    it('fetches all formatted Strava activities', async () => {
       const mockActivities = [
         {
-          id: 12345678,
-          name: 'Morning Run',
-          distance: 10000,
-          moving_time: 3600,
-          start_date_local: '2024-01-15T08:00:00Z',
-          average_heartrate: 145,
+          date: '2024-01-15',
+          sessionType: '',
+          duration: '01:00:00',
+          distance: 10,
+          avgPace: '06:00',
+          avgHeartRate: 145,
+          comments: 'Morning Run',
+          externalId: '12345678',
+          source: 'strava',
         },
         {
-          id: 87654321,
-          name: 'Evening Jog',
-          distance: 5000,
-          moving_time: 1800,
-          start_date_local: '2024-01-15T18:00:00Z',
-          average_heartrate: 135,
+          date: '2024-01-15',
+          sessionType: '',
+          duration: '00:30:00',
+          distance: 5,
+          avgPace: '06:00',
+          avgHeartRate: 135,
+          comments: 'Evening Jog',
+          externalId: '87654321',
+          source: 'strava',
         },
       ];
-      mockApiRequest.mockResolvedValue({ activities: mockActivities, hasMore: false });
+      mockApiRequest.mockResolvedValue({ activities: mockActivities });
 
       const result = await getStravaActivities();
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=50');
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=20');
       expect(result.activities).toEqual(mockActivities);
-      expect(result.hasMore).toBe(false);
     });
 
     it('returns empty array when no activities', async () => {
-      mockApiRequest.mockResolvedValue({ activities: [], hasMore: false });
+      mockApiRequest.mockResolvedValue({ activities: [] });
 
       const result = await getStravaActivities();
 
       expect(result.activities).toEqual([]);
-      expect(result.hasMore).toBe(false);
     });
 
-    it('supports custom pagination parameters', async () => {
-      mockApiRequest.mockResolvedValue({ activities: [], hasMore: true });
+    it('fetches activities with pagination', async () => {
+      const mockActivities = [
+        {
+          date: '2024-01-15',
+          sessionType: '',
+          duration: '01:00:00',
+          distance: 10,
+          avgPace: '06:00',
+          avgHeartRate: 145,
+          comments: 'Morning Run',
+          externalId: '12345678',
+          source: 'strava',
+        },
+      ];
+      mockApiRequest.mockResolvedValue({ activities: mockActivities, hasMore: true });
 
-      const result = await getStravaActivities(2, 25);
+      const result = await getStravaActivities(2);
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=2&per_page=25');
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=2&per_page=20');
       expect(result.hasMore).toBe(true);
     });
   });

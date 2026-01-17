@@ -165,3 +165,40 @@ export async function getActivityStreams(
   const data = await response.json();
   return stravaStreamSetSchema.parse(data);
 }
+
+export interface StravaAthleteStats {
+  all_run_totals: {
+    count: number;
+    distance: number;
+    moving_time: number;
+    elapsed_time: number;
+    elevation_gain: number;
+  };
+}
+
+/**
+ * Fetches athlete stats (useful for total run count)
+ * @param accessToken Strava access token
+ * @param stravaId Strava athlete ID
+ * @returns Athlete stats object
+ */
+export async function getAthleteStats(
+  accessToken: string,
+  stravaId: string
+): Promise<StravaAthleteStats> {
+  const response = await fetch(
+    `${STRAVA_URLS.API_BASE}/athletes/${stravaId}/stats`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch athlete stats');
+  }
+
+  return response.json();
+}
+

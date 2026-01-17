@@ -32,13 +32,13 @@ describe('weekly-calculator', () => {
     it('should format week within same month', () => {
       const start = new Date('2026-01-05');
       const end = new Date('2026-01-11');
-      expect(formatWeekLabel(start, end)).toBe('5-11 jan');
+      expect(formatWeekLabel(start, end, false)).toBe('5-11 jan');
     });
 
     it('should format week spanning two months', () => {
       const start = new Date('2026-01-26');
       const end = new Date('2026-02-01');
-      expect(formatWeekLabel(start, end)).toBe('26 jan - 1 fév');
+      expect(formatWeekLabel(start, end, false)).toBe('26 jan - 1 fév');
     });
   });
 

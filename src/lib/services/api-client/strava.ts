@@ -1,8 +1,7 @@
 import { apiRequest } from './client';
-import type { StravaActivity, StravaActivity as StravaActivityEntity, IntervalDetails } from '@/lib/types';
+import type { StravaActivity as StravaActivityEntity, IntervalDetails } from '@/lib/types';
 
-export interface StravaActivityDetails {
-  id: string;
+export interface FormattedStravaActivity {
   date: string;
   sessionType: string;
   duration: string;
@@ -20,17 +19,20 @@ export interface StravaActivityDetails {
   calories?: number | null;
 }
 
-/**
- * Fetches Strava activities for the current user with pagination support
- */
-export async function getStravaActivities(page: number = 1, perPage: number = 50): Promise<{ activities: StravaActivity[], hasMore: boolean }> {
-  return apiRequest<{ activities: StravaActivity[], hasMore: boolean }>(`/api/strava/activities?page=${page}&per_page=${perPage}`);
+export interface StravaActivitiesResponse {
+  activities: FormattedStravaActivity[];
+  hasMore: boolean;
+  totalCount?: number;
 }
 
-/**
- * Fetches detailed information for a specific Strava activity
- * @param activityId Strava activity ID
- */
-export async function getStravaActivityDetails(activityId: string): Promise<StravaActivityDetails> {
-  return apiRequest<StravaActivityDetails>(`/api/strava/activities/${activityId}`);
+export async function getStravaActivities(page: number = 1, perPage: number = 20): Promise<StravaActivitiesResponse> {
+  return apiRequest<StravaActivitiesResponse>(`/api/strava/activities?page=${page}&per_page=${perPage}`);
+}
+
+export async function getStravaActivityDetails(activityId: string): Promise<FormattedStravaActivity> {
+  return apiRequest<FormattedStravaActivity>(`/api/strava/activities/${activityId}`);
+}
+
+export async function getImportedStravaIds(): Promise<string[]> {
+  return apiRequest<string[]>('/api/sessions/strava-ids');
 }

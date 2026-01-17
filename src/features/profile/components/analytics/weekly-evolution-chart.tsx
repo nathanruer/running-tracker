@@ -95,7 +95,7 @@ export function WeeklyEvolutionChart({ chartData }: WeeklyEvolutionChartProps) {
                   if (!active || !payload || payload.length === 0) return null;
                   
                   const data = payload[0].payload as WeeklyData;
-                  const { changePercent, completedCount, plannedKm, plannedCount } = data;
+                  const { changePercent, completedCount, plannedKm } = data;
 
                   return (
                     <div className="bg-background border border-border rounded-xl p-3 shadow-lg min-w-[180px]">

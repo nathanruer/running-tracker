@@ -5,12 +5,19 @@ import * as api from '@/lib/services/api-client';
 import { useRouter } from 'next/navigation';
 
 vi.mock('@/lib/services/api-client', () => ({
-  loginUser: vi.fn(),
-  registerUser: vi.fn(),
+  loginUser: vi.fn().mockResolvedValue({}),
+  registerUser: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
+}));
+
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({
+    invalidateQueries: vi.fn(),
+    clear: vi.fn(),
+  }),
 }));
 
 describe('LoginCard', () => {

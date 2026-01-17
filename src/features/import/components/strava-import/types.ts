@@ -1,0 +1,86 @@
+import type { QueryClient } from '@tanstack/react-query';
+import type { FormattedStravaActivity } from '@/lib/services/api-client';
+
+export interface StravaImportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImport: (data: FormattedStravaActivity) => void;
+  mode?: 'create' | 'edit' | 'complete';
+  queryClient?: QueryClient;
+  onBulkImportSuccess?: () => void;
+}
+
+export interface StravaImportContentProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImport: (data: FormattedStravaActivity) => void;
+  mode: 'create' | 'edit' | 'complete';
+  queryClient?: QueryClient;
+  onBulkImportSuccess?: () => void;
+}
+
+export interface StravaConnectScreenProps {
+  loading: boolean;
+  onConnect: () => void;
+}
+
+export interface StravaToolbarProps {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  activitiesCount: number;
+  totalCount: number | null;
+  loading: boolean;
+  hasMore: boolean;
+  loadingAll: boolean;
+  loadingMore: boolean;
+  onLoadAll: () => void;
+  onReset: () => void;
+  topRef: React.RefObject<HTMLTableSectionElement | null>;
+}
+
+export interface StravaTableHeaderProps {
+  mode: 'create' | 'edit' | 'complete';
+  hasActivities: boolean;
+  isAllSelected: boolean;
+  onToggleSelectAll: () => void;
+  sortColumn: string | null;
+  onSort: (column: string) => void;
+  SortIcon: React.FC<{ column: string }>;
+}
+
+export interface StravaActivityRowProps {
+  activity: FormattedStravaActivity;
+  index: number;
+  selected: boolean;
+  onToggleSelect: (index: number) => void;
+}
+
+export interface StravaActivitiesTableProps {
+  activities: FormattedStravaActivity[];
+  filteredActivities: FormattedStravaActivity[];
+  mode: 'create' | 'edit' | 'complete';
+  selectedIndices: Set<number>;
+  isSelected: (index: number) => boolean;
+  isAllSelected: () => boolean;
+  toggleSelect: (index: number) => void;
+  toggleSelectAll: () => void;
+  sortColumn: string | null;
+  handleSort: (column: string) => void;
+  SortIcon: React.FC<{ column: string }>;
+  hasMore: boolean;
+  loadingMore: boolean;
+  loadingAll: boolean;
+  observerTarget: React.RefObject<HTMLDivElement | null>;
+  topRef: React.RefObject<HTMLTableSectionElement | null>;
+}
+
+export interface StravaImportFooterProps {
+  selectedCount: number;
+  importing: boolean;
+  onCancel: () => void;
+  onImport: () => void;
+}
+
+export interface StravaLoadingSkeletonProps {
+  rows?: number;
+}

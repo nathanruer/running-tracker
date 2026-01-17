@@ -4,6 +4,7 @@ export {
   getActivities,
   getActivityDetails,
   getActivityStreams,
+  getAthleteStats,
 } from './client';
 
 export { formatStravaActivity } from '@/lib/utils/strava/activity-formatter';

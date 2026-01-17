@@ -1,68 +1,99 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
-import { getStravaActivities } from '@/lib/services/api-client';
+import { getStravaActivities, type FormattedStravaActivity } from '@/lib/services/api-client';
 
-export interface StravaActivity {
-  id: number;
-  name: string;
-  distance: number;
-  moving_time: number;
-  start_date_local: string;
-  type: string;
-  average_heartrate?: number;
-  max_heartrate?: number;
-}
+export type { FormattedStravaActivity };
 
 export function useStravaActivities(open: boolean) {
   const [loading, setLoading] = useState(false);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [activities, setActivities] = useState<StravaActivity[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [activities, setActivities] = useState<FormattedStravaActivity[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const { handleError } = useApiErrorHandler();
 
-  const loadActivities = useCallback(async (pageToLoad: number = 1) => {
-    if (pageToLoad === 1) {
-      setLoading(true);
-    } else {
-      setIsFetchingMore(true);
-    }
+  const loadActivities = useCallback(async (pageNum: number, perPage: number = 20) => {
+    const isFirst = pageNum === 1;
+    if (isFirst) setLoading(true);
+    else setLoadingMore(true);
 
     try {
-      const data = await getStravaActivities(pageToLoad, 50);
-      
-      if (pageToLoad === 1) {
+      const data = await getStravaActivities(pageNum, perPage);
+
+      const nextActivities = isFirst
+        ? data.activities
+        : await new Promise<FormattedStravaActivity[]>((resolve) => {
+            setActivities((prev) => {
+              const ids = new Set(prev.map((a) => a.externalId));
+              const merged = [...prev, ...data.activities.filter((a) => !ids.has(a.externalId))];
+              resolve(merged);
+              return merged;
+            });
+          });
+
+      if (isFirst) {
         setActivities(data.activities);
-      } else {
-        setActivities(prev => {
-          const existingIds = new Set(prev.map(a => a.id));
-          const newActivities = data.activities.filter((a: StravaActivity) => !existingIds.has(a.id));
-          return [...prev, ...newActivities];
-        });
       }
 
-      setIsConnected(true);
-      setHasMore(data.hasMore);
-      setPage(pageToLoad);
-    } catch (error) {
-      if (error instanceof Error && (error.message.includes('401') || error.message.includes('400'))) {
-        setIsConnected(false);
-        setActivities([]);
-        setHasMore(false);
+      if (data.totalCount !== undefined) {
+        setTotalCount(data.totalCount);
       }
-      handleError(error, 'Impossible de récupérer les activités Strava');
+
+      setTotalCount((currentTotal) => {
+        const reachedTotal = currentTotal !== null && nextActivities.length >= currentTotal;
+        setHasMore(data.hasMore && !reachedTotal);
+        return currentTotal;
+      });
+
+      setIsConnected(true);
+      setPage(pageNum);
+      return data.hasMore;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
+      const isAuthError = errorMessage.includes('non connecté') || 
+                          errorMessage.includes('401') || 
+                          errorMessage.includes('400') ||
+                          errorMessage.includes('unauthorized');
+      
+      if (isAuthError) {
+        setIsConnected(false);
+      } else {
+        handleError(error, 'Impossible de récupérer les activités Strava');
+      }
+      return false;
     } finally {
       setLoading(false);
-      setIsFetchingMore(false);
+      setLoadingMore(false);
     }
   }, [handleError]);
 
   const loadMore = useCallback(() => {
-    if (!loading && !isFetchingMore && hasMore) {
-      loadActivities(page + 1);
+    if (!loading && !loadingMore && !loadingAll && hasMore) {
+      loadActivities(page + 1, 20);
     }
-  }, [loading, isFetchingMore, hasMore, page, loadActivities]);
+  }, [loading, loadingMore, loadingAll, hasMore, page, loadActivities]);
+
+  const loadAll = useCallback(async () => {
+    if (loading || loadingMore || loadingAll || !hasMore) return;
+
+    setLoadingAll(true);
+    
+    let currentPage = 1;
+    let moreAvailable = true;
+
+    while (moreAvailable) {
+      moreAvailable = await loadActivities(currentPage, 200) ?? false;
+      currentPage += 1;
+    }
+
+    setLoadingAll(false);
+  }, [loading, loadingMore, loadingAll, hasMore, loadActivities]);
+  const reset = useCallback(() => {
+    loadActivities(1, 20);
+  }, [loadActivities]);
 
   const connectToStrava = () => {
     window.location.href = '/api/auth/strava/authorize';
@@ -72,18 +103,24 @@ export function useStravaActivities(open: boolean) {
     if (open) {
       setActivities([]);
       setIsConnected(false);
-      loadActivities();
+      setPage(1);
+      setHasMore(false);
+      loadActivities(1, 20);
     }
-  }, [open, loadActivities]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return {
     activities,
     loading,
-    isFetchingMore,
+    loadingMore,
+    loadingAll,
     hasMore,
+    totalCount,
     isConnected,
-    loadActivities,
     loadMore,
+    loadAll,
+    reset,
     connectToStrava,
   };
 }

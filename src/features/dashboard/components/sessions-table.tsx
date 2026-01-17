@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Plus, MoreVertical, FilterX } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
@@ -81,6 +81,31 @@ export function SessionsTable({
 }: SessionsTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasMore || isFetchingNextPage || isShowingAll || searchQuery.trim() !== '') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '400px' }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, isFetchingNextPage, isShowingAll, searchQuery, onLoadMore]);
 
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions;
@@ -173,16 +198,16 @@ export function SessionsTable({
               </div>
 
               {!initialLoading && (
-                <div className="flex items-center gap-2.5 ml-auto">
-                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-2.5 py-1.5 transition-all">
+                <div className="flex items-center ml-auto">
+                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-3 py-1.5 transition-all gap-2.5">
                     <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/30 whitespace-nowrap">
                       {paginatedCount} / {totalCount || (isFetching ? '...' : '0')}
                     </span>
                     
                     {(paginatedCount > 10 || (onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore))) && (
                       <>
-                        <div className="w-[1px] h-3 bg-border/40 mx-0.5" />
-                        <div className="flex items-center gap-2.5">
+                        <div className="w-[1px] h-3 bg-border/40" />
+                        <div className="flex items-center gap-3">
                           {onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore) && (
                             <button
                               onClick={onShowAll}
@@ -369,17 +394,31 @@ export function SessionsTable({
         </CardContent>
       </Card>
 
-      {hasMore && sortedSessions.length > 0 && !searchQuery.trim() && (
-        <div className="mt-6 flex justify-center">
-          <Button
-            variant="neutral"
-            size="lg"
-            onClick={onLoadMore}
-            className="w-full sm:w-auto border-border/40"
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? 'Chargement...' : 'Voir plus'}
-          </Button>
+      {hasMore && !searchQuery.trim() && (
+        <div ref={observerTarget} className="mt-6 flex flex-col items-center justify-center p-6 w-full min-h-[100px]">
+          {isFetchingNextPage ? (
+            <div className="w-full space-y-4 px-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 opacity-40">
+                  <div className="h-10 w-10 bg-muted/20 animate-pulse rounded-xl shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-1/3 bg-muted/20 animate-pulse rounded-lg" />
+                  </div>
+                  <div className="h-8 w-16 bg-muted/10 animate-pulse rounded-lg" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-[0.2em] animate-pulse">
+              DÉFILEZ POUR PLUS
+            </p>
+          )}
+        </div>
+      )}
+
+      {!hasMore && sortedSessions.length > 10 && !searchQuery.trim() && (
+        <div className="mt-8 mb-4 flex justify-center opacity-10">
+          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Fin de l&apos;historique</span>
         </div>
       )}
 

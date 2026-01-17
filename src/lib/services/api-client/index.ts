@@ -37,7 +37,8 @@ export { updateUser } from './users';
 export {
   getStravaActivities,
   getStravaActivityDetails,
-  type StravaActivityDetails,
+  getImportedStravaIds,
+  type FormattedStravaActivity,
 } from './strava';
 
 export { apiRequest } from './client';

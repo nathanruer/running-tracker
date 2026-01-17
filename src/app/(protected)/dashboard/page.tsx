@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/features/sessions/components/forms/session-dialog';
-import { StravaImportDialog } from '@/features/import/components/strava-import-dialog';
+import { StravaImportDialog } from '@/features/import';
 import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
@@ -14,9 +14,7 @@ import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
-import {
-  type StravaActivityDetails,
-} from '@/lib/services/api-client';
+import { type FormattedStravaActivity } from '@/features/import';
 import {
   type TrainingSession,
   type TrainingSessionPayload,
@@ -133,7 +131,7 @@ const DashboardPage = () => {
     setIsDialogOpen(open);
   };
 
-  const handleStravaImport = (data: StravaActivityDetails) => {
+  const handleStravaImport = (data: FormattedStravaActivity) => {
     setImportedData(data as TrainingSessionPayload);
     setIsDialogOpen(true);
   };
