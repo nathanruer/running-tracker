@@ -1,67 +1,127 @@
 import { describe, it, expect } from 'vitest';
-import { calculateWeeklyStats } from '../weekly-calculator';
+import { calculateWeeklyStats, getISOWeekKey, formatWeekLabel, parseWeekKey } from '../weekly-calculator';
 import type { TrainingSession } from '@/lib/types';
 
+function createSession(
+  dateStr: string, 
+  distance: number, 
+  status: 'completed' | 'planned' = 'completed'
+): Partial<TrainingSession> {
+  return { date: dateStr, distance, status, week: null };
+}
+
 describe('weekly-calculator', () => {
+  describe('getISOWeekKey', () => {
+    it('should return correct ISO week key', () => {
+      expect(getISOWeekKey(new Date('2026-01-06'))).toBe('2026-W02');
+      expect(getISOWeekKey(new Date('2026-01-01'))).toBe('2026-W01');
+      expect(getISOWeekKey(new Date('2025-12-31'))).toBe('2026-W01');
+    });
+  });
+
+  describe('parseWeekKey', () => {
+    it('should parse week key back to Monday', () => {
+      const monday = parseWeekKey('2026-W02');
+      expect(monday.getFullYear()).toBe(2026);
+      expect(monday.getDay()).toBe(1);
+      expect(monday.getDate()).toBe(5);
+    });
+  });
+
+  describe('formatWeekLabel', () => {
+    it('should format week within same month', () => {
+      const start = new Date('2026-01-05');
+      const end = new Date('2026-01-11');
+      expect(formatWeekLabel(start, end)).toBe('5-11 jan');
+    });
+
+    it('should format week spanning two months', () => {
+      const start = new Date('2026-01-26');
+      const end = new Date('2026-02-01');
+      expect(formatWeekLabel(start, end)).toBe('26 jan - 1 fév');
+    });
+  });
+
   describe('calculateWeeklyStats', () => {
     it('should return empty stats when no sessions', () => {
       const result = calculateWeeklyStats([], []);
-
       expect(result.totalKm).toBe(0);
       expect(result.totalSessions).toBe(0);
       expect(result.averageKmPerWeek).toBe(0);
       expect(result.chartData).toEqual([]);
     });
 
-    it('should calculate stats for completed sessions only', () => {
+    it('should calculate stats based on session dates', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        { week: 1, distance: 5, status: 'completed' },
-        { week: 2, distance: 15, status: 'completed' },
+        createSession('2026-01-06', 10),
+        createSession('2026-01-07', 5),
+        createSession('2026-01-13', 15),
       ];
 
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
 
       expect(result.totalKm).toBe(30);
       expect(result.totalSessions).toBe(3);
-      expect(result.averageKmPerWeek).toBe(15); // 30km / 2 weeks
+      expect(result.activeWeeksCount).toBe(2);
       expect(result.chartData).toHaveLength(2);
     });
 
-    it('should aggregate completed sessions by week', () => {
+    it('should include inactive weeks with km=0 between active weeks', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        { week: 1, distance: 5, status: 'completed' },
-        { week: 2, distance: 8, status: 'completed' },
+        createSession('2026-01-06', 10),
+        createSession('2026-02-03', 15),
       ];
 
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
 
-      expect(result.chartData[0]).toMatchObject({
-        week: 1,
-        km: 15,
-        completedCount: 2,
-      });
-      expect(result.chartData[1]).toMatchObject({
-        week: 2,
-        km: 8,
-        completedCount: 1,
-      });
+      expect(result.totalKm).toBe(25);
+      expect(result.totalSessions).toBe(2);
+      expect(result.activeWeeksCount).toBe(2);
+      expect(result.totalWeeksSpan).toBe(5);
+      expect(result.chartData).toHaveLength(5);
+      
+      expect(result.chartData[0].isActive).toBe(true);
+      expect(result.chartData[0].km).toBe(10);
+      expect(result.chartData[0].trainingWeek).toBe(1);
+      expect(result.chartData[0].gapWeeks).toBe(0);
+      
+      expect(result.chartData[1].isActive).toBe(false);
+      expect(result.chartData[1].km).toBe(0);
+      expect(result.chartData[1].trainingWeek).toBeNull();
+      
+      expect(result.chartData[2].isActive).toBe(false);
+      expect(result.chartData[2].km).toBe(0);
+      
+      expect(result.chartData[3].isActive).toBe(false);
+      expect(result.chartData[3].km).toBe(0);
+      
+      expect(result.chartData[4].isActive).toBe(true);
+      expect(result.chartData[4].km).toBe(15);
+      expect(result.chartData[4].trainingWeek).toBe(2);
+      expect(result.chartData[4].gapWeeks).toBe(3);
     });
 
-    it('should aggregate planned sessions separately', () => {
+    it('should aggregate sessions within the same week', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
+        createSession('2026-01-05', 10),
+        createSession('2026-01-07', 5),
+        createSession('2026-01-11', 3),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.chartData).toHaveLength(1);
+      expect(result.chartData[0].km).toBe(18);
+      expect(result.chartData[0].completedCount).toBe(3);
+    });
+
+    it('should handle planned sessions', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        createSession('2026-01-06', 10),
       ];
       const plannedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 5, status: 'planned' },
-        { week: 2, distance: 12, status: 'planned' },
+        createSession('2026-01-08', 5, 'planned'),
+        createSession('2026-01-15', 12, 'planned'),
       ];
 
       const result = calculateWeeklyStats(
@@ -69,193 +129,100 @@ describe('weekly-calculator', () => {
         plannedSessions as TrainingSession[]
       );
 
-      expect(result.chartData[0]).toMatchObject({
-        week: 1,
-        km: 10,
-        plannedKm: 5,
-        totalWithPlanned: 15,
-        completedCount: 1,
-        plannedCount: 1,
-      });
-      expect(result.chartData[1]).toMatchObject({
-        week: 2,
-        km: null, // No completed in week 2
-        plannedKm: 12,
-        totalWithPlanned: 12,
-        completedCount: 0,
-        plannedCount: 1,
-      });
+      expect(result.chartData).toHaveLength(2);
+      
+      expect(result.chartData[0].km).toBe(10);
+      expect(result.chartData[0].plannedKm).toBe(5);
+      expect(result.chartData[0].totalWithPlanned).toBe(15);
+      expect(result.chartData[0].completedCount).toBe(1);
+      expect(result.chartData[0].plannedCount).toBe(1);
+      
+      expect(result.chartData[1].km).toBe(0);
+      expect(result.chartData[1].plannedKm).toBe(12);
+      expect(result.chartData[1].totalWithPlanned).toBe(12);
+    });
+
+    it('should format week labels correctly', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        createSession('2026-01-06', 10),
+        createSession('2026-01-13', 15),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.chartData[0].label).toBe('5-11 jan');
+      expect(result.chartData[0].weekKey).toBe('2026-W02');
+      expect(result.chartData[1].label).toBe('12-18 jan');
+      expect(result.chartData[1].weekKey).toBe('2026-W03');
+    });
+
+    it('should calculate changePercent between active weeks only', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        createSession('2026-01-06', 10),
+        createSession('2026-01-20', 15),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.chartData[0].changePercent).toBeNull();
+      expect(result.chartData[1].isActive).toBe(false);
+      expect(result.chartData[1].changePercent).toBeNull();
+      expect(result.chartData[2].changePercent).toBe(50.0);
+    });
+
+    it('should skip sessions without date', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        { date: null, distance: 10, status: 'completed' },
+        createSession('2026-01-06', 5),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.totalKm).toBe(5);
+      expect(result.chartData).toHaveLength(1);
+    });
+
+    it('should calculate averages correctly', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        createSession('2026-01-06', 10),
+        createSession('2026-01-27', 20),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.totalWeeksSpan).toBe(4);
+      expect(result.averageKmPerWeek).toBe(30 / 4);
+      expect(result.activeWeeksCount).toBe(2);
+      expect(result.averageKmPerActiveWeek).toBe(30 / 2);
     });
 
     it('should round distances to 1 decimal place', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10.555, status: 'completed' },
-        { week: 1, distance: 5.444, status: 'completed' },
+        createSession('2026-01-06', 10.555),
+        createSession('2026-01-07', 5.444),
       ];
 
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
 
-      expect(result.chartData[0].km).toBe(16.0); // 10.555 + 5.444 = 15.999 → 16.0
+      expect(result.chartData[0].km).toBe(16.0);
     });
 
-    it('should skip sessions with null week', () => {
+    it('should handle sessions spanning year boundary', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { week: null, distance: 10, status: 'completed' },
-        { week: 1, distance: 5, status: 'completed' },
+        createSession('2025-12-29', 10),
+        createSession('2026-01-02', 15),
       ];
 
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
 
-      expect(result.totalKm).toBe(5); // Only week 1
       expect(result.chartData).toHaveLength(1);
-    });
-
-    it('should sort weeks in ascending order', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 3, distance: 10, status: 'completed' },
-        { week: 1, distance: 5, status: 'completed' },
-        { week: 2, distance: 8, status: 'completed' },
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
-
-      expect(result.chartData[0].week).toBe(1);
-      expect(result.chartData[1].week).toBe(2);
-      expect(result.chartData[2].week).toBe(3);
-    });
-
-    it('should calculate changePercent correctly', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        { week: 2, distance: 15, status: 'completed' }, // +50%
-        { week: 3, distance: 12, status: 'completed' }, // -20%
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
-
-      expect(result.chartData[0].changePercent).toBeNull(); // First week
-      expect(result.chartData[1].changePercent).toBe(50.0); // (15-10)/10 * 100
-      expect(result.chartData[2].changePercent).toBe(-20.0); // (12-15)/15 * 100
-    });
-
-    it('should skip weeks without completed km when calculating changePercent', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        // Week 2 has no completed sessions
-        { week: 3, distance: 15, status: 'completed' },
-      ];
-      const plannedSessions: Partial<TrainingSession>[] = [
-        { week: 2, distance: 5, status: 'planned' },
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        plannedSessions as TrainingSession[]
-      );
-
-      // Week 2 should have null km
-      expect(result.chartData[1].km).toBeNull();
-      // Week 3 changePercent should compare to week 1 (skipping week 2)
-      expect(result.chartData[2].changePercent).toBe(50.0); // (15-10)/10 * 100
-    });
-
-    it('should calculate changePercentWithPlanned including planned sessions', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        { week: 2, distance: 8, status: 'completed' },
-      ];
-      const plannedSessions: Partial<TrainingSession>[] = [
-        { week: 2, distance: 7, status: 'planned' }, // Total: 15km
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        plannedSessions as TrainingSession[]
-      );
-
-      expect(result.chartData[0].changePercentWithPlanned).toBeNull(); // First week
-      // Week 2: (15 - 10) / 10 * 100 = 50%
-      expect(result.chartData[1].changePercentWithPlanned).toBe(50.0);
-    });
-
-    it('should format week labels as "S{number}"', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        { week: 42, distance: 5, status: 'completed' },
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
-
-      expect(result.chartData[0].semaine).toBe('S1');
-      expect(result.chartData[1].semaine).toBe('S42');
-    });
-
-    it('should handle zero distance gracefully', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 0, status: 'completed' },
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
-
-      expect(result.totalKm).toBe(0);
-      expect(result.chartData[0].km).toBeNull(); // 0 → null
-    });
-
-    it('should handle undefined distance as 0', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: undefined, status: 'completed' },
-        { week: 1, distance: 5, status: 'completed' },
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        []
-      );
-
-      expect(result.totalKm).toBe(5);
-      expect(result.chartData[0].km).toBe(5);
-    });
-
-    it('should include all weeks from both completed and planned sessions', () => {
-      const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
-        { week: 3, distance: 8, status: 'completed' },
-      ];
-      const plannedSessions: Partial<TrainingSession>[] = [
-        { week: 2, distance: 5, status: 'planned' },
-        { week: 4, distance: 12, status: 'planned' },
-      ];
-
-      const result = calculateWeeklyStats(
-        completedSessions as TrainingSession[],
-        plannedSessions as TrainingSession[]
-      );
-
-      expect(result.chartData).toHaveLength(4);
-      expect(result.chartData.map((d) => d.week)).toEqual([1, 2, 3, 4]);
+      expect(result.chartData[0].km).toBe(25);
+      expect(result.chartData[0].weekKey).toBe('2026-W01');
     });
 
     it('should handle null planned sessions array', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { week: 1, distance: 10, status: 'completed' },
+        createSession('2026-01-06', 10),
       ];
 
       const result = calculateWeeklyStats(
@@ -263,12 +230,21 @@ describe('weekly-calculator', () => {
         null as unknown as TrainingSession[]
       );
 
-      expect(result.chartData[0]).toMatchObject({
-        week: 1,
-        km: 10,
-        plannedKm: 0,
-        plannedCount: 0,
-      });
+      expect(result.chartData[0].km).toBe(10);
+      expect(result.chartData[0].plannedKm).toBe(0);
+      expect(result.chartData[0].plannedCount).toBe(0);
+    });
+
+    it('should handle zero distance gracefully', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        createSession('2026-01-06', 0),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.totalKm).toBe(0);
+      expect(result.chartData[0].km).toBe(0);
+      expect(result.chartData[0].isActive).toBe(false);
     });
   });
 });

@@ -12,7 +12,7 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
     <div 
       data-testid="sessions-empty-state"
       className={cn(
-      "relative overflow-hidden rounded-[2.5rem] border-none bg-card p-16 md:p-24 text-center shadow-xl",
+      "relative overflow-hidden rounded-[2.5rem] border-none bg-card p-16 md:p-24 text-center shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700",
       className
     )}>
 

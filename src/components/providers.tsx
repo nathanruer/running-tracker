@@ -73,9 +73,15 @@ export const Providers = ({ children }: ProvidersProps) => {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ 
+      persistOptions={{
         persister,
-        maxAge: 7 * MS_PER_DAY, // Persist for 7 days
+        maxAge: 7 * MS_PER_DAY,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const key = query.queryKey[0];
+            return key !== 'user' && key !== 'conversations' && key !== 'conversation';
+          },
+        },
       }}
     >
       <TooltipProvider delayDuration={150}>

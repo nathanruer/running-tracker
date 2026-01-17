@@ -57,15 +57,17 @@ export async function GET(request: NextRequest) {
       const page = parseInt(searchParams.get('page') || '1');
       const perPage = parseInt(searchParams.get('per_page') || '50');
 
-      const activities = await getActivities(accessToken, perPage, page);
-      const hasMore = activities.length === perPage;
-
-      const runningActivities = activities.filter(
+      let allActivities = await getActivities(accessToken, Math.min(perPage * 2, 200), page);
+      
+      const runningActivities = allActivities.filter(
         (activity) => activity.type === 'Run'
       );
 
+      const finalActivities = runningActivities.slice(0, perPage);
+      const hasMore = allActivities.length >= perPage;
+
       return NextResponse.json({ 
-        activities: runningActivities,
+        activities: finalActivities,
         hasMore 
       });
     },

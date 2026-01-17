@@ -25,7 +25,7 @@ export function useAnalyticsData(sessions: TrainingSession[]) {
   } = useDateRangeFilter(completedSessions, 'all');
 
   const filteredPlannedSessions = useMemo(() => {
-    const plannedSessions = sessions.filter((s) => s.status === 'planned' && s.week !== null);
+    const plannedSessions = sessions.filter((s) => s.status === 'planned' && s.date);
 
     if (dateRange === 'all') return plannedSessions;
 

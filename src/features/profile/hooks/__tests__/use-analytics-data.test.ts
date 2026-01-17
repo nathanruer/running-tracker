@@ -64,11 +64,11 @@ describe('useAnalyticsData', () => {
       expect(result.current.stats).toBeDefined();
     });
 
-    it('should filter planned sessions with week numbers', () => {
+    it('should filter planned sessions with dates', () => {
       const sessions: TrainingSession[] = [
-        createSession({ id: '1', status: 'planned', week: 1 }),
-        createSession({ id: '2', status: 'planned', week: null }),
-        createSession({ id: '3', status: 'completed', week: 1 }),
+        createSession({ id: '1', status: 'planned', date: '2024-01-15' }),
+        createSession({ id: '2', status: 'planned', date: null }),
+        createSession({ id: '3', status: 'completed', date: '2024-01-15' }),
       ];
 
       const { result } = renderHook(() => useAnalyticsData(sessions));

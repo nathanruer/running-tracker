@@ -13,20 +13,6 @@ export interface StravaActivity {
   max_heartrate?: number;
 }
 
-/**
- * Hook for fetching and managing Strava activities
- * Handles loading state, connection status, and activity fetching
- *
- * @param open Dialog open state - triggers fetch when opened
- * @returns Object with activities, loading state, connection status, and utility functions
- *
- * @example
- * const { activities, loading, isConnected, loadActivities, connectToStrava } = useStravaActivities(open);
- *
- * if (!isConnected) {
- *   return <Button onClick={connectToStrava}>Connect to Strava</Button>;
- * }
- */
 export function useStravaActivities(open: boolean) {
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);

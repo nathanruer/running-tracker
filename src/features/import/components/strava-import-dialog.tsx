@@ -79,6 +79,7 @@ export function StravaImportDialog({
       }
     };
   }, [hasMore, isFetchingMore, isConnected, loadMore]);
+
   const { handleError, handleSuccess, handleWarning } = useApiErrorHandler();
   const filteredActivities = useMemo(() => {
     if (!searchQuery.trim()) return activities;
@@ -128,13 +129,7 @@ export function StravaImportDialog({
     try {
       const selectedActivities = Array.from(selectedIndices).map((i) => activities[i]);
 
-      if (mode === 'complete') {
-        const activity = selectedActivities[0];
-        const data = await getStravaActivityDetails(activity.id.toString());
-        onImport(data);
-        onOpenChange(false);
-        clearSelection();
-      } else if (selectedIndices.size === 1) {
+      if (mode === 'complete' || selectedIndices.size === 1) {
         const activity = selectedActivities[0];
         const data = await getStravaActivityDetails(activity.id.toString());
         onImport(data);
@@ -191,8 +186,6 @@ export function StravaImportDialog({
         if (onBulkImportSuccess) {
           onBulkImportSuccess();
         }
-
-        return;
       }
     } catch (error) {
       handleError(error, "Impossible d'importer les activités");
@@ -234,30 +227,14 @@ export function StravaImportDialog({
 
           <div className="flex-1 min-h-0 flex flex-col">
             {!isConnected ? (
-              <div key="strava-connect-view" className="flex flex-col items-center py-10 px-6 text-center space-y-8 animate-in fade-in zoom-in-95 duration-300">
+              <div className="flex flex-col items-center py-10 px-6 text-center space-y-8 animate-in fade-in zoom-in-95 duration-300">
                 <div className="relative">
                   <div className="absolute inset-0 bg-[#FC4C02]/20 blur-2xl rounded-full" />
                   <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-[#FC4C02]/5 border border-[#FC4C02]/10 shadow-inner">
-                    <svg
-                      width="48"
-                      height="48"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066l-2.084 4.116z"
-                        fill="#FC4C02"
-                      />
-                      <path
-                        d="M10.233 13.828L7.9 9.111H4.47l5.763 11.38 2.089-4.116-2.089-2.547z"
-                        fill="#FC4C02"
-                        opacity="0.6"
-                      />
-                      <path
-                        d="M7.9 9.111l2.333 4.717 2.089 2.547 2.089-4.116h3.065L12 0 7.9 9.111z"
-                        fill="#FC4C02"
-                      />
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066l-2.084 4.116z" fill="#FC4C02" />
+                      <path d="M10.233 13.828L7.9 9.111H4.47l5.763 11.38 2.089-4.116-2.089-2.547z" fill="#FC4C02" opacity="0.6" />
+                      <path d="M7.9 9.111l2.333 4.717 2.089 2.547 2.089-4.116h3.065L12 0 7.9 9.111z" fill="#FC4C02" />
                     </svg>
                   </div>
                 </div>
@@ -270,19 +247,8 @@ export function StravaImportDialog({
                 </div>
 
                 <div className="w-full space-y-4">
-                  <Button
-                    key="strava-connect-button"
-                    onClick={connectToStrava}
-                    variant="action"
-                    size="xl"
-                    className="w-full bg-[#FC4C02] hover:bg-[#E34402] transition-none"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'Se connecter à Strava'
-                    )}
+                  <Button onClick={connectToStrava} variant="action" size="xl" className="w-full bg-[#FC4C02] hover:bg-[#E34402] transition-none" disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Se connecter à Strava'}
                   </Button>
                   
                   <div className="flex flex-col items-center gap-2 pt-2">
@@ -294,11 +260,11 @@ export function StravaImportDialog({
                 </div>
               </div>
             ) : loading || (activities.length === 0 && loading) ? (
-              <div key="strava-loading-view" className="flex-1 flex items-center justify-center">
+              <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="h-10 w-10 animate-spin text-violet-600 relative z-10" />
               </div>
             ) : (
-              <div key="strava-activities-view" className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+              <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
                 <div className="px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 border-b border-border/10 bg-muted/5">
                   <SearchInput
                     value={searchQuery}
@@ -306,9 +272,23 @@ export function StravaImportDialog({
                     placeholder="Filtrer par nom..."
                     className="md:w-[320px]"
                   />
-                  <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] whitespace-nowrap">
-                    {filteredActivities.length} {filteredActivities.length > 1 ? 'activités trouvées' : 'activité trouvée'}
-                  </p>
+                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-2.5 py-1.5 transition-all">
+                    <span className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/30 whitespace-nowrap">
+                      {activities.length} {activities.length > 1 ? 'SÉANCES' : 'SÉANCE'}
+                    </span>
+                    {hasMore && (
+                      <>
+                        <div className="w-[1px] h-3 bg-border/40 mx-1.5" />
+                        <button
+                          onClick={loadMore}
+                          disabled={isFetchingMore}
+                          className="text-[9px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors disabled:opacity-50"
+                        >
+                          {isFetchingMore ? '...' : 'Synchroniser'}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -316,7 +296,7 @@ export function StravaImportDialog({
                     <div className="min-w-full overflow-x-auto px-4 md:px-8 py-2">
                       <Table>
                         <TableHeader className="bg-transparent border-b border-border/40 sticky top-0 bg-background/95 backdrop-blur-sm z-20">
-                          <TableRow className="hover:bg-transparent">
+                          <TableRow className="hover:bg-transparent border-none">
                             <TableHead className="w-[40px] md:w-[50px] py-4 px-2 md:px-4">
                               {mode !== 'complete' && (
                                 <Checkbox
@@ -327,10 +307,7 @@ export function StravaImportDialog({
                               )}
                             </TableHead>
                             <TableHead className="text-center py-4 px-2 md:px-4">
-                              <button 
-                                onClick={() => handleSort('date')}
-                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
-                              >
+                              <button onClick={() => handleSort('date')} className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group">
                                 <SortIcon column="date" />
                                 <span className={cn(
                                   "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
@@ -340,10 +317,7 @@ export function StravaImportDialog({
                             </TableHead>
                             <TableHead className="py-4 px-2 md:px-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Activité</TableHead>
                             <TableHead className="text-center py-4 px-2 md:px-4 hidden sm:table-cell">
-                              <button 
-                                onClick={() => handleSort('duration')}
-                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
-                              >
+                              <button onClick={() => handleSort('duration')} className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group">
                                 <SortIcon column="duration" />
                                 <span className={cn(
                                   "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
@@ -352,10 +326,7 @@ export function StravaImportDialog({
                               </button>
                             </TableHead>
                             <TableHead className="text-center py-4 px-2 md:px-4">
-                              <button 
-                                onClick={() => handleSort('distance')}
-                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
-                              >
+                              <button onClick={() => handleSort('distance')} className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group">
                                 <SortIcon column="distance" />
                                 <span className={cn(
                                   "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
@@ -364,10 +335,7 @@ export function StravaImportDialog({
                               </button>
                             </TableHead>
                             <TableHead className="text-center py-4 px-2 md:px-4 hidden md:table-cell">
-                              <button
-                                onClick={() => handleSort('pace')}
-                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
-                              >
+                              <button onClick={() => handleSort('pace')} className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group">
                                 <SortIcon column="pace" />
                                 <span className={cn(
                                   "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
@@ -376,10 +344,7 @@ export function StravaImportDialog({
                               </button>
                             </TableHead>
                             <TableHead className="text-center py-4 px-2 md:px-4 hidden lg:table-cell">
-                              <button 
-                                onClick={() => handleSort('heartRate')}
-                                className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group"
-                              >
+                              <button onClick={() => handleSort('heartRate')} className="flex items-center justify-center gap-1.5 hover:text-foreground transition-all w-full group">
                                 <SortIcon column="heartRate" />
                                 <span className={cn(
                                   "text-[10px] font-bold uppercase tracking-[0.15em] transition-colors",
@@ -397,7 +362,7 @@ export function StravaImportDialog({
                               <TableRow
                                 key={activity.id}
                                 className={cn(
-                                  "cursor-pointer transition-colors group/row",
+                                  "cursor-pointer transition-colors group/row border-none",
                                   selected ? "bg-violet-500/5 hover:bg-violet-500/10" : "hover:bg-muted/30"
                                 )}
                                 onClick={() => toggleSelect(originalIndex)}
@@ -451,15 +416,34 @@ export function StravaImportDialog({
                     </div>
 
                     {hasMore && (
-                      <div ref={observerTarget} className="flex justify-center p-8 w-full min-h-[100px]">
-                        {isFetchingMore && (
-                          <div className="flex items-center gap-3 text-muted-foreground animate-in fade-in duration-300">
-                            <Loader2 className="h-5 w-5 animate-spin text-violet-600 relative z-10" />
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40">
+                      <div ref={observerTarget} className="flex flex-col items-center justify-center p-8 w-full min-h-[120px] gap-4">
+                        {isFetchingMore ? (
+                          <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in duration-300">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-violet-500/20 blur-xl rounded-full animate-pulse" />
+                              <Loader2 className="h-6 w-6 animate-spin text-violet-600 relative z-10" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-violet-600/60">
                               Synchronisation Strava...
                             </span>
                           </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 group animate-in fade-in slide-in-from-bottom-2 duration-700">
+                            <div className="h-8 w-[1px] bg-gradient-to-b from-transparent via-violet-500/20 to-transparent" />
+                            <p className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-[0.2em] group-hover:text-violet-500/50 transition-colors">
+                              Défilez pour charger plus
+                            </p>
+                          </div>
                         )}
+                      </div>
+                    )}
+                    
+                    {!hasMore && activities.length > 0 && (
+                      <div className="flex justify-center p-12 w-full opacity-20">
+                         <div className="flex flex-col items-center gap-2">
+                           <div className="h-1 w-1 rounded-full bg-muted-foreground" />
+                           <span className="text-[9px] font-black uppercase tracking-[0.3em]">Fin de l&apos;historique</span>
+                         </div>
                       </div>
                     )}
                   </ScrollArea>
@@ -467,7 +451,6 @@ export function StravaImportDialog({
 
                 <div className="flex flex-col sm:flex-row gap-3 md:gap-4 p-4 md:p-8 border-t border-border/40 bg-background/50 backdrop-blur-sm">
                   <Button
-                    key="strava-cancel-button"
                     type="button"
                     variant="neutral"
                     size="xl"

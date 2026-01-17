@@ -6,20 +6,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface WeeklyData {
-  semaine: string;
-  km: number | null;
-  completedCount: number;
-  changePercent: number | null;
-  plannedKm?: number;
-  plannedCount?: number;
-  totalWithPlanned?: number | null;
-  changePercentWithPlanned?: number | null;
-}
+import type { WeeklyChartDataPoint } from '@/lib/domain/analytics/weekly-calculator';
 
 interface ExportWeeklyAnalyticsProps {
-  data: WeeklyData[];
+  data: WeeklyChartDataPoint[];
 }
 
 export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
@@ -34,31 +24,31 @@ export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
     ];
 
     const rows = data.map((week) => {
-      const hasCompleted = week.km !== null && week.km > 0;
-      const hasPlanned = week.plannedKm !== undefined && week.plannedKm > 0;
+      const hasCompleted = week.km > 0;
+      const hasPlanned = week.plannedKm > 0;
 
       let distance = '';
       let evolution = '';
 
       if (hasCompleted && hasPlanned) {
         distance = `${week.km} (total prévu: ${week.totalWithPlanned})`;
-        evolution = week.changePercentWithPlanned !== null && week.changePercentWithPlanned !== undefined
+        evolution = week.changePercentWithPlanned !== null
           ? `${week.changePercentWithPlanned > 0 ? '+' : ''}${week.changePercentWithPlanned.toFixed(1)}`
           : '';
       } else if (hasCompleted) {
-        distance = week.km!.toString();
+        distance = week.km.toString();
         evolution = week.changePercent !== null
           ? `${week.changePercent > 0 ? '+' : ''}${week.changePercent.toFixed(1)}`
           : '';
       } else if (hasPlanned) {
         distance = `${week.plannedKm} (prévu)`;
-        evolution = week.changePercentWithPlanned !== null && week.changePercentWithPlanned !== undefined
+        evolution = week.changePercentWithPlanned !== null
           ? `${week.changePercentWithPlanned > 0 ? '+' : ''}${week.changePercentWithPlanned.toFixed(1)}`
           : '';
       }
 
       return [
-        week.semaine,
+        week.label,
         distance,
         week.completedCount.toString(),
         evolution,
@@ -93,23 +83,23 @@ export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
     if (data.length === 0) return;
 
     const exportData = data.map((week) => {
-      const hasCompleted = week.km !== null && week.km > 0;
-      const hasPlanned = week.plannedKm !== undefined && week.plannedKm > 0;
+      const hasCompleted = week.km > 0;
+      const hasPlanned = week.plannedKm > 0;
 
       if (hasCompleted && hasPlanned) {
         return {
-          semaine: week.semaine,
+          semaine: week.label,
           distance_realisee_km: week.km,
           seances_realisees: week.completedCount,
           distance_totale_prevue_km: week.totalWithPlanned,
-          seances_prevues_restantes: week.plannedCount || 0,
+          seances_prevues_restantes: week.plannedCount,
           evolution_pourcent: week.changePercentWithPlanned,
         };
       }
 
       if (hasCompleted) {
         return {
-          semaine: week.semaine,
+          semaine: week.label,
           distance_realisee_km: week.km,
           seances_realisees: week.completedCount,
           evolution_pourcent: week.changePercent,
@@ -118,15 +108,15 @@ export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
 
       if (hasPlanned) {
         return {
-          semaine: week.semaine,
+          semaine: week.label,
           distance_prevue_km: week.plannedKm,
-          seances_prevues: week.plannedCount || 0,
+          seances_prevues: week.plannedCount,
           evolution_pourcent: week.changePercentWithPlanned,
         };
       }
 
       return {
-        semaine: week.semaine,
+        semaine: week.label,
         evolution_pourcent: null,
       };
     });
@@ -154,31 +144,31 @@ export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
     ];
 
     const rows = data.map((week) => {
-      const hasCompleted = week.km !== null && week.km > 0;
-      const hasPlanned = week.plannedKm !== undefined && week.plannedKm > 0;
+      const hasCompleted = week.km > 0;
+      const hasPlanned = week.plannedKm > 0;
 
       let distance = '';
       let evolution = '';
 
       if (hasCompleted && hasPlanned) {
         distance = `${week.km} (total prévu: ${week.totalWithPlanned})`;
-        evolution = week.changePercentWithPlanned !== null && week.changePercentWithPlanned !== undefined
+        evolution = week.changePercentWithPlanned !== null
           ? `${week.changePercentWithPlanned > 0 ? '+' : ''}${week.changePercentWithPlanned.toFixed(1)}`
           : '';
       } else if (hasCompleted) {
-        distance = week.km!.toString();
+        distance = week.km.toString();
         evolution = week.changePercent !== null
           ? `${week.changePercent > 0 ? '+' : ''}${week.changePercent.toFixed(1)}`
           : '';
       } else if (hasPlanned) {
         distance = `${week.plannedKm} (prévu)`;
-        evolution = week.changePercentWithPlanned !== null && week.changePercentWithPlanned !== undefined
+        evolution = week.changePercentWithPlanned !== null
           ? `${week.changePercentWithPlanned > 0 ? '+' : ''}${week.changePercentWithPlanned.toFixed(1)}`
           : '';
       }
 
       return [
-        week.semaine,
+        week.label,
         distance,
         week.completedCount.toString(),
         evolution,

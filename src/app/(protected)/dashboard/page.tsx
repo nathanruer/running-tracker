@@ -155,7 +155,7 @@ const DashboardPage = () => {
 
   return (
     <PageContainer testId="dashboard-container" mobileTitle="Dashboard">
-      {initialLoading || sessions.length > 0 || selectedType !== 'all' || isFetchingData || isDeleting ? (
+      {initialLoading || sessions.length > 0 || selectedType !== 'all' ? (
         <SessionsTable
           sessions={sessions}
           availableTypes={availableTypes}
@@ -169,7 +169,7 @@ const DashboardPage = () => {
           hasMore={hasMore && !isShowingAll}
           isFetchingNextPage={isFetchingNextPage || (isShowingAll && allSessionsLoading)}
           onLoadMore={fetchNextPage}
-          isFetching={isFetchingData || allSessionsLoading}
+          isFetching={isFetchingData || allSessionsLoading || isDeleting}
           isShowingAll={isShowingAll}
           onShowAll={() => setIsShowingAll(true)}
         />

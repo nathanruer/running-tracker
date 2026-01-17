@@ -173,32 +173,35 @@ export function SessionsTable({
               </div>
 
               {!initialLoading && (
-                <div className="flex md:flex items-center gap-2.5 ml-auto">
-                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-2.5 py-1.5 gap-2.5 transition-all">
+                <div className="flex items-center gap-2.5 ml-auto">
+                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-2.5 py-1.5 transition-all">
                     <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/30 whitespace-nowrap">
                       {paginatedCount} / {totalCount || (isFetching ? '...' : '0')}
                     </span>
+                    
                     {(paginatedCount > 10 || (onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore))) && (
-                      <div className="w-[1px] h-3 bg-border/40" />
+                      <>
+                        <div className="w-[1px] h-3 bg-border/40 mx-0.5" />
+                        <div className="flex items-center gap-2.5">
+                          {onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore) && (
+                            <button
+                              onClick={onShowAll}
+                              className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
+                            >
+                              Tout
+                            </button>
+                          )}
+                          {paginatedCount > 10 && (
+                            <button
+                              onClick={onResetPagination}
+                              className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground transition-colors"
+                            >
+                              Réduire
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
-                    <div className="flex items-center gap-2.5">
-                      {onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore) && (
-                        <button
-                          onClick={onShowAll}
-                          className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
-                        >
-                          Tout
-                        </button>
-                      )}
-                      {paginatedCount > 10 && (
-                        <button
-                          onClick={onResetPagination}
-                          className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground transition-colors"
-                        >
-                          Réduire
-                        </button>
-                      )}
-                    </div>
                   </div>
                 </div>
               )}
@@ -225,7 +228,7 @@ export function SessionsTable({
             "overflow-x-auto transition-opacity duration-300 scrollbar-thin scrollbar-thumb-muted-foreground/10",
             isFetching && !initialLoading ? "opacity-50" : "opacity-100"
           )}>
-            <Table data-testid="sessions-table" className="table-auto min-w-[1000px] md:min-w-0">
+            <Table data-testid="sessions-table" className="table-auto min-w-[800px] md:min-w-0">
               <TableHeader className="bg-transparent">
                 <TableRow className="border-border/40 hover:bg-transparent">
                   <TableHead className="w-10 md:w-12 px-2 md:px-6">
@@ -239,7 +242,7 @@ export function SessionsTable({
                   <TableHead className="w-16 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6 hidden sm:table-cell">#</TableHead>
                   <TableHead className="w-16 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6 hidden lg:table-cell">Sem.</TableHead>
                   <TableHead className="w-24 md:w-32 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Date</TableHead>
-                  <TableHead className="whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Séance</TableHead>
+                  <TableHead className="w-32 md:w-40 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Séance</TableHead>
                   <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-duration"
@@ -299,7 +302,7 @@ export function SessionsTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialLoading ? (
+                {initialLoading || (isFetching && sortedSessions.length === 0) ? (
                   [...Array(6)].map((_, i) => (
                     <TableRow key={i} className="border-border/20 p-8">
                       <TableCell className="px-6"><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
