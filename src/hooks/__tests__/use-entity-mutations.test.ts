@@ -7,8 +7,8 @@ import { useEntityMutations } from '../use-entity-mutations';
 const mockHandleError = vi.fn();
 const mockHandleSuccess = vi.fn();
 
-vi.mock('@/hooks/use-api-error-handler', () => ({
-  useApiErrorHandler: () => ({
+vi.mock('@/hooks/use-error-handler', () => ({
+  useErrorHandler: () => ({
     handleError: mockHandleError,
     handleSuccess: mockHandleSuccess,
   }),
@@ -113,7 +113,7 @@ describe('useEntityMutations', () => {
         await result.current.handleDelete('entity-1');
       });
 
-      expect(mockHandleError).toHaveBeenCalledWith(deleteError, 'Erreur lors de la suppression');
+      expect(mockHandleError).toHaveBeenCalledWith(deleteError);
     });
 
     it('should use custom success messages', async () => {
@@ -220,8 +220,7 @@ describe('useEntityMutations', () => {
       });
 
       expect(mockHandleError).toHaveBeenCalledWith(
-        bulkDeleteError,
-        'Erreur lors de la suppression groupée'
+        bulkDeleteError
       );
     });
   });

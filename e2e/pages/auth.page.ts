@@ -15,6 +15,8 @@ export class AuthPage extends BasePage {
   readonly toast: Locator;
   readonly toggleToRegisterButton: Locator;
   readonly toggleToLoginButton: Locator;
+  readonly inlineErrorMessage: Locator;
+  readonly emailFieldError: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -26,6 +28,8 @@ export class AuthPage extends BasePage {
     this.toast = this.page.locator('li[data-state="open"]');
     this.toggleToRegisterButton = this.page.locator('[data-testid="login-switch"]');
     this.toggleToLoginButton = this.page.locator('[data-testid="login-switch"]');
+    this.inlineErrorMessage = this.page.locator('form .text-destructive').first();
+    this.emailFieldError = this.page.locator('#email-error');
   }
 
   async goto(): Promise<void> {
@@ -93,6 +97,20 @@ export class AuthPage extends BasePage {
     await expect(this.toast).toBeVisible({ timeout: 5000 });
     if (message) {
       await expect(this.toast).toContainText(message);
+    }
+  }
+
+  async assertInlineErrorVisible(message?: string | RegExp): Promise<void> {
+    await expect(this.inlineErrorMessage).toBeVisible({ timeout: 5000 });
+    if (message) {
+      await expect(this.inlineErrorMessage).toContainText(message);
+    }
+  }
+
+  async assertFieldErrorVisible(message?: string | RegExp): Promise<void> {
+    await expect(this.emailFieldError).toBeVisible({ timeout: 5000 });
+    if (message) {
+      await expect(this.emailFieldError).toContainText(message);
     }
   }
 

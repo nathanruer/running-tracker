@@ -64,11 +64,14 @@ vi.mock('@/hooks/use-table-selection', () => ({
   }),
 }));
 
-vi.mock('@/hooks/use-api-error-handler', () => ({
-  useApiErrorHandler: () => ({
+vi.mock('@/hooks/use-error-handler', () => ({
+  useErrorHandler: () => ({
     handleError: vi.fn(),
     handleSuccess: vi.fn(),
     handleWarning: vi.fn(),
+    wrapAsync: <T extends unknown[], R>(fn: (...args: T) => Promise<R>) => fn,
+    error: null,
+    clearError: vi.fn(),
   }),
 }));
 

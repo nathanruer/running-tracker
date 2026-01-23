@@ -14,7 +14,9 @@ import { bulkImportSessions, type FormattedStravaActivity } from '@/lib/services
 import { useStravaActivities } from '../../hooks/use-strava-activities';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
-import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import { useErrorHandler } from '@/hooks/use-error-handler';
+import { useToast } from '@/hooks/use-toast';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { StravaConnectScreen } from './strava-connect-screen';
 import { StravaToolbar } from './strava-toolbar';
 import { StravaActivitiesTable } from './strava-activities-table';
@@ -49,7 +51,8 @@ export function StravaImportContent({
     reset,
   } = useStravaActivities(open);
 
-  const { handleError, handleSuccess, handleWarning } = useApiErrorHandler();
+  const { toast } = useToast();
+  const { error: importError, wrapAsync } = useErrorHandler({ scope: 'local' });
 
   useEffect(() => {
     if (!hasMore || loadingMore || loadingAll || !isConnected) return;
@@ -115,9 +118,12 @@ export function StravaImportContent({
     isAllSelected,
   } = useTableSelection(filteredActivities, mode === 'complete' ? 'single' : 'multiple');
 
-  const handleImportSelected = async () => {
+  const handleImportSelected = wrapAsync(async () => {
     if (selectedIndices.size === 0) {
-      handleWarning('Veuillez sélectionner au moins une activité');
+      toast({
+        title: 'Attention',
+        description: 'Veuillez sélectionner au moins une activité',
+      });
       return;
     }
 
@@ -149,11 +155,11 @@ export function StravaImportContent({
         }));
 
         const result = await bulkImportSessions(sessionsToImport);
-
-        handleSuccess(
-          'Import réussi',
-          `${result.count} séance(s) Strava importée(s) avec succès`
-        );
+        
+        toast({
+          title: 'Import réussi',
+          description: `${result.count} séance(s) Strava importée(s) avec succès`,
+        });
 
         clearSelection();
 
@@ -166,12 +172,10 @@ export function StravaImportContent({
           onOpenChange(false);
         }
       }
-    } catch (error) {
-      handleError(error, "Impossible d'importer les activités");
     } finally {
       setImporting(false);
     }
-  };
+  });
 
   return (
     <div className="flex flex-col h-full max-h-[90vh]">
@@ -198,6 +202,9 @@ export function StravaImportContent({
       </DialogHeader>
 
       <div className="flex-1 min-h-0 flex flex-col relative transform-gpu overflow-hidden">
+        <div className="px-4 md:px-8 mt-2">
+          <ErrorMessage error={importError} className="mb-4" onRetry={loadMore} />
+        </div>
         {!isConnected ? (
           <StravaConnectScreen loading={loading} onConnect={connectToStrava} />
         ) : (

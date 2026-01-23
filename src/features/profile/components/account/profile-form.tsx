@@ -75,10 +75,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
     mutationFn: updateUser,
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(['user'], updatedUser);
-      toast({
-        title: 'Profil mis à jour',
-        description: 'Vos informations ont été enregistrées avec succès.',
-      });
     },
     onError: () => {
       toast({

@@ -15,9 +15,11 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { loginUser, registerUser } from '@/lib/services/api-client';
 import { CACHE_STORAGE_KEY } from '@/lib/constants';
+import { ErrorCode, AppError } from '@/lib/errors';
+import { useErrorHandler } from '@/hooks/use-error-handler';
+import { ErrorMessage } from '@/components/ui/error-message';
 
 const LoginCard = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,52 +27,63 @@ const LoginCard = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { error: formError, clearError, setLocalError, wrapAsync } = useErrorHandler({ scope: 'local' });
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = wrapAsync(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFieldErrors({});
     setLoading(true);
+
     const cleanEmail = email.trim();
 
-    try {
-      if (isLogin) {
-        await loginUser(cleanEmail, password);
-        toast({
-          title: 'Connexion réussie',
-          description: 'Bienvenue !',
-        });
-      } else {
-        await registerUser(cleanEmail, password);
-        toast({
-          title: 'Compte créé',
-          description: 'Votre compte a été créé avec succès !',
-        });
-      }
-
-      queryClient.clear();
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(CACHE_STORAGE_KEY);
-      }
-
-      router.replace('/dashboard');
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Une erreur est survenue, veuillez réessayer.',
-        variant: 'destructive',
-      });
-    } finally {
+    if (!cleanEmail) {
+      setFieldErrors({ email: 'L\'email est requis' });
       setLoading(false);
+      return;
     }
+
+    if (!password) {
+      setFieldErrors({ password: 'Le mot de passe est requis' });
+      setLoading(false);
+      return;
+    }
+
+    if (isLogin) {
+      await loginUser(cleanEmail, password);
+    } else {
+      await registerUser(cleanEmail, password);
+    }
+
+    queryClient.clear();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(CACHE_STORAGE_KEY);
+    }
+
+    router.replace('/dashboard');
+  }, (error) => {
+    setLoading(false);
+    if (error.code === ErrorCode.AUTH_EMAIL_TAKEN) {
+      setFieldErrors({ email: 'Cette adresse email est déjà utilisée' });
+      setLocalError(null); 
+    } else if (error.code === ErrorCode.AUTH_INVALID_CREDENTIALS || error.code === ErrorCode.AUTH_UNAUTHORIZED) {
+      setLocalError(new AppError({ 
+        code: ErrorCode.AUTH_INVALID_CREDENTIALS, 
+        message: 'Email ou mot de passe incorrect' 
+      }));
+    }
+  });
+
+  const handleModeSwitch = () => {
+    setIsLogin((prev) => !prev);
+    clearError();
+    setFieldErrors({});
   };
 
   return (
-    <Card className="w-full max-w-md border-border/50 shadow-xl">
+    <Card className="w-full max-w-md border-border/50 shadow-xl transition-all duration-300">
       <CardHeader className="space-y-4 flex flex-col items-center text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600">
           <Zap className="h-8 w-8 text-white fill-white" />
@@ -88,6 +101,8 @@ const LoginCard = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <ErrorMessage error={formError} className="mb-4" hideTitle />
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -96,11 +111,22 @@ const LoginCard = () => {
               type="email"
               placeholder="email@exemple.com"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }}
+              className={fieldErrors.email ? 'border-destructive' : ''}
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             />
+            {fieldErrors.email && (
+              <p id="email-error" className="text-xs text-destructive font-medium">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
-           <div className="space-y-2">
+
+          <div className="space-y-2">
             <Label htmlFor="password">Mot de passe</Label>
             <div className="relative">
               <Input
@@ -109,9 +135,13 @@ const LoginCard = () => {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                className="pr-10"
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                className={`pr-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               />
               <button
                 type="button"
@@ -126,7 +156,13 @@ const LoginCard = () => {
                 )}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p id="password-error" className="text-xs text-destructive font-medium">
+                {fieldErrors.password}
+              </p>
+            )}
           </div>
+
           <Button
             data-testid="login-submit"
             type="submit"
@@ -144,7 +180,7 @@ const LoginCard = () => {
           <button
             data-testid="login-switch"
             type="button"
-            onClick={() => setIsLogin((prev) => !prev)}
+            onClick={handleModeSwitch}
             className="text-primary hover:underline"
           >
             {isLogin
@@ -158,4 +194,3 @@ const LoginCard = () => {
 };
 
 export default LoginCard;
-

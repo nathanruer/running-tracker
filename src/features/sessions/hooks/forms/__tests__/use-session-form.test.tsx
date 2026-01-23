@@ -8,10 +8,18 @@ vi.mock('@/lib/services/api-client', () => ({
   updateSession: vi.fn(),
 }));
 
-vi.mock('@/hooks/use-api-error-handler', () => ({
-  useApiErrorHandler: () => ({
+vi.mock('@/hooks/use-error-handler', () => ({
+  useErrorHandler: () => ({
     handleError: vi.fn(),
     handleSuccess: vi.fn(),
+    clearError: vi.fn(),
+    wrapAsync: <T extends unknown[], R>(fn: (...args: T) => Promise<R>, onError?: (error: Error) => void) => async (...args: T) => {
+      try {
+        return await fn(...args);
+      } catch (e) {
+        if (onError) onError(e instanceof Error ? e : new Error(String(e)));
+      }
+    }
   }),
 }));
 

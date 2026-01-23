@@ -56,12 +56,12 @@ test.describe('Login Flow - Core', () => {
     await dashboardPage.assertDashboardLoaded();
   });
 
-  test('should show error toast with invalid credentials', async ({ page }) => {
+  test('should show error with invalid credentials', async ({ page }) => {
     const authPage = new AuthPage(page);
     await authPage.goto();
     await authPage.fillForm(invalidTestUser);
     await authPage.submit();
-    await authPage.assertErrorToastVisible(/erreur/i);
+    await authPage.assertInlineErrorVisible(/incorrect/i);
     expect(authPage.getCurrentUrl()).not.toContain('/dashboard');
   });
 

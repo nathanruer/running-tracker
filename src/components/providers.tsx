@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useSyncExternalStore } from 'react';
+import { ReactNode, useState, useSyncExternalStore, useCallback } from 'react';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
@@ -8,8 +8,10 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
+import { ErrorModal } from '@/components/ui/error-modal';
+import { ErrorProvider } from '@/contexts/error-context';
 import { CACHE_TIME, GC_TIME, MS_PER_DAY, CACHE_STORAGE_KEY } from '@/lib/constants';
-import { toast } from '@/hooks/use-toast';
+import { reportError } from '@/lib/errors/reporter';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -24,11 +26,7 @@ export const Providers = ({ children }: ProvidersProps) => {
             if (query.meta?.silentError) {
               return;
             }
-            toast({
-              title: 'Erreur de chargement',
-              description: error.message || 'Une erreur inattendue est survenue.',
-              variant: 'destructive',
-            });
+            reportError(error);
           },
         }),
         defaultOptions: {
@@ -58,14 +56,21 @@ export const Providers = ({ children }: ProvidersProps) => {
     () => false
   );
 
+  const handleSessionExpired = useCallback(() => {
+    window.location.href = '/login';
+  }, []);
+
   if (!mounted || !persister) {
     return (
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={150}>
-          {children}
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
+        <ErrorProvider onSessionExpired={handleSessionExpired}>
+          <TooltipProvider delayDuration={150}>
+            {children}
+            <Toaster />
+            <Sonner />
+            <ErrorModal />
+          </TooltipProvider>
+        </ErrorProvider>
       </QueryClientProvider>
     );
   }
@@ -84,11 +89,14 @@ export const Providers = ({ children }: ProvidersProps) => {
         },
       }}
     >
-      <TooltipProvider delayDuration={150}>
-        {children}
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
+      <ErrorProvider onSessionExpired={handleSessionExpired}>
+        <TooltipProvider delayDuration={150}>
+          {children}
+          <Toaster />
+          <Sonner />
+          <ErrorModal />
+        </TooltipProvider>
+      </ErrorProvider>
     </PersistQueryClientProvider>
   );
 };

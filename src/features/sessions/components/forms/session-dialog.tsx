@@ -23,6 +23,7 @@ import { FileImportButtons } from './file-import-buttons';
 import { SessionFormFields } from './session-form-fields';
 import { SessionDialogActions } from './session-dialog-actions';
 import { SessionDialogHeader } from './session-dialog-header';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { useSessionForm } from '../../hooks/forms/use-session-form';
 import { useScrollToError } from '@/hooks/use-scroll-to-error';
 import { useToast } from '@/hooks/use-toast';
@@ -71,6 +72,7 @@ const SessionDialog = ({
     onSubmit,
     onUpdate,
     resetForm,
+    error,
   } = useSessionForm({
     mode,
     session,
@@ -134,6 +136,7 @@ const SessionDialog = ({
       <DialogContent hideClose className="sm:max-w-[640px] p-0 overflow-hidden w-[95vw] md:w-full">
         <div className="max-h-[90vh] md:max-h-[85vh] overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
           <SessionDialogHeader mode={mode} onReset={resetForm} />
+          <ErrorMessage error={error} className="mb-2" />
           <FileImportButtons
             mode={mode}
             onStravaClick={onRequestStravaImport}

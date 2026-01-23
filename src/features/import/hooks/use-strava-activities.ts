@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 import { getStravaActivities, type FormattedStravaActivity } from '@/lib/services/api-client';
 
 export type { FormattedStravaActivity };
@@ -13,7 +13,7 @@ export function useStravaActivities(open: boolean) {
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [page, setPage] = useState(1);
-  const { handleError } = useApiErrorHandler();
+  const { handleError } = useErrorHandler({ scope: 'local' });
 
   const loadActivities = useCallback(async (pageNum: number, perPage: number = 20) => {
     const isFirst = pageNum === 1;
@@ -61,7 +61,7 @@ export function useStravaActivities(open: boolean) {
       if (isAuthError) {
         setIsConnected(false);
       } else {
-        handleError(error, 'Impossible de récupérer les activités Strava');
+        handleError(error);
       }
       return false;
     } finally {

@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useApiErrorHandler } from '../use-api-error-handler';
 import { vi } from 'vitest';
+import { AppError, ErrorCode } from '@/lib/errors';
 
 const mockToast = vi.fn();
 
@@ -10,50 +11,57 @@ vi.mock('../use-toast', () => ({
   }),
 }));
 
+vi.mock('@/lib/errors/reporter', () => ({
+  reportError: vi.fn(),
+}));
+
 describe('useApiErrorHandler', () => {
   beforeEach(() => {
     mockToast.mockClear();
   });
 
   describe('handleError', () => {
-    it('should handle Error objects', () => {
+    it('should handle AppError with correct message', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       act(() => {
-        result.current.handleError(new Error('Test error'));
+        result.current.handleError(new AppError({
+          code: ErrorCode.SESSION_SAVE_FAILED,
+          message: 'Impossible de sauvegarder',
+        }));
       });
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'Test error',
+        description: 'Impossible de sauvegarder',
         variant: 'destructive',
       });
     });
 
-    it('should handle string errors', () => {
+    it('should handle AppError with default message from code', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       act(() => {
-        result.current.handleError('String error');
+        result.current.handleError(new AppError({ code: ErrorCode.NETWORK_TIMEOUT }));
       });
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'String error',
-        variant: 'destructive',
+        description: 'La requête a pris trop de temps. Veuillez réessayer.',
+        variant: 'default',
       });
     });
 
-    it('should handle unknown errors with default message', () => {
+    it('should handle non-AppError as unknown error', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       act(() => {
-        result.current.handleError({});
+        result.current.handleError(new Error('Some error'));
       });
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'Une erreur est survenue',
+        description: 'Une erreur inattendue est survenue.',
         variant: 'destructive',
       });
     });
@@ -62,13 +70,30 @@ describe('useApiErrorHandler', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       act(() => {
-        result.current.handleError(new Error('Original error'), 'Custom error message');
+        result.current.handleError(
+          new AppError({ code: ErrorCode.UNKNOWN }),
+          'Custom error message'
+        );
       });
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
         description: 'Custom error message',
         variant: 'destructive',
+      });
+    });
+
+    it('should use warning variant for warning severity', () => {
+      const { result } = renderHook(() => useApiErrorHandler());
+
+      act(() => {
+        result.current.handleError(new AppError({ code: ErrorCode.STRAVA_RATE_LIMITED }));
+      });
+
+      expect(mockToast).toHaveBeenCalledWith({
+        title: 'Erreur',
+        description: 'Trop de requêtes vers Strava. Veuillez patienter quelques minutes.',
+        variant: 'default',
       });
     });
   });
@@ -136,9 +161,7 @@ describe('useApiErrorHandler', () => {
     it('should return result on successful execution', async () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
-      const testFn = async () => {
-        return 'success result';
-      };
+      const testFn = async () => 'success result';
 
       const wrappedResult = await result.current.wrapAsync(testFn);
 
@@ -146,11 +169,11 @@ describe('useApiErrorHandler', () => {
       expect(mockToast).not.toHaveBeenCalled();
     });
 
-    it('should handle errors and return undefined', async () => {
+    it('should handle AppError and return undefined', async () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       const testFn = async () => {
-        throw new Error('Test error');
+        throw new AppError({ code: ErrorCode.SESSION_SAVE_FAILED });
       };
 
       const wrappedResult = await result.current.wrapAsync(testFn);
@@ -158,7 +181,7 @@ describe('useApiErrorHandler', () => {
       expect(wrappedResult).toBeUndefined();
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'Test error',
+        description: 'Impossible de sauvegarder la séance.',
         variant: 'destructive',
       });
     });
@@ -167,7 +190,7 @@ describe('useApiErrorHandler', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       const testFn = async () => {
-        throw new Error('Original error');
+        throw new AppError({ code: ErrorCode.UNKNOWN });
       };
 
       await result.current.wrapAsync(testFn, 'Custom error message');
@@ -184,9 +207,7 @@ describe('useApiErrorHandler', () => {
     it('should return result and show success toast on successful execution', async () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
-      const testFn = async () => {
-        return 'success result';
-      };
+      const testFn = async () => 'success result';
 
       const wrappedResult = await result.current.wrapAsyncWithSuccess(testFn, {
         successTitle: 'Success',
@@ -205,7 +226,7 @@ describe('useApiErrorHandler', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       const testFn = async () => {
-        throw new Error('Test error');
+        throw new AppError({ code: ErrorCode.UNKNOWN });
       };
 
       const wrappedResult = await result.current.wrapAsyncWithSuccess(testFn, {
@@ -221,11 +242,11 @@ describe('useApiErrorHandler', () => {
       });
     });
 
-    it('should use default error message when no custom message provided', async () => {
+    it('should use AppError message when no custom message provided', async () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       const testFn = async () => {
-        throw new Error('Test error');
+        throw new AppError({ code: ErrorCode.VALIDATION_FAILED });
       };
 
       await result.current.wrapAsyncWithSuccess(testFn, {
@@ -234,14 +255,14 @@ describe('useApiErrorHandler', () => {
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'Test error',
+        description: 'Les données saisies sont invalides.',
         variant: 'destructive',
       });
     });
   });
 
   describe('Edge cases', () => {
-    it('should handle null and undefined errors', () => {
+    it('should handle null as unknown error', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       act(() => {
@@ -250,21 +271,21 @@ describe('useApiErrorHandler', () => {
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'Une erreur est survenue',
+        description: 'Une erreur inattendue est survenue.',
         variant: 'destructive',
       });
     });
 
-    it('should handle empty string errors', () => {
+    it('should handle undefined as unknown error', () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
       act(() => {
-        result.current.handleError('');
+        result.current.handleError(undefined);
       });
 
       expect(mockToast).toHaveBeenCalledWith({
         title: 'Erreur',
-        description: 'Une erreur est survenue',
+        description: 'Une erreur inattendue est survenue.',
         variant: 'destructive',
       });
     });
@@ -272,9 +293,7 @@ describe('useApiErrorHandler', () => {
     it('should handle async functions that return undefined', async () => {
       const { result } = renderHook(() => useApiErrorHandler());
 
-      const testFn = async () => {
-        return undefined;
-      };
+      const testFn = async () => undefined;
 
       const wrappedResult = await result.current.wrapAsync(testFn);
 

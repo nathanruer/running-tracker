@@ -177,7 +177,7 @@ describe('useConversationCreation', () => {
     });
 
     expect(error).toBeDefined();
-    expect(error?.message).toBe('Network error');
+    expect(error?.message).toBe('Le serveur est momentanément indisponible.');
     expect(result.current.optimisticMessages).toEqual([]);
     expect(result.current.isWaitingForResponse).toBe(false);
   });
@@ -239,7 +239,7 @@ describe('useConversationCreation', () => {
     });
 
     expect(error).toBeDefined();
-    expect(error?.message).toBe('Une erreur est survenue');
+    expect(error?.message).toBe('Une erreur inattendue est survenue.');
     expect(result.current.optimisticMessages).toEqual([]);
     expect(result.current.isWaitingForResponse).toBe(false);
   });

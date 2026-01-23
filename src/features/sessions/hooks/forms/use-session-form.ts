@@ -10,7 +10,7 @@ import type {
 } from '@/lib/types';
 import { formSchema, type FormValues } from '@/lib/validation/session-form';
 import { PREDEFINED_TYPES } from '@/features/sessions/components/forms/session-type-selector';
-import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 import { transformIntervalData } from '@/lib/utils/intervals';
 import { getTodayISO } from '@/lib/utils/date';
 import { calculatePaceFromDurationAndDistance } from '@/lib/utils/pace';
@@ -34,7 +34,7 @@ interface UseSessionFormProps {
 }
 
 export function useSessionForm({ mode, session, initialData, onSuccess, onClose }: UseSessionFormProps) {
-  const { handleError, handleSuccess } = useApiErrorHandler();
+  const { error, clearError, handleError, handleSuccess } = useErrorHandler({ scope: 'local' });
   const [loading, setLoading] = useState(false);
   const [isCustomSessionType, setIsCustomSessionType] = useState(false);
   const [intervalEntryMode, setIntervalEntryMode] = useState<'quick' | 'detailed'>('quick');
@@ -155,7 +155,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       return;
     }
 
-    handleError(error, 'Une erreur est survenue lors de l\'enregistrement.');
+    handleError(error);
   };
 
   const onUpdate = async (values: FormValues) => {
@@ -284,5 +284,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     onSubmit,
     onUpdate,
     resetForm,
+    error,
+    clearError,
   };
 }

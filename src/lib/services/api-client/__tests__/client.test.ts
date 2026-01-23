@@ -84,7 +84,7 @@ describe('apiRequest', () => {
       json: async () => ({}),
     });
 
-    await expect(apiRequest('/api/auth/login')).rejects.toThrow('Une erreur est survenue');
+    await expect(apiRequest('/api/auth/login')).rejects.toThrow('Une erreur inattendue est survenue.');
   });
 
   it('handles JSON parse errors gracefully', async () => {

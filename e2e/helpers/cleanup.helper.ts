@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { API_BASE_URL, TEST_PASSWORD } from '../fixtures/test-data';
 
 /**
@@ -8,29 +8,35 @@ import { API_BASE_URL, TEST_PASSWORD } from '../fixtures/test-data';
 
 /**
  * Delete a test user and all their data via API
- * If email is provided, attempts to re-login if the first delete attempt fails (e.g. user logged out)
+ * Uses a fresh request context to ensure cookies are properly handled
  */
 export async function deleteCurrentUser(page: Page, email?: string): Promise<boolean> {
+  if (!email) {
+    return false;
+  }
+
+  const context = page.context();
+
   try {
-    let response = await page.request.delete(`${API_BASE_URL}/api/auth/delete-account`);
-    
-    if (response.ok()) {
-      return true;
-    }
-    
-    if (response.status() === 401 && email) {
-      const loginResponse = await page.request.post(`${API_BASE_URL}/api/auth/login`, {
-        data: { email, password: TEST_PASSWORD }
-      });
-      
-      if (loginResponse.ok()) {
-        response = await page.request.delete(`${API_BASE_URL}/api/auth/delete-account`);
-        return response.ok();
-      }
+    const loginResponse = await context.request.post(`${API_BASE_URL}/api/auth/login`, {
+      data: { email, password: TEST_PASSWORD }
+    });
+
+    if (!loginResponse.ok()) {
+      console.warn(`[cleanup] Failed to login as ${email}: ${loginResponse.status()}`);
+      return false;
     }
 
-    return false;
-  } catch {
+    const deleteResponse = await context.request.delete(`${API_BASE_URL}/api/auth/delete-account`);
+
+    if (!deleteResponse.ok()) {
+      console.warn(`[cleanup] Failed to delete ${email}: ${deleteResponse.status()}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn(`[cleanup] Error deleting ${email}:`, error);
     return false;
   }
 }

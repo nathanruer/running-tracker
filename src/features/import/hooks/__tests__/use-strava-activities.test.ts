@@ -4,8 +4,8 @@ import { useStravaActivities } from '../use-strava-activities';
 
 const mockHandleError = vi.fn();
 
-vi.mock('@/hooks/use-api-error-handler', () => ({
-  useApiErrorHandler: () => ({
+vi.mock('@/hooks/use-error-handler', () => ({
+  useErrorHandler: () => ({
     handleError: mockHandleError,
   }),
 }));
@@ -107,8 +107,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = new Error('Network error');
-    vi.mocked(global.fetch).mockRejectedValue(mockError);
+    vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
 
     const { result } = renderHook(() => useStravaActivities(true));
 
@@ -117,8 +116,7 @@ describe('useStravaActivities', () => {
     });
 
     expect(mockHandleError).toHaveBeenCalledWith(
-      mockError,
-      'Impossible de récupérer les activités Strava'
+      expect.objectContaining({ code: 'NETWORK_SERVER_ERROR' })
     );
   });
 
@@ -135,8 +133,7 @@ describe('useStravaActivities', () => {
     });
 
     expect(mockHandleError).toHaveBeenCalledWith(
-      expect.any(Error),
-      'Impossible de récupérer les activités Strava'
+      expect.any(Error)
     );
   });
 

@@ -40,7 +40,6 @@ test.describe('Register Flow - Core', () => {
     // Verify registration success
     await authPage.assertRegisterSuccessful();
     await dashboardPage.assertDashboardLoaded();
-    await authPage.assertSuccessToastVisible(/compte créé/i);
 
     // Verify session cookie exists
     const cookies = await context.cookies();
@@ -70,7 +69,7 @@ test.describe('Register Flow - Core', () => {
     // Try to register again with same email
     await authPage.switchToRegister();
     await authPage.register({ email: existingEmail, password: TEST_PASSWORD });
-    await authPage.assertErrorToastVisible(/email.*déjà utilisé/i);
+    await authPage.assertInlineErrorVisible(/déjà utilisé/i);
     expect(authPage.getCurrentUrl()).not.toContain('/dashboard');
   });
 

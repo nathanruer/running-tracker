@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient, InfiniteData, QueryKey, useQuery } from '@tanstack/react-query';
-import { useApiErrorHandler } from '@/hooks/use-api-error-handler';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 import { getCurrentUser } from '@/lib/services/api-client';
 
 /**
@@ -55,7 +55,7 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   } = options;
 
   const queryClient = useQueryClient();
-  const { handleError, handleSuccess } = useApiErrorHandler();
+  const { handleError, handleSuccess } = useErrorHandler({ scope: 'global' });
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: user } = useQuery({
@@ -150,7 +150,7 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     } catch (error) {
       queryClient.setQueryData(buildQueryKey('all', filterType), previousAllData);
       queryClient.setQueryData(buildQueryKey('paginated', filterType), previousPaginatedData);
-      handleError(error, defaultMessages.deleteError);
+      handleError(error);
     } finally {
       setIsDeleting(false);
     }
@@ -188,7 +188,7 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     } catch (error) {
       queryClient.setQueryData(buildQueryKey('all', filterType), previousAllData);
       queryClient.setQueryData(buildQueryKey('paginated', filterType), previousPaginatedData);
-      handleError(error, defaultMessages.bulkDeleteError);
+      handleError(error);
     } finally {
       setIsDeleting(false);
     }
