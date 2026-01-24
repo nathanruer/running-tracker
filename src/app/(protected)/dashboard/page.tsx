@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,7 @@ import { SessionsEmptyState } from '@/features/dashboard/components/sessions-emp
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
+import { useMultiSort } from '@/features/dashboard/hooks/use-multi-sort';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +21,7 @@ import {
   type TrainingSessionPayload,
 } from '@/lib/types';
 
-const DashboardPage = () => {
+function DashboardContent() {
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<string>('all');
   const [isShowingAll, setIsShowingAll] = useState(false);
@@ -34,6 +35,7 @@ const DashboardPage = () => {
 
   const { toast } = useToast();
   const router = useRouter();
+  const { sortConfig, sortParam, handleSort } = useMultiSort();
 
   const {
     user,
@@ -50,7 +52,7 @@ const DashboardPage = () => {
     fetchNextPage,
     handleResetPagination,
     mutations,
-  } = useDashboardData(selectedType, isShowingAll, setIsShowingAll);
+  } = useDashboardData(selectedType, isShowingAll, setIsShowingAll, sortParam);
 
   const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } = mutations;
 
@@ -170,6 +172,8 @@ const DashboardPage = () => {
           isFetching={isFetchingData || allSessionsLoading || isDeleting}
           isShowingAll={isShowingAll}
           onShowAll={() => setIsShowingAll(true)}
+          sortConfig={sortConfig}
+          onSort={handleSort}
         />
       ) : (
         <SessionsEmptyState onAction={openNewSession} />
@@ -218,6 +222,12 @@ const DashboardPage = () => {
       />
     </PageContainer>
   );
-};
+}
 
-export default DashboardPage;
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}

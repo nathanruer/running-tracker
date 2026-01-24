@@ -7,4 +7,24 @@ export {
   getCurrentMaxSessionNumber,
   getSessionCount,
 } from './utils';
-export type { NormalizedSession } from './types';
+export {
+  parseSortParam,
+  serializeSortConfig,
+  getColumnSortInfo,
+  toggleColumnSort,
+  getClientSortValue,
+  compareValues,
+  SORTABLE_COLUMNS,
+} from './sorting';
+export type {
+  SortColumn,
+  SortDirection,
+  SortItem,
+  SortConfig,
+} from './sorting';
+export {
+  buildPrismaOrderBy,
+  buildRawOrderByClause,
+  getSortedSessionsQuery,
+  isSimpleSortConfig,
+} from './sorting-prisma';

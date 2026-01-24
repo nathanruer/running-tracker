@@ -4,6 +4,7 @@ import { ReactNode, useState, useSyncExternalStore, useCallback } from 'react';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
@@ -62,7 +63,36 @@ export const Providers = ({ children }: ProvidersProps) => {
 
   if (!mounted || !persister) {
     return (
-      <QueryClientProvider client={queryClient}>
+      <NuqsAdapter>
+        <QueryClientProvider client={queryClient}>
+          <ErrorProvider onSessionExpired={handleSessionExpired}>
+            <TooltipProvider delayDuration={150}>
+              {children}
+              <Toaster />
+              <Sonner />
+              <ErrorModal />
+            </TooltipProvider>
+          </ErrorProvider>
+        </QueryClientProvider>
+      </NuqsAdapter>
+    );
+  }
+
+  return (
+    <NuqsAdapter>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: 7 * MS_PER_DAY,
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => {
+              const key = query.queryKey[0];
+              return key !== 'user' && key !== 'conversations' && key !== 'conversation';
+            },
+          },
+        }}
+      >
         <ErrorProvider onSessionExpired={handleSessionExpired}>
           <TooltipProvider delayDuration={150}>
             {children}
@@ -71,33 +101,8 @@ export const Providers = ({ children }: ProvidersProps) => {
             <ErrorModal />
           </TooltipProvider>
         </ErrorProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister,
-        maxAge: 7 * MS_PER_DAY,
-        dehydrateOptions: {
-          shouldDehydrateQuery: (query) => {
-            const key = query.queryKey[0];
-            return key !== 'user' && key !== 'conversations' && key !== 'conversation';
-          },
-        },
-      }}
-    >
-      <ErrorProvider onSessionExpired={handleSessionExpired}>
-        <TooltipProvider delayDuration={150}>
-          {children}
-          <Toaster />
-          <Sonner />
-          <ErrorModal />
-        </TooltipProvider>
-      </ErrorProvider>
-    </PersistQueryClientProvider>
+      </PersistQueryClientProvider>
+    </NuqsAdapter>
   );
 };
 

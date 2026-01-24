@@ -5,11 +5,13 @@ export async function getSessions(
   limit?: number,
   offset?: number,
   type?: string,
+  sort?: string,
 ): Promise<TrainingSession[]> {
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
   if (offset) params.append('offset', offset.toString());
   if (type && type !== 'all') params.append('type', type);
+  if (sort) params.append('sort', sort);
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
 

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SessionsTable } from '../sessions-table';
 import type { TrainingSession } from '@/lib/types';
+import type { SortConfig } from '@/lib/domain/sessions';
 
 const mockSessions: TrainingSession[] = [
   {
@@ -61,6 +62,7 @@ describe('SessionsTable', () => {
   const mockOnBulkDelete = vi.fn();
   const mockOnNewSession = vi.fn();
   const mockOnView = vi.fn();
+  const mockOnSort = vi.fn();
 
   const defaultActions = {
     onEdit: mockOnEdit,
@@ -69,6 +71,8 @@ describe('SessionsTable', () => {
     onNewSession: mockOnNewSession,
     onView: mockOnView,
   };
+
+  const defaultSortConfig: SortConfig = [];
 
   const defaultProps = {
     sessions: mockSessions,
@@ -85,6 +89,8 @@ describe('SessionsTable', () => {
     onLoadMore: vi.fn(),
     isShowingAll: false,
     onShowAll: vi.fn(),
+    sortConfig: defaultSortConfig,
+    onSort: mockOnSort,
   };
 
   beforeEach(() => {
@@ -204,40 +210,34 @@ describe('SessionsTable', () => {
     expect(mockOnBulkDelete).toHaveBeenCalledWith(['1', '2', '3']);
   });
 
-  it('should sort by duration when clicking duration header', async () => {
+  it('should call onSort when clicking duration header', async () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
     const durationHeader = screen.getByRole('button', { name: /durée/i });
     await user.click(durationHeader);
 
-    const rows = screen.getAllByRole('row');
-    const dataRows = rows.slice(1);
-
-    // Adaptive format: MM:SS for durations < 60min
-    expect(within(dataRows[0]).getByText('45:00')).toBeInTheDocument();
+    expect(mockOnSort).toHaveBeenCalledWith('duration', false);
   });
 
-  it('should toggle sort direction on multiple clicks', async () => {
+  it('should call onSort with shift key when Shift+clicking', async () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
+    const distanceHeader = screen.getByRole('button', { name: /dist/i });
+    await user.keyboard('{Shift>}');
+    await user.click(distanceHeader);
+    await user.keyboard('{/Shift}');
+
+    expect(mockOnSort).toHaveBeenCalledWith('distance', true);
+  });
+
+  it('should display sort indicators when sortConfig is set', () => {
+    const sortConfig: SortConfig = [{ column: 'duration', direction: 'desc' }];
+    render(<SessionsTable {...defaultProps} sortConfig={sortConfig} />);
+
     const durationHeader = screen.getByRole('button', { name: /durée/i });
-
-    // First click - descending (longest first)
-    await user.click(durationHeader);
-    let rows = screen.getAllByRole('row');
-    expect(within(rows[1]).getByText('45:00')).toBeInTheDocument();
-
-    // Second click - ascending (shortest first)
-    await user.click(durationHeader);
-    rows = screen.getAllByRole('row');
-    expect(within(rows[1]).getByText('Récupération')).toBeInTheDocument();
-
-    // Third click - no sort (back to original order)
-    await user.click(durationHeader);
-    rows = screen.getAllByRole('row');
-    expect(within(rows[1]).getByText('30:00')).toBeInTheDocument();
+    expect(within(durationHeader).getByText('Durée')).toHaveClass('text-foreground');
   });
 
   it('should render type filter select', () => {

@@ -5,6 +5,7 @@ import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
 import { calculateSessionPosition } from '@/lib/domain/sessions/position';
+import { parseSortParam, buildPrismaOrderBy } from '@/lib/domain/sessions';
 import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/lib/services/strava';
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
       const offset = parseInt(searchParams.get('offset') ?? '0');
       const sessionType = searchParams.get('type');
       const status = searchParams.get('status');
+      const sortParam = searchParams.get('sort');
 
       const whereClause: Prisma.training_sessionsWhereInput = { userId };
 
@@ -32,12 +34,12 @@ export async function GET(request: NextRequest) {
         whereClause.sessionType = sessionType;
       }
 
+      const sortConfig = parseSortParam(sortParam);
+      const orderBy = buildPrismaOrderBy(sortConfig);
+
       const sessions = await prisma.training_sessions.findMany({
         where: whereClause,
-        orderBy: [
-          { status: 'desc' },
-          { sessionNumber: 'desc' },
-        ],
+        orderBy,
         ...(limit > 0 ? { take: limit } : {}),
         ...(offset > 0 ? { skip: offset } : {}),
       });

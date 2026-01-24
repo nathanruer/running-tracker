@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Plus, MoreVertical, FilterX } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { SessionRow } from './session-row';
-import { SortIcon } from './sort-icon';
+import { MultiSortIcon } from './multi-sort-icon';
 import { SelectionBar } from './selection-bar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,7 +32,7 @@ import {
 import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { type TrainingSession } from '@/lib/types';
-import { useSessionsTableSort } from '../hooks/use-sessions-table-sort';
+import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
 import { useSessionsSelection } from '../hooks/use-sessions-selection';
 import { useBulkDelete } from '../hooks/use-bulk-delete';
 
@@ -60,6 +60,8 @@ interface SessionsTableProps {
   isFetching?: boolean;
   isShowingAll?: boolean;
   onShowAll?: () => void;
+  sortConfig: SortConfig;
+  onSort: (column: SortColumn, isMulti: boolean) => void;
 }
 
 export function SessionsTable({
@@ -78,6 +80,8 @@ export function SessionsTable({
   isFetching,
   isShowingAll,
   onShowAll,
+  sortConfig,
+  onSort,
 }: SessionsTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -110,22 +114,17 @@ export function SessionsTable({
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions;
     const lowerQuery = searchQuery.toLowerCase();
-    return sessions.filter(s => 
+    return sessions.filter(s =>
       s.sessionType.toLowerCase().includes(lowerQuery) ||
       (s.comments && s.comments.toLowerCase().includes(lowerQuery))
     );
   }, [sessions, searchQuery]);
 
-  const { sortColumn, sortDirection, handleSort: originalHandleSort, sortedSessions } = useSessionsTableSort(filteredSessions);
-  
-  const handleSort = (column: string) => {
-    if (onShowAll && !isShowingAll) {
-      onShowAll();
-    }
-    originalHandleSort(column);
+  const handleSort = (column: SortColumn, e: React.MouseEvent) => {
+    onSort(column, e.shiftKey);
   };
 
-  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sortedSessions);
+  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(filteredSessions);
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
 
   const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '';
@@ -271,51 +270,51 @@ export function SessionsTable({
                   <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-duration"
-                      onClick={() => handleSort('duration')}
+                      onClick={(e) => handleSort('duration', e)}
                       className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
-                      <SortIcon column="duration" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={cn("transition-colors uppercase", sortColumn === 'duration' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Durée</span>
+                      <MultiSortIcon column="duration" sortConfig={sortConfig} />
+                      <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'duration') ? 'text-foreground' : 'group-hover:text-foreground/80')}>Durée</span>
                     </button>
                   </TableHead>
                   <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-distance"
-                      onClick={() => handleSort('distance')}
+                      onClick={(e) => handleSort('distance', e)}
                       className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
-                      <SortIcon column="distance" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={cn("transition-colors uppercase", sortColumn === 'distance' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Dist.</span>
+                      <MultiSortIcon column="distance" sortConfig={sortConfig} />
+                      <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'distance') ? 'text-foreground' : 'group-hover:text-foreground/80')}>Dist.</span>
                     </button>
                   </TableHead>
                   <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-avgPace"
-                      onClick={() => handleSort('avgPace')}
+                      onClick={(e) => handleSort('avgPace', e)}
                       className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
-                      <SortIcon column="avgPace" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={cn("transition-colors uppercase", sortColumn === 'avgPace' ? 'text-foreground' : 'group-hover:text-foreground/80')}>Allure</span>
+                      <MultiSortIcon column="avgPace" sortConfig={sortConfig} />
+                      <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'avgPace') ? 'text-foreground' : 'group-hover:text-foreground/80')}>Allure</span>
                     </button>
                   </TableHead>
                   <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-avgHeartRate"
-                      onClick={() => handleSort('avgHeartRate')}
+                      onClick={(e) => handleSort('avgHeartRate', e)}
                       className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
-                      <SortIcon column="avgHeartRate" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={cn("transition-colors uppercase", sortColumn === 'avgHeartRate' ? 'text-foreground' : 'group-hover:text-foreground/80')}>FC</span>
+                      <MultiSortIcon column="avgHeartRate" sortConfig={sortConfig} />
+                      <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'avgHeartRate') ? 'text-foreground' : 'group-hover:text-foreground/80')}>FC</span>
                     </button>
                   </TableHead>
                   <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
                     <button
                       data-testid="sort-perceivedExertion"
-                      onClick={() => handleSort('perceivedExertion')}
+                      onClick={(e) => handleSort('perceivedExertion', e)}
                       className="flex items-center justify-center hover:text-foreground transition-all w-full group"
                     >
-                      <SortIcon column="perceivedExertion" sortColumn={sortColumn} sortDirection={sortDirection} />
-                      <span className={cn("transition-colors uppercase", sortColumn === 'perceivedExertion' ? 'text-foreground' : 'group-hover:text-foreground/80')}>RPE</span>
+                      <MultiSortIcon column="perceivedExertion" sortConfig={sortConfig} />
+                      <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'perceivedExertion') ? 'text-foreground' : 'group-hover:text-foreground/80')}>RPE</span>
                     </button>
                   </TableHead>
                   <TableHead className="max-w-[40ch] text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 py-6 hidden xl:table-cell">Commentaires</TableHead>
@@ -327,7 +326,7 @@ export function SessionsTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialLoading || (isFetching && sortedSessions.length === 0) ? (
+                {initialLoading || (isFetching && filteredSessions.length === 0) ? (
                   [...Array(6)].map((_, i) => (
                     <TableRow key={i} className="border-border/20 p-8">
                       <TableCell className="px-6"><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
@@ -358,8 +357,8 @@ export function SessionsTable({
                       </TableCell>
                     </TableRow>
                   ))
-                ) : sortedSessions.length > 0 ? (
-                  sortedSessions.map((session) => (
+                ) : filteredSessions.length > 0 ? (
+                  filteredSessions.map((session) => (
                     <SessionRow
                       key={session.id}
                       session={session}
@@ -416,7 +415,7 @@ export function SessionsTable({
         </div>
       )}
 
-      {!hasMore && sortedSessions.length > 10 && !searchQuery.trim() && (
+      {!hasMore && filteredSessions.length > 10 && !searchQuery.trim() && (
         <div className="mt-8 mb-4 flex justify-center opacity-10">
           <span className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Fin de l&apos;historique</span>
         </div>
