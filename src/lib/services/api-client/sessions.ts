@@ -6,12 +6,16 @@ export async function getSessions(
   offset?: number,
   type?: string,
   sort?: string,
+  search?: string,
+  dateFrom?: string,
 ): Promise<TrainingSession[]> {
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
   if (offset) params.append('offset', offset.toString());
   if (type && type !== 'all') params.append('type', type);
   if (sort) params.append('sort', sort);
+  if (search) params.append('search', search);
+  if (dateFrom) params.append('dateFrom', dateFrom);
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
 
@@ -19,6 +23,24 @@ export async function getSessions(
     `/api/sessions${queryString}`,
   );
   return data.sessions;
+}
+
+export async function getSessionsCount(
+  type?: string,
+  search?: string,
+  dateFrom?: string,
+): Promise<number> {
+  const params = new URLSearchParams();
+  if (type && type !== 'all') params.append('type', type);
+  if (search) params.append('search', search);
+  if (dateFrom) params.append('dateFrom', dateFrom);
+
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+
+  const data = await apiRequest<{ count: number }>(
+    `/api/sessions/count${queryString}`,
+  );
+  return data.count;
 }
 
 export async function addSession(

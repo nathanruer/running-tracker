@@ -108,7 +108,7 @@ export function RecommendationCard({
                 onClick={() => onAccept(session)}
                 disabled={loadingSessionId === session.recommendation_id}
                 variant="action"
-                className="rounded-full h-10 md:h-11 px-6 md:px-8 transition-all text-[11px] font-bold shadow-lg shadow-violet-600/20 w-full sm:w-auto"
+                className="rounded-full h-10 md:h-11 px-6 md:px-8 transition-all text-[11px] font-bold w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
                 Ajouter

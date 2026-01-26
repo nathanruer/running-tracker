@@ -28,63 +28,18 @@ vi.mock('@/components/ui/button', () => ({
   ),
 }));
 
-vi.mock('../../hooks/use-strava-activities', () => ({
-  useStravaActivities: () => ({
-    activities: [],
-    loading: false,
-    loadingMore: false,
-    loadingAll: false,
-    hasMore: false,
-    totalCount: 0,
-    isConnected: false,
-    connectToStrava: vi.fn(),
-    loadMore: vi.fn(),
-    loadAll: vi.fn(),
-    reset: vi.fn(),
-  }),
-}));
-
-vi.mock('@/hooks/use-table-sort', () => ({
-  useTableSort: () => ({
-    handleSort: vi.fn(),
-    SortIcon: () => null,
-    defaultComparator: () => [],
-    sortColumn: null,
-  }),
-}));
-
-vi.mock('@/hooks/use-table-selection', () => ({
-  useTableSelection: () => ({
-    selectedIndices: new Set(),
-    toggleSelect: vi.fn(),
-    toggleSelectAll: vi.fn(),
-    clearSelection: vi.fn(),
-    isSelected: () => false,
-    isAllSelected: () => false,
-  }),
-}));
-
-vi.mock('@/hooks/use-error-handler', () => ({
-  useErrorHandler: () => ({
-    handleError: vi.fn(),
-    handleSuccess: vi.fn(),
-    handleWarning: vi.fn(),
-    wrapAsync: <T extends unknown[], R>(fn: (...args: T) => Promise<R>) => fn,
-    error: null,
-    clearError: vi.fn(),
-  }),
-}));
-
-vi.mock('../strava-connect-screen', () => ({
-  StravaConnectScreen: ({ onConnect }: { onConnect: () => void }) => (
-    <div data-testid="connect-screen">
-      <button onClick={onConnect}>Se connecter à Strava</button>
+vi.mock('../strava-import-content', () => ({
+  StravaImportContent: ({ onOpenChange }: { onOpenChange: (open: boolean) => void }) => (
+    <div data-testid="strava-import-content">
+      <button onClick={() => onOpenChange(false)} className="rounded-xl">Close</button>
+      <span>Importer depuis Strava</span>
+      <span>Sélectionnez vos activités Strava.</span>
+      <span>Sélectionnez une activité à importer.</span>
+      <div data-testid="connect-screen">
+        <button>Se connecter à Strava</button>
+      </div>
     </div>
   ),
-}));
-
-vi.mock('../strava-loading-skeleton', () => ({
-  StravaLoadingSkeleton: () => <div data-testid="loading-skeleton" />,
 }));
 
 describe('StravaImportDialog', () => {

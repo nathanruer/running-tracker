@@ -88,7 +88,7 @@ test.describe('Session Lifecycle - Edit & Delete', () => {
     await row.getByRole('button', { name: /actions/i }).click();
     await page.getByRole('menuitem', { name: /supprimer/i }).click();
 
-    const dialog = page.getByRole('alertdialog');
+    const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await page.locator('[data-testid="delete-session-confirm"]').click();
 

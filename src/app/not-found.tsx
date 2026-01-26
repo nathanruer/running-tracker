@@ -20,7 +20,7 @@ export default function NotFound() {
             <Link href="/">
               <Button
                 size="lg"
-                className="w-full h-12 rounded-xl bg-violet-600 font-bold text-white shadow-lg shadow-violet-500/25 hover:bg-violet-700 active:scale-95 transition-all group"
+                className="w-full h-12 rounded-xl bg-violet-600 font-bold text-white hover:bg-violet-700 active:scale-95 transition-all group"
               >
                 Retour au Dashboard
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />

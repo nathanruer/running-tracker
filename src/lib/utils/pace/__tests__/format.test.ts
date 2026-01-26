@@ -1,5 +1,60 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePaceFromDurationAndDistance } from '../format';
+import { 
+  calculatePaceFromDurationAndDistance, 
+  mpsToSecondsPerKm, 
+  formatPace, 
+  mpsToMinPerKm, 
+  secondsToPace, 
+  formatDisplayPace, 
+  calculatePaceString 
+} from '../format';
+
+describe('mpsToSecondsPerKm', () => {
+  it('should convert velocity to seconds per km', () => {
+    expect(mpsToSecondsPerKm(4)).toBe(250); // 1000/4 = 250
+    expect(mpsToSecondsPerKm(0)).toBe(0);
+    expect(mpsToSecondsPerKm(-1)).toBe(0);
+  });
+});
+
+describe('formatPace', () => {
+  it('should format seconds per km to MM:SS', () => {
+    expect(formatPace(250)).toBe('4:10');
+    expect(formatPace(300)).toBe('5:00');
+    expect(formatPace(0)).toBe('-');
+    expect(formatPace(-1)).toBe('-');
+    expect(formatPace(Infinity)).toBe('-');
+  });
+});
+
+describe('mpsToMinPerKm', () => {
+  it('should convert m/s to MM:SS pace', () => {
+    expect(mpsToMinPerKm(4)).toBe('4:10');
+  });
+});
+
+describe('secondsToPace', () => {
+  it('should format total seconds to MM:SS', () => {
+    expect(secondsToPace(330)).toBe('05:30');
+    expect(secondsToPace(0)).toBe('-');
+    expect(secondsToPace(null)).toBe('-');
+  });
+});
+
+describe('formatDisplayPace', () => {
+  it('should return pace or --', () => {
+    expect(formatDisplayPace('05:30')).toBe('05:30');
+    expect(formatDisplayPace(null)).toBe('--');
+    expect(formatDisplayPace('')).toBe('--');
+  });
+});
+
+describe('calculatePaceString', () => {
+  it('should calculate pace string from distance and time', () => {
+    expect(calculatePaceString(5000, 1500)).toBe('05:00');
+    expect(calculatePaceString(0, 1500)).toBe('00:00');
+  });
+});
 
 describe('calculatePaceFromDurationAndDistance', () => {
   it('should calculate correct pace (MM:SS) for valid inputs', () => {

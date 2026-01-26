@@ -96,7 +96,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
               disabled={isWaitingForResponse || isSending || !input.trim()}
               size="icon"
               variant="action"
-              className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0 shadow-lg shadow-violet-600/20"
+              className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
             >
               {isWaitingForResponse ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -144,7 +144,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
             disabled={conversationId ? (isSending || !input.trim()) : (isWaitingForResponse || !input.trim())}
             size="icon"
             variant="action"
-            className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0 shadow-lg shadow-violet-600/20"
+            className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
           >
             {(conversationId ? isSending : isWaitingForResponse) ? (
               <Loader2 className="h-4 w-4 animate-spin" />

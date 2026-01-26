@@ -4,6 +4,7 @@ import { ExportSessions } from '@/features/dashboard/components/export-sessions'
 
 vi.mock('@/lib/services/api-client', () => ({
   getSessions: vi.fn().mockResolvedValue([]),
+  getSessionsCount: vi.fn().mockResolvedValue(0),
 }));
 
 describe('ExportSessions', () => {
@@ -18,8 +19,8 @@ describe('ExportSessions', () => {
         onOpenChange={mockOnOpenChange}
       />
     );
-    expect(screen.getByText('Exporter des séances')).toBeInTheDocument();
-    expect(screen.getByText('Configurez les options d\'export et choisissez le format.')).toBeInTheDocument();
+    expect(screen.getByText('Exporter l\'historique')).toBeInTheDocument();
+    expect(screen.getByText('Configurez vos préférences pour récupérer vos données.')).toBeInTheDocument();
   });
 
   it('shows export format buttons', () => {

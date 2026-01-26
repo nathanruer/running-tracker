@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDuration, validateDurationInput } from '../parse';
+import { parseDuration, validateDurationInput, normalizeDurationToMMSS } from '../parse';
 
 describe('parseDuration', () => {
   describe('MM:SS format', () => {
@@ -77,5 +77,34 @@ describe('validateDurationInput', () => {
     expect(validateDurationInput('12:60')).toBe(false);
     expect(validateDurationInput('00:60:00')).toBe(false);
     expect(validateDurationInput('')).toBe(false);
+  });
+});
+
+describe('normalizeDurationToMMSS', () => {
+  it('should normalize apostrophe notation', () => {
+    expect(normalizeDurationToMMSS("5'00")).toBe('05:00');
+    expect(normalizeDurationToMMSS("45'30")).toBe('45:30');
+  });
+
+  it('should normalize colon notation', () => {
+    expect(normalizeDurationToMMSS('5:00')).toBe('05:00');
+    expect(normalizeDurationToMMSS('05:00')).toBe('05:00');
+  });
+
+  it('should handle HH:MM:SS format with conversion option', () => {
+    expect(normalizeDurationToMMSS('01:30:00', { convertHoursToMinutes: true })).toBe('90:00');
+    expect(normalizeDurationToMMSS('01:30:00')).toBe(null);
+  });
+
+  it('should normalize plain numbers as minutes', () => {
+    expect(normalizeDurationToMMSS('5')).toBe('05:00');
+    expect(normalizeDurationToMMSS('45')).toBe('45:00');
+  });
+
+  it('should return null for invalid inputs', () => {
+    expect(normalizeDurationToMMSS('')).toBe(null);
+    expect(normalizeDurationToMMSS("invalid")).toBe(null);
+    expect(normalizeDurationToMMSS("5'60")).toBe(null);
+    expect(normalizeDurationToMMSS("12:60")).toBe(null);
   });
 });

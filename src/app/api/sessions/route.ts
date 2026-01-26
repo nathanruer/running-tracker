@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
       const sessionType = searchParams.get('type');
       const status = searchParams.get('status');
       const sortParam = searchParams.get('sort');
+      const search = searchParams.get('search');
+      const dateFrom = searchParams.get('dateFrom');
 
       const whereClause: Prisma.training_sessionsWhereInput = { userId };
 
@@ -32,6 +34,20 @@ export async function GET(request: NextRequest) {
 
       if (sessionType && sessionType !== 'all') {
         whereClause.sessionType = sessionType;
+      }
+
+      if (dateFrom) {
+        whereClause.date = {
+          gte: new Date(dateFrom),
+        };
+      }
+
+      if (search && search.trim()) {
+        const searchTerm = search.trim();
+        whereClause.OR = [
+          { comments: { contains: searchTerm, mode: 'insensitive' } },
+          { sessionType: { contains: searchTerm, mode: 'insensitive' } },
+        ];
       }
 
       const sortConfig = parseSortParam(sortParam);

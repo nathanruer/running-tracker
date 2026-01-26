@@ -1,25 +1,20 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSessionForm } from '../use-session-form';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { type TrainingSession } from '@/lib/types';
 
 vi.mock('@/lib/services/api-client', () => ({
   addSession: vi.fn(),
   updateSession: vi.fn(),
+  completeSession: vi.fn(),
 }));
 
 vi.mock('@/hooks/use-error-handler', () => ({
   useErrorHandler: () => ({
+    error: null,
     handleError: vi.fn(),
     handleSuccess: vi.fn(),
     clearError: vi.fn(),
-    wrapAsync: <T extends unknown[], R>(fn: (...args: T) => Promise<R>, onError?: (error: Error) => void) => async (...args: T) => {
-      try {
-        return await fn(...args);
-      } catch (e) {
-        if (onError) onError(e instanceof Error ? e : new Error(String(e)));
-      }
-    }
   }),
 }));
 
@@ -47,6 +42,10 @@ describe('useSessionForm', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should initialize with default values in create mode', () => {
     const { result } = renderHook(() => useSessionForm({ mode: 'create', onClose }));
 
@@ -54,15 +53,15 @@ describe('useSessionForm', () => {
     expect(result.current.form.getValues('perceivedExertion')).toBeNull();
     expect(result.current.isCustomSessionType).toBe(false);
   });
-  
+
   it('should reset form correctly', () => {
     const { result } = renderHook(() => useSessionForm({ mode: 'create', onClose }));
-    
+
     act(() => {
       result.current.form.setValue('comments', 'Test comment');
     });
     expect(result.current.form.getValues('comments')).toBe('Test comment');
-    
+
     act(() => {
       result.current.resetForm();
     });
@@ -71,22 +70,26 @@ describe('useSessionForm', () => {
   });
 
   it('should initialize perceivedExertion to null in edit mode if it is 0', () => {
-    const { result } = renderHook(() => useSessionForm({ 
-      mode: 'edit', 
-      session: mockSession as unknown as TrainingSession,
-      onClose 
-    }));
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'edit',
+        session: mockSession as unknown as TrainingSession,
+        onClose,
+      })
+    );
 
     expect(result.current.form.getValues('perceivedExertion')).toBeNull();
   });
 
   it('should keep valid perceivedExertion in edit mode', () => {
     const sessionWithRPE = { ...mockSession, perceivedExertion: 5 };
-    const { result } = renderHook(() => useSessionForm({ 
-      mode: 'edit', 
-      session: sessionWithRPE as unknown as TrainingSession, 
-      onClose 
-    }));
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'edit',
+        session: sessionWithRPE as unknown as TrainingSession,
+        onClose,
+      })
+    );
 
     expect(result.current.form.getValues('perceivedExertion')).toBe(5);
   });
@@ -94,20 +97,22 @@ describe('useSessionForm', () => {
   it('should include perceivedExertion in update payload for completed sessions', async () => {
     const { updateSession } = await import('@/lib/services/api-client');
     const onSuccess = vi.fn();
-    
-    const sessionWithRPE = { 
-      ...mockSession, 
+
+    const sessionWithRPE = {
+      ...mockSession,
       id: 'session-123',
       status: 'completed',
-      perceivedExertion: 5 
+      perceivedExertion: 5,
     };
-    
-    const { result } = renderHook(() => useSessionForm({ 
-      mode: 'edit', 
-      session: sessionWithRPE as unknown as TrainingSession, 
-      onClose,
-      onSuccess,
-    }));
+
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'edit',
+        session: sessionWithRPE as unknown as TrainingSession,
+        onClose,
+        onSuccess,
+      })
+    );
 
     act(() => {
       result.current.form.setValue('perceivedExertion', 8);
@@ -167,12 +172,14 @@ describe('useSessionForm', () => {
       ],
     };
 
-    const { result } = renderHook(() => useSessionForm({
-      mode: 'complete',
-      session: plannedIntervalSession as unknown as TrainingSession,
-      initialData: importedData,
-      onClose,
-    }));
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'complete',
+        session: plannedIntervalSession as unknown as TrainingSession,
+        initialData: importedData,
+        onClose,
+      })
+    );
 
     expect(result.current.form.getValues('workoutType')).toBe('SEUIL');
     expect(result.current.form.getValues('targetEffortPace')).toBe('05:07');
@@ -191,10 +198,12 @@ describe('useSessionForm', () => {
   });
 
   it('should set form field error when date is missing on submit', async () => {
-    const { result } = renderHook(() => useSessionForm({
-      mode: 'create',
-      onClose,
-    }));
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'create',
+        onClose,
+      })
+    );
 
     act(() => {
       result.current.form.setValue('date', '', { shouldValidate: true });
@@ -212,10 +221,12 @@ describe('useSessionForm', () => {
   });
 
   it('should show all validation errors at once (date and duration)', async () => {
-    const { result } = renderHook(() => useSessionForm({
-      mode: 'create',
-      onClose,
-    }));
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'create',
+        onClose,
+      })
+    );
 
     act(() => {
       result.current.form.setValue('date', '', { shouldValidate: true });

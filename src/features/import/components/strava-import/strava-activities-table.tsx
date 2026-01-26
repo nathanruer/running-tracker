@@ -18,7 +18,6 @@ export function StravaActivitiesTable({
   SortIcon,
   hasMore,
   loadingMore,
-  loadingAll,
   observerTarget,
   topRef,
 }: StravaActivitiesTableProps) {
@@ -54,7 +53,7 @@ export function StravaActivitiesTable({
       </div>
       {hasMore && (
         <div ref={observerTarget} className="flex flex-col items-center justify-center p-4 w-full min-h-[60px]">
-          {loadingMore || loadingAll ? (
+          {loadingMore ? (
             <StravaLoadingMoreSkeleton />
           ) : (
             <p className="text-[10px] font-bold text-muted-foreground/20 uppercase tracking-[0.2em]">

@@ -40,7 +40,7 @@ export default function GlobalError({
             <Button
               onClick={() => reset()}
               size="lg"
-              className="h-12 rounded-xl bg-violet-600 font-bold text-white shadow-lg shadow-violet-500/25 hover:bg-violet-700 active:scale-95 transition-all"
+              className="h-12 rounded-xl bg-violet-600 font-bold text-white hover:bg-violet-700 active:scale-95 transition-all"
             >
               <RefreshCcw className="mr-2 h-4 w-4" />
               Relancer l&apos;application

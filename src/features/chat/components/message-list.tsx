@@ -39,7 +39,7 @@ export function MessageList({
         )}>
           {message.role !== 'user' && (
             <div className="flex-shrink-0 flex items-start mt-1">
-              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-violet-600 flex items-center justify-center border border-violet-500/20 shadow-lg shadow-violet-500/20">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-violet-600 flex items-center justify-center border border-violet-500/20">
                 <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 text-white" />
               </div>
             </div>

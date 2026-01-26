@@ -59,8 +59,8 @@ export function ErrorMessage({
       className={cn(
         'relative flex flex-col gap-3 rounded-2xl border p-4 transition-all animate-in fade-in zoom-in-95 duration-300 backdrop-blur-sm shadow-sm',
         severity === 'critical' || severity === 'error'
-          ? 'bg-destructive/10 border-destructive/20 text-destructive shadow-destructive/5'
-          : 'bg-amber-500/10 border-amber-500/20 text-amber-600 shadow-amber-500/5',
+          ? 'bg-destructive/10 border-destructive/20 text-destructive'
+          : 'bg-amber-500/10 border-amber-500/20 text-amber-600',
         className
       )}
     >

@@ -38,7 +38,7 @@ export function SessionsEmptyState({ onAction, className }: SessionsEmptyStatePr
             onClick={onAction} 
             variant="action"
             size="xl"
-            className="h-12 px-8 rounded-2xl transition-all group shadow-lg shadow-violet-600/25 hover:shadow-violet-600/40"
+            className="h-12 px-8 rounded-2xl transition-all group"
           >
             <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300 shrink-0" />
             <span className="leading-none">Ajouter ma première séance</span>

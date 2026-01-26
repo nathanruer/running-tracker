@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Plus, MoreVertical, FilterX } from 'lucide-react';
+import { Plus, MoreVertical, FilterX, Download, FileUp, Settings2 } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { SessionRow } from './session-row';
 import { MultiSortIcon } from './multi-sort-icon';
@@ -30,11 +30,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SearchInput } from '@/components/ui/search-input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { type TrainingSession } from '@/lib/types';
 import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
+import type { Period } from '../hooks/use-period-filter';
 import { useSessionsSelection } from '../hooks/use-sessions-selection';
 import { useBulkDelete } from '../hooks/use-bulk-delete';
+import { PeriodFilter } from './period-filter';
 
 export interface SessionActions {
   onEdit: (session: TrainingSession) => void;
@@ -51,17 +59,18 @@ interface SessionsTableProps {
   onTypeChange: (type: string) => void;
   actions: SessionActions;
   initialLoading: boolean;
-  paginatedCount: number;
   totalCount: number;
-  onResetPagination: () => void;
   hasMore: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
   isFetching?: boolean;
-  isShowingAll?: boolean;
-  onShowAll?: () => void;
   sortConfig: SortConfig;
   onSort: (column: SortColumn, isMulti: boolean) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  period: Period;
+  onPeriodChange: (period: Period) => void;
+  dateFrom?: string;
 }
 
 export function SessionsTable({
@@ -71,24 +80,24 @@ export function SessionsTable({
   onTypeChange,
   actions,
   initialLoading,
-  paginatedCount,
   totalCount,
-  onResetPagination,
   hasMore,
   isFetchingNextPage,
   onLoadMore,
   isFetching,
-  isShowingAll,
-  onShowAll,
   sortConfig,
   onSort,
+  searchQuery,
+  onSearchChange,
+  period,
+  onPeriodChange,
+  dateFrom,
 }: SessionsTableProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [showExportDialog, setShowExportDialog] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!hasMore || isFetchingNextPage || isShowingAll || searchQuery.trim() !== '') return;
+    if (!hasMore || isFetchingNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -109,29 +118,21 @@ export function SessionsTable({
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasMore, isFetchingNextPage, isShowingAll, searchQuery, onLoadMore]);
-
-  const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions;
-    const lowerQuery = searchQuery.toLowerCase();
-    return sessions.filter(s =>
-      s.sessionType.toLowerCase().includes(lowerQuery) ||
-      (s.comments && s.comments.toLowerCase().includes(lowerQuery))
-    );
-  }, [sessions, searchQuery]);
+  }, [hasMore, isFetchingNextPage, onLoadMore]);
 
   const handleSort = (column: SortColumn, e: React.MouseEvent) => {
     onSort(column, e.shiftKey);
   };
 
-  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(filteredSessions);
+  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sessions);
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
 
-  const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '';
+  const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all';
 
   const handleClearFilters = () => {
     onTypeChange('all');
-    setSearchQuery('');
+    onSearchChange('');
+    onPeriodChange('all');
   };
 
   return (
@@ -149,27 +150,31 @@ export function SessionsTable({
                 )}
               </div>
               
-              {!initialLoading && actions.onNewSession && (
-                <Button
-                  data-testid="btn-new-session"
-                  onClick={actions.onNewSession}
-                  variant="action"
-                  size="xl"
-                  className="group rounded-2xl w-10 h-10 md:w-auto md:h-12 p-0 md:px-8 transition-all active:scale-95 flex items-center justify-center shadow-lg shadow-violet-600/25 hover:shadow-violet-600/40"
-                >
-                  <Plus className="h-5 w-5 md:h-4 md:w-4 md:mr-2 shrink-0 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
-                  <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none">Nouvelle séance</span>
-                </Button>
+              {!initialLoading && (
+                <div className="flex items-center gap-2">
+                  {actions.onNewSession && (
+                    <Button
+                      data-testid="btn-new-session"
+                      onClick={actions.onNewSession}
+                      variant="action"
+                      size="xl"
+                      className="group rounded-2xl w-10 h-10 md:w-auto md:h-12 p-0 md:px-8 transition-all active:scale-95 flex items-center justify-center"
+                    >
+                      <Plus className="h-5 w-5 md:h-4 md:w-4 md:mr-2 shrink-0 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
+                      <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none">Nouvelle séance</span>
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
 
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
               <SearchInput
                 value={searchQuery}
-                onChange={setSearchQuery}
+                onChange={onSearchChange}
               />
 
-              <div className="flex items-center gap-2.5 w-full md:w-auto">
+              <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
                 <Select value={selectedType} onValueChange={onTypeChange}>
                   <SelectTrigger data-testid="filter-session-type" className="w-full md:w-[180px] h-9 md:h-10 rounded-xl bg-muted/10 border-border/40 font-bold text-[10px] md:text-[11px] uppercase tracking-wider">
                     <SelectValue placeholder="Type" />
@@ -184,6 +189,8 @@ export function SessionsTable({
                   </SelectContent>
                 </Select>
 
+                <PeriodFilter period={period} onPeriodChange={onPeriodChange} />
+
                 {hasActiveFilters && (
                   <Button
                     variant="ghost"
@@ -194,41 +201,39 @@ export function SessionsTable({
                     Réinitialiser
                   </Button>
                 )}
+
+                {selectedSessions.size === 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 md:h-10 md:w-10 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 hover:border-border/60 shrink-0 ml-auto md:ml-0"
+                        title="Options de données"
+                      >
+                        <Settings2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[180px] rounded-xl border-border/40 bg-card/95 backdrop-blur-md shadow-2xl p-2">
+                      <DropdownMenuItem 
+                        onClick={() => setShowExportDialog(true)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors focus:bg-violet-600/10 focus:text-violet-600 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
+                      >
+                        <Download className="h-4 w-4" />
+                        Exporter les données
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        disabled
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-not-allowed opacity-50 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
+                      >
+                        <FileUp className="h-4 w-4" />
+                        Importer (Bientôt)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
 
-              {!initialLoading && (
-                <div className="flex items-center ml-auto">
-                  <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-3 py-1.5 transition-all gap-2.5">
-                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/30 whitespace-nowrap">
-                      {paginatedCount} / {totalCount || (isFetching ? '...' : '0')}
-                    </span>
-                    
-                    {(paginatedCount > 10 || (onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore))) && (
-                      <>
-                        <div className="w-[1px] h-3 bg-border/40" />
-                        <div className="flex items-center gap-3">
-                          {onShowAll && !isShowingAll && (totalCount > paginatedCount || hasMore) && (
-                            <button
-                              onClick={onShowAll}
-                              className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-violet-500/60 hover:text-violet-500 transition-colors"
-                            >
-                              Tout
-                            </button>
-                          )}
-                          {paginatedCount > 10 && (
-                            <button
-                              onClick={onResetPagination}
-                              className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground transition-colors"
-                            >
-                              Réduire
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -326,7 +331,7 @@ export function SessionsTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialLoading || (isFetching && filteredSessions.length === 0) ? (
+                {initialLoading || (isFetching && sessions.length === 0) ? (
                   [...Array(6)].map((_, i) => (
                     <TableRow key={i} className="border-border/20 p-8">
                       <TableCell className="px-6"><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
@@ -357,8 +362,8 @@ export function SessionsTable({
                       </TableCell>
                     </TableRow>
                   ))
-                ) : filteredSessions.length > 0 ? (
-                  filteredSessions.map((session) => (
+                ) : sessions.length > 0 ? (
+                  sessions.map((session) => (
                     <SessionRow
                       key={session.id}
                       session={session}
@@ -393,7 +398,7 @@ export function SessionsTable({
         </CardContent>
       </Card>
 
-      {hasMore && !searchQuery.trim() && (
+      {hasMore && (
         <div ref={observerTarget} className="mt-6 flex flex-col items-center justify-center p-6 w-full min-h-[100px]">
           {isFetchingNextPage ? (
             <div className="w-full space-y-4 px-4">
@@ -415,7 +420,7 @@ export function SessionsTable({
         </div>
       )}
 
-      {!hasMore && filteredSessions.length > 10 && !searchQuery.trim() && (
+      {!hasMore && sessions.length > 10 && (
         <div className="mt-8 mb-4 flex justify-center opacity-10">
           <span className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Fin de l&apos;historique</span>
         </div>
@@ -439,6 +444,8 @@ export function SessionsTable({
         allSessions={sessions}
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
+        searchQuery={searchQuery}
+        dateFrom={dateFrom}
       />
     </>
   );

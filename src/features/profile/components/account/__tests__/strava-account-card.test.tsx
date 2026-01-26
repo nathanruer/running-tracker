@@ -81,7 +81,7 @@ describe('StravaAccountCard', () => {
     const disconnectButton = screen.getByRole('button', { name: /déconnecter strava/i });
     await user.click(disconnectButton);
 
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/déconnexion strava/i)).toBeInTheDocument();
     expect(screen.getByText(/êtes-vous sûr de vouloir déconnecter/i)).toBeInTheDocument();
   });
@@ -101,7 +101,7 @@ describe('StravaAccountCard', () => {
     const disconnectButton = screen.getByRole('button', { name: /déconnecter strava/i });
     await user.click(disconnectButton);
 
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('dialog');
     const confirmButton = within(dialog).getByRole('button', { name: /confirmer la déconnexion/i });
     await user.click(confirmButton);
 

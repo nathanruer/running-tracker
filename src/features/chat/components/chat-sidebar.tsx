@@ -83,7 +83,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
             onClick={() => onSelectConversation('')}
             disabled={disableCreate}
             variant="action"
-            className="w-full rounded-2xl h-11 px-4 transition-all active:scale-[0.98] flex items-center justify-center gap-2.5 shadow-xl shadow-violet-600/20 font-bold text-sm"
+            className="w-full rounded-2xl h-11 px-4 transition-all active:scale-[0.98] flex items-center justify-center gap-2.5 font-bold text-sm"
           >
             <SquarePen className="h-4 w-4" />
             <span>Nouveau chat</span>

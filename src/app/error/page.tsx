@@ -75,7 +75,7 @@ function ErrorPageContent() {
             <Button
               onClick={() => window.location.href = details.action.href}
               size="lg"
-              className="h-12 rounded-xl bg-violet-600 font-bold text-white shadow-lg shadow-violet-500/25 hover:bg-violet-700 active:scale-95 transition-all"
+              className="h-12 rounded-xl bg-violet-600 font-bold text-white hover:bg-violet-700 active:scale-95 transition-all"
             >
               {details.action.label}
             </Button>
@@ -83,7 +83,7 @@ function ErrorPageContent() {
             <Link href={details.action.href}>
               <Button
                 size="lg"
-                className="w-full h-12 rounded-xl bg-violet-600 font-bold text-white shadow-lg shadow-violet-500/25 hover:bg-violet-700 active:scale-95 transition-all"
+                className="w-full h-12 rounded-xl bg-violet-600 font-bold text-white hover:bg-violet-700 active:scale-95 transition-all"
               >
                 {details.action.label}
               </Button>

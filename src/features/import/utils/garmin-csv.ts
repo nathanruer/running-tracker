@@ -143,8 +143,8 @@ function parseCSVLine(text: string): string[] {
 function mapStepType(typeRaw: string): StepType | null {
   const lower = typeRaw.toLowerCase();
   if (lower.includes('échauffement') || lower.includes('warmup')) return 'warmup';
-  if (lower.includes('récupération') || lower.includes('cooldown')) return 'cooldown';
-  if (lower.includes('repos') || lower.includes('rest')) return 'recovery';
+  if (lower.includes('retour au calme') || lower.includes('cooldown')) return 'cooldown';
+  if (lower.includes('récupération') || lower.includes('recovery') || lower.includes('repos') || lower.includes('rest')) return 'recovery';
   if (lower.includes('course') || lower.includes('run')) return 'effort';
   return null;
 }

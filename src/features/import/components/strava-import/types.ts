@@ -28,14 +28,7 @@ export interface StravaToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   activitiesCount: number;
-  totalCount: number | null;
   loading: boolean;
-  hasMore: boolean;
-  loadingAll: boolean;
-  loadingMore: boolean;
-  onLoadAll: () => void;
-  onReset: () => void;
-  topRef: React.RefObject<HTMLTableSectionElement | null>;
 }
 
 export interface StravaTableHeaderProps {
@@ -69,7 +62,6 @@ export interface StravaActivitiesTableProps {
   SortIcon: React.FC<{ column: string }>;
   hasMore: boolean;
   loadingMore: boolean;
-  loadingAll: boolean;
   observerTarget: React.RefObject<HTMLDivElement | null>;
   topRef: React.RefObject<HTMLTableSectionElement | null>;
 }

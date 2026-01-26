@@ -219,12 +219,6 @@ describe('useStravaActivities', () => {
     expect(result.current.isConnected).toBe(true);
   });
 
-  it('should provide loadAll function', () => {
-    const { result } = renderHook(() => useStravaActivities(false));
-
-    expect(typeof result.current.loadAll).toBe('function');
-  });
-
   it('should provide loadMore function', () => {
     const { result } = renderHook(() => useStravaActivities(false));
 

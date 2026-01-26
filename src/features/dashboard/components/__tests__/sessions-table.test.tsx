@@ -74,6 +74,9 @@ describe('SessionsTable', () => {
 
   const defaultSortConfig: SortConfig = [];
 
+  const mockOnSearchChange = vi.fn();
+  const mockOnPeriodChange = vi.fn();
+
   const defaultProps = {
     sessions: mockSessions,
     availableTypes: ['Endurance', 'Fractionné', 'Récupération'],
@@ -81,16 +84,16 @@ describe('SessionsTable', () => {
     onTypeChange: mockOnTypeChange,
     actions: defaultActions,
     initialLoading: false,
-    paginatedCount: mockSessions.length,
     totalCount: mockSessions.length,
-    onResetPagination: vi.fn(),
     hasMore: false,
     isFetchingNextPage: false,
     onLoadMore: vi.fn(),
-    isShowingAll: false,
-    onShowAll: vi.fn(),
     sortConfig: defaultSortConfig,
     onSort: mockOnSort,
+    searchQuery: '',
+    onSearchChange: mockOnSearchChange,
+    period: 'all' as const,
+    onPeriodChange: mockOnPeriodChange,
   };
 
   beforeEach(() => {
@@ -252,31 +255,19 @@ describe('SessionsTable', () => {
     expect(screen.getByText('Tous les types')).toBeInTheDocument();
   });
 
-  it('should render pagination badge', () => {
-    render(<SessionsTable {...defaultProps} paginatedCount={10} totalCount={50} />);
-    expect(screen.getByText('10 / 50')).toBeInTheDocument();
+  it('should render total count badge', () => {
+    render(<SessionsTable {...defaultProps} totalCount={50} />);
+    expect(screen.getByText('50')).toBeInTheDocument();
   });
 
-  it('should show "Tout" button in badge when applicable', async () => {
-    const user = userEvent.setup();
-    const mockOnShowAll = vi.fn();
-    render(<SessionsTable {...defaultProps} paginatedCount={10} totalCount={50} onShowAll={mockOnShowAll} isShowingAll={false} />);
-
-    const showAllButton = screen.getByRole('button', { name: /^tout$/i });
-    expect(showAllButton).toBeInTheDocument();
-    await user.click(showAllButton);
-    expect(mockOnShowAll).toHaveBeenCalledTimes(1);
-  });
-
-  it('should filter sessions based on search query', async () => {
+  it('should call onSearchChange when typing in search input', async () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
     const searchInput = screen.getByPlaceholderText(/chercher/i);
     await user.type(searchInput, 'Hard');
 
-    expect(screen.getByText('Hard session')).toBeInTheDocument();
-    expect(screen.queryByText('Good run')).not.toBeInTheDocument();
+    expect(mockOnSearchChange).toHaveBeenCalled();
   });
 
   it('should handle empty sessions array', () => {
@@ -298,5 +289,21 @@ describe('SessionsTable', () => {
 
     const rows = screen.getAllByRole('row');
     expect(rows.length).toBe(4);
+  });
+
+  it('should render and handle options menu', async () => {
+    const user = userEvent.setup();
+    render(<SessionsTable {...defaultProps} />);
+
+    const optionsTrigger = screen.getByTitle('Options de données');
+    expect(optionsTrigger).toBeInTheDocument();
+
+    await user.click(optionsTrigger);
+
+    expect(screen.getByText('Exporter les données')).toBeInTheDocument();
+    
+    const importItem = screen.getByText(/Importer \(Bientôt\)/i);
+    expect(importItem).toBeInTheDocument();
+    expect(importItem.closest('div')).toHaveAttribute('data-disabled');
   });
 });

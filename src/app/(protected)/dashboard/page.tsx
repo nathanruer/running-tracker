@@ -12,6 +12,8 @@ import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-ske
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
 import { useMultiSort } from '@/features/dashboard/hooks/use-multi-sort';
+import { useSearch } from '@/features/dashboard/hooks/use-search';
+import { usePeriodFilter } from '@/features/dashboard/hooks/use-period-filter';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +26,6 @@ import {
 function DashboardContent() {
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [isShowingAll, setIsShowingAll] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
@@ -36,23 +37,22 @@ function DashboardContent() {
   const { toast } = useToast();
   const router = useRouter();
   const { sortConfig, sortParam, handleSort } = useMultiSort();
+  const { searchQuery, handleSearchChange } = useSearch();
+  const { period, dateFrom, handlePeriodChange } = usePeriodFilter();
 
   const {
     user,
     userLoading,
     availableTypes,
     sessions,
+    totalCount,
     initialLoading,
-    showGlobalLoading,
     isFetchingData,
-    allSessionsLoading,
-    allSessionsData,
     hasMore,
     isFetchingNextPage,
     fetchNextPage,
-    handleResetPagination,
     mutations,
-  } = useDashboardData(selectedType, isShowingAll, setIsShowingAll, sortParam);
+  } = useDashboardData(selectedType, sortParam, searchQuery, dateFrom);
 
   const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } = mutations;
 
@@ -96,10 +96,7 @@ function DashboardContent() {
     };
   }, [importedData]);
 
-  if (!user && !userLoading) {
-    return <DashboardSkeleton />;
-  }
-  if (showGlobalLoading || !user) {
+  if (initialLoading || !user) {
     return <DashboardSkeleton />;
   }
 
@@ -155,7 +152,7 @@ function DashboardContent() {
 
   return (
     <PageContainer testId="dashboard-container" mobileTitle="Dashboard">
-      {initialLoading || sessions.length > 0 || selectedType !== 'all' ? (
+      {initialLoading || sessions.length > 0 || selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all' ? (
         <SessionsTable
           sessions={sessions}
           availableTypes={availableTypes}
@@ -163,17 +160,18 @@ function DashboardContent() {
           onTypeChange={handleTypeChange}
           actions={sessionActions}
           initialLoading={initialLoading}
-          paginatedCount={sessions.length}
-          totalCount={allSessionsData?.length || 0}
-          onResetPagination={handleResetPagination}
-          hasMore={hasMore && !isShowingAll}
-          isFetchingNextPage={isFetchingNextPage || (isShowingAll && allSessionsLoading)}
+          totalCount={totalCount}
+          hasMore={hasMore ?? false}
+          isFetchingNextPage={isFetchingNextPage}
           onLoadMore={fetchNextPage}
-          isFetching={isFetchingData || allSessionsLoading || isDeleting}
-          isShowingAll={isShowingAll}
-          onShowAll={() => setIsShowingAll(true)}
+          isFetching={isFetchingData || isDeleting}
           sortConfig={sortConfig}
           onSort={handleSort}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          period={period}
+          onPeriodChange={handlePeriodChange}
+          dateFrom={dateFrom}
         />
       ) : (
         <SessionsEmptyState onAction={openNewSession} />

@@ -41,21 +41,17 @@ export function StravaImportContent({
     activities,
     loading,
     loadingMore,
-    loadingAll,
     hasMore,
-    totalCount,
     isConnected,
     connectToStrava,
     loadMore,
-    loadAll,
-    reset,
   } = useStravaActivities(open);
 
   const { toast } = useToast();
   const { error: importError, wrapAsync } = useErrorHandler({ scope: 'local' });
 
   useEffect(() => {
-    if (!hasMore || loadingMore || loadingAll || !isConnected) return;
+    if (!hasMore || loadingMore || !isConnected) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -76,7 +72,7 @@ export function StravaImportContent({
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasMore, loadingMore, loadingAll, isConnected, loadMore]);
+  }, [hasMore, loadingMore, isConnected, loadMore]);
 
   const filteredActivities = useMemo(() => {
     if (!searchQuery.trim()) return activities;
@@ -230,18 +226,11 @@ export function StravaImportContent({
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 activitiesCount={activities.length}
-                totalCount={totalCount}
                 loading={loading}
-                hasMore={hasMore}
-                loadingAll={loadingAll}
-                loadingMore={loadingMore}
-                onLoadAll={loadAll}
-                onReset={reset}
-                topRef={topRef}
               />
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
-                {(loadingMore || loadingAll) && (
+                {loadingMore && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] z-30 overflow-hidden bg-violet-500/10">
                     <div className="h-full w-full bg-violet-500 origin-left animate-loading-bar" />
                   </div>
@@ -260,7 +249,6 @@ export function StravaImportContent({
                   SortIcon={SortIcon}
                   hasMore={hasMore}
                   loadingMore={loadingMore}
-                  loadingAll={loadingAll}
                   observerTarget={observerTarget}
                   topRef={topRef}
                 />

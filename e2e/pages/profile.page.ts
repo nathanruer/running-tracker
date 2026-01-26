@@ -25,7 +25,7 @@ export class ProfilePage extends BasePage {
     this.calendarTab = this.page.locator('[data-testid="tab-history"]');
     this.logoutButton = this.page.locator('[data-testid="logout-desktop"]');
     this.mobileLogoutButton = this.page.locator('[data-testid="logout-mobile"]');
-    this.logoutDialog = this.page.locator('[role="alertdialog"]');
+    this.logoutDialog = this.page.locator('[role="dialog"]');
     this.logoutDialogTitle = this.logoutDialog.getByRole('heading', { name: /déconnexion/i });
     this.logoutConfirmButton = this.page.locator('[data-testid="logout-confirm"]');
     this.logoutCancelButton = this.page.locator('[data-testid="logout-cancel"]');

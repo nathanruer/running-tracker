@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, Loader2, FileText, Code, Table, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -8,20 +8,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { type TrainingSession } from '@/lib/types';
-import { DatePicker } from '@/components/ui/date-picker';
-import { getSessions } from '@/lib/services/api-client';
+import { useProgressiveExport } from '../hooks/use-progressive-export';
 import {
   type ExportMode,
   type ExportFormat,
@@ -47,72 +40,53 @@ interface ExportSessionsProps {
   allSessions: TrainingSession[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  searchQuery?: string;
+  dateFrom?: string;
 }
 
-type PeriodOption = 'all' | 'week' | 'month' | 'custom';
-
-export function ExportSessions({ selectedType, selectedSessions, allSessions, open, onOpenChange }: ExportSessionsProps) {
-  const [isExporting, setIsExporting] = useState(false);
+export function ExportSessions({ 
+  selectedType, 
+  selectedSessions, 
+  allSessions, 
+  open, 
+  onOpenChange,
+  searchQuery,
+  dateFrom,
+}: ExportSessionsProps) {
   const { toast } = useToast();
+  const { exportProgress, fetchAllSessionsWithProgress, resetProgress } = useProgressiveExport();
 
-  const [mode, setMode] = useState<ExportMode>('standard');
+  const [includeIntervals, setIncludeIntervals] = useState(true);
   const [includePlanned, setIncludePlanned] = useState(false);
   const [includeWeather, setIncludeWeather] = useState(true);
-  const [period, setPeriod] = useState<PeriodOption>('all');
   
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-
-  /**
-   * Calculate date range based on period selection
-   */
-  const getDateRange = (): { startDate?: Date; endDate?: Date } => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    switch (period) {
-      case 'week': {
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
-        return { startDate: weekStart };
-      }
-      case 'month': {
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        return { startDate: monthStart };
-      }
-      case 'custom': {
-        return { 
-          startDate: customStartDate, 
-          endDate: customEndDate 
-        };
-      }
-      case 'all':
-      default:
-        return {};
+  useEffect(() => {
+    if (!open) {
+      resetProgress();
     }
-  };
+  }, [open, resetProgress]);
 
-  /**
-   * Handles export in any format
-   */
   const handleExport = async (format: ExportFormat) => {
-    setIsExporting(true);
     try {
       let sessionsToExport: TrainingSession[];
 
       if (selectedSessions.size > 0) {
         sessionsToExport = allSessions.filter((s) => selectedSessions.has(s.id));
       } else {
-        sessionsToExport = await getSessions(undefined, undefined, selectedType);
+        sessionsToExport = await fetchAllSessionsWithProgress(
+          selectedType !== 'all' ? selectedType : undefined,
+          searchQuery,
+          dateFrom
+        );
       }
 
-      const dateRange = getDateRange();
+      const exportMode: ExportMode = includeIntervals ? 'detailed' : 'standard';
+
       const options: ExportOptions = {
-        mode,
+        mode: exportMode,
         format,
         includePlanned,
         includeWeather,
-        ...dateRange,
       };
 
       const filteredSessions = filterSessions(sessionsToExport, options);
@@ -126,9 +100,9 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
         return;
       }
 
-      const filename = generateExportFilename(format, mode);
+      const filename = generateExportFilename(format, exportMode);
 
-      if (mode === 'standard') {
+      if (exportMode === 'standard') {
         if (format === 'json') {
           const rows = formatSessionsStandardJSON(filteredSessions, includeWeather);
           const content = generateJSON(rows);
@@ -171,139 +145,162 @@ export function ExportSessions({ selectedType, selectedSessions, allSessions, op
         description: 'Une erreur est survenue lors de l\'export. Veuillez réessayer.',
         variant: 'destructive',
       });
-    } finally {
-      setIsExporting(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Exporter des séances</DialogTitle>
-          <DialogDescription>
-            Configurez les options d&apos;export et choisissez le format.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          <div className="space-y-3">
-            <Label>Niveau de détail</Label>
-            <RadioGroup value={mode} onValueChange={(value) => setMode(value as ExportMode)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="standard" id="mode-standard" />
-                <Label htmlFor="mode-standard" className="font-normal cursor-pointer">
-                  Standard
-                </Label>
+      <DialogContent hideClose className="sm:max-w-[550px] p-0 overflow-hidden w-[95vw] md:w-full">
+        <div className="max-h-[85vh] overflow-y-auto p-6 md:p-8 pt-4 md:pt-6 space-y-6 md:space-y-8 scrollbar-custom">
+          <DialogHeader className="relative w-full items-start text-left flex flex-col pt-2">
+            <div className="flex w-full items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <DialogTitle className="text-xl font-bold tracking-tight">
+                  {selectedSessions.size > 0 ? "Exporter la sélection" : "Exporter l'historique"}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground/60 font-medium">
+                  Configurez vos préférences pour récupérer vos données.
+                </DialogDescription>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="detailed" id="mode-detailed" />
-                <Label htmlFor="mode-detailed" className="font-normal cursor-pointer">
-                  Détaillé
-                </Label>
-              </div>
-            </RadioGroup>
-            {mode === 'detailed' && (
-              <p className="text-sm text-muted-foreground">
-                Avec le détail des intervalles des séances fractionnées, au format JSON.
-              </p>
-            )}
-          </div>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-foreground hover:bg-muted transition-all shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </DialogClose>
+            </div>
+          </DialogHeader>
 
-          <div className="space-y-3">
-            <Label htmlFor="period-select">Période</Label>
-            <Select value={period} onValueChange={(value) => setPeriod(value as PeriodOption)}>
-              <SelectTrigger id="period-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tout</SelectItem>
-                <SelectItem value="week">Cette semaine</SelectItem>
-                <SelectItem value="month">Ce mois</SelectItem>
-                <SelectItem value="custom">Personnalisé</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {period === 'custom' && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="space-y-1">
-                  <Label className="text-sm text-muted-foreground">Du</Label>
-                  <DatePicker
-                    date={customStartDate}
-                    onSelect={setCustomStartDate}
-                    placeholder="Date de début"
-                  />
+          <div className="space-y-6">
+            {selectedSessions.size > 0 ? (
+              <div className="flex items-center gap-3 p-3.5 bg-violet-600/[0.03] border border-violet-600/10 rounded-xl">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600/10">
+                  <span className="text-[11px] font-black text-violet-600">{selectedSessions.size}</span>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-sm text-muted-foreground">Au</Label>
-                  <DatePicker
-                    date={customEndDate}
-                    onSelect={setCustomEndDate}
-                    placeholder="Date de fin"
-                  />
+                <p className="text-[11px] text-violet-600/80 font-bold uppercase tracking-wider">
+                  {selectedSessions.size === 1 ? 'séance sélectionnée' : 'séances sélectionnées'}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3.5 bg-muted/20 border border-border/40 rounded-xl">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted/20">
+                  <Download className="h-3.5 w-3.5 text-muted-foreground/60" />
                 </div>
+                <p className="text-[11px] text-muted-foreground/60 font-bold uppercase tracking-wider">
+                  Toutes les séances (filtres actifs)
+                </p>
               </div>
             )}
-          </div>
 
-          <div className="space-y-3">
-            <Label>Options supplémentaires</Label>
-            <div className="space-y-2">
-              {allSessions.some(s => s.status === 'planned') && (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="include-planned"
-                    checked={includePlanned}
-                    onCheckedChange={(checked) => setIncludePlanned(checked === true)}
-                  />
-                  <Label htmlFor="include-planned" className="font-normal cursor-pointer">
-                    Inclure les séances planifiées
-                  </Label>
+            <div className="space-y-4">
+              <div className="space-y-3 bg-muted/5 p-4 rounded-2xl border border-border/30">
+                <Label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50 ml-px">
+                  Options
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { id: 'include-intervals', checked: includeIntervals, onChange: setIncludeIntervals, label: 'Détails intervalles' },
+                    { id: 'include-weather', checked: includeWeather, onChange: setIncludeWeather, label: 'Données météo' },
+                  ].map((opt) => (
+                    <Label 
+                      key={opt.id} 
+                      htmlFor={opt.id}
+                      className={cn(
+                        "flex items-center space-x-3 px-3 py-2 rounded-xl transition-all group cursor-pointer border border-transparent",
+                        opt.checked ? "bg-violet-600/10 border-violet-600/20" : "hover:bg-muted/20"
+                      )}
+                    >
+                      <Checkbox
+                        id={opt.id}
+                        checked={opt.checked}
+                        onCheckedChange={(checked) => opt.onChange(checked === true)}
+                        className="h-4 w-4 border-border/60 data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 data-[state=checked]:text-white"
+                      />
+                      <span
+                        className={cn(
+                          "text-xs font-semibold cursor-pointer transition-colors",
+                          opt.checked ? "text-violet-600" : "text-muted-foreground/80 group-hover:text-foreground"
+                        )}
+                      >
+                        {opt.label}
+                      </span>
+                    </Label>
+                  ))}
+
+                  {allSessions.some(s => s.status === 'planned') && (
+                    <Label 
+                      htmlFor="include-planned"
+                      className={cn(
+                        "flex items-center space-x-3 px-3 py-2 rounded-xl transition-all group cursor-pointer border border-transparent sm:col-span-2",
+                        includePlanned ? "bg-violet-600/10 border-violet-600/20" : "hover:bg-muted/20"
+                      )}
+                    >
+                      <Checkbox
+                        id="include-planned"
+                        checked={includePlanned}
+                        onCheckedChange={(checked) => setIncludePlanned(checked === true)}
+                        className="h-4 w-4 border-border/60 data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600 data-[state=checked]:text-white"
+                      />
+                      <span
+                        className={cn(
+                          "text-xs font-semibold cursor-pointer transition-colors",
+                          includePlanned ? "text-violet-600" : "text-muted-foreground/80 group-hover:text-foreground"
+                        )}
+                      >
+                        Inclure les séances planifiées
+                      </span>
+                    </Label>
+                  )}
+                </div>
+              </div>
+
+              {exportProgress.isExporting && (
+                <div className="space-y-3 p-4 bg-foreground/[0.02] rounded-2xl border border-border/20 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-2 text-foreground/60 font-bold uppercase tracking-widest">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Génération...
+                    </div>
+                    <span className="font-mono text-foreground/40">
+                      {exportProgress.loadedCount} / {exportProgress.totalCount}
+                    </span>
+                  </div>
+                  <div className="relative h-1 w-full bg-muted/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-foreground/60 transition-all duration-500 ease-out rounded-full"
+                      style={{ width: `${exportProgress.progress}%` }}
+                    />
+                  </div>
                 </div>
               )}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="include-weather"
-                  checked={includeWeather}
-                  onCheckedChange={(checked) => setIncludeWeather(checked === true)}
-                />
-                <Label htmlFor="include-weather" className="font-normal cursor-pointer">
-                  Inclure la météo
-                </Label>
-              </div>
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>Format</Label>
-            <div className="flex gap-2">
-              <Button
-                className="flex-1 font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
-                variant="outline"
-                onClick={() => handleExport('csv')}
-                disabled={isExporting}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                CSV
-              </Button>
-              <Button
-                className="flex-1 font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
-                variant="outline"
-                onClick={() => handleExport('json')}
-                disabled={isExporting}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                JSON
-              </Button>
-              <Button
-                className="flex-1 font-semibold border-border/60 hover:bg-muted active:scale-95 transition-all text-muted-foreground hover:text-foreground"
-                variant="outline"
-                onClick={() => handleExport('excel')}
-                disabled={isExporting}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Excel
-              </Button>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50 ml-px">
+                  Format de fichier
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'csv', label: 'CSV', icon: FileText },
+                    { id: 'json', label: 'JSON', icon: Code },
+                    { id: 'excel', label: 'EXCEL', icon: Table },
+                  ].map((format) => (
+                    <Button
+                      key={format.id}
+                      className="flex flex-col items-center justify-center h-20 gap-2 rounded-xl border border-border/30 bg-muted/5 transition-all active:scale-[0.97] group hover:bg-muted/20 hover:border-border/60"
+                      variant="ghost"
+                      onClick={() => handleExport(format.id as ExportFormat)}
+                      disabled={exportProgress.isExporting}
+                    >
+                      <format.icon className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
+                      <span className="text-[10px] font-bold tracking-wider text-muted-foreground/60 group-hover:text-foreground">{format.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

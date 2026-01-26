@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePaceInput, normalizePaceFormat, normalizePaceOrRange } from '../parse';
+import { validatePaceInput, normalizePaceFormat, normalizePaceOrRange, isValidPace } from '../parse';
 
 describe('validatePaceInput', () => {
   it('should validate correct MM:SS pace format', () => {
@@ -42,7 +42,6 @@ describe('normalizePaceFormat', () => {
   it('should return null for invalid pace', () => {
     expect(normalizePaceFormat('invalid')).toBe(null);
     expect(normalizePaceFormat('12:60')).toBe(null);
-    expect(normalizePaceFormat('12:60')).toBe(null);
     expect(normalizePaceFormat('')).toBe(null);
   });
 
@@ -79,5 +78,15 @@ describe('normalizePaceOrRange', () => {
   it('should handle edge cases with invalid range parts', () => {
     expect(normalizePaceOrRange('abc-def')).toBe(null);
     expect(normalizePaceOrRange('-5:30')).toBe(null);
+  });
+});
+
+describe('isValidPace', () => {
+  it('should validate MM:SS format strictly', () => {
+    expect(isValidPace('05:30')).toBe(true);
+    expect(isValidPace('5:30')).toBe(true);
+    expect(isValidPace('05:60')).toBe(false);
+    expect(isValidPace('01:30:00')).toBe(false);
+    expect(isValidPace(null)).toBe(false);
   });
 });

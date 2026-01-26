@@ -1,8 +1,9 @@
-import { useQuery, useQueryClient, useInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useEntityMutations } from '@/hooks/use-entity-mutations';
 import {
   getCurrentUser,
   getSessions,
+  getSessionsCount,
   getSessionTypes,
   deleteSession,
   bulkDeleteSessions,
@@ -13,12 +14,10 @@ const LIMIT = 10;
 
 export function useDashboardData(
   selectedType: string,
-  isShowingAll: boolean,
-  setIsShowingAll: (val: boolean) => void,
-  sortParam?: string | null
+  sortParam?: string | null,
+  searchQuery?: string,
+  dateFrom?: string
 ) {
-  const queryClient = useQueryClient();
-
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user'],
     queryFn: getCurrentUser,
@@ -41,7 +40,7 @@ export function useDashboardData(
     bulkDeleteEntities: async (ids: string[]) => {
       await bulkDeleteSessions(ids);
     },
-    relatedQueryKeys: ['sessionTypes'],
+    relatedQueryKeys: ['sessionTypes', 'sessionsCount'],
     messages: {
       deleteSuccess: 'Séance supprimée',
       deleteSuccessDescription: 'La séance a été supprimée avec succès.',
@@ -53,25 +52,13 @@ export function useDashboardData(
   });
 
   const sortKey = sortParam || 'default';
+  const search = searchQuery?.trim() || '';
 
-  const {
-    data: allSessionsData,
-    isLoading: allSessionsLoading,
-  } = useQuery({
-    queryKey: ['sessions', 'all', selectedType, sortKey, user?.id],
-    queryFn: () => getSessions(undefined, undefined, selectedType, sortParam || undefined),
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ['sessionsCount', selectedType, search, dateFrom, user?.id],
+    queryFn: () => getSessionsCount(selectedType, search || undefined, dateFrom),
     enabled: !!user,
-    placeholderData: (previousData) => {
-      if (previousData) return previousData;
-      const paginatedData = queryClient.getQueryData<InfiniteData<TrainingSession[]>>(['sessions', 'paginated', selectedType, sortKey, user?.id]);
-      if (paginatedData) {
-        const lastPage = paginatedData.pages[paginatedData.pages.length - 1];
-        if (lastPage && lastPage.length < LIMIT) {
-          return paginatedData.pages.flat();
-        }
-      }
-      return undefined;
-    },
+    staleTime: 30 * 1000,
   });
 
   const {
@@ -82,49 +69,32 @@ export function useDashboardData(
     isLoading: paginatedSessionsLoading,
     isFetching: paginatedSessionsFetching
   } = useInfiniteQuery({
-    queryKey: ['sessions', 'paginated', selectedType, sortKey, user?.id],
-    queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType, sortParam || undefined),
+    queryKey: ['sessions', 'paginated', selectedType, sortKey, search, dateFrom, user?.id],
+    queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType, sortParam || undefined, search || undefined, dateFrom),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === LIMIT ? allPages.length * LIMIT : undefined;
     },
-    enabled: !!user && !isShowingAll,
+    enabled: !!user,
     placeholderData: (previousData) => previousData,
   });
 
-  const sessions = isShowingAll
-    ? (allSessionsData || [])
-    : (paginatedSessionsData?.pages.flat() || []);
+  const sessions = paginatedSessionsData?.pages.flat() || [];
+  const uniqueSessions = [...new Map(sessions.map(s => [s.id, s])).values()];
 
-  const handleResetPagination = () => {
-    setIsShowingAll(false);
-    queryClient.setQueryData(['sessions', 'paginated', selectedType, sortKey, user?.id], (old: InfiniteData<TrainingSession[]> | undefined) => {
-      if (!old) return old;
-      return {
-        pages: [old.pages[0]],
-        pageParams: [old.pageParams[0]],
-      };
-    });
-    queryClient.invalidateQueries({ queryKey: ['sessions', 'paginated', selectedType, sortKey, user?.id] });
-  };
-
-  const initialLoading = userLoading || (!sessions.length && paginatedSessionsLoading);
-  const showGlobalLoading = userLoading || (!sessions.length && paginatedSessionsLoading);
+  const initialLoading = userLoading || (!uniqueSessions.length && paginatedSessionsLoading);
 
   return {
     user,
     userLoading,
     availableTypes,
-    sessions,
+    sessions: uniqueSessions,
+    totalCount,
     initialLoading,
-    showGlobalLoading,
     isFetchingData: paginatedSessionsFetching,
-    allSessionsLoading,
-    allSessionsData,
     hasMore: hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-    handleResetPagination,
     mutations,
   };
 }

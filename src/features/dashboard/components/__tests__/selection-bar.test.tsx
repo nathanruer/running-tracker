@@ -4,133 +4,73 @@ import { describe, it, expect, vi } from 'vitest';
 import { SelectionBar } from '../selection-bar';
 
 describe('SelectionBar', () => {
+  const defaultProps = {
+    selectedCount: 1,
+    onClear: vi.fn(),
+    onDelete: vi.fn(),
+    onExport: vi.fn(),
+  };
+
   it('should render with singular text for 1 selected session', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    render(
-      <SelectionBar
-        selectedCount={1}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
-
+    render(<SelectionBar {...defaultProps} selectedCount={1} />);
     expect(screen.getByText('1 sélectionnée')).toBeInTheDocument();
   });
 
   it('should render with plural text for multiple selected sessions', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    render(
-      <SelectionBar
-        selectedCount={5}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
-
+    render(<SelectionBar {...defaultProps} selectedCount={5} />);
     expect(screen.getByText('5 sélectionnées')).toBeInTheDocument();
   });
 
   it('should call onClear when cancel button is clicked', async () => {
     const user = userEvent.setup();
     const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
 
-    render(
-      <SelectionBar
-        selectedCount={3}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
+    render(<SelectionBar {...defaultProps} onClear={mockOnClear} />);
 
     const cancelButton = screen.getByRole('button', { name: /annuler/i });
     await user.click(cancelButton);
 
     expect(mockOnClear).toHaveBeenCalledTimes(1);
-    expect(mockOnDelete).not.toHaveBeenCalled();
   });
 
   it('should call onDelete when delete button is clicked', async () => {
     const user = userEvent.setup();
-    const mockOnClear = vi.fn();
     const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
 
-    render(
-      <SelectionBar
-        selectedCount={2}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
+    render(<SelectionBar {...defaultProps} onDelete={mockOnDelete} selectedCount={2} />);
 
-    const deleteButton = screen.getByRole('button', { name: /supprimer/i });
+    const deleteButton = screen.getByRole('button', { name: /supprimer \(2\)/i });
     await user.click(deleteButton);
 
     expect(mockOnDelete).toHaveBeenCalledTimes(1);
-    expect(mockOnClear).not.toHaveBeenCalled();
+  });
+
+  it('should call onExport when export button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockOnExport = vi.fn();
+
+    render(<SelectionBar {...defaultProps} onExport={mockOnExport} selectedCount={3} />);
+
+    const exportButton = screen.getByRole('button', { name: /exporter \(3\)/i });
+    await user.click(exportButton);
+
+    expect(mockOnExport).toHaveBeenCalledTimes(1);
   });
 
   it('should render trash icon in delete button', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    const { container } = render(
-      <SelectionBar
-        selectedCount={4}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
-
+    const { container } = render(<SelectionBar {...defaultProps} />);
     const trashIcon = container.querySelector('.lucide-trash-2');
     expect(trashIcon).toBeInTheDocument();
   });
 
   it('should have correct styling classes', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    const { container } = render(
-      <SelectionBar
-        selectedCount={2}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
-
+    const { container } = render(<SelectionBar {...defaultProps} />);
     const selectionBar = container.firstChild;
     expect(selectionBar).toHaveClass('rounded-xl', 'border');
   });
 
   it('should render all buttons with correct roles', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    render(
-      <SelectionBar
-        selectedCount={3}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
+    render(<SelectionBar {...defaultProps} />);
 
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(3);
@@ -141,36 +81,12 @@ describe('SelectionBar', () => {
   });
 
   it('should handle zero selected count', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    render(
-      <SelectionBar
-        selectedCount={0}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
-
+    render(<SelectionBar {...defaultProps} selectedCount={0} />);
     expect(screen.getByText('0 sélectionnée')).toBeInTheDocument();
   });
 
   it('should handle large selected counts', () => {
-    const mockOnClear = vi.fn();
-    const mockOnDelete = vi.fn();
-    const mockOnExport = vi.fn();
-
-    render(
-      <SelectionBar
-        selectedCount={99}
-        onClear={mockOnClear}
-        onDelete={mockOnDelete}
-        onExport={mockOnExport}
-      />
-    );
-
+    render(<SelectionBar {...defaultProps} selectedCount={99} />);
     expect(screen.getByText('99 sélectionnées')).toBeInTheDocument();
   });
 });

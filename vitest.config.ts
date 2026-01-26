@@ -12,6 +12,31 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    testTimeout: 10000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/**',
+        '**/*.test.{ts,tsx}',
+        '**/__tests__/**',
+        '**/types/**',
+        '**/types.ts',
+        '**/index.ts',
+        'src/components/ui/**',
+        'vitest.*.ts',
+        'next.config.ts',
+        'postcss.config.mjs',
+        'tailwind.config.ts',
+      ],
+      thresholds: {
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60,
+      },
+    },
   },
   resolve: {
     alias: {

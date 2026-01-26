@@ -1,15 +1,13 @@
 import { Loader2 } from 'lucide-react';
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { buttonVariants } from '@/components/ui/button';
 
 interface ConfirmationDialogProps {
@@ -46,31 +44,36 @@ export function ConfirmationDialog({
     onOpenChange(false);
   };
 
+  const handleConfirm = () => {
+    onConfirm();
+  };
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-2xl font-bold">{title}</AlertDialogTitle>
-          <AlertDialogDescription className="text-base">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold tracking-tight">{title}</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground/80 leading-relaxed">
             {description}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="mt-6">
-          <AlertDialogCancel
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+          <button
             data-testid={cancelTestId}
             onClick={handleCancel}
             disabled={isLoading}
-            className={buttonVariants({ variant: 'neutral', size: 'xl' })}
+            className={buttonVariants({ variant: 'neutral', size: 'xl', className: 'w-full sm:w-auto' })}
           >
             {cancelLabel}
-          </AlertDialogCancel>
-          <AlertDialogAction
+          </button>
+          <button
             data-testid={confirmTestId}
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
             className={buttonVariants({
               variant: variant === 'destructive' ? 'destructive-premium' : 'action',
-              size: 'xl'
+              size: 'xl',
+              className: 'w-full sm:w-auto mb-2 sm:mb-0'
             })}
           >
             {isLoading ? (
@@ -81,9 +84,9 @@ export function ConfirmationDialog({
             ) : (
               confirmLabel
             )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

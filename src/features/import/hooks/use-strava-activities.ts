@@ -7,11 +7,9 @@ export type { FormattedStravaActivity };
 export function useStravaActivities(open: boolean) {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [loadingAll, setLoadingAll] = useState(false);
   const [activities, setActivities] = useState<FormattedStravaActivity[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const { handleError } = useErrorHandler({ scope: 'local' });
 
@@ -23,31 +21,16 @@ export function useStravaActivities(open: boolean) {
     try {
       const data = await getStravaActivities(pageNum, perPage);
 
-      const nextActivities = isFirst
-        ? data.activities
-        : await new Promise<FormattedStravaActivity[]>((resolve) => {
-            setActivities((prev) => {
-              const ids = new Set(prev.map((a) => a.externalId));
-              const merged = [...prev, ...data.activities.filter((a) => !ids.has(a.externalId))];
-              resolve(merged);
-              return merged;
-            });
-          });
-
       if (isFirst) {
         setActivities(data.activities);
+      } else {
+        setActivities((prev) => {
+          const ids = new Set(prev.map((a) => a.externalId));
+          return [...prev, ...data.activities.filter((a) => !ids.has(a.externalId))];
+        });
       }
 
-      if (data.totalCount !== undefined) {
-        setTotalCount(data.totalCount);
-      }
-
-      setTotalCount((currentTotal) => {
-        const reachedTotal = currentTotal !== null && nextActivities.length >= currentTotal;
-        setHasMore(data.hasMore && !reachedTotal);
-        return currentTotal;
-      });
-
+      setHasMore(data.hasMore);
       setIsConnected(true);
       setPage(pageNum);
       return data.hasMore;
@@ -71,29 +54,10 @@ export function useStravaActivities(open: boolean) {
   }, [handleError]);
 
   const loadMore = useCallback(() => {
-    if (!loading && !loadingMore && !loadingAll && hasMore) {
+    if (!loading && !loadingMore && hasMore) {
       loadActivities(page + 1, 20);
     }
-  }, [loading, loadingMore, loadingAll, hasMore, page, loadActivities]);
-
-  const loadAll = useCallback(async () => {
-    if (loading || loadingMore || loadingAll || !hasMore) return;
-
-    setLoadingAll(true);
-    
-    let currentPage = 1;
-    let moreAvailable = true;
-
-    while (moreAvailable) {
-      moreAvailable = await loadActivities(currentPage, 200) ?? false;
-      currentPage += 1;
-    }
-
-    setLoadingAll(false);
-  }, [loading, loadingMore, loadingAll, hasMore, loadActivities]);
-  const reset = useCallback(() => {
-    loadActivities(1, 20);
-  }, [loadActivities]);
+  }, [loading, loadingMore, hasMore, page, loadActivities]);
 
   const connectToStrava = () => {
     window.location.href = '/api/auth/strava/authorize';
@@ -107,20 +71,15 @@ export function useStravaActivities(open: boolean) {
       setHasMore(false);
       loadActivities(1, 20);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, loadActivities]);
 
   return {
     activities,
     loading,
     loadingMore,
-    loadingAll,
     hasMore,
-    totalCount,
     isConnected,
     loadMore,
-    loadAll,
-    reset,
     connectToStrava,
   };
 }
