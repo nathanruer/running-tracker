@@ -41,17 +41,15 @@ export async function PUT(request: NextRequest) {
     null,
     async (_data, userId) => {
       const body = await request.json();
-      const { email, weight, age, maxHeartRate, vma, goal } = body;
+      const { weight, age, maxHeartRate, vma, goal } = body;
 
       const updateData: {
-        email?: string;
         weight?: number;
         age?: number;
         maxHeartRate?: number;
         vma?: number;
         goal?: string;
       } = {
-        email,
         weight: weight !== undefined && weight !== '' ? parseFloat(weight) : undefined,
         age: age !== undefined && age !== '' ? parseInt(age) : undefined,
         maxHeartRate: maxHeartRate !== undefined && maxHeartRate !== '' ? parseInt(maxHeartRate) : undefined,

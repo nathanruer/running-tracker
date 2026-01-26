@@ -53,3 +53,18 @@ export async function disconnectStrava(): Promise<{
 
   return data;
 }
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; message: string }> {
+  const data = await apiRequest<{ success: boolean; message: string }>(
+    '/api/auth/password',
+    {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }
+  );
+
+  return data;
+}

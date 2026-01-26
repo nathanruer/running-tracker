@@ -1,7 +1,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -39,11 +38,19 @@ interface TrainingZonesTableProps {
 export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProps) {
   return (
     <Card className="md:col-span-2 border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="p-4 md:p-6">
+    <CardHeader className="p-4 md:p-6 pb-2">
         <CardTitle className="text-xl font-semibold">Zones d&apos;entraînement</CardTitle>
-        <CardDescription className="text-xs md:text-sm">
-          Calculées selon votre FC Max ({maxHeartRate || '--'} bpm) et VMA ({vma || '--'} km/h).
-        </CardDescription>
+        <p className="text-xs md:text-sm text-muted-foreground mt-1.5">
+          {maxHeartRate && vma ? (
+            <>Calculées selon votre FC Max ({maxHeartRate} bpm) et VMA ({vma} km/h)</>
+          ) : maxHeartRate ? (
+            <>Calculées selon votre FC Max ({maxHeartRate} bpm). <span className="italic">Renseignez votre VMA pour plus de précision.</span></>
+          ) : vma ? (
+            <>Calculées selon votre VMA ({vma} km/h). <span className="italic">Renseignez votre FC Max pour plus de précision.</span></>
+          ) : (
+            <span className="italic">Renseignez votre FC Max et VMA pour voir vos zones personnalisées.</span>
+          )}
+        </p>
       </CardHeader>
       <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
         <div className="overflow-x-auto rounded-xl border border-border/50">
@@ -88,10 +95,18 @@ export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProp
                       {Math.round(zone.minPct * 100)}–{Math.round(zone.maxPct * 100)}%
                     </TableCell>
                     <TableCell className="py-3 md:py-4 px-2 md:px-4 font-semibold tabular-nums text-center text-xs md:text-sm">
-                      {bpmRange.replace(' bpm', '')}
+                      {bpmRange === '--' ? (
+                        <span className="text-muted-foreground/30 font-normal">—</span>
+                      ) : (
+                        bpmRange.replace(' bpm', '')
+                      )}
                     </TableCell>
                     <TableCell className="py-3 md:py-4 px-2 md:px-4 text-muted-foreground font-medium tabular-nums text-center text-xs md:text-sm hidden sm:table-cell">
-                      {paceRange}
+                      {paceRange === '--' ? (
+                        <span className="text-muted-foreground/30 font-normal">—</span>
+                      ) : (
+                        paceRange
+                      )}
                     </TableCell>
                   </TableRow>
                 );

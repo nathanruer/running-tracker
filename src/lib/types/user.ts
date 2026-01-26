@@ -11,7 +11,6 @@ export interface User {
 }
 
 export interface UserUpdatePayload {
-  email?: string;
   password?: string;
   weight?: number;
   age?: number;

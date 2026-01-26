@@ -92,7 +92,7 @@ describe('/api/auth/me', () => {
     it('should update user profile successfully', async () => {
       const updatedUser = {
         id: 'user-123',
-        email: 'updated@example.com',
+        email: 'test@example.com',
         createdAt: '2025-12-27T10:00:00.000Z',
         stravaId: null,
         stravaTokenExpiresAt: null,
@@ -109,7 +109,6 @@ describe('/api/auth/me', () => {
       const request = new NextRequest('http://localhost/api/auth/me', {
         method: 'PUT',
         body: JSON.stringify({
-          email: 'updated@example.com',
           weight: 75,
           age: 31,
           maxHeartRate: 185,
@@ -126,7 +125,6 @@ describe('/api/auth/me', () => {
       expect(prisma.users.update).toHaveBeenCalledWith({
         where: { id: 'user-123' },
         data: {
-          email: 'updated@example.com',
           weight: 75,
           age: 31,
           maxHeartRate: 185,

@@ -43,7 +43,7 @@ export function ErrorMessage({
     return (
       <div
         className={cn(
-          'flex items-center gap-1.5 text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-200',
+          'flex items-center gap-1.5 text-xs font-semibold animate-in fade-in slide-in-from-top-1 duration-200',
           severity === 'critical' || severity === 'error' ? 'text-destructive' : 'text-amber-600',
           className
         )}

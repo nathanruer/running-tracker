@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser } from '@/lib/services/api-client';
 import { type User } from '@/lib/types';
@@ -87,7 +88,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
   const onSubmit = (data: ProfileFormValues) => {
     mutation.mutate({
-      email: data.email,
       weight: typeof data.weight === 'string' ? parseFloat(data.weight) : data.weight ?? undefined,
       age: typeof data.age === 'string' ? parseFloat(data.age) : data.age ?? undefined,
       maxHeartRate: typeof data.maxHeartRate === 'string' ? parseFloat(data.maxHeartRate) : data.maxHeartRate ?? undefined,
@@ -107,15 +107,20 @@ export function ProfileForm({ user }: ProfileFormProps) {
       <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Email</Label>
-            <Input id="email" {...register('email')} className="bg-muted/30 border-border/50" />
-            {errors.email && (
-              <p className="text-xs text-destructive font-medium ml-1">{errors.email.message}</p>
-            )}
+            <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Email</Label>
+            <Input 
+              id="email" 
+              {...register('email')} 
+              className="bg-muted/30 border-border/50 opacity-60 cursor-not-allowed" 
+              disabled 
+            />
+            <p className="text-[10px] text-muted-foreground/60 ml-1 italic">
+              L&apos;adresse email ne peut pas être modifiée.
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="goal" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Objectif / Contexte</Label>
+            <Label htmlFor="goal" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Objectif / Contexte</Label>
             <Textarea
               id="goal"
               {...register('goal')}
@@ -123,14 +128,12 @@ export function ProfileForm({ user }: ProfileFormProps) {
               rows={4}
               className="bg-muted/30 border-border/50 resize-none"
             />
-            {errors.goal && (
-              <p className="text-xs text-destructive font-medium ml-1">{errors.goal.message}</p>
-            )}
+            <ErrorMessage error={errors.goal?.message} variant="inline" className="ml-1" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             <div className="space-y-2">
-              <Label htmlFor="weight" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Poids (kg)</Label>
+              <Label htmlFor="weight" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Poids (kg)</Label>
               <Input
                 id="weight"
                 type="number"
@@ -139,21 +142,17 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 placeholder="70.5"
                 className="bg-muted/30 border-border/50"
               />
-              {errors.weight && (
-                <p className="text-xs text-destructive font-medium ml-1">{errors.weight.message}</p>
-              )}
+              <ErrorMessage error={errors.weight?.message} variant="inline" className="ml-1" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="age" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Âge</Label>
+              <Label htmlFor="age" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Âge</Label>
               <Input id="age" type="number" {...register('age')} placeholder="30" className="bg-muted/30 border-border/50" />
-              {errors.age && (
-                <p className="text-xs text-destructive font-medium ml-1">{errors.age.message}</p>
-              )}
+              <ErrorMessage error={errors.age?.message} variant="inline" className="ml-1" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="maxHeartRate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">FC Max (bpm)</Label>
+              <Label htmlFor="maxHeartRate" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">FC Max (bpm)</Label>
               <Input
                 id="maxHeartRate"
                 type="number"
@@ -161,15 +160,11 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 placeholder="185"
                 className="bg-muted/30 border-border/50"
               />
-              {errors.maxHeartRate && (
-                <p className="text-xs text-destructive font-medium ml-1">
-                  {errors.maxHeartRate.message}
-                </p>
-              )}
+              <ErrorMessage error={errors.maxHeartRate?.message} variant="inline" className="ml-1" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="vma" className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">VMA (km/h)</Label>
+              <Label htmlFor="vma" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">VMA (km/h)</Label>
               <Input
                 id="vma"
                 type="number"
@@ -178,11 +173,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 placeholder="16.5"
                 className="bg-muted/30 border-border/50"
               />
-              {errors.vma && (
-                <p className="text-xs text-destructive font-medium ml-1">
-                  {errors.vma.message}
-                </p>
-              )}
+              <ErrorMessage error={errors.vma?.message} variant="inline" className="ml-1" />
             </div>
           </div>
 

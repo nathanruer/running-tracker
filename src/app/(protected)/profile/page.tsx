@@ -8,9 +8,7 @@ import { User as UserIcon, BarChart3, LogOut, Loader2, Grid3X3 as ActivityHeatma
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
-import { ProfileForm } from '@/features/profile/components/account/profile-form';
-import { TrainingZonesTable } from '@/features/profile/components/account/training-zones-table';
-import { StravaAccountCard } from '@/features/profile/components/account/strava-account-card';
+import { ProfileForm, SecurityForm, TrainingZonesTable, StravaAccountCard } from '@/features/profile/components/account';
 import { ProfileSkeleton, AnalyticsSkeleton, HistorySkeleton } from '@/features/profile/components/profile-skeleton';
 import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
 import { CACHE_STORAGE_KEY } from '@/lib/constants';
@@ -164,6 +162,7 @@ export default function ProfilePage() {
             <div className="grid gap-8 lg:grid-cols-2 items-start">
               <div className="space-y-6 order-1">
                 <ProfileForm user={user} />
+                <SecurityForm />
               </div>
               
               <div className="space-y-8 order-2">
