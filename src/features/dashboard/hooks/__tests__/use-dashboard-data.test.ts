@@ -571,7 +571,7 @@ describe('useDashboardData', () => {
   });
 
   describe('staleTime configuration', () => {
-    it('should use Infinity staleTime for sessions query', () => {
+    it('should use 0 staleTime for sessions query', () => {
       vi.mocked(useQuery)
         .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
         .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
@@ -590,12 +590,12 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          staleTime: Infinity,
+          staleTime: 0,
         })
       );
     });
 
-    it('should use Infinity staleTime for sessionsCount query', () => {
+    it('should use 0 staleTime for sessionsCount query', () => {
       vi.mocked(useQuery)
         .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
         .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
@@ -615,7 +615,7 @@ describe('useDashboardData', () => {
       // The third useQuery call is for sessionsCount
       const sessionsCountCall = vi.mocked(useQuery).mock.calls[2];
       expect(sessionsCountCall[0]).toMatchObject({
-        staleTime: Infinity,
+        staleTime: 0,
       });
     });
   });

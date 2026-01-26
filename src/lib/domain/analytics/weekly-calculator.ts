@@ -15,6 +15,9 @@ export interface WeeklyChartDataPoint {
   isActive: boolean;
   weekStart: Date;
   weekEnd: Date;
+  durationSeconds: number;
+  avgHeartRate: number | null;
+  avgPaceSeconds: number | null;
 }
 
 export interface WeeklyStats {
@@ -91,6 +94,8 @@ function generateWeekRange(startWeekKey: string, endWeekKey: string): string[] {
   return weeks;
 }
 
+import { parseDuration } from '@/lib/utils/duration/parse';
+
 export function calculateWeeklyStats(
   completedSessions: TrainingSession[],
   plannedSessions: TrainingSession[]
@@ -108,6 +113,9 @@ export function calculateWeeklyStats(
   }
 
   const weeklyKm: Record<string, number> = {};
+  const weeklyDuration: Record<string, number> = {};
+  const weeklyHrSum: Record<string, number> = {};
+  const weeklyHrCount: Record<string, number> = {};
   const weeklyCompletedCount: Record<string, number> = {};
   let totalKm = 0;
 
@@ -116,13 +124,26 @@ export function calculateWeeklyStats(
     const sessionDate = new Date(session.date);
     const weekKey = getISOWeekKey(sessionDate);
     const distance = session.distance || 0;
+    
     if (!weeklyKm[weekKey]) {
       weeklyKm[weekKey] = 0;
+      weeklyDuration[weekKey] = 0;
+      weeklyHrSum[weekKey] = 0;
+      weeklyHrCount[weekKey] = 0;
       weeklyCompletedCount[weekKey] = 0;
     }
+    
     weeklyKm[weekKey] += distance;
     weeklyCompletedCount[weekKey]++;
     totalKm += distance;
+
+    const durationSec = parseDuration(session.duration) || 0;
+    weeklyDuration[weekKey] += durationSec;
+
+    if (session.avgHeartRate) {
+      weeklyHrSum[weekKey] += session.avgHeartRate;
+      weeklyHrCount[weekKey]++;
+    }
   });
 
   const weeklyPlannedKm: Record<string, number> = {};
@@ -170,6 +191,10 @@ export function calculateWeeklyStats(
     const plannedKm = weeklyPlannedKm[weekKey] || 0;
     const completedCount = weeklyCompletedCount[weekKey] || 0;
     const plannedCount = weeklyPlannedCount[weekKey] || 0;
+    const durationSeconds = weeklyDuration[weekKey] || 0;
+    const hrSum = weeklyHrSum[weekKey] || 0;
+    const hrCount = weeklyHrCount[weekKey] || 0;
+    
     const isActive = completedKm > 0 || plannedKm > 0;
     const gapWeeks = lastActiveIndex >= 0 ? index - lastActiveIndex - 1 : 0;
     if (isActive) {
@@ -178,6 +203,10 @@ export function calculateWeeklyStats(
     }
     const monday = parseWeekKey(weekKey);
     const { start, end } = getWeekBounds(monday);
+
+    const avgHeartRate = hrCount > 0 ? Math.round(hrSum / hrCount) : null;
+    const avgPaceSeconds = completedKm > 0 ? Math.round(durationSeconds / completedKm) : null;
+
     return {
       label: formatWeekLabel(start, end, includeYear),
       weekKey,
@@ -193,6 +222,9 @@ export function calculateWeeklyStats(
       isActive,
       weekStart: start,
       weekEnd: end,
+      durationSeconds,
+      avgHeartRate,
+      avgPaceSeconds,
     };
   });
 

@@ -42,6 +42,7 @@ describe('SelectionBar', () => {
     render(<SelectionBar {...defaultProps} onDelete={mockOnDelete} selectedCount={2} />);
 
     const deleteButton = screen.getByTestId('bulk-delete-button');
+    expect(deleteButton).toHaveTextContent('Supprimer (2)');
     await user.click(deleteButton);
 
     expect(mockOnDelete).toHaveBeenCalledTimes(1);
@@ -54,6 +55,7 @@ describe('SelectionBar', () => {
     render(<SelectionBar {...defaultProps} onExport={mockOnExport} selectedCount={3} />);
 
     const exportButton = screen.getByTestId('btn-export-selected');
+    expect(exportButton).toHaveTextContent('Exporter (3)');
     await user.click(exportButton);
 
     expect(mockOnExport).toHaveBeenCalledTimes(1);

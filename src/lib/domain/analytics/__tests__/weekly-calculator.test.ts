@@ -5,9 +5,11 @@ import type { TrainingSession } from '@/lib/types';
 function createSession(
   dateStr: string, 
   distance: number, 
-  status: 'completed' | 'planned' = 'completed'
+  status: 'completed' | 'planned' = 'completed',
+  duration: string | null = null,
+  avgHeartRate: number | null = null
 ): Partial<TrainingSession> {
-  return { date: dateStr, distance, status, week: null };
+  return { date: dateStr, distance, status, week: null, duration, avgHeartRate };
 }
 
 describe('weekly-calculator', () => {
@@ -233,6 +235,20 @@ describe('weekly-calculator', () => {
       expect(result.chartData[0].km).toBe(10);
       expect(result.chartData[0].plannedKm).toBe(0);
       expect(result.chartData[0].plannedCount).toBe(0);
+    });
+
+    it('should aggregate duration, heart rate and calculate average pace', () => {
+      const completedSessions: Partial<TrainingSession>[] = [
+        createSession('2026-01-05', 10, 'completed', '01:00:00', 150),
+        createSession('2026-01-07', 5, 'completed', '00:30:00', 140),
+      ];
+
+      const result = calculateWeeklyStats(completedSessions as TrainingSession[], []);
+
+      expect(result.chartData[0].km).toBe(15.0);
+      expect(result.chartData[0].durationSeconds).toBe(5400); // 1h30
+      expect(result.chartData[0].avgHeartRate).toBe(145);
+      expect(result.chartData[0].avgPaceSeconds).toBe(360); // 5400 / 15 = 360s/km = 6:00 min/km
     });
 
     it('should handle zero distance gracefully', () => {

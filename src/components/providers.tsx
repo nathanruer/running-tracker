@@ -34,8 +34,8 @@ export const Providers = ({ children }: ProvidersProps) => {
           queries: {
             staleTime: CACHE_TIME.DEFAULT,
             gcTime: GC_TIME.DEFAULT,
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: true,
             retry: 1,
           },
         },

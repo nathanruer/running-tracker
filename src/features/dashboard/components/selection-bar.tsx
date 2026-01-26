@@ -42,8 +42,8 @@ export function SelectionBar({ selectedCount, onClear, onDelete, onExport }: Sel
           className="flex-1 md:flex-initial group rounded-xl h-9 md:h-11 px-4 md:px-6 transition-all active:scale-95 flex items-center justify-center border border-border/40 bg-card hover:bg-muted/10 hover:border-border/60"
         >
           <Download className="h-4 w-4 md:mr-2 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
-          <span className="hidden md:inline text-[10px] font-bold uppercase tracking-widest leading-none text-muted-foreground group-hover:text-foreground transition-colors">Exporter</span>
-          <span className="md:hidden text-[10px] font-bold uppercase tracking-widest leading-none ml-2">Exporter</span>
+          <span className="hidden md:inline text-[10px] font-bold uppercase tracking-widest leading-none text-muted-foreground group-hover:text-foreground transition-colors">Exporter ({selectedCount})</span>
+          <span className="md:hidden text-[10px] font-bold uppercase tracking-widest leading-none ml-2">Exporter ({selectedCount})</span>
         </Button>
         <Button
           variant="outline"
@@ -53,7 +53,7 @@ export function SelectionBar({ selectedCount, onClear, onDelete, onExport }: Sel
           data-testid="bulk-delete-button"
         >
           <Trash2 className="mr-1.5 md:mr-2 h-3.5 w-3.5 opacity-70" />
-          Supprimer
+          Supprimer ({selectedCount})
         </Button>
       </div>
     </div>
