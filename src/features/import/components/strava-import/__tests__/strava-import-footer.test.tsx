@@ -57,7 +57,7 @@ describe('StravaImportFooter', () => {
   it('should disable import button when selectedCount is 0', () => {
     render(<StravaImportFooter {...defaultProps} selectedCount={0} />);
 
-    const importButton = screen.getByText('Importer 0 activités').closest('button');
+    const importButton = screen.getByText('Importer 0 activité').closest('button');
     expect(importButton).toBeDisabled();
   });
 
@@ -72,6 +72,10 @@ describe('StravaImportFooter', () => {
     const { rerender } = render(<StravaImportFooter {...defaultProps} selectedCount={3} />);
 
     expect(screen.getByText('Importer 3 activités')).toBeInTheDocument();
+
+    rerender(<StravaImportFooter {...defaultProps} selectedCount={1} />);
+
+    expect(screen.getByText('Importer 1 activité')).toBeInTheDocument();
 
     rerender(<StravaImportFooter {...defaultProps} selectedCount={10} />);
 

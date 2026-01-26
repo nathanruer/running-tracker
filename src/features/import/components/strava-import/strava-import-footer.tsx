@@ -30,7 +30,7 @@ export function StravaImportFooter({
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Import...
           </>
         ) : (
-          `Importer ${selectedCount} activités`
+          `Importer ${selectedCount} activité${selectedCount > 1 ? 's' : ''}`
         )}
       </Button>
     </div>

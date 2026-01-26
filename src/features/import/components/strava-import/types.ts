@@ -28,7 +28,14 @@ export interface StravaToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   activitiesCount: number;
+  totalCount: number | undefined;
+  filteredCount: number;
   loading: boolean;
+  hasMore: boolean;
+  searchLoading: boolean;
+  searchProgress: { loaded: number; total: number };
+  onLoadAll: () => void;
+  onCancelSearch: () => void;
 }
 
 export interface StravaTableHeaderProps {
@@ -64,6 +71,37 @@ export interface StravaActivitiesTableProps {
   loadingMore: boolean;
   observerTarget: React.RefObject<HTMLDivElement | null>;
   topRef: React.RefObject<HTMLTableSectionElement | null>;
+  searchQuery: string;
+  searchLoading: boolean;
+  totalCount: number | undefined;
+  totalLoadedCount: number;
+  onSearchAll: () => void;
+}
+
+export interface SearchScopeIndicatorProps {
+  loadedCount: number;
+  totalCount: number | undefined;
+  hasMore: boolean;
+  searchLoading: boolean;
+  searchProgress: { loaded: number; total: number };
+  filteredCount: number;
+  searchQuery: string;
+}
+
+export interface SearchAllButtonProps {
+  hasMore: boolean;
+  searchLoading: boolean;
+  onLoadAll: () => void;
+  onCancel: () => void;
+}
+
+export interface SmartSearchEmptyStateProps {
+  searchQuery: string;
+  hasMore: boolean;
+  searchLoading: boolean;
+  loadedCount: number;
+  totalCount: number | undefined;
+  onSearchAll: () => void;
 }
 
 export interface StravaImportFooterProps {

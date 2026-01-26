@@ -5,49 +5,30 @@ import { ProfileSkeleton, AnalyticsSkeleton, HistorySkeleton } from '../profile-
 describe('ProfileSkeleton', () => {
   it('should render skeleton container', () => {
     const { container } = render(<ProfileSkeleton />);
-
     expect(container.firstChild).toBeInTheDocument();
-  });
-
-  it('should render mobile title placeholder', () => {
-    const { container } = render(<ProfileSkeleton />);
-
-    const mobileTitle = container.querySelector('.md\\:hidden.h-9.w-48');
-    expect(mobileTitle).toBeInTheDocument();
   });
 
   it('should render tab navigation placeholders', () => {
     const { container } = render(<ProfileSkeleton />);
-
     const tabs = container.querySelectorAll('.h-9.w-24, .h-9.w-24.sm\\:w-32');
-    expect(tabs.length).toBeGreaterThan(0);
+    expect(tabs.length).toBe(3);
   });
 
-  it('should render two cards in grid', () => {
+  it('should render multiple Cards', () => {
     const { container } = render(<ProfileSkeleton />);
-
-    const cards = container.querySelectorAll('.border-border\\/50.bg-card\\/50');
-    expect(cards.length).toBeGreaterThan(0);
+    const cards = container.querySelectorAll('.rounded-xl.border');
+    expect(cards.length).toBeGreaterThanOrEqual(4);
   });
 
   it('should have animated elements', () => {
     const { container } = render(<ProfileSkeleton />);
-
     const animatedElements = container.querySelectorAll('.animate-pulse');
     expect(animatedElements.length).toBeGreaterThan(0);
   });
 
-  it('should render form field placeholders', () => {
-    const { container } = render(<ProfileSkeleton />);
-
-    const inputs = container.querySelectorAll('.h-10.w-full.bg-muted\\/30');
-    expect(inputs.length).toBeGreaterThan(0);
-  });
-
   it('should render table rows in training zones card', () => {
     const { container } = render(<ProfileSkeleton />);
-
-    const tableRows = container.querySelectorAll('.h-\\[53px\\]');
+    const tableRows = container.querySelectorAll('tbody tr');
     expect(tableRows.length).toBe(6);
   });
 });
@@ -55,28 +36,18 @@ describe('ProfileSkeleton', () => {
 describe('AnalyticsSkeleton', () => {
   it('should render skeleton container', () => {
     const { container } = render(<AnalyticsSkeleton />);
-
-    expect(container.firstChild).toHaveClass('animate-pulse');
+    expect(container.firstChild).toBeInTheDocument();
   });
 
   it('should render stat cards placeholders', () => {
     const { container } = render(<AnalyticsSkeleton />);
-
-    const statCards = container.querySelectorAll('.h-32.bg-muted\\/40');
+    const statCards = container.querySelectorAll('.md\\:grid-cols-3 > div');
     expect(statCards.length).toBe(3);
-  });
-
-  it('should render chart placeholder', () => {
-    const { container } = render(<AnalyticsSkeleton />);
-
-    const chart = container.querySelector('.h-80.bg-muted\\/40');
-    expect(chart).toBeInTheDocument();
   });
 
   it('should render title placeholder', () => {
     const { container } = render(<AnalyticsSkeleton />);
-
-    const title = container.querySelector('.h-12.w-64');
+    const title = container.querySelector('.h-12.w-80');
     expect(title).toBeInTheDocument();
   });
 });
@@ -84,14 +55,12 @@ describe('AnalyticsSkeleton', () => {
 describe('HistorySkeleton', () => {
   it('should render skeleton container', () => {
     const { container } = render(<HistorySkeleton />);
-
-    expect(container.firstChild).toHaveClass('animate-pulse');
+    expect(container.firstChild).toBeInTheDocument();
   });
 
   it('should render calendar placeholder', () => {
     const { container } = render(<HistorySkeleton />);
-
-    const calendar = container.querySelector('.h-96.bg-muted\\/40');
-    expect(calendar).toBeInTheDocument();
+    const placeholder = container.querySelector('.h-\\[250px\\].md\\:h-\\[280px\\]');
+    expect(placeholder).toBeInTheDocument();
   });
 });

@@ -569,4 +569,54 @@ describe('useDashboardData', () => {
       );
     });
   });
+
+  describe('staleTime configuration', () => {
+    it('should use Infinity staleTime for sessions query', () => {
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('all'));
+
+      expect(useInfiniteQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          staleTime: Infinity,
+        })
+      );
+    });
+
+    it('should use Infinity staleTime for sessionsCount query', () => {
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('all'));
+
+      // The third useQuery call is for sessionsCount
+      const sessionsCountCall = vi.mocked(useQuery).mock.calls[2];
+      expect(sessionsCountCall[0]).toMatchObject({
+        staleTime: Infinity,
+      });
+    });
+  });
 });

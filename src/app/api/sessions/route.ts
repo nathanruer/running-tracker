@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
           intervalDetails: intervalDetails || Prisma.JsonNull,
           stravaData: stravaData || Prisma.JsonNull,
           weather: weather ?? Prisma.JsonNull,
+          averageTemp: sessionData.averageTemp ?? null,
           stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : Prisma.JsonNull,
           date: sessionDate,
           sessionNumber,

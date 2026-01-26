@@ -94,7 +94,7 @@ describe('SessionDetailsSheet', () => {
   it('should render Strava metrics section when available', () => {
     render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     
-    expect(screen.getByText('Données avancées')).toBeInTheDocument();
+    expect(screen.getByText('Données Capteurs')).toBeInTheDocument();
     expect(screen.getAllByText('150').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('360')).toBeInTheDocument();
     expect(screen.getByText('800')).toBeInTheDocument();

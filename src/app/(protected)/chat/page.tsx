@@ -22,7 +22,7 @@ export default function ChatPage() {
   const { showSkeleton } = useConversations();
 
   if (showSkeleton) {
-    return <ChatSkeleton />;
+    return <ChatSkeleton mode="landing" />;
   }
 
   return (

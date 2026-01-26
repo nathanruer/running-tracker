@@ -9,6 +9,7 @@ import {
   bulkDeleteSessions,
 } from '@/lib/services/api-client';
 import { type TrainingSession } from '@/lib/types';
+import { CACHE_TIME } from '@/lib/constants/time';
 
 const LIMIT = 10;
 
@@ -58,7 +59,7 @@ export function useDashboardData(
     queryKey: ['sessionsCount', selectedType, search, dateFrom, user?.id],
     queryFn: () => getSessionsCount(selectedType, search || undefined, dateFrom),
     enabled: !!user,
-    staleTime: 30 * 1000,
+    staleTime: CACHE_TIME.SESSIONS,
   });
 
   const {
@@ -76,6 +77,7 @@ export function useDashboardData(
       return lastPage.length === LIMIT ? allPages.length * LIMIT : undefined;
     },
     enabled: !!user,
+    staleTime: CACHE_TIME.SESSIONS,
     placeholderData: (previousData) => previousData,
   });
 

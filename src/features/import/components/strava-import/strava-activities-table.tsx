@@ -3,6 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { StravaTableHeader } from './strava-table-header';
 import { StravaActivityRow } from './strava-activity-row';
 import { StravaLoadingMoreSkeleton } from './strava-loading-skeleton';
+import { SmartSearchEmptyState } from './smart-search-empty-state';
 import type { StravaActivitiesTableProps } from './types';
 
 export function StravaActivitiesTable({
@@ -20,7 +21,26 @@ export function StravaActivitiesTable({
   loadingMore,
   observerTarget,
   topRef,
+  searchQuery,
+  searchLoading,
+  totalCount,
+  totalLoadedCount,
+  onSearchAll,
 }: StravaActivitiesTableProps) {
+  if (filteredActivities.length === 0 && searchQuery.trim()) {
+    return (
+      <ScrollArea className="flex-1">
+        <SmartSearchEmptyState
+          searchQuery={searchQuery}
+          hasMore={hasMore}
+          searchLoading={searchLoading}
+          loadedCount={totalLoadedCount}
+          totalCount={totalCount}
+          onSearchAll={onSearchAll}
+        />
+      </ScrollArea>
+    );
+  }
   return (
     <ScrollArea className="flex-1">
       <div className="min-w-full overflow-x-auto px-4 md:px-8 py-2">

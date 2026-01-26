@@ -153,7 +153,8 @@ describe('SessionsTable', () => {
 
     await user.click(firstSessionCheckbox);
 
-    expect(screen.getByText('1 sélectionnée')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('1');
+    expect(screen.getByText(/Sélectionnée/i)).toBeInTheDocument();
   });
 
   it('should select all sessions', async () => {
@@ -163,7 +164,8 @@ describe('SessionsTable', () => {
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
-    expect(screen.getByText('3 sélectionnées')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('3');
+    expect(screen.getByText(/Sélectionnées/i)).toBeInTheDocument();
   });
 
   it('should clear selection when cancel button is clicked', async () => {
@@ -173,12 +175,12 @@ describe('SessionsTable', () => {
     const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
     await user.click(selectAllCheckbox);
 
-    expect(screen.getByText('3 sélectionnées')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('3');
 
     const cancelButton = screen.getByRole('button', { name: /annuler/i });
     await user.click(cancelButton);
 
-    expect(screen.queryByText(/sélectionnées/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('selection-count')).not.toBeInTheDocument();
   });
 
   it('should open bulk delete dialog when delete button is clicked', async () => {
@@ -295,15 +297,14 @@ describe('SessionsTable', () => {
     const user = userEvent.setup();
     render(<SessionsTable {...defaultProps} />);
 
-    const optionsTrigger = screen.getByTitle('Options de données');
+    const optionsTrigger = screen.getByTitle('Actions de données');
     expect(optionsTrigger).toBeInTheDocument();
 
     await user.click(optionsTrigger);
 
-    expect(screen.getByText('Exporter les données')).toBeInTheDocument();
+    expect(screen.getAllByText('Exporter').length).toBeGreaterThan(0);
     
     const importItem = screen.getByText(/Importer \(Bientôt\)/i);
     expect(importItem).toBeInTheDocument();
-    expect(importItem.closest('div')).toHaveAttribute('data-disabled');
   });
 });

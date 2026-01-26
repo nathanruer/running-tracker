@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Plus, MoreVertical, FilterX, Download, FileUp, Settings2 } from 'lucide-react';
+import { Plus, MoreVertical, FilterX, Download, FileUp } from 'lucide-react';
 import { ExportSessions } from './export-sessions';
 import { SessionRow } from './session-row';
 import { MultiSortIcon } from './multi-sort-icon';
@@ -36,7 +36,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { type TrainingSession } from '@/lib/types';
 import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
 import type { Period } from '../hooks/use-period-filter';
@@ -138,48 +137,88 @@ export function SessionsTable({
   return (
     <>
       <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
-        <CardHeader className="flex flex-col gap-5 px-4 py-5 md:px-8 md:py-8 border-b border-border/40">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 md:gap-3">
-                <CardTitle className="text-lg md:text-xl font-bold tracking-tight">Historique</CardTitle>
+        <CardHeader className="flex flex-col gap-4 px-3 py-4 md:px-8 md:py-8 border-b border-border/40">
+          <div className="flex flex-col gap-4 md:gap-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                <CardTitle className="text-lg md:text-2xl font-black tracking-tight truncate">
+                  Historique
+                </CardTitle>
                 {!initialLoading && (
-                  <Badge variant="secondary" className="h-5 md:h-6 px-1.5 md:px-2 rounded-lg bg-muted/30 hover:bg-muted/30 text-muted-foreground/70 font-bold border-none text-[10px] md:text-xs">
+                  <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-violet-600/10 border border-violet-600/20 text-violet-600 font-black text-[9px] md:text-xs uppercase tracking-wider">
                     {totalCount}
-                  </Badge>
+                  </div>
                 )}
               </div>
               
               {!initialLoading && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
                   {actions.onNewSession && (
                     <Button
                       data-testid="btn-new-session"
                       onClick={actions.onNewSession}
                       variant="action"
-                      size="xl"
-                      className="group rounded-2xl w-10 h-10 md:w-auto md:h-12 p-0 md:px-8 transition-all active:scale-95 flex items-center justify-center"
+                      size="sm"
+                      className="group rounded-xl w-auto h-9 md:h-12 px-3 md:px-8 transition-all active:scale-95 flex items-center justify-center"
                     >
-                      <Plus className="h-5 w-5 md:h-4 md:w-4 md:mr-2 shrink-0 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
-                      <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none">Nouvelle séance</span>
+                      <Plus className="h-4 w-4 md:h-4 md:w-4 shrink-0 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110 md:mr-2" />
+                      <span className="hidden sm:inline text-[10px] md:text-[11px] font-bold uppercase tracking-widest leading-none">Nouvelle séance</span>
+                      <span className="sm:hidden text-[9px] font-bold uppercase tracking-widest leading-none ml-1">Ajouter</span>
                     </Button>
+                  )}
+
+                  {selectedSessions.size === 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 md:h-12 md:w-12 rounded-xl border border-border/40 bg-muted/5 hover:bg-muted/10 shrink-0"
+                          title="Actions de données"
+                        >
+                          <Download className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px] rounded-xl border-border/40 bg-card/95 backdrop-blur-md shadow-2xl p-2">
+                        <div className="px-2 py-1.5 mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+                          Données
+                        </div>
+                        <DropdownMenuItem 
+                          onClick={() => setShowExportDialog(true)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer focus:bg-violet-600/10 focus:text-violet-600 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
+                        >
+                          <Download className="h-4 w-4" />
+                          Exporter
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          disabled
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg opacity-50 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
+                        >
+                          <FileUp className="h-4 w-4" />
+                          Importer (Bientôt)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
-              <SearchInput
-                value={searchQuery}
-                onChange={onSearchChange}
-              />
+            <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3">
+              <div className="w-full xl:w-[320px]">
+                <SearchInput
+                  value={searchQuery}
+                  onChange={onSearchChange}
+                  className="w-full"
+                />
+              </div>
 
-              <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+              <div className="flex flex-wrap items-center gap-2">
                 <Select value={selectedType} onValueChange={onTypeChange}>
-                  <SelectTrigger data-testid="filter-session-type" className="w-full md:w-[180px] h-9 md:h-10 rounded-xl bg-muted/10 border-border/40 font-bold text-[10px] md:text-[11px] uppercase tracking-wider">
+                  <SelectTrigger data-testid="filter-session-type" className="w-auto min-w-[120px] max-w-[150px] md:w-[160px] h-9 md:h-10 rounded-xl bg-muted/5 border-border/40 font-bold text-[9px] md:text-[11px] uppercase tracking-wider hover:bg-muted/10 transition-colors">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border/40 shadow-none">
+                  <SelectContent className="rounded-xl border-border/40 shadow-2xl">
                     <SelectItem value="all">Tous les types</SelectItem>
                     {availableTypes.map((type) => (
                       <SelectItem key={type} value={type}>
@@ -196,44 +235,13 @@ export function SessionsTable({
                     variant="ghost"
                     size="sm"
                     onClick={handleClearFilters}
-                    className="h-9 md:h-10 px-3 md:px-4 rounded-xl text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[9px] md:text-[10px] uppercase tracking-widest active:scale-95 transition-all ml-auto md:ml-0"
+                    className="h-9 px-2.5 rounded-xl text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[9px] md:text-[10px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5 ml-auto sm:ml-0"
                   >
-                    Réinitialiser
+                    <FilterX className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Effacer</span>
                   </Button>
                 )}
-
-                {selectedSessions.size === 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 md:h-10 md:w-10 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 hover:border-border/60 shrink-0 ml-auto md:ml-0"
-                        title="Options de données"
-                      >
-                        <Settings2 className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[180px] rounded-xl border-border/40 bg-card/95 backdrop-blur-md shadow-2xl p-2">
-                      <DropdownMenuItem 
-                        onClick={() => setShowExportDialog(true)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors focus:bg-violet-600/10 focus:text-violet-600 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
-                      >
-                        <Download className="h-4 w-4" />
-                        Exporter les données
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        disabled
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-not-allowed opacity-50 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
-                      >
-                        <FileUp className="h-4 w-4" />
-                        Importer (Bientôt)
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               </div>
-
             </div>
           </div>
 

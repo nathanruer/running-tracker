@@ -133,7 +133,11 @@ const SessionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideClose className="sm:max-w-[640px] p-0 overflow-hidden w-[95vw] md:w-full">
+      <DialogContent 
+        data-testid="session-dialog"
+        hideClose 
+        className="sm:max-w-[640px] p-0 overflow-hidden w-[95vw] md:w-full"
+      >
         <div className="max-h-[90vh] md:max-h-[85vh] overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
           <SessionDialogHeader mode={mode} onReset={resetForm} />
           <ErrorMessage error={error} className="mb-2" />

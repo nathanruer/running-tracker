@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useDeferredValue } from 'react';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { bulkImportSessions, type FormattedStravaActivity } from '@/lib/services/api-client';
+import { bulkImportSessions, getStravaActivityDetails, type FormattedStravaActivity } from '@/lib/services/api-client';
 import { useStravaActivities } from '../../hooks/use-strava-activities';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
@@ -45,6 +45,12 @@ export function StravaImportContent({
     isConnected,
     connectToStrava,
     loadMore,
+    totalCount,
+    searchLoading,
+    searchProgress,
+    loadAllForSearch,
+    loadAllActivities,
+    cancelSearchLoading,
   } = useStravaActivities(open);
 
   const { toast } = useToast();
@@ -74,11 +80,31 @@ export function StravaImportContent({
     };
   }, [hasMore, loadingMore, isConnected, loadMore]);
 
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   const filteredActivities = useMemo(() => {
-    if (!searchQuery.trim()) return activities;
-    const lowerQuery = searchQuery.toLowerCase();
+    if (!deferredSearchQuery.trim()) return activities;
+    const lowerQuery = deferredSearchQuery.toLowerCase();
     return activities.filter((a) => a.comments.toLowerCase().includes(lowerQuery));
-  }, [activities, searchQuery]);
+  }, [activities, deferredSearchQuery]);
+
+  useEffect(() => {
+    if (!deferredSearchQuery.trim()) return;
+    if (!hasMore) return;
+    if (searchLoading) return;
+
+    const hasResults = activities.some((a) =>
+      a.comments.toLowerCase().includes(deferredSearchQuery.toLowerCase())
+    );
+
+    if (!hasResults && activities.length > 0) {
+      const timer = setTimeout(() => {
+        loadAllForSearch(deferredSearchQuery);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [deferredSearchQuery, activities, hasMore, searchLoading, loadAllForSearch]);
 
   const { handleSort, SortIcon, defaultComparator, sortColumn } = useTableSort<FormattedStravaActivity>(
     filteredActivities,
@@ -127,12 +153,25 @@ export function StravaImportContent({
     try {
       const selectedActivities = Array.from(selectedIndices).map((i) => filteredActivities[i]);
 
+      // Fetch detailed activities to get calories, temp and other data not in search results
+      const detailedActivities = await Promise.all(
+        selectedActivities.map(async (activity) => {
+          if (!activity.externalId) return activity;
+          try {
+            return await getStravaActivityDetails(activity.externalId);
+          } catch (e) {
+            console.error('Failed to fetch details for activity:', activity.externalId, e);
+            return activity;
+          }
+        })
+      );
+
       if (mode === 'complete' || selectedIndices.size === 1) {
-        onImport(selectedActivities[0]);
+        onImport(detailedActivities[0]);
         onOpenChange(false);
         clearSelection();
       } else {
-        const sessionsToImport = selectedActivities.map((activity) => ({
+        const sessionsToImport = detailedActivities.map((activity) => ({
           date: activity.date,
           sessionType: '-',
           duration: activity.duration,
@@ -226,7 +265,14 @@ export function StravaImportContent({
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 activitiesCount={activities.length}
+                totalCount={totalCount}
+                filteredCount={filteredActivities.length}
                 loading={loading}
+                hasMore={hasMore}
+                searchLoading={searchLoading}
+                searchProgress={searchProgress}
+                onLoadAll={loadAllActivities}
+                onCancelSearch={cancelSearchLoading}
               />
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
@@ -251,6 +297,11 @@ export function StravaImportContent({
                   loadingMore={loadingMore}
                   observerTarget={observerTarget}
                   topRef={topRef}
+                  searchQuery={deferredSearchQuery}
+                  searchLoading={searchLoading}
+                  totalCount={totalCount}
+                  totalLoadedCount={activities.length}
+                  onSearchAll={() => loadAllForSearch(deferredSearchQuery)}
                 />
               </div>
 

@@ -60,7 +60,7 @@ export const SessionRow = React.memo(function SessionRow({
 
   return (
     <>
-      <TableRow className={rowClassName} onClick={handleRowClick}>
+      <TableRow data-testid={`session-row-${session.id}`} className={rowClassName} onClick={handleRowClick}>
         <CheckboxCell
           showCheckbox={showCheckbox}
           isSelected={isSelected}

@@ -37,17 +37,12 @@ export async function POST(request: NextRequest) {
             weather = await enrichSessionWithWeather(stravaData, new Date(session.date));
           }
 
-          let finalAverageTemp = averageTemp;
-          if (!finalAverageTemp && weather?.temperature !== undefined) {
-            finalAverageTemp = weather.temperature;
-          }
-
           return {
             ...sessionData,
             intervalDetails: intervalDetails || Prisma.JsonNull,
             stravaData: stravaData || Prisma.JsonNull,
             weather: weather ?? Prisma.JsonNull,
-            averageTemp: finalAverageTemp ?? null,
+            averageTemp: averageTemp ?? null,
             date: new Date(session.date),
             sessionNumber: 1,
             week: 1,

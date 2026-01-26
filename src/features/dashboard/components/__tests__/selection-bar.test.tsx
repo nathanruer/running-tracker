@@ -13,12 +13,14 @@ describe('SelectionBar', () => {
 
   it('should render with singular text for 1 selected session', () => {
     render(<SelectionBar {...defaultProps} selectedCount={1} />);
-    expect(screen.getByText('1 sélectionnée')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('1');
+    expect(screen.getByText('Sélectionnée')).toBeInTheDocument();
   });
 
   it('should render with plural text for multiple selected sessions', () => {
     render(<SelectionBar {...defaultProps} selectedCount={5} />);
-    expect(screen.getByText('5 sélectionnées')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('5');
+    expect(screen.getByText('Sélectionnées')).toBeInTheDocument();
   });
 
   it('should call onClear when cancel button is clicked', async () => {
@@ -39,7 +41,7 @@ describe('SelectionBar', () => {
 
     render(<SelectionBar {...defaultProps} onDelete={mockOnDelete} selectedCount={2} />);
 
-    const deleteButton = screen.getByRole('button', { name: /supprimer \(2\)/i });
+    const deleteButton = screen.getByTestId('bulk-delete-button');
     await user.click(deleteButton);
 
     expect(mockOnDelete).toHaveBeenCalledTimes(1);
@@ -51,7 +53,7 @@ describe('SelectionBar', () => {
 
     render(<SelectionBar {...defaultProps} onExport={mockOnExport} selectedCount={3} />);
 
-    const exportButton = screen.getByRole('button', { name: /exporter \(3\)/i });
+    const exportButton = screen.getByTestId('btn-export-selected');
     await user.click(exportButton);
 
     expect(mockOnExport).toHaveBeenCalledTimes(1);
@@ -76,17 +78,19 @@ describe('SelectionBar', () => {
     expect(buttons).toHaveLength(3);
 
     expect(screen.getByRole('button', { name: /annuler/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /exporter/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /supprimer/i })).toBeInTheDocument();
+    expect(screen.getByTestId('btn-export-selected')).toBeInTheDocument();
+    expect(screen.getByTestId('bulk-delete-button')).toBeInTheDocument();
   });
 
   it('should handle zero selected count', () => {
     render(<SelectionBar {...defaultProps} selectedCount={0} />);
-    expect(screen.getByText('0 sélectionnée')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('0');
+    expect(screen.getByText('Sélectionnée')).toBeInTheDocument();
   });
 
   it('should handle large selected counts', () => {
     render(<SelectionBar {...defaultProps} selectedCount={99} />);
-    expect(screen.getByText('99 sélectionnées')).toBeInTheDocument();
+    expect(screen.getByTestId('selection-count')).toHaveTextContent('99');
+    expect(screen.getByText('Sélectionnées')).toBeInTheDocument();
   });
 });

@@ -18,16 +18,16 @@ describe('PeriodFilter', () => {
   it('renders all period options', () => {
     render(<PeriodFilter {...defaultProps} />);
 
-    expect(screen.getByText('Tout')).toBeInTheDocument();
-    expect(screen.getByText('Semaine')).toBeInTheDocument();
-    expect(screen.getByText('Mois')).toBeInTheDocument();
-    expect(screen.getByText('Année')).toBeInTheDocument();
+    expect(screen.getByTestId('period-btn-all')).toBeInTheDocument();
+    expect(screen.getByTestId('period-btn-week')).toBeInTheDocument();
+    expect(screen.getByTestId('period-btn-month')).toBeInTheDocument();
+    expect(screen.getByTestId('period-btn-year')).toBeInTheDocument();
   });
 
   it('highlights the active period button', () => {
     render(<PeriodFilter {...defaultProps} period="week" />);
 
-    const weekButton = screen.getByText('Semaine');
+    const weekButton = screen.getByTestId('period-btn-week');
     expect(weekButton).toHaveClass('bg-violet-600');
     expect(weekButton).toHaveClass('text-white');
   });
@@ -35,15 +35,15 @@ describe('PeriodFilter', () => {
   it('does not highlight inactive period buttons', () => {
     render(<PeriodFilter {...defaultProps} period="week" />);
 
-    const allButton = screen.getByText('Tout');
+    const allButton = screen.getByTestId('period-btn-all');
     expect(allButton).not.toHaveClass('bg-violet-600');
-    expect(allButton).toHaveClass('text-muted-foreground/60');
+    expect(allButton).toHaveClass('text-muted-foreground/50');
   });
 
   it('calls onPeriodChange when a period button is clicked', () => {
     render(<PeriodFilter {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Mois'));
+    fireEvent.click(screen.getByTestId('period-btn-month'));
 
     expect(mockOnPeriodChange).toHaveBeenCalledWith('month');
   });
@@ -51,7 +51,7 @@ describe('PeriodFilter', () => {
   it('calls onPeriodChange with "all" when Tout is clicked', () => {
     render(<PeriodFilter {...defaultProps} period="month" />);
 
-    fireEvent.click(screen.getByText('Tout'));
+    fireEvent.click(screen.getByTestId('period-btn-all'));
 
     expect(mockOnPeriodChange).toHaveBeenCalledWith('all');
   });
@@ -59,7 +59,7 @@ describe('PeriodFilter', () => {
   it('calls onPeriodChange with "year" when Année is clicked', () => {
     render(<PeriodFilter {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Année'));
+    fireEvent.click(screen.getByTestId('period-btn-year'));
 
     expect(mockOnPeriodChange).toHaveBeenCalledWith('year');
   });

@@ -241,27 +241,34 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
               )}
 
               {hasStravaData && (
-                <div className="space-y-4 pt-2">
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                    Données avancées
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {typeof session.elevationGain === 'number' && session.elevationGain > 0 && (
-                      <StatCard label="Dénivelé" value={session.elevationGain} unit="m" />
-                    )}
-                    {session.averageCadence && (
-                      <StatCard label="Cadence" value={formatCadence(session.averageCadence)} unit="ppm" />
-                    )}
-                    {session.calories && (
-                      <StatCard label="Calories" value={session.calories} unit="kcal" />
-                    )}
-                    {session.averageTemp && (
-                      <StatCard label="Temp" value={session.averageTemp.toFixed(0)} unit="°C" />
-                    )}
+                <div className="space-y-6 pt-2">
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                      Données Capteurs
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {typeof session.elevationGain === 'number' && session.elevationGain > 0 && (
+                        <StatCard label="Dénivelé" value={session.elevationGain} unit="m" />
+                      )}
+                      {session.averageCadence && (
+                        <StatCard label="Cadence" value={formatCadence(session.averageCadence)} unit="ppm" />
+                      )}
+                      {typeof session.calories === 'number' && (
+                        <StatCard label="Calories" value={session.calories} unit="kcal" />
+                      )}
+                      {typeof session.averageTemp === 'number' && (
+                        <StatCard label="Température" value={session.averageTemp.toFixed(0)} unit="°C" />
+                      )}
+                    </div>
                   </div>
 
                   {session.weather && (
-                    <WeatherWidget weather={session.weather} />
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                        Conditions Météo
+                      </h3>
+                      <WeatherWidget weather={session.weather} />
+                    </div>
                   )}
                 </div>
               )}

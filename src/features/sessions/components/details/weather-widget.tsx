@@ -15,7 +15,7 @@ export function WeatherWidget({ weather }: WeatherWidgetProps) {
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2">
           <Thermometer className="w-4 h-4 text-muted-foreground" />
-          <span className="text-xl font-light tracking-tight">{weather.temperature.toFixed(1)}°</span>
+          <span data-testid="weather-temp" className="text-xl font-light tracking-tight">{weather.temperature.toFixed(1)}°</span>
         </div>
 
         <div className="h-6 w-px bg-border" />

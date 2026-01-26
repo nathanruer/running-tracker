@@ -38,6 +38,7 @@ export function SessionRowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem
+          data-testid="session-action-view"
           onClick={() => onView?.(session)}
           className="focus:bg-muted cursor-pointer"
         >
@@ -46,6 +47,7 @@ export function SessionRowActions({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
+          data-testid="session-action-edit"
           onClick={() => onEdit(session)}
           className="focus:bg-muted cursor-pointer"
         >
@@ -62,6 +64,7 @@ export function SessionRowActions({
           )}
         </DropdownMenuItem>
         <DropdownMenuItem
+          data-testid="session-action-delete"
           onClick={() => onDelete(session.id)}
           className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
         >
