@@ -36,22 +36,20 @@ export function RecommendationCard({
     let structure = '';
     let technicalTargets = '';
 
-    if (sessionType === 'Fractionné' && session.interval_structure) {
-      structure = typeof session.interval_structure === 'string'
-        ? session.interval_structure
-        : typeof session.interval_structure === 'object'
-        ? JSON.stringify(session.interval_structure)
-        : String(session.interval_structure);
+    if (sessionType === 'Fractionné' && (session.interval_structure || session.interval_details)) {
+      structure = session.interval_structure || 'Fractionné';
       
       const parts: string[] = [];
-      const paceDisplay = session.target_pace_min_km;
-      const hrDisplay = session.target_hr_bpm ? String(session.target_hr_bpm) : null;
+      const intervalDetails = session.interval_details;
+      
+      const paceDisplay = intervalDetails?.targetEffortPace || session.target_pace_min_km;
+      const hrDisplay = intervalDetails?.targetEffortHR || session.target_hr_bpm;
       
       if (paceDisplay) parts.push(`${paceDisplay} /km`);
       if (hrDisplay) parts.push(`${hrDisplay} bpm`);
       
       if (parts.length > 0) {
-        technicalTargets = `Cible : ${parts.join(' | ')}`;
+        technicalTargets = parts.join(' | ');
       }
     }
 
@@ -72,7 +70,7 @@ export function RecommendationCard({
             {sessionInfo.structure && sessionInfo.structure.toLowerCase() !== session.session_type?.toLowerCase() ? (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-violet-600 bg-violet-600/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-violet-600">
                     {session.session_type}
                   </span>
                   {isCompleted && (
@@ -98,6 +96,11 @@ export function RecommendationCard({
                   </div>
                 )}
               </div>
+            )}
+            {sessionInfo.technicalTargets && (
+              <p className="text-sm text-muted-foreground/50 leading-relaxed font-medium">
+                Cible effort : {sessionInfo.technicalTargets}
+              </p>
             )}
           </div>
 

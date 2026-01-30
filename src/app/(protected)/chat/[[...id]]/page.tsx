@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useTransition, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,14 +15,47 @@ import { ChatView } from '@/features/chat/components/chat-view';
 import { ChatSkeleton } from '@/features/chat/components/chat-skeleton';
 import { useConversations } from '@/features/chat/hooks/use-conversations';
 
+function getIdFromParams(params: ReturnType<typeof useParams>): string | null {
+  if (!params.id) return null;
+  return Array.isArray(params.id) ? params.id[0] : params.id;
+}
+
 export default function ChatPage() {
   const router = useRouter();
+  const params = useParams();
+  const [, startTransition] = useTransition();
+
+  const urlId = useMemo(() => getIdFromParams(params), [params]);
+  const [localId, setLocalId] = useState<string | null>(null);
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
+
+  const selectedConversationId = localId ?? urlId;
 
   const { showSkeleton } = useConversations();
 
+  const handleSelectConversation = useCallback((id: string) => {
+    setLocalId(id || null);
+
+    startTransition(() => {
+      const newUrl = id ? `/chat/${id}` : '/chat';
+      window.history.replaceState(null, '', newUrl);
+    });
+  }, []);
+
+  const handleSelectConversationMobile = useCallback((id: string) => {
+    handleSelectConversation(id);
+    setIsConversationsOpen(false);
+  }, [handleSelectConversation]);
+
+  const handleConversationCreated = useCallback((id: string) => {
+    setLocalId(id);
+    startTransition(() => {
+      router.replace(`/chat/${id}`, { scroll: false });
+    });
+  }, [router]);
+
   if (showSkeleton) {
-    return <ChatSkeleton mode="landing" />;
+    return <ChatSkeleton mode={selectedConversationId ? 'conversation' : 'landing'} />;
   }
 
   return (
@@ -48,13 +81,8 @@ export default function ChatPage() {
             </SheetHeader>
             <div className="h-full flex flex-col">
               <ChatSidebar
-                selectedConversationId={null}
-                onSelectConversation={(id) => {
-                  if (id) {
-                    router.push(`/chat/${id}`);
-                  }
-                  setIsConversationsOpen(false);
-                }}
+                selectedConversationId={selectedConversationId}
+                onSelectConversation={handleSelectConversationMobile}
                 isMobile={true}
               />
             </div>
@@ -64,14 +92,18 @@ export default function ChatPage() {
         <div className="flex-1 flex md:h-[calc(100vh-12rem)] gap-6 min-h-0 overflow-hidden">
           <div className="hidden md:block">
             <ChatSidebar
-              selectedConversationId={null}
-              onSelectConversation={(id) => router.push(`/chat/${id}`)}
+              selectedConversationId={selectedConversationId}
+              onSelectConversation={handleSelectConversation}
               isMobile={false}
             />
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">
-            <ChatView conversationId={null} />
+            <ChatView
+              key={selectedConversationId || 'new'}
+              conversationId={selectedConversationId}
+              onConversationCreated={handleConversationCreated}
+            />
           </div>
         </div>
       </div>

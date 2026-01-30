@@ -7,28 +7,28 @@ describe('FileImportButtons', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText('Strava')).toBeInTheDocument();
+    expect(screen.getByText('Importer Strava')).toBeInTheDocument();
   });
 
   it('should render import options label', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText("Options d'import")).toBeInTheDocument();
+    expect(screen.getByText('Options de synchronisation')).toBeInTheDocument();
   });
 
   it('should render description text', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText(/Synchronisez votre séance depuis Strava/)).toBeInTheDocument();
+    expect(screen.getByText(/Récupérez automatiquement les données/)).toBeInTheDocument();
   });
 
   it('should call onStravaClick when strava button is clicked', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    fireEvent.click(screen.getByText('Strava'));
+    fireEvent.click(screen.getByText('Importer Strava'));
 
     expect(onStravaClick).toHaveBeenCalledTimes(1);
   });
@@ -50,21 +50,21 @@ describe('FileImportButtons', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText('Strava')).toBeInTheDocument();
+    expect(screen.getByText('Importer Strava')).toBeInTheDocument();
   });
 
   it('should render strava button in complete mode', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="complete" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText('Strava')).toBeInTheDocument();
+    expect(screen.getByText('Importer Strava')).toBeInTheDocument();
   });
 
   it('should have correct button styling', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    const button = screen.getByText('Strava').closest('button');
-    expect(button).toHaveClass('bg-[#FC6100]');
+    const button = screen.getByText('Importer Strava').closest('button');
+    expect(button).toHaveClass('bg-[#FC4C02]');
   });
 });

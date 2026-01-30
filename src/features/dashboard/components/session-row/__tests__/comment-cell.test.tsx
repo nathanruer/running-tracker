@@ -112,10 +112,10 @@ describe('CommentCell', () => {
         </tbody>
       </table>
     );
-    
-    const cell = screen.getByText('Truncated comment').closest('td');
-    if (cell) fireEvent.click(cell);
-    
+
+    const commentDiv = screen.getByText('Truncated comment');
+    fireEvent.click(commentDiv);
+
     expect(mockOnShowMore).toHaveBeenCalledTimes(1);
   });
 });

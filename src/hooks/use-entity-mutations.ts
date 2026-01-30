@@ -1,24 +1,20 @@
 import { useState } from 'react';
-import { useQueryClient, InfiniteData, QueryKey, useQuery } from '@tanstack/react-query';
+import { useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { getCurrentUser } from '@/lib/services/api-client';
 
 /**
  * Configuration options for useEntityMutations hook
  */
 interface UseEntityMutationsOptions<T> {
   baseQueryKey: string;
-  filterType: string;
+  /** @deprecated No longer used - cache updates now apply to all matching queries */
+  filterType?: string;
   deleteEntity: (id: string) => Promise<void>;
   bulkDeleteEntities?: (ids: string[]) => Promise<void>;
   relatedQueryKeys?: string[];
   messages?: {
-    deleteSuccess?: string;
-    deleteSuccessDescription?: string;
     bulkDeleteSuccessTitle?: string;
     bulkDeleteSuccess?: (count: number) => string;
-    deleteError?: string;
-    bulkDeleteError?: string;
   };
   sortFn?: (a: T, b: T) => number;
 }
@@ -46,7 +42,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 ) {
   const {
     baseQueryKey,
-    filterType,
     deleteEntity,
     bulkDeleteEntities,
     relatedQueryKeys = [],
@@ -58,19 +53,9 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   const { handleError, handleSuccess } = useErrorHandler({ scope: 'global' });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: getCurrentUser,
-    staleTime: 10 * 60 * 1000,
-  });
-
   const defaultMessages = {
-    deleteSuccess: 'Élément supprimé',
-    deleteSuccessDescription: "L'élément a été supprimé avec succès.",
     bulkDeleteSuccessTitle: 'Éléments supprimés',
-    bulkDeleteSuccess: (count: number) => `${count} éléments ont été supprimés avec succès.`,
-    deleteError: 'Erreur lors de la suppression',
-    bulkDeleteError: 'Erreur lors de la suppression groupée',
+    bulkDeleteSuccess: (count: number) => `${count} élément${count > 1 ? 's' : ''} supprimé${count > 1 ? 's' : ''}.`,
     ...messages,
   };
 
@@ -82,47 +67,55 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 
   const sortEntities = sortFn || defaultSortFn;
 
-  const buildQueryKey = (variant: 'all' | 'paginated', type: string): QueryKey => [
-    baseQueryKey,
-    variant,
-    type,
-    user?.id
-  ];
+  /**
+   * Snapshots all queries matching baseQueryKey for rollback
+   */
+  const snapshotQueries = (): Map<string, unknown> => {
+    const snapshot = new Map<string, unknown>();
+    const queries = queryClient.getQueriesData({ queryKey: [baseQueryKey] });
+    for (const [key, data] of queries) {
+      snapshot.set(JSON.stringify(key), data);
+    }
+    return snapshot;
+  };
 
+  /**
+   * Restores queries from snapshot
+   */
+  const restoreFromSnapshot = (snapshot: Map<string, unknown>) => {
+    for (const [keyStr, data] of snapshot) {
+      const key = JSON.parse(keyStr);
+      queryClient.setQueryData(key, data);
+    }
+  };
+
+  /**
+   * Removes entities from ALL matching queries (handles any query key structure)
+   */
   const removeFromCache = (predicate: (entity: T) => boolean) => {
-    queryClient.setQueryData(
-      buildQueryKey('all', filterType),
-      (old: T[] | undefined) => old?.filter((item) => !predicate(item))
-    );
-
-    queryClient.setQueryData(
-      buildQueryKey('paginated', filterType),
-      (old: InfiniteData<T[]> | undefined) => {
+    queryClient.setQueriesData<T[] | InfiniteData<T[]>>(
+      { queryKey: [baseQueryKey] },
+      (old) => {
         if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) => page.filter((item) => !predicate(item))),
-        };
-      }
-    );
 
-    if (filterType !== 'all') {
-      queryClient.setQueryData(
-        buildQueryKey('all', 'all'),
-        (old: T[] | undefined) => old?.filter((item) => !predicate(item))
-      );
+        // Handle array format (simple queries)
+        if (Array.isArray(old)) {
+          return old.filter((item) => !predicate(item));
+        }
 
-      queryClient.setQueryData(
-        buildQueryKey('paginated', 'all'),
-        (old: InfiniteData<T[]> | undefined) => {
-          if (!old) return old;
+        // Handle infinite query format
+        if ('pages' in old && Array.isArray(old.pages)) {
           return {
             ...old,
-            pages: old.pages.map((page) => page.filter((item) => !predicate(item))),
+            pages: old.pages.map((page) =>
+              Array.isArray(page) ? page.filter((item) => !predicate(item)) : page
+            ),
           };
         }
-      );
-    }
+
+        return old;
+      }
+    );
   };
 
   /**
@@ -130,15 +123,13 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
    * @param id Entity ID to delete
    */
   const handleDelete = async (id: string) => {
-    const previousAllData = queryClient.getQueryData(buildQueryKey('all', filterType));
-    const previousPaginatedData = queryClient.getQueryData(buildQueryKey('paginated', filterType));
+    const snapshot = snapshotQueries();
 
     await queryClient.cancelQueries({ queryKey: [baseQueryKey] });
 
     removeFromCache((item) => item.id === id);
 
     setIsDeleting(true);
-    handleSuccess(defaultMessages.deleteSuccess, defaultMessages.deleteSuccessDescription);
 
     try {
       await deleteEntity(id);
@@ -148,8 +139,8 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
         queryClient.invalidateQueries({ queryKey: [key] });
       });
     } catch (error) {
-      queryClient.setQueryData(buildQueryKey('all', filterType), previousAllData);
-      queryClient.setQueryData(buildQueryKey('paginated', filterType), previousPaginatedData);
+      // Rollback all queries from snapshot
+      restoreFromSnapshot(snapshot);
       handleError(error);
     } finally {
       setIsDeleting(false);
@@ -165,11 +156,12 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
       throw new Error('bulkDeleteEntities function not provided');
     }
 
-    const previousAllData = queryClient.getQueryData(buildQueryKey('all', filterType));
-    const previousPaginatedData = queryClient.getQueryData(buildQueryKey('paginated', filterType));
+    // Snapshot ALL matching queries for rollback
+    const snapshot = snapshotQueries();
 
     await queryClient.cancelQueries({ queryKey: [baseQueryKey] });
 
+    // Optimistically remove from ALL matching caches
     removeFromCache((item) => ids.includes(item.id));
 
     try {
@@ -186,8 +178,8 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
         defaultMessages.bulkDeleteSuccess(ids.length)
       );
     } catch (error) {
-      queryClient.setQueryData(buildQueryKey('all', filterType), previousAllData);
-      queryClient.setQueryData(buildQueryKey('paginated', filterType), previousPaginatedData);
+      // Rollback all queries from snapshot
+      restoreFromSnapshot(snapshot);
       handleError(error);
     } finally {
       setIsDeleting(false);
@@ -199,41 +191,46 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
    * @param savedEntity Newly created or updated entity
    */
   const handleEntitySuccess = (savedEntity: T) => {
-    queryClient.setQueryData(
-      buildQueryKey('all', filterType),
-      (old: T[] | undefined) => {
-        if (!old) return [savedEntity];
-
-        const exists = old.find((item) => item.id === savedEntity.id);
-        if (exists) {
-          return old.map((item) => (item.id === savedEntity.id ? savedEntity : item));
-        } else {
-          return [savedEntity, ...old].sort(sortEntities);
-        }
-      }
-    );
-
-    queryClient.setQueryData(
-      buildQueryKey('paginated', filterType),
-      (old: InfiniteData<T[]> | undefined) => {
+    // Update ALL matching queries (handles any query key structure)
+    queryClient.setQueriesData<T[] | InfiniteData<T[]>>(
+      { queryKey: [baseQueryKey] },
+      (old) => {
         if (!old) return old;
 
-        const newPages = old.pages.map((page) => {
-          const index = page.findIndex((item) => item.id === savedEntity.id);
-          if (index !== -1) {
-            const newPage = [...page];
-            newPage[index] = savedEntity;
-            return newPage;
+        // Handle array format (simple queries)
+        if (Array.isArray(old)) {
+          const exists = old.find((item) => item.id === savedEntity.id);
+          if (exists) {
+            return old.map((item) => (item.id === savedEntity.id ? savedEntity : item));
+          } else {
+            return [savedEntity, ...old].sort(sortEntities);
           }
-          return page;
-        });
-
-        const existsInPages = old.pages.some((p) => p.some((item) => item.id === savedEntity.id));
-        if (!existsInPages && newPages.length > 0) {
-          newPages[0] = [savedEntity, ...newPages[0]];
         }
 
-        return { ...old, pages: newPages };
+        // Handle infinite query format
+        if ('pages' in old && Array.isArray(old.pages)) {
+          const newPages = old.pages.map((page) => {
+            if (!Array.isArray(page)) return page;
+            const index = page.findIndex((item) => item.id === savedEntity.id);
+            if (index !== -1) {
+              const newPage = [...page];
+              newPage[index] = savedEntity;
+              return newPage;
+            }
+            return page;
+          });
+
+          const existsInPages = old.pages.some((p) =>
+            Array.isArray(p) && p.some((item) => item.id === savedEntity.id)
+          );
+          if (!existsInPages && newPages.length > 0 && Array.isArray(newPages[0])) {
+            newPages[0] = [savedEntity, ...newPages[0]];
+          }
+
+          return { ...old, pages: newPages };
+        }
+
+        return old;
       }
     );
 

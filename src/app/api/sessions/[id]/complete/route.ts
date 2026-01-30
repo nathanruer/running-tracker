@@ -52,6 +52,13 @@ export async function PATCH(
         intervalDetails,
       } = body;
 
+      if (!date || isNaN(new Date(date).getTime())) {
+        return NextResponse.json(
+          { error: 'Une date valide est requise pour terminer une séance' },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        );
+      }
+
       let weather = body.weather || null;
       if (!weather && stravaData) {
         weather = await enrichSessionWithWeather(stravaData, new Date(date));

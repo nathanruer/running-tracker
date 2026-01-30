@@ -32,8 +32,8 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
   const [recoveryMode, setRecoveryMode] = useState<'time' | 'distance'>('time');
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-8 text-left">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={control}
           name="workoutType"
@@ -71,7 +71,7 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <EffortRecoverySection
           label="Effort"
           mode={effortMode === 'time' ? 'duration' : 'distance'}

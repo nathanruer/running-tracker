@@ -5,7 +5,7 @@ interface SessionDialogActionsProps {
   loading: boolean;
   hasSession: boolean;
   onCancel: () => void;
-  onUpdate?: () => void;
+  primaryLabel?: string;
 }
 
 export function SessionDialogActions({
@@ -13,8 +13,16 @@ export function SessionDialogActions({
   loading,
   hasSession,
   onCancel,
-  onUpdate,
+  primaryLabel,
 }: SessionDialogActionsProps) {
+  const defaultLabel = loading 
+    ? 'Enregistrement...' 
+    : mode === 'complete' 
+    ? 'Valider la séance'
+    : hasSession 
+    ? 'Mettre à jour' 
+    : 'Enregistrer la séance';
+
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
       <Button
@@ -27,45 +35,17 @@ export function SessionDialogActions({
       >
         Annuler
       </Button>
-      {mode === 'complete' && onUpdate ? (
-        <>
-          <Button
-            key="btn-update"
-            data-testid="btn-session-update"
-            type="button"
-            variant="secondary"
-            size="xl"
-            onClick={onUpdate}
-            className="w-full sm:flex-1 uppercase text-xs tracking-widest transition-none"
-            disabled={loading}
-          >
-            {loading ? 'Modification...' : 'Modifier'}
-          </Button>
-          <Button 
-            key="btn-submit-complete"
-            data-testid="btn-session-submit" 
-            type="submit" 
-            variant="action"
-            size="xl"
-            className="w-full sm:flex-[2] px-8 transition-none" 
-            disabled={loading}
-          >
-            {loading ? 'Enregistrement...' : 'Valider la séance'}
-          </Button>
-        </>
-      ) : (
-        <Button 
-          key="btn-submit-default"
-          data-testid="btn-session-submit" 
-          type="submit" 
-          variant="action"
-          size="xl"
-          className="w-full sm:flex-[2] px-8 transition-none" 
-          disabled={loading}
-        >
-          {loading ? 'Enregistrement...' : hasSession ? 'Mettre à jour' : 'Enregistrer la séance'}
-        </Button>
-      )}
+      <Button 
+        key="btn-session-submit"
+        data-testid="btn-session-submit" 
+        type="submit" 
+        variant="action"
+        size="xl"
+        className="w-full sm:flex-[2] px-8 transition-none" 
+        disabled={loading}
+      >
+        {primaryLabel || defaultLabel}
+      </Button>
     </div>
   );
 }

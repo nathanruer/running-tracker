@@ -57,7 +57,7 @@ export async function getHistoricalWeather(
 
     const hour = date.getUTCHours();
 
-    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateYMD}&end_date=${dateYMD}&hourly=temperature_2m,precipitation,weathercode,windspeed_10m`;
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateYMD}&end_date=${dateYMD}&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,precipitation,weathercode,windspeed_10m`;
 
     const res = await fetchWithTimeout(url, {}, 5000);
     if (!res.ok) throw new Error('Weather API error');
@@ -79,6 +79,8 @@ export async function getHistoricalWeather(
     const result: WeatherData = {
       conditionCode: data.hourly.weathercode[index],
       temperature: data.hourly.temperature_2m[index],
+      apparentTemperature: data.hourly.apparent_temperature?.[index],
+      humidity: data.hourly.relativehumidity_2m?.[index],
       windSpeed: data.hourly.windspeed_10m[index],
       precipitation: data.hourly.precipitation[index],
       timestamp: hour,

@@ -68,6 +68,9 @@ describe('SecurityForm', () => {
       </Wrapper>
     );
 
+    const newPasswordInput = screen.getByLabelText(/nouveau mot de passe/i);
+    await user.type(newPasswordInput, 'newpassword123');
+
     const submitButton = screen.getByRole('button', { name: /modifier le mot de passe/i });
     await user.click(submitButton);
 

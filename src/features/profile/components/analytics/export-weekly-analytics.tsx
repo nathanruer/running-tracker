@@ -4,6 +4,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { WeeklyChartDataPoint } from '@/lib/domain/analytics/weekly-calculator';
@@ -82,18 +83,19 @@ export function ExportWeeklyAnalytics({ data }: ExportWeeklyAnalyticsProps) {
           <span className="hidden sm:inline">Exporter</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-background">
-        <DropdownMenuItem data-testid="export-csv" onClick={exportToCSV} className="bg-background hover:bg-accent cursor-pointer">
-          <Download className="mr-2 h-4 w-4" />
-          CSV
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuLabel>Format d&apos;export</DropdownMenuLabel>
+        <DropdownMenuItem onClick={exportToCSV}>
+          <Download className="h-4 w-4" />
+          Fichier CSV
         </DropdownMenuItem>
-        <DropdownMenuItem data-testid="export-json" onClick={exportToJSON} className="bg-background hover:bg-accent cursor-pointer">
-          <Download className="mr-2 h-4 w-4" />
-          JSON
+        <DropdownMenuItem onClick={exportToJSON}>
+          <Download className="h-4 w-4" />
+          Fichier JSON
         </DropdownMenuItem>
-        <DropdownMenuItem data-testid="export-excel" onClick={exportToExcel} className="bg-background hover:bg-accent cursor-pointer">
-          <Download className="mr-2 h-4 w-4" />
-          Excel
+        <DropdownMenuItem onClick={exportToExcel}>
+          <Download className="h-4 w-4" />
+          Fichier Excel (XLSX)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

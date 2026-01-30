@@ -14,13 +14,14 @@ export type { Message, ConversationWithMessages as Conversation } from '@/lib/se
 
 interface ChatViewProps {
   conversationId: string | null;
+  onConversationCreated?: (id: string) => void;
 }
 
-export function ChatView({ conversationId }: ChatViewProps) {
+export function ChatView({ conversationId, onConversationCreated }: ChatViewProps) {
   const [input, setInput] = useState('');
 
   const { optimisticMessages, isWaitingForResponse, createConversationWithMessage } =
-    useConversationCreation({ conversationId });
+    useConversationCreation({ conversationId, onConversationCreated });
 
   const { data: allSessions = [] } = useQuery({
     queryKey: ['sessions', 'history'],

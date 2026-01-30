@@ -58,6 +58,14 @@ export function parseGarminCSV(csvContent: string): IntervalDetails | null {
 
   if (steps.length === 0) return null;
 
+  const hasCooldown = steps.some(s => s.stepType === 'cooldown');
+  if (!hasCooldown && steps.length > 0) {
+    const lastStep = steps[steps.length - 1];
+    if (lastStep.stepType === 'recovery') {
+      lastStep.stepType = 'cooldown';
+    }
+  }
+
   const effortSteps = steps.filter(s => s.stepType === 'effort');
   const recoverySteps = steps.filter(s => s.stepType === 'recovery');
   
@@ -107,7 +115,7 @@ export function parseGarminCSV(csvContent: string): IntervalDetails | null {
   }
 
   return {
-    workoutType: 'TEMPO', 
+    workoutType: null,
     repetitionCount: repetitionCount > 0 ? repetitionCount : null,
     effortDuration,
     recoveryDuration,

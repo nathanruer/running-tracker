@@ -3,15 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useConversationCreation } from '../use-conversation-creation';
 
-const mockPush = vi.fn();
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    replace: vi.fn(),
-    push: mockPush,
-  }),
-}));
-
 global.fetch = vi.fn();
 
 const createWrapper = () => {
@@ -44,7 +35,9 @@ describe('useConversationCreation', () => {
     expect(result.current.createConversationWithMessage).toBeInstanceOf(Function);
   });
 
-  it('should create conversation and navigate successfully', async () => {
+  it('should create conversation and call onConversationCreated callback', async () => {
+    const onConversationCreated = vi.fn();
+
     vi.mocked(fetch).mockImplementation((url) => {
       if (url === '/api/conversations') {
         return Promise.resolve({
@@ -77,7 +70,7 @@ describe('useConversationCreation', () => {
     });
 
     const { result } = renderHook(
-      () => useConversationCreation({ conversationId: null }),
+      () => useConversationCreation({ conversationId: null, onConversationCreated }),
       { wrapper: createWrapper() }
     );
 
@@ -86,7 +79,7 @@ describe('useConversationCreation', () => {
     });
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/chat/new-conv-123');
+      expect(onConversationCreated).toHaveBeenCalledWith('new-conv-123');
     });
 
     expect(fetch).toHaveBeenCalledWith('/api/conversations', expect.objectContaining({
@@ -242,5 +235,68 @@ describe('useConversationCreation', () => {
     expect(error?.message).toBe('Une erreur inattendue est survenue.');
     expect(result.current.optimisticMessages).toEqual([]);
     expect(result.current.isWaitingForResponse).toBe(false);
+  });
+
+  it('should invalidate conversations query after successful creation', async () => {
+    const invalidateQueriesSpy = vi.fn().mockResolvedValue(undefined);
+    const onConversationCreated = vi.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    queryClient.invalidateQueries = invalidateQueriesSpy;
+
+    vi.mocked(fetch).mockImplementation((url) => {
+      if (url === '/api/conversations') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: 'new-conv-456', title: 'Test' }),
+        } as Response);
+      }
+      if (String(url).includes('/messages')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            userMessage: {
+              id: 'msg-1',
+              role: 'user',
+              content: 'Test',
+              recommendations: null,
+              createdAt: new Date().toISOString(),
+            },
+            assistantMessage: {
+              id: 'msg-2',
+              role: 'assistant',
+              content: 'Response',
+              recommendations: null,
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    const Wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    Wrapper.displayName = 'TestWrapperWithSpy';
+
+    const { result } = renderHook(
+      () => useConversationCreation({ conversationId: null, onConversationCreated }),
+      { wrapper: Wrapper }
+    );
+
+    await act(async () => {
+      await result.current.createConversationWithMessage('Test');
+    });
+
+    await waitFor(() => {
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['conversations'] });
+    });
+
+    expect(onConversationCreated).toHaveBeenCalledWith('new-conv-456');
   });
 });

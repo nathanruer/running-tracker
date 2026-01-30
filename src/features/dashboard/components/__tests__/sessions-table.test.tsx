@@ -110,7 +110,7 @@ describe('SessionsTable', () => {
   });
 
   it('should render loading skeleton when initialLoading is true', () => {
-    render(<SessionsTable {...defaultProps} initialLoading={true} />);
+    render(<SessionsTable {...defaultProps} initialLoading={true} sessions={[]} />);
 
     const skeletons = screen.getAllByRole('row').filter(row => {
       const cells = within(row).queryAllByRole('cell');
@@ -263,11 +263,13 @@ describe('SessionsTable', () => {
   });
 
   it('should call onSearchChange when typing in search input', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionsTable {...defaultProps} />);
 
     const searchInput = screen.getByPlaceholderText(/chercher/i);
     await user.type(searchInput, 'Hard');
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
 
     expect(mockOnSearchChange).toHaveBeenCalled();
   });

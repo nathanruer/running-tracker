@@ -189,15 +189,47 @@ describe('useSessionForm', () => {
     expect(result.current.form.getValues('recoveryDuration')).toBe('02:00');
 
     expect(result.current.form.getValues('steps')).toHaveLength(2);
-    expect(result.current.form.getValues('steps.0.duration')).toBe('13:00');
-    expect(result.current.form.getValues('steps.1.pace')).toBe('05:01');
+    expect(result.current.form.getValues('steps.0.duration')).toBe('10:00');
+    expect(result.current.form.getValues('steps.1.pace')).toBe('05:07');
 
     expect(result.current.form.getValues('duration')).toBe('00:45:00');
     expect(result.current.form.getValues('distance')).toBe(7.5);
     expect(result.current.form.getValues('avgHeartRate')).toBe(165);
   });
 
-  it('should set form field error when date is missing on submit', async () => {
+  it('should set form field error when date is missing on submit in complete mode', async () => {
+    const plannedSession = {
+      ...mockSession,
+      id: 'session-to-complete',
+      status: 'planned',
+      date: null,
+    };
+
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'complete',
+        session: plannedSession as unknown as TrainingSession,
+        onClose,
+      })
+    );
+
+    act(() => {
+      result.current.form.setValue('isCompletion', true);
+      result.current.form.setValue('date', '', { shouldValidate: true });
+      result.current.form.setValue('duration', '01:00:00', { shouldValidate: true });
+      result.current.form.setValue('distance', 10, { shouldValidate: true });
+      result.current.form.setValue('avgPace', '06:00', { shouldValidate: true });
+    });
+
+    await act(async () => {
+      await result.current.form.trigger();
+    });
+
+    expect(result.current.form.formState.errors.date).toBeDefined();
+    expect(result.current.form.formState.errors.date?.message).toBe('Date requise');
+  });
+
+  it('should not require date in create mode (date is optional for planning)', async () => {
     const { result } = renderHook(() =>
       useSessionForm({
         mode: 'create',
@@ -213,35 +245,9 @@ describe('useSessionForm', () => {
     });
 
     await act(async () => {
-      await Promise.resolve();
+      await result.current.form.trigger();
     });
 
-    expect(result.current.form.formState.errors.date).toBeDefined();
-    expect(result.current.form.formState.errors.date?.message).toBe('Date requise');
-  });
-
-  it('should show all validation errors at once (date and duration)', async () => {
-    const { result } = renderHook(() =>
-      useSessionForm({
-        mode: 'create',
-        onClose,
-      })
-    );
-
-    act(() => {
-      result.current.form.setValue('date', '', { shouldValidate: true });
-      result.current.form.setValue('duration', '', { shouldValidate: true });
-      result.current.form.setValue('distance', 10, { shouldValidate: true });
-      result.current.form.setValue('avgPace', '06:00', { shouldValidate: true });
-    });
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(result.current.form.formState.errors.date).toBeDefined();
-    expect(result.current.form.formState.errors.date?.message).toBe('Date requise');
-    expect(result.current.form.formState.errors.duration).toBeDefined();
-    expect(result.current.form.formState.errors.duration?.message).toBe('Durée requise');
+    expect(result.current.form.formState.errors.date).toBeUndefined();
   });
 });

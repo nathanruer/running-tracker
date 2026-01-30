@@ -22,6 +22,7 @@ vi.mock('@/lib/services/api-client', () => ({
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useEntityMutations } from '@/hooks/use-entity-mutations';
 import { useDashboardData } from '../use-dashboard-data';
+import { CACHE_TIME } from '@/lib/constants';
 import type { TrainingSession } from '@/lib/types';
 
 const createSession = (id: string, overrides?: Partial<TrainingSession>): TrainingSession => ({
@@ -590,12 +591,12 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          staleTime: 0,
+          staleTime: CACHE_TIME.SESSIONS,
         })
       );
     });
 
-    it('should use 0 staleTime for sessionsCount query', () => {
+    it('should use CACHE_TIME.SESSIONS staleTime for sessionsCount query', () => {
       vi.mocked(useQuery)
         .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
         .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
@@ -615,7 +616,7 @@ describe('useDashboardData', () => {
       // The third useQuery call is for sessionsCount
       const sessionsCountCall = vi.mocked(useQuery).mock.calls[2];
       expect(sessionsCountCall[0]).toMatchObject({
-        staleTime: 0,
+        staleTime: CACHE_TIME.SESSIONS,
       });
     });
   });

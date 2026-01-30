@@ -59,7 +59,8 @@ export function ProfileForm({ user }: ProfileFormProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -76,6 +77,18 @@ export function ProfileForm({ user }: ProfileFormProps) {
     mutationFn: updateUser,
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(['user'], updatedUser);
+      toast({
+        title: 'Succès',
+        description: 'Vos informations personnelles ont été mises à jour.',
+      });
+      reset({
+        email: updatedUser.email,
+        weight: updatedUser.weight ?? undefined,
+        age: updatedUser.age ?? undefined,
+        maxHeartRate: updatedUser.maxHeartRate ?? undefined,
+        vma: updatedUser.vma ?? undefined,
+        goal: updatedUser.goal ?? undefined,
+      });
     },
     onError: () => {
       toast({
@@ -178,7 +191,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           </div>
 
           <div className='pt-4'>
-            <Button type="submit" variant="action" size="xl" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" variant="action" size="xl" className="w-full" disabled={isSubmitting || !isDirty}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

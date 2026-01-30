@@ -39,7 +39,7 @@ export function SecurityForm() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<SecurityFormValues>({
     resolver: zodResolver(securitySchema),
     defaultValues: {
@@ -180,7 +180,7 @@ export function SecurityForm() {
               variant="action" 
               size="lg" 
               className="w-full" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isDirty}
             >
               {isSubmitting ? (
                 <>

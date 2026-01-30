@@ -15,6 +15,8 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
     onClick?: (e: React.MouseEvent) => void;
     className?: string;
   }) => <div onClick={onClick} role="menuitem">{children}</div>,
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <hr />,
 }));
 
 describe('ConversationListItem', () => {

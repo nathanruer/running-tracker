@@ -26,6 +26,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
     <button data-testid="dropdown-item" onClick={onClick}>{children}</button>
   ),
   DropdownMenuSeparator: () => <hr />,
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-label">{children}</div>,
 }));
 
 vi.mock('../../interval-details-view', () => ({
@@ -235,11 +236,11 @@ describe('SessionRow', () => {
 
     it('calls onView when view details item is clicked', () => {
       renderRow(mockCompletedSession);
-      
+
       const menuItems = screen.getAllByTestId('dropdown-item');
-      const viewItem = menuItems.find(item => item.textContent?.includes('Voir détails'));
+      const viewItem = menuItems.find(item => item.textContent?.includes('Voir les détails'));
       expect(viewItem).toBeInTheDocument();
-      
+
       if (viewItem) {
         fireEvent.click(viewItem);
         expect(mockOnView).toHaveBeenCalledWith(mockCompletedSession);
@@ -248,11 +249,11 @@ describe('SessionRow', () => {
 
     it('calls onEdit when edit item is clicked for completed session', () => {
       renderRow(mockCompletedSession);
-      
+
       const menuItems = screen.getAllByTestId('dropdown-item');
-      const editItem = menuItems.find(item => item.textContent?.includes('Modifier'));
+      const editItem = menuItems.find(item => item.textContent?.includes('Modifier la séance'));
       expect(editItem).toBeInTheDocument();
-      
+
       if (editItem) {
         fireEvent.click(editItem);
         expect(mockOnEdit).toHaveBeenCalledWith(mockCompletedSession);

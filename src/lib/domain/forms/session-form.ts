@@ -3,9 +3,6 @@ import type { FormValues } from '@/lib/validation/session-form';
 import { getTodayISO, extractDatePart } from '@/lib/utils/date';
 import { transformStepsData, getSessionDisplayData } from '@/lib/domain/forms/session-helpers';
 
-/**
- * Initialize the form to complete a planned session
- */
 export function initializeFormForComplete(
   session: TrainingSession,
   initialData: Partial<FormValues> | null
@@ -16,24 +13,36 @@ export function initializeFormForComplete(
 
   const perceivedExertion = session.targetRPE || null;
 
+  const sessionComments = session.comments || '';
+  const importedComments = importedFields.comments || '';
+  const comments = sessionComments || importedComments;
+
+  const sessionHasIntervals = session.intervalDetails?.steps &&
+    session.intervalDetails.steps.length > 0;
+
+  const sessionTypeIsGeneric = !session.sessionType || session.sessionType === '-' || session.sessionType === 'Footing';
+  const sessionType = sessionTypeIsGeneric && importedFields.sessionType
+    ? importedFields.sessionType
+    : session.sessionType || 'Footing';
+
   return {
     date: sessionDate,
     perceivedExertion,
-    comments: session.comments || '',
-    duration: '',
-    distance: null,
-    avgPace: '',
-    avgHeartRate: null,
-    ...importedFields,
-    sessionType: importedFields.sessionType || session.sessionType || 'Footing',
+    comments,
+    duration: importedFields.duration || '',
+    distance: importedFields.distance ?? null,
+    avgPace: importedFields.avgPace || '',
+    avgHeartRate: importedFields.avgHeartRate ?? null,
+    sessionType,
     source: importedFields.source ?? session.source,
     stravaData: importedFields.stravaData ?? session.stravaData,
+    externalId: importedFields.externalId ?? session.externalId,
     elevationGain: importedFields.elevationGain ?? session.elevationGain,
     averageCadence: importedFields.averageCadence ?? session.averageCadence,
     averageTemp: importedFields.averageTemp ?? session.averageTemp,
     calories: importedFields.calories ?? session.calories,
     workoutType: session.intervalDetails?.workoutType || importedFields.workoutType || '',
-    repetitionCount: importedFields.repetitionCount ?? session.intervalDetails?.repetitionCount ?? undefined,
+    repetitionCount: session.intervalDetails?.repetitionCount ?? importedFields.repetitionCount ?? undefined,
     effortDuration: session.intervalDetails?.effortDuration || importedFields.effortDuration || '',
     recoveryDuration: session.intervalDetails?.recoveryDuration || importedFields.recoveryDuration || '',
     effortDistance: session.intervalDetails?.effortDistance ?? importedFields.effortDistance ?? undefined,
@@ -41,7 +50,9 @@ export function initializeFormForComplete(
     targetEffortPace: session.intervalDetails?.targetEffortPace || importedFields.targetEffortPace || '',
     targetEffortHR: session.intervalDetails?.targetEffortHR ?? importedFields.targetEffortHR ?? undefined,
     targetRecoveryPace: session.intervalDetails?.targetRecoveryPace || importedFields.targetRecoveryPace || '',
-    steps: importedFields.steps || transformStepsData(session.intervalDetails?.steps) || [],
+    steps: sessionHasIntervals
+      ? transformStepsData(session.intervalDetails?.steps)
+      : (importedFields.steps || []),
   };
 }
 

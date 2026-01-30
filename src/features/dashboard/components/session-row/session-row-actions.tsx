@@ -4,6 +4,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -37,38 +38,37 @@ export function SessionRowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuLabel>Actions de session</DropdownMenuLabel>
         <DropdownMenuItem
           data-testid="session-action-view"
           onClick={() => onView?.(session)}
-          className="focus:bg-muted cursor-pointer"
         >
-          <Eye className="h-4 w-4 mr-2" />
-          Voir détails
+          <Eye className="h-4 w-4" />
+          Voir les détails
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem
           data-testid="session-action-edit"
           onClick={() => onEdit(session)}
-          className="focus:bg-muted cursor-pointer"
         >
           {isPlanned ? (
             <>
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="h-4 w-4 text-primary" />
               Compléter / Modifier
             </>
           ) : (
             <>
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
+              <Edit className="h-4 w-4" />
+              Modifier la séance
             </>
           )}
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           data-testid="session-action-delete"
           onClick={() => onDelete(session.id)}
-          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+          className="text-destructive focus:text-destructive focus:bg-destructive/10"
         >
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="h-4 w-4" />
           Supprimer
         </DropdownMenuItem>
       </DropdownMenuContent>

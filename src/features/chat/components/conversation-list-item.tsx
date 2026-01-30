@@ -5,6 +5,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Conversation } from '@/lib/services/api-client';
@@ -30,6 +32,7 @@ export function ConversationListItem({
 }: ConversationListItemProps) {
   return (
     <div
+      data-testid={`conversation-${conversation.id}`}
       className={`
         group flex items-center gap-3 p-3.5 rounded-xl cursor-pointer
         transition-all active:scale-[0.98]
@@ -63,25 +66,26 @@ export function ConversationListItem({
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Conversation</DropdownMenuLabel>
           <DropdownMenuItem
-            className="focus:bg-muted cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onRename(conversation);
             }}
           >
-            <Pencil className="h-4 w-4 mr-2" />
+            <Pencil className="h-4 w-4" />
             Renommer
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(conversation.id);
             }}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="h-4 w-4" />
             Supprimer
           </DropdownMenuItem>
         </DropdownMenuContent>

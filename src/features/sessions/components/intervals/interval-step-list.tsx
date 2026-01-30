@@ -131,7 +131,7 @@ export function IntervalStepList({
           <div className="space-y-6 rounded-2xl bg-muted/30 p-6 border border-border/40">
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Objectifs de séance</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={control}
                   name="targetEffortPace"

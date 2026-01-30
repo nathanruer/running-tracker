@@ -38,8 +38,8 @@ export function EffortRecoverySection({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">{label}</h4>
+      <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 shrink-0">{label}</h4>
         <ModeToggleButton mode={mode} onChange={onModeChange} />
       </div>
 

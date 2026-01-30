@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import type { AIRecommendedSession } from '@/lib/types';
+import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import {
   sendMessage as apiSendMessage,
   deleteSession,
@@ -38,18 +38,65 @@ export function useChatMutations(conversationId: string | null) {
         comments,
       });
     },
-    onMutate: (session: AIRecommendedSession) => {
+    onMutate: async (session: AIRecommendedSession) => {
       setLoadingSessionId(session.recommendation_id ?? null);
+
+      await queryClient.cancelQueries({ queryKey: ['sessions', 'history'] });
+
+      const previousSessions = queryClient.getQueryData<TrainingSession[]>(['sessions', 'history']);
+
+      const optimisticSession: TrainingSession = {
+        id: `optimistic-${session.recommendation_id}`,
+        sessionNumber: 0,
+        sessionType: session.session_type || 'Footing',
+        status: 'planned',
+        week: null,
+        userId: '',
+        date: null,
+        duration: null,
+        distance: null,
+        avgPace: null,
+        avgHeartRate: null,
+        perceivedExertion: null,
+        comments: session.description || '',
+        intervalDetails: session.interval_details || null,
+        plannedDate: null,
+        targetPace: session.target_pace_min_km ?? null,
+        targetDuration: session.duration_min ?? null,
+        targetDistance: session.estimated_distance_km ?? null,
+        targetHeartRateBpm: session.target_hr_bpm ?? null,
+        targetRPE: session.target_rpe ?? null,
+        recommendationId: session.recommendation_id ?? null,
+        externalId: null,
+        source: 'coach',
+      };
+
+      queryClient.setQueryData<TrainingSession[]>(['sessions', 'history'], (old) =>
+        old ? [optimisticSession, ...old] : [optimisticSession]
+      );
+
+      return { previousSessions };
     },
-    onSuccess: () => {
+    onSuccess: (newSession, originalSession) => {
+      if (newSession) {
+        queryClient.setQueryData<TrainingSession[]>(['sessions', 'history'], (old) => {
+          if (!old) return [newSession];
+          return old.map((s) =>
+            s.id.startsWith('optimistic-') && s.recommendationId === originalSession.recommendation_id
+              ? newSession
+              : s
+          );
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['sessions', 'history'] });
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      toast({
-        title: 'Séance ajoutée',
-        description: 'La séance a été ajoutée à vos séances prévues',
-      });
     },
-    onError: (error) => {
+    onError: (error, _session, context) => {
+      if (context?.previousSessions) {
+        queryClient.setQueryData(['sessions', 'history'], context.previousSessions);
+      }
+
       toast({
         title: 'Erreur',
         description: error instanceof Error ? error.message : 'Erreur lors de l\'ajout de la séance',
@@ -65,18 +112,27 @@ export function useChatMutations(conversationId: string | null) {
     mutationFn: async ({ sessionId }: { sessionId: string; recommendationId: string }) => {
       await deleteSession(sessionId);
     },
-    onMutate: ({ recommendationId }) => {
+    onMutate: async ({ sessionId, recommendationId }) => {
       setLoadingSessionId(recommendationId);
+
+      await queryClient.cancelQueries({ queryKey: ['sessions', 'history'] });
+
+      const previousSessions = queryClient.getQueryData<TrainingSession[]>(['sessions', 'history']);
+
+      queryClient.setQueryData<TrainingSession[]>(['sessions', 'history'], (old) =>
+        old ? old.filter((s) => s.id !== sessionId && s.recommendationId !== recommendationId) : []
+      );
+
+      return { previousSessions };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions', 'history'] });
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      toast({
-        title: 'Séance supprimée',
-        description: 'La séance a été retirée de vos séances prévues',
-      });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context?.previousSessions) {
+        queryClient.setQueryData(['sessions', 'history'], context.previousSessions);
+      }
+
       toast({
         title: 'Erreur',
         description: error instanceof Error ? error.message : 'Erreur lors de la suppression de la séance',

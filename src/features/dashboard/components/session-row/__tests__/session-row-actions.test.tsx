@@ -11,6 +11,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
     <button data-testid="dropdown-item" onClick={onClick}>{children}</button>
   ),
   DropdownMenuSeparator: () => <hr data-testid="dropdown-separator" />,
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div data-testid="dropdown-label">{children}</div>,
 }));
 
 describe('SessionRowActions', () => {
@@ -48,7 +49,7 @@ describe('SessionRowActions', () => {
     expect(screen.getByTestId('dropdown-trigger')).toBeInTheDocument();
   });
 
-  it('should call onView when "Voir détails" is clicked', () => {
+  it('should call onView when "Voir les détails" is clicked', () => {
     render(
       <SessionRowActions
         session={mockSession}
@@ -59,14 +60,14 @@ describe('SessionRowActions', () => {
     );
 
     const items = screen.getAllByTestId('dropdown-item');
-    const viewButton = items.find(item => item.textContent?.includes('Voir détails'));
+    const viewButton = items.find(item => item.textContent?.includes('Voir les détails'));
 
     expect(viewButton).toBeDefined();
     fireEvent.click(viewButton!);
     expect(mockOnView).toHaveBeenCalledWith(mockSession);
   });
 
-  it('should call onEdit when "Modifier" is clicked for completed session', () => {
+  it('should call onEdit when "Modifier la séance" is clicked for completed session', () => {
     render(
       <SessionRowActions
         session={mockSession}
@@ -78,7 +79,7 @@ describe('SessionRowActions', () => {
     );
 
     const items = screen.getAllByTestId('dropdown-item');
-    const editButton = items.find(item => item.textContent?.includes('Modifier'));
+    const editButton = items.find(item => item.textContent?.includes('Modifier la séance'));
 
     expect(editButton).toBeDefined();
     fireEvent.click(editButton!);
@@ -167,8 +168,8 @@ describe('SessionRowActions', () => {
       />
     );
 
-    expect(screen.getByText('Voir détails')).toBeInTheDocument();
-    expect(screen.getByText('Modifier')).toBeInTheDocument();
+    expect(screen.getByText('Voir les détails')).toBeInTheDocument();
+    expect(screen.getByText('Modifier la séance')).toBeInTheDocument();
     expect(screen.getByText('Supprimer')).toBeInTheDocument();
   });
 });

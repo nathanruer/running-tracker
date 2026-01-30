@@ -238,7 +238,7 @@ describe('initializeFormForComplete', () => {
     expect(result.elevationGain).toBe(150);
   });
 
-  it('correctly merges interval steps', () => {
+  it('preserves session interval steps over imported data', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
@@ -273,7 +273,40 @@ describe('initializeFormForComplete', () => {
 
     const result = initializeFormForComplete(session, initialData);
 
-    // initialData.steps takes priority
+    expect(result.steps).toEqual([
+      {
+        stepNumber: 1,
+        stepType: 'warmup',
+        duration: '00:10:00',
+        distance: 2,
+        pace: null,
+        hr: null,
+      },
+    ]);
+  });
+
+  it('uses imported steps when session has no intervals', () => {
+    const session = {
+      status: 'planned',
+      date: '2024-01-15',
+      sessionType: 'Footing',
+    } as unknown as TrainingSession;
+
+    const initialData = {
+      steps: [
+        {
+          stepNumber: 1,
+          stepType: 'warmup' as const,
+          duration: '00:12:00',
+          distance: 2.5,
+          pace: '04:48',
+          hr: 140,
+        },
+      ],
+    };
+
+    const result = initializeFormForComplete(session, initialData);
+
     expect(result.steps).toEqual(initialData.steps);
   });
 });

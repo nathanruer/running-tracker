@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { createConversation, sendMessage, type Conversation } from '@/lib/services/api-client';
 import type { Message } from '../components/chat-view';
 
 interface UseConversationCreationProps {
   conversationId: string | null;
+  onConversationCreated?: (id: string) => void;
 }
 
-export function useConversationCreation({ conversationId }: UseConversationCreationProps) {
+export function useConversationCreation({ conversationId, onConversationCreated }: UseConversationCreationProps) {
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   const [prevId, setPrevId] = useState(conversationId);
   if (conversationId !== prevId) {
@@ -62,7 +61,9 @@ export function useConversationCreation({ conversationId }: UseConversationCreat
         return old ? [newConvSync, ...old] : [newConvSync];
       });
 
-      router.push(`/chat/${newConversationId}`);
+      onConversationCreated?.(newConversationId);
+
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     } catch (error) {
       setOptimisticMessages([]);
       setIsWaitingForResponse(false);

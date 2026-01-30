@@ -64,6 +64,8 @@ export const intervalDetailsEntitySchema = z.object({
 export const weatherDataSchema = z.object({
   conditionCode: z.number(),
   temperature: z.number(),
+  apparentTemperature: z.number().optional(),
+  humidity: z.number().optional(),
   windSpeed: z.number(),
   precipitation: z.number(),
   timestamp: z.number().optional(),

@@ -44,7 +44,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
   }, [duration, distance, setValue, stepIndex]);
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <FormField
         control={control}
         name={`steps.${stepIndex}.duration`}

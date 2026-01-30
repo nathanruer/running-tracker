@@ -212,6 +212,14 @@ export function useIntervalSync({ watch, replace, onEntryModeChange, disableAuto
       const updatedStep = { ...step };
       let changed = false;
 
+      const hasDetailedData =
+        (step.pace && step.pace !== '') ||
+        (step.hr !== null && step.hr !== undefined);
+
+      if (hasDetailedData) {
+        return step;
+      }
+
       if (step.stepType === 'effort') {
         const shouldUpdateDuration =
           effortDuration !== undefined && effortDuration !== null && effortDuration !== '';

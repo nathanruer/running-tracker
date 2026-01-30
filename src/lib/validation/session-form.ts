@@ -32,7 +32,8 @@ const intervalStepSchema = z.object({
 // ============================================================================
 
 const formSchema = z.object({
-  date: z.string().min(1, VALIDATION_MESSAGES.DATE_REQUIRED),
+  isCompletion: z.boolean().optional(),
+  date: z.string().optional().nullable(),
   sessionType: z.string().min(1, VALIDATION_MESSAGES.SESSION_TYPE_REQUIRED),
   duration: requiredDurationSchema,
   distance: z.number().nullable().superRefine((val, ctx) => {
@@ -78,6 +79,14 @@ const formSchema = z.object({
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
   calories: z.number().optional().nullable(),
+}).refine((data) => {
+  if (data.isCompletion && (!data.date || data.date.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: VALIDATION_MESSAGES.DATE_REQUIRED,
+  path: ['date'],
 });
 
 // ============================================================================

@@ -74,30 +74,30 @@ export function IntervalFields({
   };
 
   return (
-    <div className="space-y-6 rounded-[2rem] border border-border/50 bg-muted/20 p-6 md:p-8">
+    <div className="space-y-6 rounded-2xl border border-border/50 bg-muted/20 p-5 md:p-6">
       {onCsvImport && (
-        <div className="flex items-center justify-between gap-4 mb-2">
-           <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Type Fractionné</span>
-             <span className="text-xs text-muted-foreground font-medium italic">Configurez vos intervalles</span>
-           </div>
-           <Button
-             variant="secondary"
-             size="sm"
-              className="h-8 px-4 font-black text-[10px] uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white active:scale-95 transition-all border-none"
-             asChild
-           >
-             <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <Watch className="mr-2 h-3.5 w-3.5" />
-                Garmin CSV
-             </label>
-           </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/10">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-black uppercase tracking-wider text-foreground/90">Type de Fractionné</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Configurez les intervalles de votre séance</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-3 text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all border border-border/20"
+            asChild
+          >
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Watch className="mr-2 h-3.5 w-3.5" />
+              Importer CSV
+            </label>
+          </Button>
         </div>
       )}
 

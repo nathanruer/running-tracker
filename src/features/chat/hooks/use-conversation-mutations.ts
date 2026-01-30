@@ -32,10 +32,6 @@ export function useConversationMutations({
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       onConversationCreated?.(data.id);
-      toast({
-        title: 'Conversation créée',
-        description: 'Une nouvelle conversation a été créée.',
-      });
     },
     onError: () => {
       toast({
@@ -55,10 +51,6 @@ export function useConversationMutations({
       setRenameDialogOpen(false);
       setSelectedForRename(null);
       setNewTitle('');
-      toast({
-        title: 'Conversation renommée',
-        description: 'Le titre de la conversation a été modifié.',
-      });
     },
     onError: () => {
       toast({
@@ -89,12 +81,7 @@ export function useConversationMutations({
 
       return { previousConversations, deletedId };
     },
-    onSuccess: () => {
-      toast({
-        title: 'Conversation supprimée',
-        description: 'La conversation a été supprimée.',
-      });
-    },
+    onSuccess: () => {},
     onError: (_, __, context) => {
       if (context?.previousConversations) {
         queryClient.setQueryData(['conversations'], context.previousConversations);

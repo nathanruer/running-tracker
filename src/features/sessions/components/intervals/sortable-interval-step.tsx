@@ -79,11 +79,11 @@ export function SortableIntervalStep({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-2xl border border-border/40 p-5 space-y-4 bg-background/40 ${
+      className={`rounded-2xl border border-border/40 p-4 sm:p-5 space-y-4 bg-background/40 ${
         isDragging ? 'shadow-xl ring-1 ring-violet-500/20 bg-background !opacity-100 z-50' : ''
       }`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <Button
             type="button"
@@ -129,12 +129,24 @@ export function SortableIntervalStep({
           variant="ghost"
           size="icon"
           onClick={() => onRemove(index)}
-          className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-red-500 hover:bg-red-500/5 active:scale-95 transition-all"
+          className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-red-500 hover:bg-red-500/5 active:scale-95 transition-all hidden sm:flex"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
       <IntervalStepFields stepIndex={index} control={control} setValue={setValue} />
+      
+      <div className="sm:hidden pt-2 border-t border-border/10">
+        <Button 
+          type="button"
+          variant="ghost"
+          onClick={() => onRemove(index)}
+          className="w-full h-9 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-400/60 hover:text-red-500 hover:bg-red-500/5 transition-all"
+        >
+          <Trash2 className="h-3.5 w-3.5 mr-2" />
+          Supprimer l&apos;étape
+        </Button>
+      </div>
     </div>
   );
 }

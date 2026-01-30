@@ -41,6 +41,19 @@ describe('parseGarminCSV', () => {
     expect(result?.steps[3].stepType).toBe('cooldown');
   });
 
+  it('should reclassify last recovery as cooldown if no cooldown exists', () => {
+    const csv = `
+"Type d'étape","Durée"
+"Course","05:00"
+"Récupération","02:00"
+    `.trim();
+
+    const result = parseGarminCSV(csv);
+    
+    expect(result?.steps).toHaveLength(2);
+    expect(result?.steps[1].stepType).toBe('cooldown');
+  });
+
   it('should format duration correctly', () => {
     const csv = `
 "Type d'étape","Durée"
@@ -64,10 +77,46 @@ describe('parseGarminCSV', () => {
     `.trim();
 
     const result = parseGarminCSV(csv);
-    
+
     expect(result?.steps[0].distance).toBe(2.5);
     expect(result?.steps[0].hr).toBe(160);
     expect(result?.steps[1].distance).toBeNull();
     expect(result?.steps[1].hr).toBeNull();
+  });
+
+  it('should parse pace correctly and preserve unique values per step', () => {
+    const csv = `
+"Type d'étape","Durée","Distance","Allure moyenne","Fréquence cardiaque moyenne"
+"Échauffement","14:38","2.17","6:46","142"
+"Course à pied","15:00","2.91","5:09","166"
+"Repos","02:00","0.26","7:41","165"
+"Course à pied","15:00","3.04","4:56","174"
+"Récupération","06:32","0.93","7:02","159"
+    `.trim();
+
+    const result = parseGarminCSV(csv);
+
+    expect(result).not.toBeNull();
+    expect(result?.steps).toHaveLength(5);
+
+    expect(result?.steps[0].stepType).toBe('warmup');
+    expect(result?.steps[0].pace).toBe('6:46');
+    expect(result?.steps[0].hr).toBe(142);
+
+    expect(result?.steps[1].stepType).toBe('effort');
+    expect(result?.steps[1].distance).toBe(2.91);
+    expect(result?.steps[1].pace).toBe('5:09');
+    expect(result?.steps[1].hr).toBe(166);
+
+    expect(result?.steps[2].stepType).toBe('recovery');
+    expect(result?.steps[2].pace).toBe('7:41');
+
+    expect(result?.steps[3].stepType).toBe('effort');
+    expect(result?.steps[3].distance).toBe(3.04);
+    expect(result?.steps[3].pace).toBe('4:56');
+    expect(result?.steps[3].hr).toBe(174);
+
+    expect(result?.steps[4].stepType).toBe('cooldown');
+    expect(result?.steps[4].pace).toBe('7:02');
   });
 });

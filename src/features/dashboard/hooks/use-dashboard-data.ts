@@ -43,12 +43,8 @@ export function useDashboardData(
     },
     relatedQueryKeys: ['sessionTypes', 'sessionsCount'],
     messages: {
-      deleteSuccess: 'Séance supprimée',
-      deleteSuccessDescription: 'La séance a été supprimée avec succès.',
       bulkDeleteSuccessTitle: 'Séances supprimées',
-      bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} ${count > 1 ? 'ont' : 'a'} été supprimée${count > 1 ? 's' : ''} avec succès.`,
-      deleteError: 'Erreur lors de la suppression',
-      bulkDeleteError: 'Erreur lors de la suppression groupée',
+      bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} supprimée${count > 1 ? 's' : ''}.`,
     },
   });
 
@@ -84,7 +80,8 @@ export function useDashboardData(
   const sessions = paginatedSessionsData?.pages.flat() || [];
   const uniqueSessions = [...new Map(sessions.map(s => [s.id, s])).values()];
 
-  const initialLoading = userLoading || (!uniqueSessions.length && paginatedSessionsLoading);
+  const isInitialLoad = paginatedSessionsLoading && !uniqueSessions.length;
+  const initialLoading = userLoading || isInitialLoad;
 
   return {
     user,
@@ -94,6 +91,7 @@ export function useDashboardData(
     totalCount,
     initialLoading,
     isFetchingData: paginatedSessionsFetching,
+    isFiltering: paginatedSessionsFetching && !!(search || selectedType !== 'all' || dateFrom),
     hasMore: hasNextPage,
     isFetchingNextPage,
     fetchNextPage,

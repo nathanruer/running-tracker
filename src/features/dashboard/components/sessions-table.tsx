@@ -34,8 +34,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { LoadingBar } from '@/components/ui/loading-bar';
 import { type TrainingSession } from '@/lib/types';
 import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
 import type { Period } from '../hooks/use-period-filter';
@@ -179,20 +181,16 @@ export function SessionsTable({
                           <Download className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[200px] rounded-xl border-border/40 bg-card/95 backdrop-blur-md shadow-2xl p-2">
-                        <div className="px-2 py-1.5 mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
-                          Données
-                        </div>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Données</DropdownMenuLabel>
                         <DropdownMenuItem 
                           onClick={() => setShowExportDialog(true)}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer focus:bg-violet-600/10 focus:text-violet-600 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
                         >
                           <Download className="h-4 w-4" />
                           Exporter
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           disabled
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg opacity-50 text-muted-foreground font-bold text-[10px] uppercase tracking-wider"
                         >
                           <FileUp className="h-4 w-4" />
                           Importer (Bientôt)
@@ -205,13 +203,12 @@ export function SessionsTable({
             </div>
 
             <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3">
-              <div className="w-full xl:w-[320px]">
                 <SearchInput
                   value={searchQuery}
                   onChange={onSearchChange}
-                  className="w-full"
+                  className="w-full xl:w-[320px]"
+                  isLoading={isFetching}
                 />
-              </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <Select value={selectedType} onValueChange={onTypeChange}>
@@ -255,15 +252,10 @@ export function SessionsTable({
           )}
         </CardHeader>
         <CardContent className="p-0 relative">
-          {isFetching && !initialLoading && (
-            <div className="absolute top-0 left-0 right-0 h-[2px] z-20 overflow-hidden bg-violet-500/10">
-              <div className="h-full w-full bg-violet-500 origin-left animate-loading-bar" />
-            </div>
-          )}
-          
+          <LoadingBar isLoading={!!isFetching && !initialLoading} />
           <div className={cn(
-            "overflow-x-auto transition-opacity duration-300 scrollbar-thin scrollbar-thumb-muted-foreground/10",
-            isFetching && !initialLoading ? "opacity-50" : "opacity-100"
+            "overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/10 transition-opacity duration-500",
+            isFetching && !initialLoading && sessions.length > 0 ? "opacity-60" : "opacity-100"
           )}>
             <Table data-testid="sessions-table" className="table-auto min-w-[800px] md:min-w-0">
               <TableHeader className="bg-transparent">
@@ -339,7 +331,7 @@ export function SessionsTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialLoading || (isFetching && sessions.length === 0) ? (
+                {initialLoading && sessions.length === 0 ? (
                   [...Array(6)].map((_, i) => (
                     <TableRow key={i} className="border-border/20 p-8">
                       <TableCell className="px-6"><div className="h-4 w-4 animate-pulse rounded bg-muted mx-auto" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
@@ -383,10 +375,13 @@ export function SessionsTable({
                       onView={actions.onView}
                     />
                   ))
-                ) : (
+                ) : sessions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={12} className="h-64 text-center">
-                      <div className="flex flex-col items-center justify-center gap-3 animate-in fade-in zoom-in-95 duration-500">
+                      <div className={cn(
+                        "flex flex-col items-center justify-center gap-3 transition-opacity duration-300",
+                        isFetching ? "opacity-40" : "opacity-100"
+                      )}>
                         <div className="p-4 rounded-full bg-muted/50 border border-border/50">
                           <FilterX className="h-6 w-6 text-muted-foreground/50" />
                         </div>
@@ -399,7 +394,7 @@ export function SessionsTable({
                       </div>
                     </TableCell>
                   </TableRow>
-                )}
+                ) : null}
               </TableBody>
             </Table>
           </div>

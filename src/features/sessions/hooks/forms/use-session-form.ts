@@ -1,6 +1,6 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { addSession, updateSession, completeSession } from '@/lib/services/api-client';
 import type {
   TrainingSessionPayload,
@@ -42,6 +42,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      isCompletion: mode === 'complete',
       date: getTodayISO(),
       sessionType: 'Footing',
       duration: '',
@@ -198,7 +199,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
       if (mode === 'complete' && session) {
         const sessionData: TrainingSessionPayload = {
-          date: values.date,
+          date: values.date ?? null,
           sessionType: values.sessionType,
           duration: normalizedValues.duration,
           distance: values.distance ?? null,
@@ -228,7 +229,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         handleSuccess('Séance modifiée', `Votre séance ${type}${dist} a été mise à jour avec succès.`);
       } else {
         const sessionData: TrainingSessionPayload = {
-          date: values.date,
+          date: values.date ?? null,
           sessionType: values.sessionType,
           duration: normalizedValues.duration,
           distance: values.distance ?? null,

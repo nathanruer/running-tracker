@@ -22,6 +22,7 @@ import { StravaToolbar } from './strava-toolbar';
 import { StravaActivitiesTable } from './strava-activities-table';
 import { StravaImportFooter } from './strava-import-footer';
 import { StravaLoadingSkeleton } from './strava-loading-skeleton';
+import { LoadingBar } from '@/components/ui/loading-bar';
 import type { StravaImportContentProps } from './types';
 
 export function StravaImportContent({
@@ -276,11 +277,7 @@ export function StravaImportContent({
               />
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
-                {loadingMore && (
-                  <div className="absolute top-0 left-0 right-0 h-[2px] z-30 overflow-hidden bg-violet-500/10">
-                    <div className="h-full w-full bg-violet-500 origin-left animate-loading-bar" />
-                  </div>
-                )}
+                <LoadingBar isLoading={loadingMore} />
                 <StravaActivitiesTable
                   activities={sortedActivities}
                   filteredActivities={filteredActivities}

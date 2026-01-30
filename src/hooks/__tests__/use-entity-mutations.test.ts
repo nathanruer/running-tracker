@@ -60,7 +60,7 @@ describe('useEntityMutations', () => {
   });
 
   describe('handleDelete', () => {
-    it('should delete entity and show success message', async () => {
+    it('should delete entity silently (no success toast)', async () => {
       const entities: TestEntity[] = [
         createTestEntity({ id: 'entity-1', name: 'Entity 1' }),
         createTestEntity({ id: 'entity-2', name: 'Entity 2' }),
@@ -83,10 +83,7 @@ describe('useEntityMutations', () => {
       });
 
       expect(mockDeleteEntity).toHaveBeenCalledWith('entity-1');
-      expect(mockHandleSuccess).toHaveBeenCalledWith(
-        'Élément supprimé',
-        "L'élément a été supprimé avec succès."
-      );
+      expect(mockHandleSuccess).not.toHaveBeenCalled();
     });
 
     it('should rollback on delete error', async () => {
@@ -116,33 +113,6 @@ describe('useEntityMutations', () => {
       expect(mockHandleError).toHaveBeenCalledWith(deleteError);
     });
 
-    it('should use custom success messages', async () => {
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1' }),
-      ];
-
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
-
-      const { result } = renderHook(
-        () =>
-          useEntityMutations<TestEntity>({
-            baseQueryKey: 'entities',
-            filterType: 'all',
-            deleteEntity: mockDeleteEntity,
-            messages: {
-              deleteSuccess: 'Custom Success',
-              deleteSuccessDescription: 'Custom Description',
-            },
-          }),
-        { wrapper }
-      );
-
-      await act(async () => {
-        await result.current.handleDelete('entity-1');
-      });
-
-      expect(mockHandleSuccess).toHaveBeenCalledWith('Custom Success', 'Custom Description');
-    });
   });
 
   describe('handleBulkDelete', () => {
@@ -173,7 +143,7 @@ describe('useEntityMutations', () => {
       expect(mockBulkDeleteEntities).toHaveBeenCalledWith(['entity-1', 'entity-2']);
       expect(mockHandleSuccess).toHaveBeenCalledWith(
         'Éléments supprimés',
-        '2 éléments ont été supprimés avec succès.'
+        '2 éléments supprimés.'
       );
     });
 
