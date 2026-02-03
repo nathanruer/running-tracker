@@ -147,7 +147,9 @@ describe('useConversationMutations', () => {
       renderHook(() => useConversationMutations({ onConversationCreated: onCreated }));
 
       const createMutationOptions = (useMutation as Mock).mock.calls[0][0];
-      createMutationOptions.onSuccess?.({ id: 'conv-1' });
+      act(() => {
+        createMutationOptions.onSuccess?.({ id: 'conv-1' });
+      });
 
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalled();
       expect(onCreated).toHaveBeenCalledWith('conv-1');
@@ -157,7 +159,9 @@ describe('useConversationMutations', () => {
       renderHook(() => useConversationMutations({}));
 
       const createMutationOptions = (useMutation as Mock).mock.calls[0][0];
-      createMutationOptions.onError?.();
+      act(() => {
+        createMutationOptions.onError?.();
+      });
 
       expect(mockToast).toHaveBeenCalled();
     });
@@ -166,7 +170,9 @@ describe('useConversationMutations', () => {
       renderHook(() => useConversationMutations({}));
 
       const renameMutationOptions = (useMutation as Mock).mock.calls[1][0];
-      renameMutationOptions.onError?.();
+      act(() => {
+        renameMutationOptions.onError?.();
+      });
 
       expect(mockToast).toHaveBeenCalled();
     });
@@ -181,7 +187,9 @@ describe('useConversationMutations', () => {
       renderHook(() => useConversationMutations({ onConversationDeleted: onDeleted }));
 
       const deleteMutationOptions = (useMutation as Mock).mock.calls[2][0];
-      await deleteMutationOptions.onMutate?.('conv-1');
+      await act(async () => {
+        await deleteMutationOptions.onMutate?.('conv-1');
+      });
 
       expect(mockQueryClient.setQueryData).toHaveBeenCalled();
       expect(mockQueryClient.removeQueries).toHaveBeenCalled();
@@ -192,7 +200,9 @@ describe('useConversationMutations', () => {
       renderHook(() => useConversationMutations({}));
 
       const deleteMutationOptions = (useMutation as Mock).mock.calls[2][0];
-      deleteMutationOptions.onError?.(new Error('fail'), 'conv-1', { previousConversations: [] });
+      act(() => {
+        deleteMutationOptions.onError?.(new Error('fail'), 'conv-1', { previousConversations: [] });
+      });
 
       expect(mockQueryClient.setQueryData).toHaveBeenCalled();
       expect(mockToast).toHaveBeenCalled();
@@ -216,7 +226,9 @@ describe('useConversationMutations', () => {
       expect(result.current.renameDialogOpen).toBe(true);
 
       const renameMutationOptions = (useMutation as Mock).mock.calls[1][0];
-      renameMutationOptions.onSuccess?.({}, { id: 'conv-1', title: 'New Title' });
+      act(() => {
+        renameMutationOptions.onSuccess?.({}, { id: 'conv-1', title: 'New Title' });
+      });
 
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: expect.arrayContaining(['conversations']) });
     });
@@ -238,7 +250,9 @@ describe('useConversationMutations', () => {
       renderHook(() => useConversationMutations({}));
 
       const deleteMutationOptions = (useMutation as Mock).mock.calls[2][0];
-      await deleteMutationOptions.onMutate?.('conv-1');
+      await act(async () => {
+        await deleteMutationOptions.onMutate?.('conv-1');
+      });
 
       expect(capturedFilterFn).toBeDefined();
       const filtered = capturedFilterFn!(conversations);

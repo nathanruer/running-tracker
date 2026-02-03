@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { Prisma } from '@prisma/client';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { createPlannedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(
@@ -22,53 +22,32 @@ export async function POST(request: NextRequest) {
         comments,
       } = body;
 
-      const [sessionStats, firstSession] = await Promise.all([
-        prisma.training_sessions.aggregate({
-          where: { userId },
-          _max: { sessionNumber: true },
-        }),
-        plannedDate
-          ? prisma.training_sessions.findFirst({
-              where: { userId, date: { not: null } },
-              orderBy: { date: 'asc' },
-              select: { date: true },
-            })
-          : null,
-      ]);
+      try {
+        const plan = await createPlannedSession(
+          {
+            sessionType,
+            targetDuration,
+            targetDistance,
+            targetPace,
+            targetHeartRateBpm,
+            targetRPE,
+            intervalDetails,
+            plannedDate,
+            recommendationId,
+            comments,
+          },
+          userId
+        );
 
-      const nextSessionNumber = (sessionStats._max.sessionNumber ?? 0) + 1;
-
-      let week: number | null = null;
-      if (plannedDate && firstSession?.date) {
-        const baseDate = new Date(plannedDate);
-        const diffTime = Math.abs(baseDate.getTime() - firstSession.date.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        week = Math.floor(diffDays / 7) + 1;
-      } else if (plannedDate) {
-        week = 1;
+        const session = await fetchSessionById(userId, plan.id);
+        return NextResponse.json({ session });
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'create-planned' });
+        return NextResponse.json(
+          { error: 'Erreur lors de la création de la séance planifiée.' },
+          { status: 500 }
+        );
       }
-
-      const plannedSession = await prisma.training_sessions.create({
-        data: {
-          userId,
-          sessionNumber: nextSessionNumber,
-          week,
-          sessionType,
-          status: 'planned',
-          targetDuration,
-          targetDistance,
-          targetPace,
-
-          targetHeartRateBpm: targetHeartRateBpm?.toString(),
-          targetRPE,
-          intervalDetails: intervalDetails || Prisma.JsonNull,
-          plannedDate: plannedDate ? new Date(plannedDate) : null,
-          recommendationId,
-          comments: comments || '',
-        },
-      });
-
-      return NextResponse.json(plannedSession);
     },
     { logContext: 'create-planned-session' }
   );

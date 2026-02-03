@@ -8,6 +8,7 @@ export {
 
 export {
   getSessions,
+  getSessionById,
   getSessionsCount,
   addSession,
   updateSession,

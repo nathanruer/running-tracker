@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-
-import { prisma } from '@/lib/database';
 import { handleGetRequest } from '@/lib/services/api-handlers';
+import { fetchSessionCount } from '@/lib/domain/sessions/sessions-read';
 
 export const runtime = 'nodejs';
 
@@ -15,28 +13,12 @@ export async function GET(request: NextRequest) {
       const search = searchParams.get('search');
       const dateFrom = searchParams.get('dateFrom');
 
-      const whereClause: Prisma.training_sessionsWhereInput = { userId };
-
-      if (sessionType && sessionType !== 'all') {
-        whereClause.sessionType = sessionType;
-      }
-
-      if (dateFrom) {
-        whereClause.date = {
-          gte: new Date(dateFrom),
-        };
-      }
-
-      if (search && search.trim()) {
-        const searchTerm = search.trim();
-        whereClause.OR = [
-          { comments: { contains: searchTerm, mode: 'insensitive' } },
-          { sessionType: { contains: searchTerm, mode: 'insensitive' } },
-        ];
-      }
-
-      const count = await prisma.training_sessions.count({
-        where: whereClause,
+      const count = await fetchSessionCount({
+        userId,
+        status: null,
+        sessionType,
+        search,
+        dateFrom,
       });
 
       return NextResponse.json({ count });

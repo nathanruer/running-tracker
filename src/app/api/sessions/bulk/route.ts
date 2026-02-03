@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-
-import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
-import { recalculateSessionNumbers } from '@/lib/domain/sessions';
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
+import { createCompletedSession, deleteSessions, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
 
 export const runtime = 'nodejs';
 
@@ -28,43 +26,42 @@ export async function POST(request: NextRequest) {
         sessionSchema.parse(session)
       );
 
-      const sessionsWithWeather = await Promise.all(
-        validatedSessions.map(async (session) => {
+      try {
+        const created = [];
+        for (const session of validatedSessions) {
           const { intervalDetails, stravaData, weather: importedWeather, averageTemp, ...sessionData } = session;
-
           let weather = importedWeather || null;
           if (!weather && stravaData) {
             weather = await enrichSessionWithWeather(stravaData, new Date(session.date));
           }
+          const workout = await createCompletedSession(
+            {
+              ...sessionData,
+              intervalDetails,
+              stravaData,
+              weather: weather ?? null,
+              averageTemp: averageTemp ?? null,
+            },
+            userId
+          );
+          const createdSession = await fetchSessionById(userId, workout.id);
+          if (createdSession) created.push(createdSession);
+        }
 
-          return {
-            ...sessionData,
-            intervalDetails: intervalDetails || Prisma.JsonNull,
-            stravaData: stravaData || Prisma.JsonNull,
-            weather: weather ?? Prisma.JsonNull,
-            averageTemp: averageTemp ?? null,
-            date: new Date(session.date),
-            sessionNumber: 1,
-            week: 1,
-            userId,
-            status: SESSION_STATUS.COMPLETED,
-          };
-        })
-      );
-      
-      const result = await prisma.training_sessions.createMany({
-        data: sessionsWithWeather,
-      });
-
-      await recalculateSessionNumbers(userId);
-
-      return NextResponse.json(
-        {
-          message: `${result.count} séance(s) importée(s) avec succès`,
-          count: result.count,
-        },
-        { status: HTTP_STATUS.CREATED }
-      );
+        return NextResponse.json(
+          {
+            message: `${created.length} séance(s) importée(s) avec succès`,
+            count: created.length,
+          },
+          { status: HTTP_STATUS.CREATED }
+        );
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'bulk-import' });
+        return NextResponse.json(
+          { error: 'Erreur lors de l\'import des séances.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        );
+      }
     },
     { logContext: 'bulk-import-sessions' }
   );
@@ -84,22 +81,22 @@ export async function DELETE(request: NextRequest) {
         );
       }
 
-      const result = await prisma.training_sessions.deleteMany({
-        where: {
-          id: { in: ids },
-          userId: userId,
-        },
-      });
-
-      await recalculateSessionNumbers(userId);
-
-      return NextResponse.json(
-        {
-          message: `${result.count} séance(s) supprimée(s) avec succès`,
-          count: result.count,
-        },
-        { status: HTTP_STATUS.OK }
-      );
+      try {
+        await deleteSessions(ids, userId);
+        return NextResponse.json(
+          {
+            message: `${ids.length} séance(s) supprimée(s) avec succès`,
+            count: ids.length,
+          },
+          { status: HTTP_STATUS.OK }
+        );
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'bulk-delete' });
+        return NextResponse.json(
+          { error: 'Erreur lors de la suppression des séances.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        );
+      }
     },
     { logContext: 'bulk-delete-sessions' }
   );

@@ -8,6 +8,7 @@ export async function getSessions(
   sort?: string,
   search?: string,
   dateFrom?: string,
+  context?: 'analytics',
 ): Promise<TrainingSession[]> {
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
@@ -16,6 +17,7 @@ export async function getSessions(
   if (sort) params.append('sort', sort);
   if (search) params.append('search', search);
   if (dateFrom) params.append('dateFrom', dateFrom);
+  if (context) params.append('context', context);
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
 
@@ -23,6 +25,13 @@ export async function getSessions(
     `/api/sessions${queryString}`,
   );
   return data.sessions;
+}
+
+export async function getSessionById(id: string): Promise<TrainingSession> {
+  const data = await apiRequest<{ session: TrainingSession }>(
+    `/api/sessions/${id}`,
+  );
+  return data.session;
 }
 
 export async function getSessionsCount(

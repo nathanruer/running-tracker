@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { findSessionByIdAndUser } from '@/lib/utils/api';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
+import { updateSessionWeather, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
 
 /**
  * Endpoint to re-enrich a session with weather data
@@ -19,7 +19,9 @@ export async function PATCH(
     request,
     null,
     async (_data, userId) => {
-      const session = await findSessionByIdAndUser(id, userId);
+      const body = await request.json();
+      const providedWeather = body?.weather ?? null;
+      const session = await fetchSessionById(userId, id);
 
       if (!session) {
         return NextResponse.json(
@@ -28,7 +30,26 @@ export async function PATCH(
         );
       }
 
-      // Check if session already has weather data
+      if (providedWeather) {
+        try {
+          const workoutId = await updateSessionWeather(id, userId, providedWeather);
+          if (!workoutId) {
+            return NextResponse.json(
+              { error: 'Séance non trouvée' },
+              { status: HTTP_STATUS.NOT_FOUND }
+            );
+          }
+          const updated = await fetchSessionById(userId, id);
+          return NextResponse.json(updated ?? { id: workoutId, weather: providedWeather });
+        } catch (error) {
+          await logSessionWriteError(error, { userId, action: 'weather', id });
+          return NextResponse.json(
+            { error: 'Erreur lors de la mise à jour météo.' },
+            { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+          );
+        }
+      }
+
       if (session.weather) {
         return NextResponse.json(
           { message: 'Cette séance a déjà des données météo', weather: session.weather },
@@ -36,7 +57,6 @@ export async function PATCH(
         );
       }
 
-      // Check if session has Strava data to enrich from
       if (!session.stravaData) {
         return NextResponse.json(
           { error: 'Cette séance n\'a pas de données Strava pour l\'enrichissement' },
@@ -44,7 +64,6 @@ export async function PATCH(
         );
       }
 
-      // Check if session has a date
       if (!session.date) {
         return NextResponse.json(
           { error: 'Cette séance n\'a pas de date' },
@@ -64,12 +83,23 @@ export async function PATCH(
         );
       }
 
-      const updatedSession = await prisma.training_sessions.update({
-        where: { id },
-        data: { weather },
-      });
-
-      return NextResponse.json(updatedSession);
+      try {
+        const workoutId = await updateSessionWeather(id, userId, weather);
+        if (!workoutId) {
+          return NextResponse.json(
+            { error: 'Séance non trouvée' },
+            { status: HTTP_STATUS.NOT_FOUND }
+          );
+        }
+        const updated = await fetchSessionById(userId, id);
+        return NextResponse.json(updated ?? { id: workoutId, weather });
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'weather', id });
+        return NextResponse.json(
+          { error: 'Erreur lors de la mise à jour météo.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        );
+      }
     },
     { logContext: 'enrich-session-weather' }
   );

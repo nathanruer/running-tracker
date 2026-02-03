@@ -406,18 +406,18 @@ describe('useStreamingChat', () => {
     });
 
     act(() => {
-      result.current.sendStreamingMessage('conv-1', 'Hello');
+      void result.current.sendStreamingMessage('conv-1', 'Hello');
     });
 
-    await waitFor(() => {
-      expect(result.current.isStreaming).toBe(true);
-    });
+    expect(result.current.isStreaming).toBe(true);
 
     unmount();
 
     expect(abortMock).toHaveBeenCalled();
 
-    resolveRead!({ done: true, value: undefined });
+    await act(async () => {
+      resolveRead!({ done: true, value: undefined });
+    });
 
     global.AbortController = originalAbortController;
   });
@@ -451,12 +451,10 @@ describe('useStreamingChat', () => {
     });
 
     act(() => {
-      result.current.sendStreamingMessage('conv-1', 'Hello');
+      void result.current.sendStreamingMessage('conv-1', 'Hello');
     });
 
-    await waitFor(() => {
-      expect(result.current.isStreaming).toBe(true);
-    });
+    expect(result.current.isStreaming).toBe(true);
 
     act(() => {
       result.current.cancelStream();
@@ -465,7 +463,9 @@ describe('useStreamingChat', () => {
     expect(abortMock).toHaveBeenCalled();
     expect(result.current.isStreaming).toBe(false);
 
-    resolveRead!({ done: true, value: undefined });
+    await act(async () => {
+      resolveRead!({ done: true, value: undefined });
+    });
 
     global.AbortController = originalAbortController;
   });

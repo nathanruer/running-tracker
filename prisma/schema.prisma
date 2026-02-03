@@ -7,49 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model training_sessions {
-  id                String   @id @default(cuid())
-  sessionNumber     Int
-  week              Int?
-  date              DateTime?
-  sessionType       String
-  duration          String?
-  distance          Float?
-  avgPace           String?
-  avgHeartRate      Int?
-  comments          String   @default("")
-  createdAt         DateTime @default(now())
-  userId            String
-  intervalDetails   Json?
-  perceivedExertion Int?     @default(0)
-  status            String   @default("completed")
-  plannedDate       DateTime?
-  targetPace        String?
-  targetDuration    Int?
-  targetDistance    Float?
-
-  targetHeartRateBpm String?
-  targetRPE         Int?
-  recommendationId  String?
-  externalId        String?
-  source            String?  @default("manual")
-  stravaData        Json?
-  stravaStreams     Json?
-  elevationGain     Float?
-  averageCadence    Float?
-  averageTemp       Float?
-  calories          Int?
-  weather           Json?
-
-  users             users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([recommendationId])
-  @@index([userId, date])
-  @@index([userId, status, sessionNumber])
-}
-
 model users {
   id                   String                @id @default(cuid())
   email                String                @unique
@@ -64,8 +21,9 @@ model users {
   weight               Float?
   vma                  Float?
   goal                 String?               @db.Text
-  training_sessions    training_sessions[]
   chat_conversations   chat_conversations[]
+  plan_sessions        plan_sessions[]
+  workouts             workouts[]
 }
 
 model chat_conversations {
@@ -92,4 +50,159 @@ model chat_messages {
   chat_conversations chat_conversations @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
+}
+
+model plan_sessions {
+  id                String   @id @default(cuid())
+  userId            String
+  sessionNumber     Int?
+  week              Int?
+  plannedDate       DateTime?
+  sessionType       String
+  status            String   @default("planned")
+  targetDuration    Int?
+  targetDistance    Float?
+  targetPace        String?
+  targetHeartRateBpm String?
+  targetRPE         Int?
+  intervalDetails   Json?
+  recommendationId  String?
+  comments          String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  users             users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workouts          workouts[]
+
+  @@index([userId])
+  @@index([userId, plannedDate])
+  @@index([status])
+}
+
+model workouts {
+  id               String   @id @default(cuid())
+  userId           String
+  planSessionId    String?  @unique
+  date             DateTime
+  status           String   @default("completed")
+  sessionNumber    Int?
+  week             Int?
+  sessionType      String?
+  comments         String   @default("")
+  perceivedExertion Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  users            users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan_sessions    plan_sessions? @relation(fields: [planSessionId], references: [id], onDelete: SetNull)
+  workout_metrics_raw      workout_metrics_raw?
+  workout_metrics_derived  workout_metrics_derived?
+  workout_streams          workout_streams[]
+  external_activities      external_activities[]
+  weather_observations     weather_observations?
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([status])
+}
+
+model workout_metrics_raw {
+  id              String   @id @default(cuid())
+  workoutId       String   @unique
+  durationSeconds Int?
+  distanceMeters  Float?
+  avgPace         String?
+  avgHeartRate    Int?
+  maxHeartRate    Int?
+  averageCadence  Float?
+  elevationGain   Float?
+  calories        Int?
+
+  workouts        workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+}
+
+model workout_metrics_derived {
+  id              String   @id @default(cuid())
+  workoutId       String   @unique
+  pace            String?
+  zones           Json?
+  efficiency      Float?
+  trainingLoad    Float?
+
+  workouts        workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+}
+
+model external_activities {
+  id             String   @id @default(cuid())
+  workoutId      String
+  source         String
+  externalId     String
+  sourceStatus   String?  @default("imported")
+  startedAt      DateTime?
+  elapsedSeconds Int?
+  movingSeconds  Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workouts       workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  external_payloads external_payloads?
+
+  @@index([workoutId])
+  @@index([source, externalId])
+}
+
+model external_payloads {
+  id                 String   @id @default(cuid())
+  externalActivityId String   @unique
+  payload            Json
+  payloadType        String?
+  payloadVersion     String?
+  createdAt          DateTime @default(now())
+
+  external_activities external_activities @relation(fields: [externalActivityId], references: [id], onDelete: Cascade)
+}
+
+model workout_streams {
+  id            String   @id @default(cuid())
+  workoutId     String
+  streamType    String
+  resolution    String?
+  seriesType    String?
+  originalSize  Int?
+  createdAt     DateTime @default(now())
+
+  workouts      workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workout_stream_chunks workout_stream_chunks[]
+
+  @@index([workoutId])
+  @@index([workoutId, streamType])
+}
+
+model workout_stream_chunks {
+  id             String   @id @default(cuid())
+  workoutStreamId String
+  chunkIndex     Int
+  data           Json
+  createdAt      DateTime @default(now())
+
+  workout_streams workout_streams @relation(fields: [workoutStreamId], references: [id], onDelete: Cascade)
+
+  @@index([workoutStreamId, chunkIndex])
+}
+
+model weather_observations {
+  id                 String   @id @default(cuid())
+  workoutId          String   @unique
+  observedAt         DateTime?
+  temperature        Float?
+  apparentTemperature Float?
+  humidity           Float?
+  windSpeed          Float?
+  precipitation      Float?
+  conditionCode      Int?
+  source             String?
+  payload            Json?
+  createdAt          DateTime @default(now())
+
+  workouts           workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
 }

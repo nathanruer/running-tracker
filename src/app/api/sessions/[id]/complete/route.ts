@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { recalculateSessionNumbers } from '@/lib/domain/sessions';
-import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { findSessionByIdAndUser, toPrismaJson } from '@/lib/utils/api';
+import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
 import { handleApiRequest } from '@/lib/services/api-handlers';
-import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
+import { HTTP_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/lib/services/strava';
+import { completePlannedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
 
 export async function PATCH(
   request: NextRequest,
@@ -17,96 +15,49 @@ export async function PATCH(
     request,
     null,
     async (_data, userId) => {
-      const session = await findSessionByIdAndUser(id, userId);
-
-      if (!session) {
-        return NextResponse.json(
-          { error: 'Séance non trouvée' },
-          { status: HTTP_STATUS.NOT_FOUND }
-        );
-      }
-
-      if (session.status !== SESSION_STATUS.PLANNED) {
-        return NextResponse.json(
-          { error: 'Cette séance n\'est pas planifiée' },
-          { status: HTTP_STATUS.BAD_REQUEST }
-        );
-      }
-
       const body = await request.json();
-      const {
-        date,
-        duration,
-        distance,
-        avgPace,
-        avgHeartRate,
-        perceivedExertion,
-        comments,
-        externalId,
-        source,
-        stravaData,
-        elevationGain,
-        averageCadence,
-        averageTemp,
-        calories,
-        intervalDetails,
-      } = body;
-
-      if (!date || isNaN(new Date(date).getTime())) {
+      if (!body?.date || isNaN(new Date(body.date).getTime())) {
         return NextResponse.json(
           { error: 'Une date valide est requise pour terminer une séance' },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
 
-      let weather = body.weather || null;
-      if (!weather && stravaData) {
-        weather = await enrichSessionWithWeather(stravaData, new Date(date));
+      try {
+        const weather = body.weather ?? null;
+        const stravaStreams = await fetchStreamsForSession(
+          body.source ?? null,
+          body.externalId ?? null,
+          userId,
+          'session-completion'
+        );
+
+        const workout = await completePlannedSession(
+          id,
+          {
+            ...body,
+            stravaStreams: stravaStreams ? body.stravaStreams ?? stravaStreams : body.stravaStreams,
+            weather,
+          },
+          userId
+        );
+
+        if (!workout) {
+          return NextResponse.json(
+            { error: 'Séance non trouvée' },
+            { status: HTTP_STATUS.NOT_FOUND }
+          );
+        }
+
+        const session = await fetchSessionById(userId, workout.id);
+        return NextResponse.json(session || workout);
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'complete-planned', id });
+        return NextResponse.json(
+          { error: 'Erreur lors de la complétion de la séance.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        );
       }
-
-      let finalAverageTemp = averageTemp;
-      if (!finalAverageTemp && weather?.temperature !== undefined) {
-        finalAverageTemp = weather.temperature;
-      }
-
-      const stravaStreams = await fetchStreamsForSession(
-        source ?? null,
-        externalId ?? null,
-        userId,
-        'session-completion'
-      );
-
-      const completedSession = await prisma.training_sessions.update({
-        where: { id },
-        data: {
-          status: SESSION_STATUS.COMPLETED,
-          date: new Date(date),
-          duration,
-          distance: parseFloat(distance),
-          avgPace,
-          avgHeartRate: parseInt(avgHeartRate, 10) || 0,
-          perceivedExertion: perceivedExertion ? parseInt(perceivedExertion, 10) : 0,
-          comments: comments || '',
-          externalId: externalId ?? undefined,
-          source: source ?? undefined,
-          stravaData: stravaData ?? undefined,
-          stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : undefined,
-          elevationGain: elevationGain ?? undefined,
-          averageCadence: averageCadence ?? undefined,
-          averageTemp: finalAverageTemp ?? undefined,
-          calories: calories ?? undefined,
-          weather: weather ?? undefined,
-          intervalDetails: intervalDetails ? toPrismaJson(intervalDetails) : undefined,
-        },
-      });
-
-      await recalculateSessionNumbers(userId);
-
-      const refreshed = await prisma.training_sessions.findUnique({
-        where: { id }
-      });
-
-      return NextResponse.json(refreshed || completedSession);
     },
     { logContext: 'complete-planned-session' }
   );

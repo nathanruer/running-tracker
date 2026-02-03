@@ -23,6 +23,7 @@ import {
   type TrainingSession,
   type TrainingSessionPayload,
 } from '@/lib/types';
+import { getSessionById } from '@/lib/services/api-client';
 
 function DashboardContent() {
   const queryClient = useQueryClient();
@@ -143,6 +144,13 @@ function DashboardContent() {
     onView: (session) => {
       setViewingSession(session);
       setIsDetailsSheetOpen(true);
+      getSessionById(session.id)
+        .then((freshSession) => {
+          setViewingSession(freshSession);
+        })
+        .catch(() => {
+          // Keep existing session data if refresh fails.
+        });
     },
     onNewSession: openNewSession,
   };

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
-import { jsonError } from '@/lib/utils/api';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 
 export async function POST(request: NextRequest) {
@@ -10,12 +9,12 @@ export async function POST(request: NextRequest) {
     async (_data, userId) => {
       const body = await request.json();
       if (!body?.content || typeof body.content !== 'string') {
-        return jsonError('Contenu invalide');
+        return NextResponse.json({ error: 'Contenu invalide' }, { status: 400 });
       }
 
       const content = body.content.trim();
       if (!content) {
-        return jsonError('Message vide');
+        return NextResponse.json({ error: 'Message vide' }, { status: 400 });
       }
 
       const title = content.length > 50 ? content.substring(0, 50) + '...' : content;

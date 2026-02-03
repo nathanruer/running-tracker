@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { Prisma } from '@prisma/client';
 import { handleApiRequest } from '@/lib/services/api-handlers';
+import { createPlannedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(
@@ -17,64 +17,40 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const allSessions = await prisma.training_sessions.findMany({
-        where: { userId },
-        select: { sessionNumber: true },
-        orderBy: { sessionNumber: 'desc' },
-        take: 1,
-      });
-
-      let nextSessionNumber = allSessions.length > 0
-        ? allSessions[0].sessionNumber + 1
-        : 1;
-
-      const firstSession = await prisma.training_sessions.findFirst({
-        where: { userId },
-        orderBy: { date: 'asc' },
-      });
-
-      const createdSessions = [];
-
-      for (let i = 0; i < sessions.length; i++) {
-        const session = sessions[i];
-
-        const baseDate = session.plannedDate ? new Date(session.plannedDate) : new Date();
-
-        let week = 1;
-        if (firstSession && firstSession.date) {
-          const diffTime = Math.abs(baseDate.getTime() - firstSession.date.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          week = Math.floor(diffDays / 7) + 1;
+      try {
+        const createdSessions = [];
+        for (const session of sessions) {
+          const plan = await createPlannedSession(
+            {
+              sessionType: session.sessionType,
+              targetDuration: session.targetDuration,
+              targetDistance: session.targetDistance,
+              targetPace: session.targetPace,
+              targetHeartRateBpm: session.targetHeartRateBpm,
+              targetRPE: session.targetRPE,
+              intervalDetails: session.intervalDetails,
+              plannedDate: session.plannedDate,
+              recommendationId: session.recommendationId,
+              comments: session.comments,
+            },
+            userId
+          );
+          const createdSession = await fetchSessionById(userId, plan.id);
+          if (createdSession) createdSessions.push(createdSession);
         }
 
-        const plannedSession = await prisma.training_sessions.create({
-          data: {
-            userId,
-            sessionNumber: nextSessionNumber,
-            week,
-            sessionType: session.sessionType,
-            status: 'planned',
-            targetDuration: session.targetDuration,
-            targetDistance: session.targetDistance,
-            targetPace: session.targetPace,
-            targetHeartRateBpm: session.targetHeartRateBpm?.toString(),
-            targetRPE: session.targetRPE,
-            intervalDetails: session.intervalDetails ? session.intervalDetails : Prisma.JsonNull,
-            plannedDate: session.plannedDate ? new Date(session.plannedDate) : null,
-            recommendationId: session.recommendationId,
-            comments: session.comments || '',
-          },
+        return NextResponse.json({
+          message: `${createdSessions.length} séance(s) ajoutée(s) avec succès`,
+          sessions: createdSessions,
+          count: createdSessions.length,
         });
-
-        createdSessions.push(plannedSession);
-        nextSessionNumber++;
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'planned-bulk' });
+        return NextResponse.json(
+          { error: 'Erreur lors de la création des séances planifiées.' },
+          { status: 500 }
+        );
       }
-
-      return NextResponse.json({
-        message: `${createdSessions.length} séance(s) ajoutée(s) avec succès`,
-        sessions: createdSessions,
-        count: createdSessions.length,
-      });
     },
     { logContext: 'create-bulk-planned-sessions' }
   );

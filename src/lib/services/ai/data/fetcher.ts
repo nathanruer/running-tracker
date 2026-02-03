@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/database';
-import { normalizeSessions } from '@/lib/domain/sessions/normalizer';
 import type { RequiredData } from '../intent/types';
-import type { Session, UserProfile } from '@/lib/types';
+import type { Session, UserProfile, TrainingSession } from '@/lib/types';
+import type { NormalizedSession } from '@/lib/domain/sessions/types';
+import { fetchSessions as fetchTrainingSessions } from '@/lib/domain/sessions/sessions-read';
 
 export interface FetchedContext {
   profile?: UserProfile;
@@ -11,27 +12,6 @@ export interface FetchedContext {
   totalSessions?: number;
   totalDistance?: number;
 }
-
-const SESSION_SELECT = {
-  id: true,
-  sessionNumber: true,
-  week: true,
-  date: true,
-  sessionType: true,
-  duration: true,
-  distance: true,
-  avgPace: true,
-  avgHeartRate: true,
-  comments: true,
-  intervalDetails: true,
-  perceivedExertion: true,
-  status: true,
-  targetPace: true,
-  targetDuration: true,
-  targetDistance: true,
-  targetHeartRateBpm: true,
-  targetRPE: true,
-};
 
 async function fetchProfile(userId: string): Promise<UserProfile> {
   const user = await prisma.users.findUnique({
@@ -47,29 +27,48 @@ async function fetchProfile(userId: string): Promise<UserProfile> {
   };
 }
 
+function normalizeSession(session: TrainingSession): NormalizedSession {
+  return {
+    date: session.date ?? '',
+    sessionType: session.sessionType ?? '',
+    avgPace: session.avgPace ?? '',
+    duration: session.duration ?? '',
+    comments: session.comments ?? '',
+    avgHeartRate: session.avgHeartRate ?? 0,
+    perceivedExertion: session.perceivedExertion ?? 0,
+    distance: session.distance ?? 0,
+    week: session.week ?? null,
+    status: session.status ?? undefined,
+    sessionNumber: session.sessionNumber ?? undefined,
+    intervalDetails: session.intervalDetails ?? null,
+  };
+}
+
 async function fetchSessions(userId: string, limit: number): Promise<Session[]> {
-  const sessions = await prisma.training_sessions.findMany({
-    where: { userId },
-    orderBy: { date: 'desc' },
-    select: SESSION_SELECT,
-    take: limit,
+  const sessions = await fetchTrainingSessions({
+    userId,
+    limit,
+    status: 'completed',
+    sort: 'date:desc',
   });
 
-  return normalizeSessions(sessions as Record<string, unknown>[]);
+  return sessions.map(normalizeSession);
 }
 
 async function fetchSessionStats(
   userId: string
 ): Promise<{ totalSessions: number; totalDistance: number }> {
-  const result = await prisma.training_sessions.aggregate({
-    where: { userId },
-    _count: { id: true },
-    _sum: { distance: true },
-  });
+  const [countResult, distanceResult] = await Promise.all([
+    prisma.workouts.count({ where: { userId } }),
+    prisma.workout_metrics_raw.aggregate({
+      where: { workouts: { userId } },
+      _sum: { distanceMeters: true },
+    }),
+  ]);
 
   return {
-    totalSessions: result._count.id,
-    totalDistance: result._sum.distance ?? 0,
+    totalSessions: countResult,
+    totalDistance: (distanceResult._sum.distanceMeters ?? 0) / 1000,
   };
 }
 

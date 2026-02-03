@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-
 import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { prisma } from '@/lib/database';
 import { sessionSchema } from '@/lib/validation';
-import { calculateSessionPosition } from '@/lib/domain/sessions/position';
-import { parseSortParam, buildPrismaOrderBy } from '@/lib/domain/sessions';
 import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
-import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
+import { HTTP_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/lib/services/strava';
 import { toPrismaJson } from '@/lib/utils/api';
+import { fetchSessions } from '@/lib/domain/sessions/sessions-read';
+import { createCompletedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
 
 export const runtime = 'nodejs';
 
@@ -25,39 +22,18 @@ export async function GET(request: NextRequest) {
       const sortParam = searchParams.get('sort');
       const search = searchParams.get('search');
       const dateFrom = searchParams.get('dateFrom');
+      const context = searchParams.get('context');
 
-      const whereClause: Prisma.training_sessionsWhereInput = { userId };
-
-      if (status && status !== 'all') {
-        whereClause.status = status;
-      }
-
-      if (sessionType && sessionType !== 'all') {
-        whereClause.sessionType = sessionType;
-      }
-
-      if (dateFrom) {
-        whereClause.date = {
-          gte: new Date(dateFrom),
-        };
-      }
-
-      if (search && search.trim()) {
-        const searchTerm = search.trim();
-        whereClause.OR = [
-          { comments: { contains: searchTerm, mode: 'insensitive' } },
-          { sessionType: { contains: searchTerm, mode: 'insensitive' } },
-        ];
-      }
-
-      const sortConfig = parseSortParam(sortParam);
-      const orderBy = buildPrismaOrderBy(sortConfig);
-
-      const sessions = await prisma.training_sessions.findMany({
-        where: whereClause,
-        orderBy,
-        ...(limit > 0 ? { take: limit } : {}),
-        ...(offset > 0 ? { skip: offset } : {}),
+      const sessions = await fetchSessions({
+        userId,
+        limit,
+        offset,
+        status,
+        sessionType,
+        search,
+        dateFrom,
+        sort: sortParam,
+        includePlannedDateAsDate: context === 'analytics',
       });
 
       return NextResponse.json({ sessions });
@@ -71,46 +47,44 @@ export async function POST(request: NextRequest) {
     request,
     sessionSchema,
     async (payload, userId) => {
-      const sessionDate = new Date(payload.date);
+      try {
+        const sessionDate = new Date(payload.date);
+        let weather = null;
+        if (payload.stravaData) {
+          weather = await enrichSessionWithWeather(payload.stravaData, sessionDate);
+        }
 
-      const { sessionNumber, week } = await calculateSessionPosition(userId, sessionDate);
-
-      const { intervalDetails, stravaData, ...sessionData } = payload;
-
-      let weather = null;
-      if (stravaData) {
-        weather = await enrichSessionWithWeather(stravaData, sessionDate);
-      }
-
-      const stravaStreams = await fetchStreamsForSession(
-        sessionData.source ?? null,
-        sessionData.externalId ?? null,
-        userId,
-        'session-import'
-      );
-
-      const session = await prisma.training_sessions.create({
-        data: {
-          ...sessionData,
-          intervalDetails: intervalDetails || Prisma.JsonNull,
-          stravaData: stravaData || Prisma.JsonNull,
-          weather: weather ?? Prisma.JsonNull,
-          averageTemp: sessionData.averageTemp ?? null,
-          stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : Prisma.JsonNull,
-          date: sessionDate,
-          sessionNumber,
-          week,
+        const stravaStreams = await fetchStreamsForSession(
+          payload.source ?? null,
+          payload.externalId ?? null,
           userId,
-          status: SESSION_STATUS.COMPLETED,
-        },
-      });
+          'session-import'
+        );
 
-      return NextResponse.json(
-        { session },
-        { status: HTTP_STATUS.CREATED }
-      );
+        const workout = await createCompletedSession(
+          {
+            ...payload,
+            weather: weather ?? null,
+            stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : null,
+          },
+          userId
+        );
+
+        const { fetchSessionById } = await import('@/lib/domain/sessions/sessions-read');
+        const session = await fetchSessionById(userId, workout.id);
+
+        return NextResponse.json(
+          { session },
+          { status: HTTP_STATUS.CREATED }
+        );
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'create-completed' });
+        return NextResponse.json(
+          { error: 'Erreur lors de la création de la séance.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        );
+      }
     },
     { logContext: 'create-session' }
   );
 }
-

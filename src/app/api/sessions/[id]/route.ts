@@ -1,14 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-
-import { prisma } from '@/lib/database';
 import { partialSessionSchema } from '@/lib/validation';
-import { recalculateSessionNumbers } from '@/lib/domain/sessions';
-import { findSessionByIdAndUser } from '@/lib/utils/api';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { handleApiRequest, handleGetRequest } from '@/lib/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
+import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
+import { updateSession, deleteSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
 
 export const runtime = 'nodejs';
+
+export async function GET(
+  request: NextRequest,
+  props: { params: Promise<{ id: string }> },
+) {
+  const params = await props.params;
+
+  return handleGetRequest(
+    request,
+    async (userId) => {
+      const session = await fetchSessionById(userId, params.id);
+      if (!session) {
+        return NextResponse.json(
+          { error: 'Séance introuvable' },
+          { status: HTTP_STATUS.NOT_FOUND }
+        );
+      }
+
+      return NextResponse.json({ session });
+    },
+    { logContext: 'get-session' }
+  );
+}
 
 export async function PUT(
   request: NextRequest,
@@ -20,62 +40,23 @@ export async function PUT(
     request,
     partialSessionSchema,
     async (updates, userId) => {
-      const session = await findSessionByIdAndUser(params.id, userId);
-
-      if (!session) {
+      try {
+        const updated = await updateSession(params.id, updates as Record<string, unknown>, userId);
+        if (!updated) {
+          return NextResponse.json(
+            { error: 'Séance introuvable' },
+            { status: HTTP_STATUS.NOT_FOUND }
+          );
+        }
+        const session = await fetchSessionById(userId, params.id);
+        return NextResponse.json({ session: session ?? updated });
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'update', id: params.id });
         return NextResponse.json(
-          { error: 'Séance introuvable' },
-          { status: HTTP_STATUS.NOT_FOUND }
+          { error: 'Erreur lors de la mise à jour de la séance.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
         );
       }
-
-      const dateUpdate = updates.date !== undefined
-        ? updates.date === ''
-          ? { date: null }
-          : { date: new Date(updates.date) }
-        : {};
-
-      const { intervalDetails, stravaData, weather, averageTemp, ...restUpdates } = updates;
-      const intervalDetailsUpdate = intervalDetails !== undefined
-        ? { intervalDetails: intervalDetails || Prisma.JsonNull }
-        : {};
-
-      const stravaDataUpdate = stravaData !== undefined
-        ? { stravaData: stravaData || Prisma.JsonNull }
-        : {};
-
-      const weatherUpdate = weather !== undefined
-        ? { weather: weather || Prisma.JsonNull }
-        : {};
-
-      const averageTempUpdate: { averageTemp?: number | null } = {};
-      if (averageTemp !== undefined) {
-        averageTempUpdate.averageTemp = averageTemp;
-      } else if (weather !== undefined && weather?.temperature !== undefined) {
-        averageTempUpdate.averageTemp = weather.temperature;
-      }
-
-      const updated = await prisma.training_sessions.update({
-        where: { id: params.id },
-        data: {
-          ...restUpdates,
-          ...dateUpdate,
-          ...intervalDetailsUpdate,
-          ...stravaDataUpdate,
-          ...weatherUpdate,
-          ...averageTempUpdate,
-        },
-      });
-
-      if (updates.date !== undefined) {
-        await recalculateSessionNumbers(userId);
-        const refreshed = await prisma.training_sessions.findUnique({
-          where: { id: params.id }
-        });
-        return NextResponse.json({ session: refreshed || updated });
-      }
-
-      return NextResponse.json({ session: updated });
     },
     { logContext: 'update-session' }
   );
@@ -91,22 +72,17 @@ export async function DELETE(
     request,
     null,
     async (_data, userId) => {
-      const session = await findSessionByIdAndUser(params.id, userId);
-
-      if (!session) {
+      try {
+        await deleteSession(params.id, userId);
+        return NextResponse.json({ message: 'Séance supprimée' });
+      } catch (error) {
+        await logSessionWriteError(error, { userId, action: 'delete', id: params.id });
         return NextResponse.json(
-          { error: 'Séance introuvable' },
-          { status: HTTP_STATUS.NOT_FOUND }
+          { error: 'Erreur lors de la suppression de la séance.' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
         );
       }
-
-      await prisma.training_sessions.delete({ where: { id: params.id } });
-
-      await recalculateSessionNumbers(userId);
-
-      return NextResponse.json({ message: 'Séance supprimée' });
     },
     { logContext: 'delete-session' }
   );
 }
-

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { recalculateSessionNumbers } from '@/lib/domain/sessions/sessions-write';
 import { handleApiRequest } from '@/lib/services/api-handlers';
 
 export async function POST(request: NextRequest) {
