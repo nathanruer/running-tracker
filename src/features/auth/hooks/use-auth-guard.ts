@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUser } from '@/lib/services/api-client';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 /**
  * Hook for protecting routes that require authentication
@@ -24,7 +25,7 @@ export function useAuthGuard(redirectTo: string = '/') {
   const router = useRouter();
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ['user'],
+    queryKey: queryKeys.user(),
     queryFn: getCurrentUser,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: false,
@@ -62,7 +63,7 @@ export function useAuthGuard(redirectTo: string = '/') {
  */
 export function useAuth() {
   const { data: user, isLoading, error } = useQuery({
-    queryKey: ['user'],
+    queryKey: queryKeys.user(),
     queryFn: getCurrentUser,
     staleTime: 10 * 60 * 1000,
     retry: false,

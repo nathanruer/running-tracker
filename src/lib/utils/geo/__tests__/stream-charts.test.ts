@@ -6,6 +6,7 @@ import {
   prepareCadenceData,
   getAvailableStreams,
   calculateStreamAverage,
+  calculatePaceDomain,
   STREAM_CONFIGS,
 } from '../stream-charts';
 import type { StravaStreamSet } from '@/lib/types';
@@ -182,7 +183,7 @@ describe('streams utilities', () => {
 
     it('should have correct config structure', () => {
       const altitudeConfig = STREAM_CONFIGS.altitude;
-      
+
       expect(altitudeConfig.key).toBe('altitude');
       expect(altitudeConfig.label).toBe('Altitude');
       expect(altitudeConfig.unit).toBe('m');
@@ -195,6 +196,76 @@ describe('streams utilities', () => {
       expect(STREAM_CONFIGS.altitude.formatValue(123.5)).toBe('124');
       expect(STREAM_CONFIGS.heartrate.formatTooltip(150)).toBe('150 bpm');
       expect(STREAM_CONFIGS.cadence.formatTooltip(80)).toBe('160 ppm'); // Doubled
+    });
+
+    it('should format altitude tooltip correctly', () => {
+      expect(STREAM_CONFIGS.altitude.formatTooltip(123.5)).toBe('124 m');
+    });
+
+    it('should format pace value correctly', () => {
+      // 300 seconds per km = 5:00 min/km
+      const formatted = STREAM_CONFIGS.pace.formatValue(300);
+      expect(formatted).toBe('5:00');
+    });
+
+    it('should format pace tooltip correctly', () => {
+      // 330 seconds per km = 5:30 min/km
+      const formatted = STREAM_CONFIGS.pace.formatTooltip(330);
+      expect(formatted).toBe('5:30 /km');
+    });
+
+    it('should format heartrate value correctly', () => {
+      expect(STREAM_CONFIGS.heartrate.formatValue(155.8)).toBe('156');
+    });
+
+    it('should format cadence value correctly (doubled)', () => {
+      // Strava gives single leg, so value is doubled
+      expect(STREAM_CONFIGS.cadence.formatValue(85)).toBe('170');
+    });
+  });
+
+  describe('calculatePaceDomain', () => {
+    it('should return undefined for empty data', () => {
+      expect(calculatePaceDomain([])).toBeUndefined();
+    });
+
+    it('should calculate domain with padding', () => {
+      const data = [
+        { distance: 0, time: 0, value: 300, formattedValue: '5:00' },
+        { distance: 1, time: 60, value: 330, formattedValue: '5:30' },
+        { distance: 2, time: 120, value: 360, formattedValue: '6:00' },
+      ];
+
+      const result = calculatePaceDomain(data);
+
+      expect(result).toBeDefined();
+      expect(result![0]).toBeLessThan(300); // min - padding
+      expect(result![1]).toBeGreaterThan(360); // max + padding
+    });
+
+    it('should handle single data point', () => {
+      const data = [
+        { distance: 0, time: 0, value: 300, formattedValue: '5:00' },
+      ];
+
+      const result = calculatePaceDomain(data);
+
+      expect(result).toBeDefined();
+      // With zero range, padding is 0, so domain equals the single value
+      expect(result![0]).toBe(300);
+      expect(result![1]).toBe(300);
+    });
+
+    it('should not return negative minimum', () => {
+      const data = [
+        { distance: 0, time: 0, value: 5, formattedValue: '0:05' },
+        { distance: 1, time: 60, value: 10, formattedValue: '0:10' },
+      ];
+
+      const result = calculatePaceDomain(data);
+
+      expect(result).toBeDefined();
+      expect(result![0]).toBeGreaterThanOrEqual(0);
     });
   });
 });

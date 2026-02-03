@@ -23,6 +23,7 @@ export {
   getConversations,
   getConversation,
   createConversation,
+  createConversationWithMessage,
   renameConversation,
   deleteConversation,
   sendMessage,
@@ -31,6 +32,7 @@ export {
   type MessageRecommendations,
   type ConversationWithMessages,
   type SendMessageResponse,
+  type CreateConversationWithMessageResponse,
 } from './conversations';
 
 export { updateUser } from './users';

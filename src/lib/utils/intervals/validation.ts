@@ -1,19 +1,39 @@
 import { type IntervalFormValues } from './form';
+import { isFractionneType } from '@/lib/utils/session-type';
 
 /**
- * Checks if a duration string is valid (MM:SS or HH:MM:SS)
+ * Checks if a duration string is valid (MM:SS or HH:MM:SS) and non-zero
  */
 function isValidDuration(duration: string): boolean {
   const pattern = /^(\d{1,2}):([0-5]\d):([0-5]\d)$|^([0-5]?\d):([0-5]\d)$/;
-  return pattern.test(duration);
+  if (!pattern.test(duration)) return false;
+
+  // Reject all-zero durations
+  const normalized = duration.replace(/^0+:/, '');
+  if (normalized === '00:00' || normalized === '0:00' || duration === '00:00:00') {
+    return false;
+  }
+  return true;
 }
 
 /**
- * Checks if a pace string is valid (MM:SS)
+ * Converts pace string (MM:SS) to seconds
+ */
+function paceToSeconds(pace: string): number {
+  const parts = pace.split(':');
+  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+
+/**
+ * Checks if a pace string is valid (MM:SS) with reasonable bounds (2:00 - 15:00 min/km)
  */
 function isValidPace(pace: string): boolean {
   const pattern = /^([0-5]?\d):([0-5]\d)$/;
-  return pattern.test(pace);
+  if (!pattern.test(pace)) return false;
+
+  const seconds = paceToSeconds(pace);
+  // Between 2:00 (120s) and 15:00 (900s) min/km
+  return seconds >= 120 && seconds <= 900;
 }
 
 /**
@@ -22,7 +42,7 @@ function isValidPace(pace: string): boolean {
 export function validateIntervalData(values: IntervalFormValues): string[] {
   const errors: string[] = [];
 
-  if (values.sessionType !== 'Fractionné') {
+  if (!isFractionneType(values.sessionType)) {
     return errors;
   }
 

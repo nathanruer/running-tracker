@@ -1,40 +1,86 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo, useCallback } from 'react';
 import { Bot, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import type { Message } from '@/lib/services/api-client';
 import { RecommendationCard } from './recommendation-card';
 import { getAddedSessionId } from '@/lib/domain/sessions/helpers';
 
+function useDebouncedCallback(callback: () => void, delay: number): () => void {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callbackRef = useRef(callback);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  return useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      callbackRef.current();
+    }, delay);
+  }, [delay]);
+}
+
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   isSending: boolean;
+  isStreaming?: boolean;
+  streamingContent?: string;
   loadingSessionId: string | null;
   allSessions: TrainingSession[];
   onAcceptSession: (session: AIRecommendedSession) => void;
   onDeleteSession: (params: { sessionId: string; recommendationId: string }) => void;
 }
 
-export function MessageList({
+export const MessageList = memo(function MessageList({
   messages,
   isSending,
+  isStreaming = false,
+  streamingContent = '',
   loadingSessionId,
   allSessions,
   onAcceptSession,
   onDeleteSession,
 }: MessageListProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const streamingRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useDebouncedCallback(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, 100);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isSending]);
+    if (isStreaming) {
+      scrollToBottom();
+    }
+  }, [isStreaming, streamingContent, scrollToBottom]);
+
+  useEffect(() => {
+    if (!isStreaming && !isSending && containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages.length, isStreaming, isSending]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-6 pb-6 space-y-6 scroll-smooth scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20">
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto px-4 pt-6 pb-6 space-y-6 scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20"
+    >
       {messages.map((message) => (
         <div key={message.id} className={cn(
-          "flex w-full gap-2.5 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300",
+          "flex w-full gap-2.5 md:gap-4",
+          message.role === 'user' && "animate-in fade-in slide-in-from-bottom-2 duration-300",
           message.role === 'user' ? "justify-end" : "justify-start"
         )}>
           {message.role !== 'user' && (
@@ -51,13 +97,21 @@ export function MessageList({
           )}>
             <div className={cn(
               "relative px-5 py-3.5 text-sm transition-all",
-              message.role === 'user' 
-                ? "bg-violet-600 text-white rounded-2xl border border-violet-500/20" 
+              message.role === 'user'
+                ? "bg-violet-600 text-white rounded-2xl border border-violet-500/20"
                 : "bg-muted/50 border border-border/40 text-foreground rounded-2xl"
             )} data-testid={message.role === 'assistant' ? "assistant-message" : "user-message"}>
-              <p className="leading-relaxed whitespace-pre-line font-medium opacity-95">
-                {message.content}
-              </p>
+              {message.role === 'assistant' ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-2 prose-headings:font-bold prose-headings:mt-4 prose-headings:mb-2 prose-table:my-3 prose-th:px-3 prose-th:py-2 prose-td:px-3 prose-td:py-2 prose-table:text-xs prose-li:my-0.5">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p className="leading-relaxed whitespace-pre-line font-medium opacity-95">
+                  {message.content}
+                </p>
+              )}
             </div>
 
             {message.role === 'assistant' && message.recommendations?.recommended_sessions && (
@@ -112,31 +166,42 @@ export function MessageList({
         </div>
       ))}
 
-      {isSending && (
-        <div className="flex gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300" data-testid="chat-loading-indicator">
-          <div className="flex-shrink-0 flex items-end">
-            <div className="h-8 w-8 rounded-full bg-violet-600/10 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-violet-600 animate-pulse" />
+      {(isSending || isStreaming) && (
+        <div
+          ref={streamingRef}
+          className="flex gap-3 md:gap-4"
+          data-testid="chat-loading-indicator"
+        >
+          <div className="flex-shrink-0 flex items-start mt-1">
+            <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-violet-600 flex items-center justify-center border border-violet-500/20">
+              <Bot className={cn("h-3.5 w-3.5 md:h-4 md:w-4 text-white", !streamingContent && "animate-pulse")} />
             </div>
           </div>
           <div className="flex flex-col space-y-2 max-w-[85%] md:max-w-[75%]">
-            <div className="bg-muted/50 border border-border/20 rounded-2xl px-5 py-3.5">
-              <div className="flex items-center gap-4">
-                <div className="flex gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce [animation-delay:-0.3s]" />
-                  <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce [animation-delay:-0.15s]" />
-                  <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce" />
+            <div className="bg-muted/50 border border-border/40 rounded-2xl px-5 py-3.5">
+              {streamingContent ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-2 prose-headings:font-bold prose-headings:mt-4 prose-headings:mb-2 prose-table:my-3 prose-th:px-3 prose-th:py-2 prose-td:px-3 prose-td:py-2 prose-table:text-xs prose-li:my-0.5">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {streamingContent}
+                  </ReactMarkdown>
+                  <span className="inline-block w-1.5 h-4 bg-violet-600/60 ml-0.5 animate-pulse" />
                 </div>
-                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
-                  Le coach réfléchit...
-                </p>
-              </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce [animation-delay:-0.3s]" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce [animation-delay:-0.15s]" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-violet-600/30 animate-bounce" />
+                  </div>
+                  <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
+                    Le coach réfléchit...
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      <div ref={messagesEndRef} className="h-px" />
     </div>
   );
-}
+});

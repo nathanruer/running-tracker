@@ -7,6 +7,7 @@ import {
   deleteConversation as apiDeleteConversation,
   type Conversation,
 } from '@/lib/services/api-client';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 interface UseConversationMutationsProps {
   onConversationCreated?: (id: string) => void;
@@ -30,7 +31,7 @@ export function useConversationMutations({
   const createMutation = useMutation({
     mutationFn: () => apiCreateConversation(),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
       onConversationCreated?.(data.id);
     },
     onError: () => {
@@ -46,8 +47,8 @@ export function useConversationMutations({
     mutationFn: ({ id, title }: { id: string; title: string }) =>
       apiRenameConversation(id, title),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      queryClient.invalidateQueries({ queryKey: ['conversation', variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversation(variables.id) });
       setRenameDialogOpen(false);
       setSelectedForRename(null);
       setNewTitle('');
@@ -64,27 +65,27 @@ export function useConversationMutations({
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiDeleteConversation(id),
     onMutate: async (deletedId) => {
-      await queryClient.cancelQueries({ queryKey: ['conversations'] });
-      await queryClient.cancelQueries({ queryKey: ['conversation', deletedId] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.conversations() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.conversation(deletedId) });
 
-      const previousConversations = queryClient.getQueryData<Conversation[]>(['conversations']);
+      const previousConversations = queryClient.getQueryData<Conversation[]>(queryKeys.conversations());
 
-      queryClient.setQueryData<Conversation[]>(['conversations'], (old) =>
+      queryClient.setQueryData<Conversation[]>(queryKeys.conversations(), (old) =>
         old?.filter((c) => c.id !== deletedId) ?? []
       );
 
-      queryClient.removeQueries({ queryKey: ['conversation', deletedId] });
+      queryClient.removeQueries({ queryKey: queryKeys.conversation(deletedId) });
 
       setDeleteDialogOpen(false);
       setSelectedForDelete(null);
+
       onConversationDeleted?.(deletedId);
 
       return { previousConversations, deletedId };
     },
-    onSuccess: () => {},
     onError: (_, __, context) => {
       if (context?.previousConversations) {
-        queryClient.setQueryData(['conversations'], context.previousConversations);
+        queryClient.setQueryData(queryKeys.conversations(), context.previousConversations);
       }
       toast({
         title: 'Erreur',

@@ -9,6 +9,9 @@ import {
   formatSessionsDetailedJSON,
   generateCSV,
   generateJSON,
+  generateXLSX,
+  downloadFile,
+  downloadBlob,
   generateExportFilename,
   filterSessions,
   type ExportOptions,
@@ -300,6 +303,7 @@ describe('formatSessionsStandardJSON', () => {
 
     expect(rows[0].temperature).toBe('15°C');
     expect(rows[0].vent).toBe('10 km/h');
+    expect(rows[0].precipitations).toBe('');
   });
 });
 
@@ -480,6 +484,64 @@ describe('generateJSON', () => {
     const json = generateJSON([]);
 
     expect(json).toBe('[]');
+  });
+});
+
+// ============================================================================
+// XLSX GENERATION TESTS
+// ============================================================================
+
+describe('generateXLSX', () => {
+  it('generates a blob with xlsx mime type', () => {
+    const headers = ['Nom'];
+    const rows = [{ nom: 'Alice' }];
+
+    const blob = generateXLSX(headers, rows);
+
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  });
+});
+
+// ============================================================================
+// FILE DOWNLOAD TESTS
+// ============================================================================
+
+describe('downloadFile', () => {
+  it('creates a link, clicks it, and revokes URL', () => {
+    const appendChild = vi.spyOn(document.body, 'appendChild');
+    const removeChild = vi.spyOn(document.body, 'removeChild');
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockReturnValue();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    downloadFile('content', 'file.csv', 'text/csv');
+
+    expect(appendChild).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
+    expect(removeChild).toHaveBeenCalled();
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock');
+    vi.restoreAllMocks();
+  });
+});
+
+describe('downloadBlob', () => {
+  it('creates a link for blob download', () => {
+    const appendChild = vi.spyOn(document.body, 'appendChild');
+    const removeChild = vi.spyOn(document.body, 'removeChild');
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockReturnValue();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    downloadBlob(new Blob(['data']), 'file.xlsx');
+
+    expect(appendChild).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
+    expect(removeChild).toHaveBeenCalled();
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock');
+    vi.restoreAllMocks();
   });
 });
 

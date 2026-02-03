@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { getConversation } from '@/lib/services/api-client';
+import { queryKeys } from '@/lib/constants/query-keys';
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,7 @@ export function ChatSidebar({ selectedConversationId, onSelectConversation, isMo
 
   const handlePrefetch = (id: string) => {
     queryClient.prefetchQuery({
-      queryKey: ['conversation', id],
+      queryKey: queryKeys.conversation(id),
       queryFn: () => getConversation(id),
       staleTime: 1000 * 60 * 5,
     });

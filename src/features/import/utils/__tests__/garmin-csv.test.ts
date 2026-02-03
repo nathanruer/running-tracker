@@ -119,4 +119,38 @@ describe('parseGarminCSV', () => {
     expect(result?.steps[4].stepType).toBe('cooldown');
     expect(result?.steps[4].pace).toBe('7:02');
   });
+
+  it('should return null when required headers (Type d\'étape or Durée) are missing', () => {
+    // Missing "Type d'étape" header
+    const csvMissingType = `
+"Durée","Distance","Allure moyenne"
+"10:00","1.5","6:00"
+    `.trim();
+
+    expect(parseGarminCSV(csvMissingType)).toBeNull();
+
+    // Missing "Durée" header
+    const csvMissingDuration = `
+"Type d'étape","Distance","Allure moyenne"
+"Course","1.5","6:00"
+    `.trim();
+
+    expect(parseGarminCSV(csvMissingDuration)).toBeNull();
+  });
+
+  it('should skip rows with unrecognized step types (mapStepType returns null)', () => {
+    const csv = `
+"Type d'étape","Durée","Distance"
+"Course","05:00","1.0"
+"Unknown Type","02:00","0.2"
+"Marche","03:00","0.3"
+    `.trim();
+
+    const result = parseGarminCSV(csv);
+
+    // Only "Course" should be parsed, "Unknown Type" and "Marche" should be skipped
+    expect(result).not.toBeNull();
+    expect(result?.steps).toHaveLength(1);
+    expect(result?.steps[0].stepType).toBe('effort');
+  });
 });

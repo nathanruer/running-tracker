@@ -176,4 +176,30 @@ describe('/api/sessions/[id]/complete', () => {
     expect(enrichSessionWithWeather).toHaveBeenCalled();
     expect(response.status).toBe(200);
   });
+
+  it('should return 400 when date is invalid', async () => {
+    const plannedSession = {
+      id: 'session-123',
+      userId: 'user-123',
+      status: 'planned',
+    };
+
+    vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+    vi.mocked(findSessionByIdAndUser).mockResolvedValue(plannedSession as never);
+
+    const response = await PATCH(
+      createRequest({
+        date: 'invalid-date',
+        duration: '01:00:00',
+        distance: '10',
+        avgPace: '06:00',
+        avgHeartRate: '150',
+      }),
+      createParams('session-123')
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe('Une date valide est requise pour terminer une séance');
+  });
 });

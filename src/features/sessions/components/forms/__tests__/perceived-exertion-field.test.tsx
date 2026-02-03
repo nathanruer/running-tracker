@@ -1,8 +1,22 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { PerceivedExertionField } from '../perceived-exertion-field';
 import { Form, FormField } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
+
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ children, onValueChange, value }: { children: React.ReactNode; onValueChange?: (value: string) => void; value?: string }) => (
+    <div data-testid="select" data-value={value}>
+      <button type="button" onClick={() => onValueChange?.('-1')}>none</button>
+      <button type="button" onClick={() => onValueChange?.('7')}>seven</button>
+      {children}
+    </div>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
+  SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
+}));
 
 const FormWrapper = ({ children }: { children: React.ReactElement }) => {
   const form = useForm({
@@ -58,7 +72,20 @@ describe('PerceivedExertionField', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByTestId('select-rpe')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('none'));
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('should call onChange with numeric value when selecting RPE', () => {
+    const onChange = vi.fn();
+    render(
+      <FormWrapper>
+        <PerceivedExertionField value={null} onChange={onChange} />
+      </FormWrapper>
+    );
+
+    fireEvent.click(screen.getByText('seven'));
+    expect(onChange).toHaveBeenCalledWith(7);
   });
 
   it('should accept undefined value', () => {

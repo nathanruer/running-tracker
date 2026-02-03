@@ -93,3 +93,20 @@ export async function sendMessage(conversationId: string, content: string): Prom
     body: JSON.stringify({ content }),
   });
 }
+
+export interface CreateConversationWithMessageResponse {
+  conversationId: string;
+  messageId: string;
+}
+
+/**
+ * Creates a new conversation with an initial user message
+ * Does NOT trigger AI response - that happens via streaming after redirect
+ * @param content The user's message content
+ */
+export async function createConversationWithMessage(content: string): Promise<CreateConversationWithMessageResponse> {
+  return apiRequest<CreateConversationWithMessageResponse>('/api/conversations/with-message', {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}

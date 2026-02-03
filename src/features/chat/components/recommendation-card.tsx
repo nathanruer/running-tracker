@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Check, Trash2, Clock, Activity, MapPin, Heart, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -16,7 +17,7 @@ interface RecommendationCardProps {
   getAddedSessionId: (session: AIRecommendedSession) => string | undefined;
 }
 
-export function RecommendationCard({
+export const RecommendationCard = memo(function RecommendationCard({
   session,
   isAdded,
   isCompleted,
@@ -25,18 +26,22 @@ export function RecommendationCard({
   onDelete,
   getAddedSessionId,
 }: RecommendationCardProps) {
-  const totals = calculateIntervalTotals(session.interval_details?.steps);
-  
+  const totals = useMemo(
+    () => calculateIntervalTotals(session.interval_details?.steps),
+    [session.interval_details?.steps]
+  );
+
   const displayDistance = totals.totalDistanceKm > 0 ? totals.totalDistanceKm : session.estimated_distance_km;
   const displayDuration = totals.totalDurationMin > 0 ? totals.totalDurationMin : session.duration_min;
   const isCalculated = totals.totalDistanceKm > 0 || totals.totalDurationMin > 0;
 
-  const sessionInfo = (() => {
-    const sessionType = session.session_type;
+  const sessionInfo = useMemo(() => {
+    const sessionType = session.session_type?.toLowerCase() ?? '';
+    const isFractionne = sessionType === 'fractionné' || sessionType === 'fractionne';
     let structure = '';
     let technicalTargets = '';
 
-    if (sessionType === 'Fractionné' && (session.interval_structure || session.interval_details)) {
+    if (isFractionne && (session.interval_structure || session.interval_details)) {
       structure = session.interval_structure || 'Fractionné';
       
       const parts: string[] = [];
@@ -54,7 +59,7 @@ export function RecommendationCard({
     }
 
     return { structure, technicalTargets };
-  })();
+  }, [session.session_type, session.interval_structure, session.interval_details, session.target_pace_min_km, session.target_hr_bpm]);
 
   return (
     <div 
@@ -175,4 +180,4 @@ export function RecommendationCard({
       </div>
     </div>
   );
-}
+});

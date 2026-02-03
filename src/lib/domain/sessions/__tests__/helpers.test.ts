@@ -4,6 +4,7 @@ import {
   isSessionCompleted,
   getAddedSessionId,
   getCompletedSession,
+  getAddedSession,
   getNextSessionNumber,
 } from '../helpers';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
@@ -128,6 +129,34 @@ describe('session-helpers', () => {
         recommendation_id: 'rec-999',
       };
       expect(getCompletedSession(newSession, mockSessions)).toBeUndefined();
+    });
+  });
+
+  describe('getAddedSession', () => {
+    it('should return completed session', () => {
+      const result = getAddedSession(mockRecommendedSession, mockSessions);
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('session-1');
+      expect(result?.status).toBe('completed');
+    });
+
+    it('should return planned session', () => {
+      const plannedSession: AIRecommendedSession = {
+        ...mockRecommendedSession,
+        recommendation_id: 'rec-2',
+      };
+      const result = getAddedSession(plannedSession, mockSessions);
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('session-2');
+      expect(result?.status).toBe('planned');
+    });
+
+    it('should return undefined when session does not exist', () => {
+      const newSession: AIRecommendedSession = {
+        ...mockRecommendedSession,
+        recommendation_id: 'rec-999',
+      };
+      expect(getAddedSession(newSession, mockSessions)).toBeUndefined();
     });
   });
 

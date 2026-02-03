@@ -4,6 +4,7 @@ import { calculateIntervalTotals, generateIntervalStructure } from '@/lib/utils/
 import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { normalizePaceOrRange } from '@/lib/utils/pace';
 import { formatHRDisplay } from '@/lib/utils/heart-rate';
+import { isFractionneType } from '@/lib/utils/session-type';
 
 export interface SessionRowDisplayData {
   isPlanned: boolean;
@@ -28,7 +29,7 @@ hasApprox: boolean;
 export function useSessionRowData(session: TrainingSession): SessionRowDisplayData {
   return useMemo(() => {
     const isPlanned = session.status === 'planned';
-    const hasIntervalDetails = session.sessionType === 'Fractionné' && !!session.intervalDetails;
+    const hasIntervalDetails = isFractionneType(session.sessionType) && !!session.intervalDetails;
     
     const totals = hasIntervalDetails 
       ? calculateIntervalTotals(session.intervalDetails?.steps) 

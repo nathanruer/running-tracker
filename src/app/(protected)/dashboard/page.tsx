@@ -14,6 +14,7 @@ import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data'
 import { useMultiSort } from '@/features/dashboard/hooks/use-multi-sort';
 import { useSearch } from '@/features/dashboard/hooks/use-search';
 import { usePeriodFilter } from '@/features/dashboard/hooks/use-period-filter';
+import { useTypeFilter } from '@/features/dashboard/hooks/use-type-filter';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +26,7 @@ import {
 
 function DashboardContent() {
   const queryClient = useQueryClient();
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const { selectedType, handleTypeChange } = useTypeFilter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
@@ -81,10 +82,6 @@ function DashboardContent() {
       router.replace('/');
     }
   }, [user, userLoading, router]);
-
-  const handleTypeChange = (type: string) => {
-    setSelectedType(type);
-  };
 
   const sessionDialogInitialData = useMemo(() => {
     if (!importedData) return null;

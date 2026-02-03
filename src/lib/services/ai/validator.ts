@@ -1,57 +1,104 @@
 import { randomUUID } from 'crypto';
 import { logger } from '@/lib/infrastructure/logger';
-import type { AIResponse, AIRecommendedSession } from '@/lib/types/ai';
 import { validatePaceInput } from '@/lib/utils/pace';
 import { validateAndAdjustDistance } from '@/lib/utils/distance';
+import {
+  aiResponseSchema,
+  type AIResponseValidated,
+  type AIRecommendedSessionValidated,
+} from '@/lib/validation/schemas/ai-response';
 
-/**
- * Validates and fixes AI-generated training recommendations
- * Ensures distance calculations are consistent with pace and duration
- * Adds unique IDs to each recommendation
- *
- * @param response Raw AI response object
- * @returns Validated and corrected response with recommendation IDs
- */
-export function validateAndFixRecommendations(response: AIResponse): AIResponse {
+export type ValidateResult =
+  | { success: true; data: AIResponseValidated }
+  | { success: false; error: string; fallback: AIResponseValidated };
+
+export function validateAIResponse(raw: unknown): ValidateResult {
+  const result = aiResponseSchema.safeParse(raw);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+
+  const errorMessage = result.error.issues[0]?.message ?? 'Validation failed';
+  return {
+    success: false,
+    error: errorMessage,
+    fallback: {
+      responseType: 'conversation',
+      message: 'Erreur de format de réponse.',
+    },
+  };
+}
+
+function fixIntervalCount(session: AIRecommendedSessionValidated): AIRecommendedSessionValidated {
+  const details = session.interval_details;
+  if (!details?.steps || !details.repetitionCount) return session;
+
+  const effortCount = details.steps.filter((s) => s.stepType === 'effort').length;
+  if (effortCount !== details.repetitionCount) {
+    return {
+      ...session,
+      interval_details: { ...details, repetitionCount: effortCount },
+      interval_structure: session.interval_structure?.replace(
+        /(\d+)x/,
+        `${effortCount}x`
+      ),
+    };
+  }
+  return session;
+}
+
+function enrichSession(
+  session: AIRecommendedSessionValidated,
+  idx: number
+): AIRecommendedSessionValidated {
+  const recommendationId = randomUUID();
+  const enriched = fixIntervalCount(session);
+
   if (
-    response.responseType !== 'recommendations' ||
-    !Array.isArray(response.recommended_sessions)
+    typeof enriched.target_pace_min_km !== 'string' ||
+    typeof enriched.duration_min !== 'number' ||
+    typeof enriched.estimated_distance_km !== 'number'
   ) {
+    return { ...enriched, recommendation_id: recommendationId };
+  }
+
+  if (!validatePaceInput(enriched.target_pace_min_km)) {
+    logger.warn(
+      { sessionIndex: idx + 1, invalidPace: enriched.target_pace_min_km },
+      "Format d'allure invalide dans la réponse IA"
+    );
+    return { ...enriched, recommendation_id: recommendationId };
+  }
+
+  const adjustedDistance = validateAndAdjustDistance(
+    enriched.duration_min,
+    enriched.estimated_distance_km,
+    enriched.target_pace_min_km
+  );
+
+  return {
+    ...enriched,
+    recommendation_id: recommendationId,
+    estimated_distance_km: adjustedDistance,
+  };
+}
+
+export function enrichRecommendations(response: AIResponseValidated): AIResponseValidated {
+  if (response.responseType !== 'recommendations') {
     return response;
   }
 
-  response.recommended_sessions = response.recommended_sessions.map(
-    (session: AIRecommendedSession, idx: number) => {
-      const recommendationId = randomUUID();
+  return {
+    ...response,
+    recommended_sessions: response.recommended_sessions.map(enrichSession),
+  };
+}
 
-      if (
-        typeof session.target_pace_min_km !== 'string' ||
-        typeof session.duration_min !== 'number' ||
-        typeof session.estimated_distance_km !== 'number'
-      ) {
-        return { ...session, recommendation_id: recommendationId };
-      }
+export function validateAndFixRecommendations(response: unknown): AIResponseValidated {
+  const validationResult = validateAIResponse(response);
+  const validatedResponse = validationResult.success
+    ? validationResult.data
+    : validationResult.fallback;
 
-      if (!validatePaceInput(session.target_pace_min_km)) {
-        logger.warn(
-          {
-            sessionIndex: idx + 1,
-            invalidPace: session.target_pace_min_km,
-          },
-          'Format d\'allure invalide dans la réponse IA'
-        );
-        return { ...session, recommendation_id: recommendationId };
-      }
-
-      session.estimated_distance_km = validateAndAdjustDistance(
-        session.duration_min,
-        session.estimated_distance_km,
-        session.target_pace_min_km
-      );
-
-      return { ...session, recommendation_id: recommendationId };
-    }
-  );
-
-  return response;
+  return enrichRecommendations(validatedResponse);
 }

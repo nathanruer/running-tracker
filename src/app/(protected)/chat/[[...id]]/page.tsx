@@ -26,21 +26,22 @@ export default function ChatPage() {
   const [, startTransition] = useTransition();
 
   const urlId = useMemo(() => getIdFromParams(params), [params]);
-  const [localId, setLocalId] = useState<string | null>(null);
+  const [localId, setLocalId] = useState<string | null | undefined>(undefined);
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
 
-  const selectedConversationId = localId ?? urlId;
+  const selectedConversationId = localId === undefined ? urlId : localId;
 
   const { showSkeleton } = useConversations();
 
   const handleSelectConversation = useCallback((id: string) => {
-    setLocalId(id || null);
+    const newId = id || null;
+    setLocalId(newId);
 
     startTransition(() => {
-      const newUrl = id ? `/chat/${id}` : '/chat';
-      window.history.replaceState(null, '', newUrl);
+      const newUrl = newId ? `/chat/${newId}` : '/chat';
+      router.replace(newUrl, { scroll: false });
     });
-  }, []);
+  }, [router]);
 
   const handleSelectConversationMobile = useCallback((id: string) => {
     handleSelectConversation(id);

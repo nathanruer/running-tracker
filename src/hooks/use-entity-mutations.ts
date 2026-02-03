@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient, InfiniteData } from '@tanstack/react-query';
+import { useQueryClient, InfiniteData, type QueryKey } from '@tanstack/react-query';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 
 /**
@@ -7,11 +7,9 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
  */
 interface UseEntityMutationsOptions<T> {
   baseQueryKey: string;
-  /** @deprecated No longer used - cache updates now apply to all matching queries */
-  filterType?: string;
   deleteEntity: (id: string) => Promise<void>;
   bulkDeleteEntities?: (ids: string[]) => Promise<void>;
-  relatedQueryKeys?: string[];
+  relatedQueryKeys?: QueryKey[];
   messages?: {
     bulkDeleteSuccessTitle?: string;
     bulkDeleteSuccess?: (count: number) => string;
@@ -31,10 +29,9 @@ interface UseEntityMutationsOptions<T> {
  * const { handleDelete, handleBulkDelete, handleEntitySuccess, isDeleting } =
  *   useEntityMutations<TrainingSession>({
  *     baseQueryKey: 'sessions',
- *     filterType: selectedType,
  *     deleteEntity: deleteSession,
  *     bulkDeleteEntities: bulkDeleteSessions,
- *     relatedQueryKeys: ['sessionTypes'],
+ *     relatedQueryKeys: [queryKeys.sessionTypesBase()],
  *   });
  */
 export function useEntityMutations<T extends { id: string; date?: string | Date | null }>(
@@ -70,21 +67,14 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   /**
    * Snapshots all queries matching baseQueryKey for rollback
    */
-  const snapshotQueries = (): Map<string, unknown> => {
-    const snapshot = new Map<string, unknown>();
-    const queries = queryClient.getQueriesData({ queryKey: [baseQueryKey] });
-    for (const [key, data] of queries) {
-      snapshot.set(JSON.stringify(key), data);
-    }
-    return snapshot;
-  };
+  const snapshotQueries = (): Array<[QueryKey, unknown]> =>
+    queryClient.getQueriesData({ queryKey: [baseQueryKey] });
 
   /**
    * Restores queries from snapshot
    */
-  const restoreFromSnapshot = (snapshot: Map<string, unknown>) => {
-    for (const [keyStr, data] of snapshot) {
-      const key = JSON.parse(keyStr);
+  const restoreFromSnapshot = (snapshot: Array<[QueryKey, unknown]>) => {
+    for (const [key, data] of snapshot) {
       queryClient.setQueryData(key, data);
     }
   };
@@ -136,7 +126,7 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 
       await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
       relatedQueryKeys.forEach((key) => {
-        queryClient.invalidateQueries({ queryKey: [key] });
+        queryClient.invalidateQueries({ queryKey: key });
       });
     } catch (error) {
       // Rollback all queries from snapshot
@@ -170,7 +160,7 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 
       await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
       relatedQueryKeys.forEach((key) => {
-        queryClient.invalidateQueries({ queryKey: [key] });
+        queryClient.invalidateQueries({ queryKey: key });
       });
 
       handleSuccess(
@@ -236,7 +226,7 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
 
     queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
     relatedQueryKeys.forEach((key) => {
-      queryClient.invalidateQueries({ queryKey: [key] });
+      queryClient.invalidateQueries({ queryKey: key });
     });
   };
 

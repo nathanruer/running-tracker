@@ -125,7 +125,6 @@ export const SessionRow = React.memo(function SessionRow({
         <CommentCell
           comment={session.comments}
           isPlanned={data.isPlanned}
-          onShowMore={() => onView?.(session)}
           className="hidden xl:table-cell"
         />
         

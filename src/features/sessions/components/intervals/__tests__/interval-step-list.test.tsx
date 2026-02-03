@@ -1,9 +1,36 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { IntervalStepList } from '../interval-step-list';
 import { Form } from '@/components/ui/form';
 import { useForm, useFieldArray } from 'react-hook-form';
 import type { IntervalStep } from '@/lib/types';
+import { useEffect } from 'react';
+
+let dragEndHandler: ((event: { active: { id: string }; over: { id: string } | null }) => void) | null = null;
+
+vi.mock('@dnd-kit/core', () => ({
+  DndContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd?: (event: { active: { id: string }; over: { id: string } | null }) => void }) => {
+    dragEndHandler = onDragEnd || null;
+    return <div>{children}</div>;
+  },
+  closestCenter: vi.fn(),
+  KeyboardSensor: vi.fn(),
+  PointerSensor: vi.fn(),
+  useSensor: vi.fn(),
+  useSensors: vi.fn(() => []),
+}));
+
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  sortableKeyboardCoordinates: vi.fn(),
+  verticalListSortingStrategy: vi.fn(),
+}));
+
+vi.mock('../sortable-interval-step', () => ({
+  SortableIntervalStep: ({ id, index, onRemove }: { id: string; index: number; onRemove: (index: number) => void }) => (
+    <button type="button" data-testid={`remove-${id}`} onClick={() => onRemove(index)}>remove</button>
+  ),
+}));
 
 interface FormValues {
   steps: IntervalStep[];
@@ -17,12 +44,14 @@ const TestWrapper = ({
   onRemove = vi.fn(),
   onAppend = vi.fn(),
   onEntryModeChange = vi.fn(),
+  onFieldIds,
 }: {
   defaultSteps?: IntervalStep[];
   onMove?: (oldIndex: number, newIndex: number) => void;
   onRemove?: (index: number) => void;
   onAppend?: (step: IntervalStep) => void;
   onEntryModeChange?: (mode: 'quick' | 'detailed') => void;
+  onFieldIds?: (ids: string[]) => void;
 }) => {
   const form = useForm<FormValues>({
     defaultValues: {
@@ -36,6 +65,12 @@ const TestWrapper = ({
     control: form.control,
     name: 'steps',
   });
+
+  useEffect(() => {
+    if (onFieldIds) {
+      onFieldIds(fields.map((field) => field.id));
+    }
+  }, [fields, onFieldIds]);
 
   return (
     <Form {...form}>
@@ -144,5 +179,48 @@ describe('IntervalStepList', () => {
 
     fireEvent.click(screen.getByText('Masquer les détails'));
     expect(screen.getByText('Détails avancés')).toBeInTheDocument();
+  });
+
+  it('should call onMove when drag ends', () => {
+    const onMove = vi.fn();
+    let fieldIds: string[] = [];
+    const steps: IntervalStep[] = [
+      { stepNumber: 1, stepType: 'warmup', duration: '', distance: null, pace: '', hr: null },
+      { stepNumber: 2, stepType: 'effort', duration: '', distance: null, pace: '', hr: null },
+    ];
+
+    render(<TestWrapper defaultSteps={steps} onMove={onMove} onFieldIds={(ids) => { fieldIds = ids; }} />);
+
+    fireEvent.click(screen.getByText('Détails avancés'));
+
+    act(() => {
+      dragEndHandler?.({ active: { id: fieldIds[0] }, over: { id: fieldIds[1] } });
+    });
+
+    expect(onMove).toHaveBeenCalledWith(0, 1);
+  });
+
+  it('should call onRemove when removing a step', () => {
+    const onRemove = vi.fn();
+    const onEntryModeChange = vi.fn();
+    let fieldIds: string[] = [];
+    const steps: IntervalStep[] = [
+      { stepNumber: 1, stepType: 'warmup', duration: '', distance: null, pace: '', hr: null },
+    ];
+
+    render(
+      <TestWrapper
+        defaultSteps={steps}
+        onRemove={onRemove}
+        onEntryModeChange={onEntryModeChange}
+        onFieldIds={(ids) => { fieldIds = ids; }}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Détails avancés'));
+    fireEvent.click(screen.getByTestId(`remove-${fieldIds[0]}`));
+
+    expect(onRemove).toHaveBeenCalledWith(0);
+    expect(onEntryModeChange).toHaveBeenCalledWith('detailed');
   });
 });

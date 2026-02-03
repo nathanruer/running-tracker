@@ -8,6 +8,8 @@ import {
   addPlannedSession,
   type ConversationWithMessages,
 } from '@/lib/services/api-client';
+import { isFractionneType } from '@/lib/utils/session-type';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 export function useChatMutations(conversationId: string | null) {
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function useChatMutations(conversationId: string | null) {
       const sessionType = session.session_type;
       const intervalDetails = session.interval_details || null;
 
-      if (sessionType === 'Fractionné' && (!intervalDetails?.steps || intervalDetails.steps.length === 0)) {
+      if (isFractionneType(sessionType) && (!intervalDetails?.steps || intervalDetails.steps.length === 0)) {
         throw new Error("Impossible d'ajouter la séance : L'IA n'a pas généré les étapes détaillées. Veuillez demander à l'IA de régénérer la séance.");
       }
 
@@ -41,9 +43,9 @@ export function useChatMutations(conversationId: string | null) {
     onMutate: async (session: AIRecommendedSession) => {
       setLoadingSessionId(session.recommendation_id ?? null);
 
-      await queryClient.cancelQueries({ queryKey: ['sessions', 'history'] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.sessionsHistory() });
 
-      const previousSessions = queryClient.getQueryData<TrainingSession[]>(['sessions', 'history']);
+      const previousSessions = queryClient.getQueryData<TrainingSession[]>(queryKeys.sessionsHistory());
 
       const optimisticSession: TrainingSession = {
         id: `optimistic-${session.recommendation_id}`,
@@ -71,7 +73,7 @@ export function useChatMutations(conversationId: string | null) {
         source: 'coach',
       };
 
-      queryClient.setQueryData<TrainingSession[]>(['sessions', 'history'], (old) =>
+      queryClient.setQueryData<TrainingSession[]>(queryKeys.sessionsHistory(), (old) =>
         old ? [optimisticSession, ...old] : [optimisticSession]
       );
 
@@ -79,7 +81,7 @@ export function useChatMutations(conversationId: string | null) {
     },
     onSuccess: (newSession, originalSession) => {
       if (newSession) {
-        queryClient.setQueryData<TrainingSession[]>(['sessions', 'history'], (old) => {
+        queryClient.setQueryData<TrainingSession[]>(queryKeys.sessionsHistory(), (old) => {
           if (!old) return [newSession];
           return old.map((s) =>
             s.id.startsWith('optimistic-') && s.recommendationId === originalSession.recommendation_id
@@ -89,12 +91,12 @@ export function useChatMutations(conversationId: string | null) {
         });
       }
 
-      queryClient.invalidateQueries({ queryKey: ['sessions', 'history'] });
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionsHistory() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
     },
     onError: (error, _session, context) => {
       if (context?.previousSessions) {
-        queryClient.setQueryData(['sessions', 'history'], context.previousSessions);
+        queryClient.setQueryData(queryKeys.sessionsHistory(), context.previousSessions);
       }
 
       toast({
@@ -115,22 +117,22 @@ export function useChatMutations(conversationId: string | null) {
     onMutate: async ({ sessionId, recommendationId }) => {
       setLoadingSessionId(recommendationId);
 
-      await queryClient.cancelQueries({ queryKey: ['sessions', 'history'] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.sessionsHistory() });
 
-      const previousSessions = queryClient.getQueryData<TrainingSession[]>(['sessions', 'history']);
+      const previousSessions = queryClient.getQueryData<TrainingSession[]>(queryKeys.sessionsHistory());
 
-      queryClient.setQueryData<TrainingSession[]>(['sessions', 'history'], (old) =>
+      queryClient.setQueryData<TrainingSession[]>(queryKeys.sessionsHistory(), (old) =>
         old ? old.filter((s) => s.id !== sessionId && s.recommendationId !== recommendationId) : []
       );
 
       return { previousSessions };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
     },
     onError: (error, _variables, context) => {
       if (context?.previousSessions) {
-        queryClient.setQueryData(['sessions', 'history'], context.previousSessions);
+        queryClient.setQueryData(queryKeys.sessionsHistory(), context.previousSessions);
       }
 
       toast({
@@ -150,18 +152,18 @@ export function useChatMutations(conversationId: string | null) {
       return apiSendMessage(conversationId, content);
     },
     onMutate: async (content: string) => {
-      await queryClient.cancelQueries({ queryKey: ['conversation', conversationId] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.conversation(conversationId) });
 
-      const previousConversation = queryClient.getQueryData(['conversation', conversationId]);
+      const previousConversation = queryClient.getQueryData(queryKeys.conversation(conversationId));
 
-      queryClient.setQueryData(['conversation', conversationId], (old: ConversationWithMessages | undefined) => {
+      queryClient.setQueryData(queryKeys.conversation(conversationId), (old: ConversationWithMessages | undefined) => {
         if (!old) return old;
         return {
           ...old,
           chat_messages: [
             ...old.chat_messages,
             {
-              id: 'temp-' + Date.now(),
+              id: `temp-${crypto.randomUUID()}`,
               role: 'user',
               content,
               createdAt: new Date().toISOString(),
@@ -174,7 +176,7 @@ export function useChatMutations(conversationId: string | null) {
       return { previousConversation };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['conversation', conversationId], (old: ConversationWithMessages | undefined) => {
+      queryClient.setQueryData(queryKeys.conversation(conversationId), (old: ConversationWithMessages | undefined) => {
         if (!old) return old;
 
         const messagesWithoutTemp = old.chat_messages.filter((m) => !m.id.toString().startsWith('temp-'));
@@ -189,12 +191,12 @@ export function useChatMutations(conversationId: string | null) {
         };
       });
 
-      queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
     },
     onError: (error, _variables, context) => {
       if (context?.previousConversation) {
-        queryClient.setQueryData(['conversation', conversationId], context.previousConversation);
+        queryClient.setQueryData(queryKeys.conversation(conversationId), context.previousConversation);
       }
       toast({
         title: 'Erreur',

@@ -4,6 +4,14 @@ import { DELETE } from '../delete-account/route';
 import { prisma } from '@/lib/database/prisma';
 import { getUserIdFromRequest, clearSessionCookie } from '@/lib/auth';
 
+vi.mock('@/lib/infrastructure/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 vi.mock('@/lib/database/prisma', () => ({
   prisma: {
     users: {

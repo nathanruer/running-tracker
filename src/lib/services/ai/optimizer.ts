@@ -1,12 +1,20 @@
 import { prisma } from '@/lib/database';
 import { logger } from '@/lib/infrastructure/logger';
-import type { JsonValue } from '@prisma/client/runtime/library';
+import type { Prisma } from '@prisma/client';
 
-interface PrismaMessage {
-  role: string;
+type ChatRole = 'user' | 'assistant' | 'system';
+
+interface ChatMessageRecord {
+  role: ChatRole;
   content: string;
-  recommendations: JsonValue;
+  recommendations: Prisma.JsonValue;
   createdAt: Date;
+}
+
+interface RecommendationData {
+  responseType?: string;
+  week_summary?: string;
+  message?: string;
 }
 
 export const OPTIMIZATION_CONFIG = {
@@ -17,23 +25,29 @@ function estimateTokenCount(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-async function summarizeMessages(messages: PrismaMessage[]): Promise<string> {
+function mapMessageContent(msg: ChatMessageRecord): string {
+  if (msg.role === 'assistant' && msg.recommendations) {
+    return JSON.stringify(msg.recommendations);
+  }
+  return msg.content;
+}
+
+function summarizeMessages(messages: ChatMessageRecord[]): string {
   if (messages.length === 0) return '';
-  
+
   const keyPoints: string[] = [];
-  
+
   for (const msg of messages) {
     if (msg.role === 'user') {
       keyPoints.push(`Question utilisateur: ${msg.content.substring(0, 100)}`);
     } else if (msg.role === 'assistant') {
-      if (msg.recommendations) {
-        const recs = msg.recommendations as { responseType?: string; week_summary?: string; message?: string };
-        const recType = recs.responseType;
-        if (recType === 'recommendations') {
+      if (msg.recommendations && typeof msg.recommendations === 'object') {
+        const recs = msg.recommendations as RecommendationData;
+        if (recs.responseType === 'recommendations') {
           keyPoints.push(
-            `Recommandations données: ${recs.week_summary || 'Plan d\'entraînement fourni'}`
+            `Recommandations données: ${recs.week_summary || "Plan d'entraînement fourni"}`
           );
-        } else if (recType === 'analysis') {
+        } else if (recs.responseType === 'analysis') {
           keyPoints.push(
             `Analyse effectuée: ${recs.message?.substring(0, 100) || 'Analyse de performance'}`
           );
@@ -43,38 +57,35 @@ async function summarizeMessages(messages: PrismaMessage[]): Promise<string> {
       }
     }
   }
-  
+
   return `[Résumé de ${messages.length} messages précédents]\n${keyPoints.join('\n')}`;
+}
+
+export interface OptimizedHistory {
+  messages: Array<{ role: ChatRole; content: string }>;
+  tokensSaved: number;
+  originalTokenCount: number;
+  optimizedTokenCount: number;
 }
 
 export async function getOptimizedConversationHistory(
   conversationId: string
-): Promise<{
-  messages: Array<{ role: string; content: string }>;
-  tokensSaved: number;
-  originalTokenCount: number;
-  optimizedTokenCount: number;
-}> {
+): Promise<OptimizedHistory> {
   const allMessages = await prisma.chat_messages.findMany({
     where: { conversationId },
     orderBy: { createdAt: 'asc' },
   });
 
   const totalMessages = allMessages.length;
-  
+
   if (totalMessages <= OPTIMIZATION_CONFIG.RECENT_MESSAGES_COUNT) {
     const messages = allMessages.map(msg => ({
-      role: msg.role,
-      content: msg.role === 'assistant' && msg.recommendations
-        ? JSON.stringify(msg.recommendations)
-        : msg.content,
+      role: msg.role as ChatRole,
+      content: mapMessageContent(msg as ChatMessageRecord),
     }));
-    
-    const tokenCount = messages.reduce(
-      (sum, msg) => sum + estimateTokenCount(msg.content),
-      0
-    );
-    
+
+    const tokenCount = messages.reduce((sum, msg) => sum + estimateTokenCount(msg.content), 0);
+
     return {
       messages,
       tokensSaved: 0,
@@ -87,10 +98,10 @@ export async function getOptimizedConversationHistory(
   const recentMessages = allMessages.slice(-recentCount);
   const olderMessages = allMessages.slice(0, -recentCount);
 
-  const summary = await summarizeMessages(olderMessages);
-  
-  const optimizedMessages: Array<{ role: string; content: string }> = [];
-  
+  const summary = summarizeMessages(olderMessages as ChatMessageRecord[]);
+
+  const optimizedMessages: Array<{ role: ChatRole; content: string }> = [];
+
   if (summary) {
     optimizedMessages.push({
       role: 'system',
@@ -100,20 +111,13 @@ export async function getOptimizedConversationHistory(
 
   for (const msg of recentMessages) {
     optimizedMessages.push({
-      role: msg.role,
-      content: msg.role === 'assistant' && msg.recommendations
-        ? JSON.stringify(msg.recommendations)
-        : msg.content,
+      role: msg.role as ChatRole,
+      content: mapMessageContent(msg as ChatMessageRecord),
     });
   }
 
   const originalTokenCount = allMessages.reduce(
-    (sum, msg) => {
-      const content = msg.role === 'assistant' && msg.recommendations
-        ? JSON.stringify(msg.recommendations)
-        : msg.content;
-      return sum + estimateTokenCount(content);
-    },
+    (sum, msg) => sum + estimateTokenCount(mapMessageContent(msg as ChatMessageRecord)),
     0
   );
 
@@ -124,16 +128,19 @@ export async function getOptimizedConversationHistory(
 
   const tokensSaved = originalTokenCount - optimizedTokenCount;
 
-  logger.info({
-    conversationId,
-    totalMessages,
-    recentMessages: recentCount,
-    summarizedMessages: olderMessages.length,
-    originalTokenCount,
-    optimizedTokenCount,
-    tokensSaved,
-    compressionRatio: (optimizedTokenCount / originalTokenCount).toFixed(2),
-  }, 'Conversation history optimized');
+  logger.info(
+    {
+      conversationId,
+      totalMessages,
+      recentMessages: recentCount,
+      summarizedMessages: olderMessages.length,
+      originalTokenCount,
+      optimizedTokenCount,
+      tokensSaved,
+      compressionRatio: (optimizedTokenCount / originalTokenCount).toFixed(2),
+    },
+    'Conversation history optimized'
+  );
 
   return {
     messages: optimizedMessages,

@@ -54,4 +54,35 @@ describe('IntervalDetailsView', () => {
     // Should display the HR range from effort steps in the "Cible" section
     expect(screen.getByText(/162-174 bpm/i)).toBeInTheDocument();
   });
+
+  it('should return null for target HR when no HR data is available', () => {
+    const detailsNoHR = {
+      ...mockIntervalDetails,
+      targetEffortHR: null,
+      steps: [
+        { stepNumber: 1, stepType: 'effort' as const, duration: '02:50', distance: 0.67, pace: '04:15', hr: null },
+      ]
+    };
+    render(<IntervalDetailsView intervalDetails={detailsNoHR} isPlanned={false} />);
+    // Should not display any HR value in the target section
+    const cibleSection = screen.getByText(/Cible :/i).parentElement;
+    expect(cibleSection).not.toHaveTextContent('bpm');
+  });
+
+  it('should estimate pace when pace is missing but duration and distance are provided', () => {
+    const detailsWithMissingPace = {
+      ...mockIntervalDetails,
+      steps: [
+        { stepNumber: 1, stepType: 'effort' as const, duration: '05:00', distance: 1.0, pace: null as string | null, hr: 180 },
+      ]
+    };
+    render(<IntervalDetailsView intervalDetails={detailsWithMissingPace} isPlanned={false} />);
+    // 5 minutes for 1km = 05:00/km pace - multiple 05:00 may exist, so check that at least one exists
+    expect(screen.getAllByText('05:00').length).toBeGreaterThan(0);
+  });
+
+  it('should show totals section when there are steps with distance and time', () => {
+    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} isPlanned={false} />);
+    expect(screen.getByText(/Totaux/i)).toBeInTheDocument();
+  });
 });

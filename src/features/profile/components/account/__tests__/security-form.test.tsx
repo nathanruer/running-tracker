@@ -200,4 +200,80 @@ describe('SecurityForm', () => {
       expect(confirmPasswordInput).toHaveValue('');
     });
   });
+
+  it('should show error toast when password change fails', async () => {
+    const user = userEvent.setup();
+    const mockChangePassword = vi.mocked(authApi.changePassword);
+    mockChangePassword.mockRejectedValue(new Error('Current password is incorrect'));
+
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <SecurityForm />
+      </Wrapper>
+    );
+
+    const currentPasswordInput = screen.getByLabelText(/mot de passe actuel/i);
+    const newPasswordInput = screen.getByLabelText(/nouveau mot de passe/i);
+    const confirmPasswordInput = screen.getByLabelText(/confirmer/i);
+
+    await user.type(currentPasswordInput, 'wrongpassword');
+    await user.type(newPasswordInput, 'newpassword123');
+    await user.type(confirmPasswordInput, 'newpassword123');
+
+    const submitButton = screen.getByRole('button', { name: /modifier le mot de passe/i });
+    await user.click(submitButton);
+
+    await vi.waitFor(() => {
+      expect(mockChangePassword).toHaveBeenCalled();
+    });
+  });
+
+  it('should toggle new password visibility when eye icon is clicked', async () => {
+    const user = userEvent.setup();
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <SecurityForm />
+      </Wrapper>
+    );
+
+    const newPasswordInput = screen.getByLabelText(/nouveau mot de passe/i);
+    expect(newPasswordInput).toHaveAttribute('type', 'password');
+
+    const toggleButtons = screen.getAllByRole('button').filter(btn =>
+      btn.querySelector('svg')
+    );
+    const newPasswordToggle = toggleButtons[1];
+    await user.click(newPasswordToggle);
+
+    expect(newPasswordInput).toHaveAttribute('type', 'text');
+
+    await user.click(newPasswordToggle);
+    expect(newPasswordInput).toHaveAttribute('type', 'password');
+  });
+
+  it('should toggle confirm password visibility when eye icon is clicked', async () => {
+    const user = userEvent.setup();
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <SecurityForm />
+      </Wrapper>
+    );
+
+    const confirmPasswordInput = screen.getByLabelText(/confirmer/i);
+    expect(confirmPasswordInput).toHaveAttribute('type', 'password');
+
+    const toggleButtons = screen.getAllByRole('button').filter(btn =>
+      btn.querySelector('svg')
+    );
+    const confirmPasswordToggle = toggleButtons[2];
+    await user.click(confirmPasswordToggle);
+
+    expect(confirmPasswordInput).toHaveAttribute('type', 'text');
+
+    await user.click(confirmPasswordToggle);
+    expect(confirmPasswordInput).toHaveAttribute('type', 'password');
+  });
 });

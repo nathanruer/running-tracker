@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { apiRequest } from '@/lib/services/api-client/client';
+import { ErrorCode } from '@/lib/errors';
 
 describe('apiRequest', () => {
   const mockFetch = vi.fn();
@@ -168,5 +169,46 @@ describe('apiRequest', () => {
         },
       })
     );
+  });
+
+  it('throws NETWORK_TIMEOUT when request times out', async () => {
+    mockFetch.mockRejectedValue(new Error('timeout'));
+
+    try {
+      await apiRequest('/api/test');
+      throw new Error('Expected to throw');
+    } catch (error) {
+      const err = error as { code?: string };
+      expect(err.code).toBe(ErrorCode.NETWORK_TIMEOUT);
+    }
+  });
+
+  it('throws NETWORK_OFFLINE when offline', async () => {
+    Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
+    mockFetch.mockRejectedValue(new Error('network'));
+
+    try {
+      await apiRequest('/api/test');
+      throw new Error('Expected to throw');
+    } catch (error) {
+      const err = error as { code?: string };
+      expect(err.code).toBe(ErrorCode.NETWORK_OFFLINE);
+    }
+  });
+
+  it('maps status code to error code when response lacks code', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    });
+
+    try {
+      await apiRequest('/api/test');
+      throw new Error('Expected to throw');
+    } catch (error) {
+      const err = error as { code?: string };
+      expect(err.code).toBe(ErrorCode.SESSION_NOT_FOUND);
+    }
   });
 });

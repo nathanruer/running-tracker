@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useConversationMutations } from '../use-conversation-mutations';
 import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { deleteConversation, renameConversation, type Conversation } from '@/lib/services/api-client';
 import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
 
@@ -38,6 +38,7 @@ describe('useConversationMutations', () => {
     vi.clearAllMocks();
     (useToast as Mock).mockReturnValue({ toast: mockToast });
     (useQueryClient as Mock).mockReturnValue(mockQueryClient);
+    (useMutation as Mock).mockClear();
   });
 
   describe('Rename', () => {
@@ -137,6 +138,177 @@ describe('useConversationMutations', () => {
       });
 
       expect(result.current.deleteDialogOpen).toBe(false);
+    });
+  });
+
+  describe('Mutation callbacks', () => {
+    it('should call onConversationCreated on create success', () => {
+      const onCreated = vi.fn();
+      renderHook(() => useConversationMutations({ onConversationCreated: onCreated }));
+
+      const createMutationOptions = (useMutation as Mock).mock.calls[0][0];
+      createMutationOptions.onSuccess?.({ id: 'conv-1' });
+
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalled();
+      expect(onCreated).toHaveBeenCalledWith('conv-1');
+    });
+
+    it('should toast on create error', () => {
+      renderHook(() => useConversationMutations({}));
+
+      const createMutationOptions = (useMutation as Mock).mock.calls[0][0];
+      createMutationOptions.onError?.();
+
+      expect(mockToast).toHaveBeenCalled();
+    });
+
+    it('should toast on rename error', () => {
+      renderHook(() => useConversationMutations({}));
+
+      const renameMutationOptions = (useMutation as Mock).mock.calls[1][0];
+      renameMutationOptions.onError?.();
+
+      expect(mockToast).toHaveBeenCalled();
+    });
+
+    it('should optimistically remove conversation on delete mutate', async () => {
+      const onDeleted = vi.fn();
+      (mockQueryClient.getQueryData as Mock).mockReturnValue([
+        { id: 'conv-1', title: 'Title' },
+        { id: 'conv-2', title: 'Title 2' },
+      ]);
+
+      renderHook(() => useConversationMutations({ onConversationDeleted: onDeleted }));
+
+      const deleteMutationOptions = (useMutation as Mock).mock.calls[2][0];
+      await deleteMutationOptions.onMutate?.('conv-1');
+
+      expect(mockQueryClient.setQueryData).toHaveBeenCalled();
+      expect(mockQueryClient.removeQueries).toHaveBeenCalled();
+      expect(onDeleted).toHaveBeenCalledWith('conv-1');
+    });
+
+    it('should rollback on delete error', () => {
+      renderHook(() => useConversationMutations({}));
+
+      const deleteMutationOptions = (useMutation as Mock).mock.calls[2][0];
+      deleteMutationOptions.onError?.(new Error('fail'), 'conv-1', { previousConversations: [] });
+
+      expect(mockQueryClient.setQueryData).toHaveBeenCalled();
+      expect(mockToast).toHaveBeenCalled();
+    });
+
+    it('should reset rename dialog state on success', () => {
+      const { result } = renderHook(() => useConversationMutations({}));
+
+      const mockConversation: Conversation = {
+        id: 'conv-1',
+        title: 'Old Title',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        _count: { chat_messages: 0 }
+      };
+
+      act(() => {
+        result.current.handleRenameClick(mockConversation);
+      });
+
+      expect(result.current.renameDialogOpen).toBe(true);
+
+      const renameMutationOptions = (useMutation as Mock).mock.calls[1][0];
+      renameMutationOptions.onSuccess?.({}, { id: 'conv-1', title: 'New Title' });
+
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: expect.arrayContaining(['conversations']) });
+    });
+
+    it('should use setQueryData filter function correctly for delete', async () => {
+      const conversations: Conversation[] = [
+        { id: 'conv-1', title: 'Title 1', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+        { id: 'conv-2', title: 'Title 2', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      ];
+      (mockQueryClient.getQueryData as Mock).mockReturnValue(conversations);
+
+      let capturedFilterFn: ((old: Conversation[] | undefined) => Conversation[]) | undefined;
+      (mockQueryClient.setQueryData as Mock).mockImplementation((_key, fn) => {
+        if (typeof fn === 'function') {
+          capturedFilterFn = fn as (old: Conversation[] | undefined) => Conversation[];
+        }
+      });
+
+      renderHook(() => useConversationMutations({}));
+
+      const deleteMutationOptions = (useMutation as Mock).mock.calls[2][0];
+      await deleteMutationOptions.onMutate?.('conv-1');
+
+      expect(capturedFilterFn).toBeDefined();
+      const filtered = capturedFilterFn!(conversations);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].id).toBe('conv-2');
+
+      const emptyFiltered = capturedFilterFn!(undefined);
+      expect(emptyFiltered).toEqual([]);
+    });
+
+    it('should execute createConversation mutationFn', async () => {
+      const { createConversation } = await import('@/lib/services/api-client');
+      (createConversation as Mock).mockResolvedValue({ id: 'new-conv-1', title: 'Nouvelle conversation' });
+
+      renderHook(() => useConversationMutations({}));
+
+      const createMutationOptions = (useMutation as Mock).mock.calls[0][0];
+      await createMutationOptions.mutationFn();
+
+      expect(createConversation).toHaveBeenCalled();
+    });
+  });
+
+  describe('handleRenameSubmit edge cases', () => {
+    it('should not submit rename when selectedForRename is null', () => {
+      const { result } = renderHook(() => useConversationMutations({}));
+
+      act(() => {
+        result.current.handleRenameSubmit();
+      });
+
+      expect(renameConversation).not.toHaveBeenCalled();
+    });
+
+    it('should not submit rename when newTitle is empty', () => {
+      const { result } = renderHook(() => useConversationMutations({}));
+
+      const mockConversation: Conversation = {
+        id: 'conv-1',
+        title: 'Old Title',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        _count: { chat_messages: 0 }
+      };
+
+      act(() => {
+        result.current.handleRenameClick(mockConversation);
+      });
+
+      act(() => {
+        result.current.setNewTitle('   ');
+      });
+
+      act(() => {
+        result.current.handleRenameSubmit();
+      });
+
+      expect(renameConversation).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleDeleteSubmit edge cases', () => {
+    it('should not submit delete when selectedForDelete is null', () => {
+      const { result } = renderHook(() => useConversationMutations({}));
+
+      act(() => {
+        result.current.handleDeleteSubmit();
+      });
+
+      expect(deleteConversation).not.toHaveBeenCalled();
     });
   });
 });

@@ -13,6 +13,7 @@ import { ProfileSkeleton, AnalyticsSkeleton, HistorySkeleton } from '@/features/
 import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
 import { CACHE_STORAGE_KEY } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { queryKeys } from '@/lib/constants/query-keys';
 import dynamic from 'next/dynamic';
 
 const AnalyticsView = dynamic(
@@ -40,13 +41,13 @@ export default function ProfilePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: user, isLoading: loading } = useQuery({
-    queryKey: ['user'],
+    queryKey: queryKeys.user(),
     queryFn: getCurrentUser,
     staleTime: 10 * 60 * 1000,
   });
 
   const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
-    queryKey: ['sessions', 'all', user?.id],
+    queryKey: queryKeys.sessionsAll(user?.id ?? null),
     queryFn: () => getSessions(),
     enabled: !!user && (activeView === 'analytics' || activeView === 'history'),
     staleTime: 5 * 60 * 1000,

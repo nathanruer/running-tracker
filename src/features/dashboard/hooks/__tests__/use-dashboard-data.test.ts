@@ -21,7 +21,9 @@ vi.mock('@/lib/services/api-client', () => ({
 
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useEntityMutations } from '@/hooks/use-entity-mutations';
+import { getSessions, getSessionsCount, getSessionTypes, bulkDeleteSessions } from '@/lib/services/api-client';
 import { useDashboardData } from '../use-dashboard-data';
+import { queryKeys } from '@/lib/constants/query-keys';
 import { CACHE_TIME } from '@/lib/constants';
 import type { TrainingSession } from '@/lib/types';
 
@@ -442,10 +444,34 @@ describe('useDashboardData', () => {
       expect(useEntityMutations).toHaveBeenCalledWith(
         expect.objectContaining({
           baseQueryKey: 'sessions',
-          filterType: 'Footing',
-          relatedQueryKeys: ['sessionTypes', 'sessionsCount'],
+          relatedQueryKeys: [queryKeys.sessionTypesBase(), queryKeys.sessionsCountBase()],
         })
       );
+    });
+
+    it('should use bulk delete helper and success message', async () => {
+      const bulkDeleteSessionsMock = vi.mocked(bulkDeleteSessions);
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('all'));
+
+      const options = vi.mocked(useEntityMutations).mock.calls[0][0];
+      await options.bulkDeleteEntities?.(['a', 'b']);
+
+      expect(bulkDeleteSessionsMock).toHaveBeenCalledWith(['a', 'b']);
+      expect(options.messages?.bulkDeleteSuccess?.(2)).toBe('2 séances supprimées.');
     });
   });
 
@@ -469,7 +495,7 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: expect.arrayContaining(['sessions', 'paginated', 'all', 'date:desc']),
+          queryKey: ['sessions', 'paginated', expect.objectContaining({ sortKey: 'date:desc' })],
         })
       );
     });
@@ -493,7 +519,7 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: expect.arrayContaining(['sessions', 'paginated', 'all', 'default']),
+          queryKey: ['sessions', 'paginated', expect.objectContaining({ sortKey: 'default' })],
         })
       );
     });
@@ -517,7 +543,7 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: expect.arrayContaining(['marathon']),
+          queryKey: ['sessions', 'paginated', expect.objectContaining({ search: 'marathon' })],
         })
       );
     });
@@ -541,7 +567,7 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: expect.arrayContaining(['test']),
+          queryKey: ['sessions', 'paginated', expect.objectContaining({ search: 'test' })],
         })
       );
     });
@@ -565,7 +591,7 @@ describe('useDashboardData', () => {
 
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: expect.arrayContaining(['2024-01-01']),
+          queryKey: ['sessions', 'paginated', expect.objectContaining({ dateFrom: '2024-01-01' })],
         })
       );
     });
@@ -618,6 +644,129 @@ describe('useDashboardData', () => {
       expect(sessionsCountCall[0]).toMatchObject({
         staleTime: CACHE_TIME.SESSIONS,
       });
+    });
+  });
+
+  describe('query functions', () => {
+    it('should sort session types in queryFn', async () => {
+      vi.mocked(getSessionTypes).mockResolvedValueOnce(['Interval', 'Footing']);
+
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('all'));
+
+      const sessionTypesCall = vi.mocked(useQuery).mock.calls[1][0];
+      const result = await (sessionTypesCall.queryFn as () => Promise<string[]>)();
+
+      expect(getSessionTypes).toHaveBeenCalled();
+      expect(result).toEqual(['Footing', 'Interval']);
+    });
+
+    it('should call getSessionsCount with trimmed search and dateFrom', async () => {
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('all', null, '  marathon  ', '2024-01-01'));
+
+      const sessionsCountCall = vi.mocked(useQuery).mock.calls[2][0];
+      await (sessionsCountCall.queryFn as () => Promise<number>)();
+
+      expect(getSessionsCount).toHaveBeenCalledWith('all', 'marathon', '2024-01-01');
+    });
+
+    it('should pass correct params to getSessions and compute next page', async () => {
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('Footing', 'date:desc', 'tempo', '2024-01-01'));
+
+      const infiniteCall = vi.mocked(useInfiniteQuery).mock.calls[0][0];
+      await (infiniteCall.queryFn as (ctx: { pageParam: number }) => Promise<unknown>)({ pageParam: 20 });
+
+      expect(getSessions).toHaveBeenCalledWith(10, 20, 'Footing', 'date:desc', 'tempo', '2024-01-01');
+
+      const getNextPageParam = infiniteCall.getNextPageParam as (lastPage: unknown[], allPages: unknown[][], lastPageParam: number, allPageParams: number[]) => number | undefined;
+      const nextPage = getNextPageParam(new Array(10).fill(createSession('x')), [new Array(10)], 0, [0]);
+      const noNextPage = getNextPageParam([createSession('1')], [new Array(10)], 0, [0]);
+
+      expect(nextPage).toBe(10);
+      expect(noNextPage).toBeUndefined();
+    });
+
+    it('should preserve placeholder data', () => {
+      vi.mocked(useQuery)
+        .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
+        .mockReturnValueOnce({ data: 0 } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      renderHook(() => useDashboardData('all'));
+
+      const infiniteCall = vi.mocked(useInfiniteQuery).mock.calls[0][0];
+      const previousData = { pages: [[createSession('1')]], pageParams: [0] };
+
+      expect((infiniteCall.placeholderData as (prev: typeof previousData) => typeof previousData)(previousData)).toBe(previousData);
+    });
+
+    it('should set isFiltering based on inputs and fetching', () => {
+      vi.mocked(useQuery).mockReturnValue({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>);
+
+      vi.mocked(useInfiniteQuery).mockReturnValue({
+        data: { pages: [[createSession('1')]], pageParams: [0] },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isLoading: false,
+        isFetching: true,
+      } as unknown as ReturnType<typeof useInfiniteQuery>);
+
+      const { result: withFilter } = renderHook(() => useDashboardData('Footing', null, '', '2024-01-01'));
+      expect(withFilter.current.isFiltering).toBe(true);
+
+      const { result: withoutFilter } = renderHook(() => useDashboardData('all'));
+      expect(withoutFilter.current.isFiltering).toBe(false);
     });
   });
 });

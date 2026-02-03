@@ -75,6 +75,13 @@ describe('ConversationListItem', () => {
       const conversationDiv = container.firstChild as HTMLElement;
       expect(conversationDiv).toBeInTheDocument();
     });
+
+    it('should show action button when mobile', () => {
+      render(<ConversationListItem {...defaultProps} isMobile={true} />);
+
+      const button = screen.getAllByRole('button')[0];
+      expect(button.className).toContain('opacity-100');
+    });
   });
 
   describe('Interactions', () => {
@@ -130,6 +137,15 @@ describe('ConversationListItem', () => {
       fireEvent.click(deleteButton!);
 
       expect(mockOnDelete).toHaveBeenCalledWith('conv-1');
+    });
+
+    it('should not trigger select when opening menu', () => {
+      render(<ConversationListItem {...defaultProps} />);
+
+      const menuButton = screen.getAllByRole('button')[0];
+      fireEvent.click(menuButton);
+
+      expect(mockOnSelect).not.toHaveBeenCalled();
     });
   });
 });

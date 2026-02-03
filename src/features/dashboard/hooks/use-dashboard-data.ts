@@ -10,6 +10,7 @@ import {
 } from '@/lib/services/api-client';
 import { type TrainingSession } from '@/lib/types';
 import { CACHE_TIME } from '@/lib/constants/time';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 const LIMIT = 10;
 
@@ -20,13 +21,13 @@ export function useDashboardData(
   dateFrom?: string
 ) {
   const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['user'],
+    queryKey: queryKeys.user(),
     queryFn: getCurrentUser,
     staleTime: 10 * 60 * 1000,
   });
 
   const { data: availableTypes = [] } = useQuery({
-    queryKey: ['sessionTypes', user?.id],
+    queryKey: queryKeys.sessionTypes(user?.id),
     queryFn: async () => {
       const types = await getSessionTypes();
       return types.sort();
@@ -36,12 +37,11 @@ export function useDashboardData(
 
   const mutations = useEntityMutations<TrainingSession>({
     baseQueryKey: 'sessions',
-    filterType: selectedType,
     deleteEntity: deleteSession,
     bulkDeleteEntities: async (ids: string[]) => {
       await bulkDeleteSessions(ids);
     },
-    relatedQueryKeys: ['sessionTypes', 'sessionsCount'],
+    relatedQueryKeys: [queryKeys.sessionTypesBase(), queryKeys.sessionsCountBase()],
     messages: {
       bulkDeleteSuccessTitle: 'Séances supprimées',
       bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} supprimée${count > 1 ? 's' : ''}.`,
@@ -52,7 +52,12 @@ export function useDashboardData(
   const search = searchQuery?.trim() || '';
 
   const { data: totalCount = 0 } = useQuery({
-    queryKey: ['sessionsCount', selectedType, search, dateFrom, user?.id],
+    queryKey: queryKeys.sessionsCount({
+      selectedType,
+      search,
+      dateFrom,
+      userId: user?.id ?? null,
+    }),
     queryFn: () => getSessionsCount(selectedType, search || undefined, dateFrom),
     enabled: !!user,
     staleTime: CACHE_TIME.SESSIONS,
@@ -66,7 +71,13 @@ export function useDashboardData(
     isLoading: paginatedSessionsLoading,
     isFetching: paginatedSessionsFetching
   } = useInfiniteQuery({
-    queryKey: ['sessions', 'paginated', selectedType, sortKey, search, dateFrom, user?.id],
+    queryKey: queryKeys.sessionsPaginated({
+      selectedType,
+      sortKey,
+      search,
+      dateFrom,
+      userId: user?.id ?? null,
+    }),
     queryFn: ({ pageParam }) => getSessions(LIMIT, pageParam, selectedType, sortParam || undefined, search || undefined, dateFrom),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {

@@ -72,7 +72,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
           }),
         { wrapper }
@@ -100,7 +99,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
           }),
         { wrapper }
@@ -113,6 +111,39 @@ describe('useEntityMutations', () => {
       expect(mockHandleError).toHaveBeenCalledWith(deleteError);
     });
 
+    it('should remove entity from infinite query cache', async () => {
+      const entitiesPage1: TestEntity[] = [
+        createTestEntity({ id: 'entity-1' }),
+        createTestEntity({ id: 'entity-2' }),
+      ];
+      const entitiesPage2: TestEntity[] = [
+        createTestEntity({ id: 'entity-3' }),
+      ];
+
+      queryClient.setQueryData(['entities', 'paginated'], {
+        pages: [entitiesPage1, entitiesPage2],
+        pageParams: [0, 2],
+      });
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
+
+      await act(async () => {
+        await result.current.handleDelete('entity-2');
+      });
+
+      const cachedData = queryClient.getQueryData(['entities', 'paginated']) as {
+        pages: TestEntity[][];
+      };
+
+      expect(cachedData.pages[0].some((e) => e.id === 'entity-2')).toBe(false);
+    });
   });
 
   describe('handleBulkDelete', () => {
@@ -129,7 +160,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
             bulkDeleteEntities: mockBulkDeleteEntities,
           }),
@@ -152,7 +182,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
           }),
         { wrapper }
@@ -178,7 +207,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
             bulkDeleteEntities: mockBulkDeleteEntities,
           }),
@@ -192,6 +220,51 @@ describe('useEntityMutations', () => {
       expect(mockHandleError).toHaveBeenCalledWith(
         bulkDeleteError
       );
+    });
+
+    it('should set deleting state during bulk delete', async () => {
+      let resolveBulk: () => void;
+      const pendingBulk = new Promise<void>((resolve) => {
+        resolveBulk = resolve;
+      });
+      mockBulkDeleteEntities.mockReturnValue(pendingBulk);
+
+      const entities: TestEntity[] = [
+        createTestEntity({ id: 'entity-1' }),
+        createTestEntity({ id: 'entity-2' }),
+      ];
+
+      queryClient.setQueryData(['entities', 'all'], entities);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+            bulkDeleteEntities: mockBulkDeleteEntities,
+          }),
+        { wrapper }
+      );
+
+      expect(result.current.isDeleting).toBe(false);
+
+      let bulkPromise: Promise<void>;
+      act(() => {
+        bulkPromise = result.current.handleBulkDelete(['entity-1']);
+      });
+
+      await waitFor(() => {
+        expect(result.current.isDeleting).toBe(true);
+      });
+
+      await act(async () => {
+        resolveBulk!();
+        await bulkPromise;
+      });
+
+      await waitFor(() => {
+        expect(result.current.isDeleting).toBe(false);
+      });
     });
   });
 
@@ -207,7 +280,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
           }),
         { wrapper }
@@ -235,7 +307,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
           }),
         { wrapper }
@@ -250,6 +321,92 @@ describe('useEntityMutations', () => {
       const cachedData = queryClient.getQueryData(['entities', 'all', 'all', 'test-user']) as TestEntity[];
       expect(cachedData).toHaveLength(1);
       expect(cachedData[0].name).toBe('Updated Name');
+    });
+
+    it('should insert into first page for infinite queries', () => {
+      const page1: TestEntity[] = [createTestEntity({ id: 'entity-1', date: '2024-01-10' })];
+      const page2: TestEntity[] = [createTestEntity({ id: 'entity-2', date: '2024-01-09' })];
+
+      queryClient.setQueryData(['entities', 'paginated'], {
+        pages: [page1, page2],
+        pageParams: [0, 10],
+      });
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
+
+      const newEntity = createTestEntity({ id: 'entity-3', date: '2024-01-15' });
+
+      act(() => {
+        result.current.handleEntitySuccess(newEntity);
+      });
+
+      const cachedData = queryClient.getQueryData(['entities', 'paginated']) as {
+        pages: TestEntity[][];
+      };
+
+      expect(cachedData.pages[0][0].id).toBe('entity-3');
+    });
+
+    it('should update entity inside infinite pages', () => {
+      const page1: TestEntity[] = [createTestEntity({ id: 'entity-1', name: 'old' })];
+
+      queryClient.setQueryData(['entities', 'paginated'], {
+        pages: [page1],
+        pageParams: [0],
+      });
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.handleEntitySuccess(createTestEntity({ id: 'entity-1', name: 'new' }));
+      });
+
+      const cachedData = queryClient.getQueryData(['entities', 'paginated']) as {
+        pages: TestEntity[][];
+      };
+
+      expect(cachedData.pages[0][0].name).toBe('new');
+    });
+
+    it('should respect custom sort function', () => {
+      const entities: TestEntity[] = [
+        createTestEntity({ id: 'entity-1', date: '2024-01-01', name: 'B' }),
+      ];
+
+      queryClient.setQueryData(['entities', 'all'], entities);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+            sortFn: (a, b) => a.name.localeCompare(b.name),
+          }),
+        { wrapper }
+      );
+
+      const newEntity = createTestEntity({ id: 'entity-2', date: '2024-01-02', name: 'A' });
+
+      act(() => {
+        result.current.handleEntitySuccess(newEntity);
+      });
+
+      const cachedData = queryClient.getQueryData(['entities', 'all']) as TestEntity[];
+      expect(cachedData[0].name).toBe('A');
     });
   });
 
@@ -268,7 +425,6 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
           }),
         { wrapper }
@@ -307,9 +463,8 @@ describe('useEntityMutations', () => {
         () =>
           useEntityMutations<TestEntity>({
             baseQueryKey: 'entities',
-            filterType: 'all',
             deleteEntity: mockDeleteEntity,
-            relatedQueryKeys: ['related1', 'related2'],
+            relatedQueryKeys: [['related1'], ['related2']],
           }),
         { wrapper }
       );
@@ -320,6 +475,106 @@ describe('useEntityMutations', () => {
 
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
+    });
+
+    it('should invalidate related query keys on bulk delete', async () => {
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+      const entities: TestEntity[] = [
+        createTestEntity({ id: 'entity-1' }),
+        createTestEntity({ id: 'entity-2' }),
+      ];
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+            bulkDeleteEntities: mockBulkDeleteEntities,
+            relatedQueryKeys: [['related1'], ['related2']],
+          }),
+        { wrapper }
+      );
+
+      await act(async () => {
+        await result.current.handleBulkDelete(['entity-1', 'entity-2']);
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
+    });
+
+    it('should invalidate related query keys on entity success', () => {
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+            relatedQueryKeys: [['related1'], ['related2']],
+          }),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.handleEntitySuccess(createTestEntity({ id: 'entity-2' }));
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
+    });
+  });
+
+  describe('edge cases with unrecognized data formats', () => {
+    it('should return old data unchanged in removeFromCache when format is unrecognized', async () => {
+      // Set up an object that is neither an array nor has pages property
+      const unknownFormat = { someKey: 'someValue' };
+      queryClient.setQueryData(['entities', 'unknown'], unknownFormat);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
+
+      await act(async () => {
+        await result.current.handleDelete('entity-1');
+      });
+
+      // The unknown format should remain unchanged
+      const cachedData = queryClient.getQueryData(['entities', 'unknown']);
+      expect(cachedData).toEqual(unknownFormat);
+    });
+
+    it('should return old data unchanged in handleEntitySuccess when format is unrecognized', () => {
+      // Set up an object that is neither an array nor has pages property
+      const unknownFormat = { someKey: 'someValue' };
+      queryClient.setQueryData(['entities', 'unknown'], unknownFormat);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.handleEntitySuccess(createTestEntity({ id: 'new-entity' }));
+      });
+
+      // The unknown format should remain unchanged
+      const cachedData = queryClient.getQueryData(['entities', 'unknown']);
+      expect(cachedData).toEqual(unknownFormat);
     });
   });
 });

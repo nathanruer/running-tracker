@@ -1,14 +1,19 @@
-import type { AIResponse } from '@/lib/types/ai';
+import {
+  aiResponseSchema,
+  type AIResponseValidated,
+} from '@/lib/validation/schemas/ai-response';
 
-/**
- * Extracts and parses JSON from AI response text
- * Handles markdown code blocks and finds JSON objects within text
- *
- * @param text Raw text from AI response
- * @returns Parsed JSON object
- * @throws Error if no valid JSON found in response
- */
-export function extractJsonFromAI(text: string): AIResponse {
+export class AIParseError extends Error {
+  constructor(
+    message: string,
+    public readonly rawText?: string
+  ) {
+    super(message);
+    this.name = 'AIParseError';
+  }
+}
+
+export function extractJsonFromAI(text: string): unknown {
   let cleaned = text.trim();
 
   if (cleaned.startsWith('```')) {
@@ -19,8 +24,24 @@ export function extractJsonFromAI(text: string): AIResponse {
   const last = cleaned.lastIndexOf('}');
 
   if (first === -1 || last === -1) {
-    throw new Error('JSON non trouvé dans la réponse IA');
+    throw new AIParseError('JSON non trouvé dans la réponse IA', text);
   }
 
-  return JSON.parse(cleaned.slice(first, last + 1));
+  try {
+    return JSON.parse(cleaned.slice(first, last + 1));
+  } catch {
+    throw new AIParseError('JSON invalide dans la réponse IA', text);
+  }
+}
+
+export function parseAndValidateAIResponse(text: string): AIResponseValidated {
+  const raw = extractJsonFromAI(text);
+  const result = aiResponseSchema.safeParse(raw);
+
+  if (!result.success) {
+    const errorMessage = result.error.issues[0]?.message ?? 'Validation failed';
+    throw new AIParseError(`Validation échouée: ${errorMessage}`, text);
+  }
+
+  return result.data;
 }

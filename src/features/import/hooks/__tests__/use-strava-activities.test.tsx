@@ -1,5 +1,5 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStravaActivities } from '../use-strava-activities';
 import * as apiClient from '@/lib/services/api-client';
@@ -45,6 +45,10 @@ const mockActivity = {
 describe('useStravaActivities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should initialize with default values when closed', () => {
@@ -324,4 +328,61 @@ describe('useStravaActivities', () => {
 
     expect(typeof result.current.cancelSearchLoading).toBe('function');
   });
+
+  it('should load all activities when loadAllActivities is called', async () => {
+    vi.mocked(apiClient.getStravaActivities)
+      .mockResolvedValueOnce({
+        activities: [mockActivity],
+        hasMore: true,
+        totalCount: 2,
+      })
+      .mockResolvedValueOnce({
+        activities: [{ ...mockActivity, externalId: '2' }],
+        hasMore: false,
+        totalCount: 2,
+      });
+
+    const { result } = renderHook(() => useStravaActivities(true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasMore).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.loadAllActivities();
+    });
+
+    expect(result.current.activities).toHaveLength(2);
+  });
+
+  it('should stop search when match is found', async () => {
+    vi.mocked(apiClient.getStravaActivities)
+      .mockResolvedValueOnce({
+        activities: [mockActivity],
+        hasMore: true,
+        totalCount: 2,
+      })
+      .mockResolvedValueOnce({
+        activities: [{ ...mockActivity, externalId: '2', comments: 'match here' }],
+        hasMore: true,
+        totalCount: 2,
+      });
+
+    const { result } = renderHook(() => useStravaActivities(true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasMore).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.loadAllForSearch('match');
+    });
+
+    expect(result.current.searchLoading).toBe(false);
+  });
+
 });

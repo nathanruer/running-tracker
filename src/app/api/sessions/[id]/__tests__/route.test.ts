@@ -215,6 +215,22 @@ describe('/api/sessions/[id]', () => {
         })
       );
     });
+
+    it('uses explicit averageTemp when provided', async () => {
+      const existingSession = { id: 'session-123', userId: 'user-123' };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(findSessionByIdAndUser).mockResolvedValue(existingSession as never);
+      vi.mocked(prisma.training_sessions.update).mockResolvedValue({ ...existingSession, averageTemp: 22 } as never);
+
+      await PUT(createRequest('PUT', { averageTemp: 22 }), createParams('session-123'));
+
+      expect(prisma.training_sessions.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ averageTemp: 22 }),
+        })
+      );
+    });
   });
 
   describe('DELETE', () => {

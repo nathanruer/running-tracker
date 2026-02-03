@@ -1,26 +1,29 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MessageList } from '../message-list';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 
 HTMLElement.prototype.scrollIntoView = vi.fn();
+HTMLElement.prototype.scrollTo = vi.fn();
 
 vi.mock('../recommendation-card', () => ({
-  RecommendationCard: ({ session }: {
+  RecommendationCard: ({ session, isAdded, getAddedSessionId }: {
     session: AIRecommendedSession;
+    isAdded?: boolean;
+    getAddedSessionId?: (session: AIRecommendedSession) => string | null;
   }) => (
-    <div data-testid={`recommendation-${session.recommendation_id}`}>
+    <div data-testid={`recommendation-${session.recommendation_id}`} data-added={String(isAdded)}>
+      {getAddedSessionId ? getAddedSessionId(session) : null}
       {session.session_type}
     </div>
   ),
 }));
 
-vi.mock('@/lib/utils/chat/session-helpers', () => ({
-  isSessionAlreadyAdded: vi.fn(() => false),
-  isSessionCompleted: vi.fn(() => false),
-  getAddedSessionId: vi.fn(() => null),
-  getCompletedSession: vi.fn(() => null),
-  getNextSessionNumber: vi.fn(() => 1),
+vi.mock('@/lib/domain/sessions/helpers', () => ({
+  getAddedSessionId: vi.fn((session: AIRecommendedSession, sessions: TrainingSession[]) => {
+    const match = sessions.find((s) => s.recommendationId === session.recommendation_id);
+    return match?.id ?? null;
+  }),
 }));
 
 describe('MessageList', () => {
@@ -67,6 +70,19 @@ describe('MessageList', () => {
       render(<MessageList {...defaultProps} isSending={true} />);
 
       expect(screen.getByText('Le coach réfléchit...')).toBeInTheDocument();
+    });
+
+    it('should render streaming content when provided', () => {
+      render(
+        <MessageList
+          {...defaultProps}
+          isStreaming={true}
+          streamingContent="Streaming..."
+        />
+      );
+
+      expect(screen.getByTestId('chat-loading-indicator')).toBeInTheDocument();
+      expect(screen.getByText('Streaming...')).toBeInTheDocument();
     });
   });
 
@@ -162,6 +178,25 @@ describe('MessageList', () => {
       );
 
       expect(screen.getByText('Modèle: gpt-4')).toBeInTheDocument();
+    });
+
+    it('should auto-scroll when messages update', () => {
+      render(
+        <MessageList
+          {...defaultProps}
+          messages={[
+            {
+              id: '1',
+              role: 'assistant',
+              content: 'Hello',
+              recommendations: null,
+              createdAt: new Date().toISOString(),
+            },
+          ]}
+        />
+      );
+
+      expect(HTMLElement.prototype.scrollTo).toHaveBeenCalled();
     });
   });
 
@@ -269,14 +304,119 @@ describe('MessageList', () => {
 
       expect(screen.queryByText(/séance.*recommandée/i)).not.toBeInTheDocument();
     });
+
+    it('should mark recommendation as added when session exists', () => {
+      const mockSession: AIRecommendedSession = {
+        recommendation_id: 'rec-1',
+        session_type: 'Endurance',
+        duration_min: 30,
+        estimated_distance_km: 5,
+      };
+
+      const matchedSession: TrainingSession = {
+        id: 'session-1',
+        userId: 'user-1',
+        sessionNumber: 1,
+        week: 1,
+        date: '2024-01-01',
+        sessionType: 'Endurance',
+        duration: '00:30:00',
+        distance: 5,
+        avgPace: '06:00',
+        avgHeartRate: 140,
+        perceivedExertion: 4,
+        comments: '',
+        status: 'completed',
+        intervalDetails: null,
+        recommendationId: 'rec-1',
+      };
+
+      render(
+        <MessageList
+          {...defaultProps}
+          allSessions={[matchedSession]}
+          messages={[
+            {
+              id: '1',
+              role: 'assistant',
+              content: 'Voici une recommandation',
+              recommendations: {
+                recommended_sessions: [mockSession],
+              },
+              createdAt: new Date().toISOString(),
+            },
+          ]}
+        />
+      );
+
+      expect(screen.getByTestId('recommendation-rec-1')).toHaveAttribute('data-added', 'true');
+    });
   });
 
   describe('Auto-scroll', () => {
-    it('should have scroll anchor element', () => {
+    it('should have scrollable container', () => {
       const { container } = render(<MessageList {...defaultProps} />);
 
-      const scrollAnchor = container.querySelector('div[class*="flex-1"] > div:last-child');
-      expect(scrollAnchor).toBeInTheDocument();
+      const scrollContainer = container.querySelector('div[class*="overflow-y-auto"]');
+      expect(scrollContainer).toBeInTheDocument();
+    });
+
+    it('should scroll to bottom when streaming', () => {
+      vi.useFakeTimers();
+      const { container, rerender } = render(
+        <MessageList
+          {...defaultProps}
+          isStreaming={false}
+          streamingContent=""
+        />
+      );
+
+      const scrollContainer = container.querySelector('div[class*="overflow-y-auto"]') as HTMLDivElement;
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, writable: true });
+
+      rerender(
+        <MessageList
+          {...defaultProps}
+          isStreaming={true}
+          streamingContent="Hello"
+        />
+      );
+
+      act(() => {
+        vi.runAllTimers();
+      });
+
+      expect(scrollContainer.scrollTop).toBe(1000);
+      vi.useRealTimers();
+    });
+
+    it('should clear previous debounce timer on rapid streaming updates', () => {
+      vi.useFakeTimers();
+      const clearSpy = vi.spyOn(global, 'clearTimeout');
+
+      const { rerender } = render(
+        <MessageList
+          {...defaultProps}
+          isStreaming={true}
+          streamingContent="A"
+        />
+      );
+
+      rerender(
+        <MessageList
+          {...defaultProps}
+          isStreaming={true}
+          streamingContent="B"
+        />
+      );
+
+      act(() => {
+        vi.runAllTimers();
+      });
+
+      expect(clearSpy).toHaveBeenCalled();
+      clearSpy.mockRestore();
+      vi.useRealTimers();
     });
   });
 });

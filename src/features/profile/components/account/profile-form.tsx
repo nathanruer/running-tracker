@@ -18,6 +18,7 @@ import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser } from '@/lib/services/api-client';
 import { type User } from '@/lib/types';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 const profileSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -76,7 +77,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
   const mutation = useMutation({
     mutationFn: updateUser,
     onSuccess: (updatedUser) => {
-      queryClient.setQueryData(['user'], updatedUser);
+      queryClient.setQueryData(queryKeys.user(), updatedUser);
       toast({
         title: 'Succès',
         description: 'Vos informations personnelles ont été mises à jour.',

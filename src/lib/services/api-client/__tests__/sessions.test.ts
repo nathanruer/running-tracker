@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getSessions,
+  getSessionsCount,
   addSession,
   updateSession,
   deleteSession,
   bulkImportSessions,
+  bulkDeleteSessions,
   getSessionTypes,
+  addPlannedSession,
+  completeSession,
 } from '@/lib/services/api-client/sessions';
 import * as clientModule from '@/lib/services/api-client/client';
 
@@ -61,6 +65,34 @@ describe('Sessions API', () => {
       await getSessions(5, 10, 'Fractionné');
 
       expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions?limit=5&offset=10&type=Fractionn%C3%A9');
+    });
+
+    it('includes sort, search and dateFrom', async () => {
+      mockApiRequest.mockResolvedValue({ sessions: [] });
+
+      await getSessions(10, 0, 'all', 'date:asc', 'test', '2024-01-01');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions?limit=10&sort=date%3Aasc&search=test&dateFrom=2024-01-01');
+    });
+  });
+
+  describe('getSessionsCount', () => {
+    it('fetches count without filters', async () => {
+      mockApiRequest.mockResolvedValue({ count: 4 });
+
+      const result = await getSessionsCount();
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/count');
+      expect(result).toBe(4);
+    });
+
+    it('fetches count with filters', async () => {
+      mockApiRequest.mockResolvedValue({ count: 2 });
+
+      const result = await getSessionsCount('Footing', 'test', '2024-01-01');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/count?type=Footing&search=test&dateFrom=2024-01-01');
+      expect(result).toBe(2);
     });
   });
 
@@ -134,6 +166,20 @@ describe('Sessions API', () => {
     });
   });
 
+  describe('bulkDeleteSessions', () => {
+    it('deletes multiple sessions', async () => {
+      mockApiRequest.mockResolvedValue({ count: 2, message: '2 séances supprimées' });
+
+      const result = await bulkDeleteSessions(['a', 'b']);
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/bulk', {
+        method: 'DELETE',
+        body: JSON.stringify({ ids: ['a', 'b'] }),
+      });
+      expect(result).toEqual({ count: 2, message: '2 séances supprimées' });
+    });
+  });
+
   describe('getSessionTypes', () => {
     it('fetches available session types', async () => {
       const types = ['Footing', 'Fractionné', 'Sortie longue'];
@@ -143,6 +189,36 @@ describe('Sessions API', () => {
 
       expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/types');
       expect(result).toEqual(types);
+    });
+  });
+
+  describe('addPlannedSession', () => {
+    it('creates a planned session', async () => {
+      const payload = { date: '2024-01-15', sessionType: 'Footing' };
+      mockApiRequest.mockResolvedValue({ session: { id: 'p1', ...payload } });
+
+      const result = await addPlannedSession(payload);
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/planned', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      expect(result).toEqual({ id: 'p1', ...payload });
+    });
+  });
+
+  describe('completeSession', () => {
+    it('completes a session', async () => {
+      const payload = { date: '2024-01-15', sessionType: 'Footing' };
+      mockApiRequest.mockResolvedValue({ id: 'c1', ...payload });
+
+      const result = await completeSession('c1', payload as never);
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/c1/complete', {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      expect(result).toEqual({ id: 'c1', ...payload });
     });
   });
 });

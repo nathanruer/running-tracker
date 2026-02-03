@@ -1,42 +1,47 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatView } from '../chat-view';
 import { useChatMutations } from '../../hooks/use-chat-mutations';
+import { useStreamingChat } from '../../hooks/use-streaming-chat';
+import { useConversationCreation } from '../../hooks/use-conversation-creation';
 
 vi.mock('../message-list', () => ({
-  MessageList: ({ messages, isLoading, isSending }: {
+  MessageList: ({ messages, isLoading, isStreaming }: {
     messages: unknown[];
     isLoading: boolean;
-    isSending: boolean;
+    isStreaming: boolean;
   }) => (
     <div data-testid="message-list">
       {isLoading && <div>Loading...</div>}
-      {isSending && <div>Sending...</div>}
+      {isStreaming && <div>Streaming...</div>}
       <div>Messages: {messages.length}</div>
     </div>
   ),
 }));
 
-const mockSendMessage = vi.fn();
+const mockSendStreamingMessage = vi.fn();
 const mockAcceptSession = vi.fn();
 const mockDeleteSession = vi.fn();
-const mockReplace = vi.fn();
 
-let mockIsSending = false;
+let mockIsStreaming = false;
 
 vi.mock('../../hooks/use-chat-mutations');
+vi.mock('../../hooks/use-streaming-chat');
+vi.mock('../../hooks/use-conversation-creation');
 
 const mockGetConversation = vi.fn();
 
 vi.mock('@/lib/services/api-client', () => ({
   getSessions: vi.fn(() => Promise.resolve([])),
   getConversation: (...args: unknown[]) => mockGetConversation(...args),
+  createConversationWithMessage: vi.fn(() => Promise.resolve({ conversationId: 'new-id', messageId: 'msg-id' })),
 }));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    replace: mockReplace,
+    replace: vi.fn(),
     push: vi.fn(),
   }),
 }));
@@ -58,17 +63,33 @@ const createWrapper = () => {
 vi.mocked(useChatMutations).mockImplementation(() => ({
   acceptSession: mockAcceptSession,
   deleteSession: mockDeleteSession,
-  sendMessage: mockSendMessage,
-  isSending: mockIsSending,
+  sendMessage: vi.fn(),
   isAccepting: false,
   isDeleting: false,
+  isSending: false,
   loadingSessionId: null,
+}));
+
+vi.mocked(useStreamingChat).mockImplementation(() => ({
+  streamingContent: '',
+  isStreaming: mockIsStreaming,
+  sendStreamingMessage: mockSendStreamingMessage,
+  cancelStream: vi.fn(),
+}));
+
+const mockCreateAndRedirect = vi.fn();
+let mockIsCreating = false;
+
+vi.mocked(useConversationCreation).mockImplementation(() => ({
+  isCreating: mockIsCreating,
+  createAndRedirect: mockCreateAndRedirect,
 }));
 
 describe('ChatView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsSending = false;
+    mockIsStreaming = false;
+    mockIsCreating = false;
   });
 
   describe('No conversation selected', () => {
@@ -82,6 +103,36 @@ describe('ChatView', () => {
       expect(screen.getByPlaceholderText('Programme moi 4 séances pour cette semaine...')).toBeInTheDocument();
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
+
+    it('should create conversation when sending without conversationId', async () => {
+      const user = userEvent.setup();
+
+      render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
+
+      const input = screen.getByPlaceholderText('Programme moi 4 séances pour cette semaine...');
+      await user.type(input, 'Bonjour');
+      await user.click(screen.getByTestId('chat-send-button'));
+
+      expect(mockCreateAndRedirect).toHaveBeenCalledWith('Bonjour');
+    });
+
+    it('should send on Enter in empty state', async () => {
+      render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
+
+      const input = screen.getByPlaceholderText('Programme moi 4 séances pour cette semaine...');
+      fireEvent.change(input, { target: { value: 'Salut' } });
+      fireEvent.keyDown(input, { key: 'Enter', shiftKey: false });
+
+      expect(mockCreateAndRedirect).toHaveBeenCalledWith('Salut');
+    });
+
+    it('should disable input when creating', () => {
+      mockIsCreating = true;
+      render(<ChatView conversationId={null} />, { wrapper: createWrapper() });
+
+      expect(screen.getByTestId('chat-input')).toBeDisabled();
+      expect(screen.getByTestId('chat-send-button')).toBeDisabled();
+    });
   });
 
   describe('Conversation loaded', () => {
@@ -92,7 +143,7 @@ describe('ChatView', () => {
         chat_messages: [
           {
             id: 'msg-1',
-            role: 'user',
+            role: 'assistant',
             content: 'Hello',
             recommendations: null,
             createdAt: new Date().toISOString(),
@@ -133,11 +184,19 @@ describe('ChatView', () => {
       mockGetConversation.mockResolvedValue({
         id: 'conv-1',
         title: 'Ma conversation',
-        chat_messages: [],
+        chat_messages: [
+          {
+            id: 'msg-1',
+            role: 'assistant',
+            content: 'Hello',
+            recommendations: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
       });
     });
 
-    it('should call sendMessage when send button is clicked', async () => {
+    it('should call sendStreamingMessage when send button is clicked', async () => {
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
@@ -155,7 +214,7 @@ describe('ChatView', () => {
         fireEvent.click(sendButton);
       });
 
-      expect(mockSendMessage).toHaveBeenCalledWith('Test message');
+      expect(mockSendStreamingMessage).toHaveBeenCalledWith('conv-1', 'Test message');
     });
 
     it('should clear input after sending message', async () => {
@@ -192,7 +251,7 @@ describe('ChatView', () => {
         fireEvent.keyDown(input, { key: 'Enter', shiftKey: false });
       });
 
-      expect(mockSendMessage).toHaveBeenCalledWith('Test message');
+      expect(mockSendStreamingMessage).toHaveBeenCalledWith('conv-1', 'Test message');
     });
 
     it('should not send message on Shift+Enter', async () => {
@@ -207,16 +266,18 @@ describe('ChatView', () => {
       fireEvent.change(input, { target: { value: 'Test message' } });
       fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
 
-      expect(mockSendMessage).not.toHaveBeenCalled();
+      expect(mockSendStreamingMessage).not.toHaveBeenCalled();
     });
 
-    it('should disable input and button when sending', async () => {
-      mockIsSending = true;
+    it('should disable input and button when streaming', async () => {
+      mockIsStreaming = true;
 
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
-      expect(screen.getByPlaceholderText('Envoyez un message...')).toBeDisabled();
-      expect(screen.getByRole('button')).toBeDisabled();
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Envoyez un message...')).toBeDisabled();
+        expect(screen.getByRole('button')).toBeDisabled();
+      });
     });
 
     it('should disable send button when input is empty', async () => {
@@ -225,6 +286,81 @@ describe('ChatView', () => {
       await waitFor(() => {
         expect(screen.getByRole('button')).toBeDisabled();
       });
+    });
+
+    it('should request streaming when last message is user', async () => {
+      mockGetConversation.mockResolvedValue({
+        id: 'conv-1',
+        title: 'Ma conversation',
+        chat_messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            content: 'Hello',
+            recommendations: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
+
+      render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(mockSendStreamingMessage).toHaveBeenCalledWith('conv-1', 'Hello', {
+          skipOptimisticUserMessage: true,
+          skipSaveUserMessage: true,
+        });
+      });
+    });
+
+    it('should not request streaming when last message is assistant', async () => {
+      mockGetConversation.mockResolvedValue({
+        id: 'conv-1',
+        title: 'Ma conversation',
+        chat_messages: [
+          {
+            id: 'msg-1',
+            role: 'assistant',
+            content: 'Hello',
+            recommendations: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
+
+      render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('message-list')).toBeInTheDocument();
+      });
+
+      expect(mockSendStreamingMessage).not.toHaveBeenCalled();
+    });
+
+    it('should only stream once for the same last message', async () => {
+      mockGetConversation.mockResolvedValue({
+        id: 'conv-1',
+        title: 'Ma conversation',
+        chat_messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            content: 'Hello',
+            recommendations: null,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
+
+      const { rerender } = render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(mockSendStreamingMessage).toHaveBeenCalledTimes(1);
+      });
+
+      rerender(<ChatView conversationId="conv-1" />);
+
+      expect(mockSendStreamingMessage).toHaveBeenCalledTimes(1);
     });
   });
 });

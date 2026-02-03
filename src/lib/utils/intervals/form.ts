@@ -1,4 +1,5 @@
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
+import { isFractionneType } from '@/lib/utils/session-type';
 
 export interface IntervalFormValues {
   sessionType: string;
@@ -28,7 +29,7 @@ export function transformIntervalData(
   values: IntervalFormValues,
   entryMode: 'quick' | 'detailed' = 'quick'
 ): IntervalDetails | null {
-  if (values.sessionType !== 'Fractionné') {
+  if (!isFractionneType(values.sessionType)) {
     return null;
   }
 
@@ -73,7 +74,7 @@ export function transformIntervalData(
  */
 export function hasIntervalData(values: IntervalFormValues): boolean {
   return (
-    values.sessionType === 'Fractionné' &&
+    isFractionneType(values.sessionType) &&
     (!!values.workoutType ||
       !!values.repetitionCount ||
       !!values.targetEffortPace ||

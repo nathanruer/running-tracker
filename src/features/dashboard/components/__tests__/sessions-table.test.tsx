@@ -5,6 +5,17 @@ import { SessionsTable } from '../sessions-table';
 import type { TrainingSession } from '@/lib/types';
 import type { SortConfig } from '@/lib/domain/sessions';
 
+let intersectionCallback: ((entries: Array<{ isIntersecting: boolean }>) => void) | null = null;
+
+global.IntersectionObserver = class {
+  constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+    intersectionCallback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as never;
+
 const mockSessions: TrainingSession[] = [
   {
     id: '1',
@@ -308,5 +319,40 @@ describe('SessionsTable', () => {
     
     const importItem = screen.getByText(/Importer \(Bientôt\)/i);
     expect(importItem).toBeInTheDocument();
+  });
+
+  it('should clear active filters', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionsTable
+        {...defaultProps}
+        selectedType="Fractionné"
+        searchQuery="test"
+        period="week"
+      />
+    );
+
+    const clearButton = screen.getByRole('button', { name: /effacer/i });
+    await user.click(clearButton);
+
+    expect(mockOnTypeChange).toHaveBeenCalledWith('all');
+    expect(mockOnSearchChange).toHaveBeenCalledWith('');
+    expect(mockOnPeriodChange).toHaveBeenCalledWith('all');
+  });
+
+  it('should call onLoadMore when observer intersects', () => {
+    const onLoadMore = vi.fn();
+    render(
+      <SessionsTable
+        {...defaultProps}
+        hasMore={true}
+        isFetchingNextPage={false}
+        onLoadMore={onLoadMore}
+      />
+    );
+
+    intersectionCallback?.([{ isIntersecting: true }]);
+
+    expect(onLoadMore).toHaveBeenCalled();
   });
 });

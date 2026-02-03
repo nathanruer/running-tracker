@@ -6,10 +6,20 @@ import {
   toggleColumnSort,
   getClientSortValue,
   compareValues,
+  SORTABLE_COLUMNS,
   type SortConfig,
 } from '../sorting';
 
 describe('sorting', () => {
+  describe('SORTABLE_COLUMNS', () => {
+    it('should have a transform function for duration that converts minutes to seconds', () => {
+      const durationConfig = SORTABLE_COLUMNS.duration;
+      expect(durationConfig.transform).toBeDefined();
+      // 45 minutes should become 2700 seconds
+      expect(durationConfig.transform!(45)).toBe(2700);
+    });
+  });
+
   describe('parseSortParam', () => {
     it('should return empty array for null param', () => {
       expect(parseSortParam(null)).toEqual([]);
@@ -174,6 +184,21 @@ describe('sorting', () => {
       expect(getClientSortValue(session, 'sessionNumber')).toBe(5);
     });
 
+    it('should return null for null sessionNumber', () => {
+      const session = { status: 'completed', sessionNumber: null };
+      expect(getClientSortValue(session, 'sessionNumber')).toBeNull();
+    });
+
+    it('should return week for session', () => {
+      const session = { status: 'completed', week: 3 };
+      expect(getClientSortValue(session, 'week')).toBe(3);
+    });
+
+    it('should return null for null week', () => {
+      const session = { status: 'completed', week: null };
+      expect(getClientSortValue(session, 'week')).toBeNull();
+    });
+
     it('should return date as timestamp', () => {
       const session = { status: 'completed', date: '2024-01-15' };
       const expected = new Date('2024-01-15').getTime();
@@ -205,9 +230,65 @@ describe('sorting', () => {
       expect(getClientSortValue(session, 'duration')).toBe(2700);
     });
 
+    it('should return null for planned session with no targetDuration', () => {
+      const session = { status: 'planned', duration: null, targetDuration: null };
+      expect(getClientSortValue(session, 'duration')).toBeNull();
+    });
+
     it('should return lowercase sessionType', () => {
       const session = { sessionType: 'Endurance' };
       expect(getClientSortValue(session, 'sessionType')).toBe('endurance');
+    });
+
+    it('should return null for undefined sessionType', () => {
+      const session = { status: 'completed' };
+      expect(getClientSortValue(session, 'sessionType')).toBeNull();
+    });
+
+    it('should return avgPace for completed session', () => {
+      const session = { status: 'completed', avgPace: '5:30' };
+      expect(getClientSortValue(session, 'avgPace')).toBe(330);
+    });
+
+    it('should return targetPace for planned session', () => {
+      const session = { status: 'planned', avgPace: null, targetPace: '6:00' };
+      expect(getClientSortValue(session, 'avgPace')).toBe(360);
+    });
+
+    it('should return avgHeartRate for completed session', () => {
+      const session = { status: 'completed', avgHeartRate: 150 };
+      expect(getClientSortValue(session, 'avgHeartRate')).toBe(150);
+    });
+
+    it('should return null for completed session with no avgHeartRate', () => {
+      const session = { status: 'completed', avgHeartRate: null };
+      expect(getClientSortValue(session, 'avgHeartRate')).toBeNull();
+    });
+
+    it('should return targetHeartRateBpm for planned session', () => {
+      const session = { status: 'planned', avgHeartRate: null, targetHeartRateBpm: 145 };
+      expect(getClientSortValue(session, 'avgHeartRate')).toBe(145);
+    });
+
+    it('should return targetHeartRateBpm as string for planned session', () => {
+      // parseFloat('140-150') returns 140, not the average
+      const session = { status: 'planned', avgHeartRate: null, targetHeartRateBpm: '140-150' };
+      expect(getClientSortValue(session, 'avgHeartRate')).toBe(140);
+    });
+
+    it('should return perceivedExertion for completed session', () => {
+      const session = { status: 'completed', perceivedExertion: 7 };
+      expect(getClientSortValue(session, 'perceivedExertion')).toBe(7);
+    });
+
+    it('should return targetRPE for planned session', () => {
+      const session = { status: 'planned', perceivedExertion: null, targetRPE: 6 };
+      expect(getClientSortValue(session, 'perceivedExertion')).toBe(6);
+    });
+
+    it('should return null for planned session with no targetRPE', () => {
+      const session = { status: 'planned', perceivedExertion: null, targetRPE: null };
+      expect(getClientSortValue(session, 'perceivedExertion')).toBeNull();
     });
   });
 

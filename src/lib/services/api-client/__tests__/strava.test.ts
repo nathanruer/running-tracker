@@ -178,4 +178,16 @@ describe('Strava API', () => {
       expect(result.intervalDetails).toBeDefined();
     });
   });
+
+  describe('getImportedStravaIds', () => {
+    it('fetches imported Strava ids', async () => {
+      mockApiRequest.mockResolvedValue(['id-1', 'id-2']);
+
+      const { getImportedStravaIds } = await import('@/lib/services/api-client/strava');
+      const result = await getImportedStravaIds();
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/strava-ids');
+      expect(result).toEqual(['id-1', 'id-2']);
+    });
+  });
 });

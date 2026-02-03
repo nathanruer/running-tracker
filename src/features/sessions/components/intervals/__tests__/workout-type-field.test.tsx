@@ -4,6 +4,20 @@ import { WorkoutTypeField, WORKOUT_TYPES } from '../workout-type-field';
 import { Form, FormField } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ children, onValueChange, value }: { children: React.ReactNode; onValueChange?: (value: string) => void; value?: string }) => (
+    <div data-testid="select" data-value={value}>
+      <button type="button" onClick={() => onValueChange?.('custom')}>custom</button>
+      <button type="button" onClick={() => onValueChange?.('TEMPO')}>tempo</button>
+      {children}
+    </div>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectValue: () => <span>value</span>,
+}));
+
 const FormWrapper = ({ children }: { children: React.ReactElement }) => {
   const form = useForm({
     defaultValues: { workoutType: '' },
@@ -32,7 +46,7 @@ describe('WorkoutTypeField', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByTestId('select')).toBeInTheDocument();
   });
 
   it('should render label', () => {
@@ -132,7 +146,7 @@ describe('WorkoutTypeField', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByTestId('select')).toBeInTheDocument();
   });
 
   it('should handle undefined value', () => {
@@ -147,7 +161,47 @@ describe('WorkoutTypeField', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByTestId('select')).toBeInTheDocument();
+  });
+
+  it('should switch to custom type when selecting custom', () => {
+    const onCustomTypeChange = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <FormWrapper>
+        <WorkoutTypeField
+          value=""
+          onChange={onChange}
+          isCustomType={false}
+          onCustomTypeChange={onCustomTypeChange}
+        />
+      </FormWrapper>
+    );
+
+    fireEvent.click(screen.getByText('custom'));
+
+    expect(onCustomTypeChange).toHaveBeenCalledWith(true);
+    expect(onChange).toHaveBeenCalledWith('');
+  });
+
+  it('should update value when selecting predefined type', () => {
+    const onCustomTypeChange = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <FormWrapper>
+        <WorkoutTypeField
+          value=""
+          onChange={onChange}
+          isCustomType={false}
+          onCustomTypeChange={onCustomTypeChange}
+        />
+      </FormWrapper>
+    );
+
+    fireEvent.click(screen.getByText('tempo'));
+
+    expect(onChange).toHaveBeenCalledWith('TEMPO');
+    expect(onCustomTypeChange).not.toHaveBeenCalled();
   });
 });
 

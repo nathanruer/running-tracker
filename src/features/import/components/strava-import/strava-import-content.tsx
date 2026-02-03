@@ -17,6 +17,7 @@ import { useTableSelection } from '@/hooks/use-table-selection';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorMessage } from '@/components/ui/error-message';
+import { queryKeys } from '@/lib/constants/query-keys';
 import { StravaConnectScreen } from './strava-connect-screen';
 import { StravaToolbar } from './strava-toolbar';
 import { StravaActivitiesTable } from './strava-activities-table';
@@ -200,7 +201,7 @@ export function StravaImportContent({
         clearSelection();
 
         if (queryClient) {
-          queryClient.invalidateQueries({ queryKey: ['sessions'] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
         }
 
         if (onBulkImportSuccess) {

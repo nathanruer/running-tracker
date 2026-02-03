@@ -8,6 +8,7 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { LogOut } from "lucide-react"
 import { disconnectStrava } from "@/lib/services/api-client/auth"
 import { type User } from "@/lib/types"
+import { queryKeys } from "@/lib/constants/query-keys"
 
 interface StravaAccountCardProps {
   stravaId: string | null | undefined
@@ -31,7 +32,7 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
         variant: "default",
       })
       
-      queryClient.setQueryData<User>(['user'], (oldUser) => {
+      queryClient.setQueryData<User>(queryKeys.user(), (oldUser) => {
         if (oldUser) {
           return {
             ...oldUser,

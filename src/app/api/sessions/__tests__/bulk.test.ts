@@ -4,6 +4,7 @@ import { POST, DELETE } from '../bulk/route';
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { recalculateSessionNumbers } from '@/lib/domain/sessions';
+import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
 
 vi.mock('@/lib/database', () => ({
   prisma: {
@@ -20,6 +21,10 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/domain/sessions', () => ({
   recalculateSessionNumbers: vi.fn(),
+}));
+
+vi.mock('@/lib/domain/sessions/enrichment', () => ({
+  enrichSessionWithWeather: vi.fn(),
 }));
 
 vi.mock('@/lib/infrastructure/logger', () => ({
@@ -167,6 +172,53 @@ describe('/api/sessions/bulk', () => {
 
       expect(response.status).toBe(500);
       expect(data).toEqual({ error: 'Database error' });
+    });
+
+    it('should enrich sessions with weather from strava data when no weather provided', async () => {
+      const weather = { temperature: 15, conditionCode: 1, windSpeed: 5, precipitation: 0 };
+      const stravaData = {
+        id: 12345,
+        name: 'Morning Run',
+        distance: 10000,
+        moving_time: 3600,
+        elapsed_time: 3700,
+        total_elevation_gain: 50,
+        type: 'Run',
+        start_date: '2025-12-27T10:00:00Z',
+        start_date_local: '2025-12-27T11:00:00',
+        average_speed: 2.78,
+        max_speed: 3.5,
+        start_latlng: [48.8566, 2.3522],
+      };
+
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(enrichSessionWithWeather).mockResolvedValue(weather);
+      vi.mocked(prisma.training_sessions.createMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(recalculateSessionNumbers).mockResolvedValue(true);
+
+      const request = new NextRequest('http://localhost/api/sessions/bulk', {
+        method: 'POST',
+        body: JSON.stringify({
+          sessions: [
+            {
+              sessionType: 'Footing',
+              date: '2025-12-27T10:00:00.000Z',
+              distance: 10,
+              duration: '01:00:00',
+              avgPace: '06:00',
+              avgHeartRate: 150,
+              stravaData,
+            },
+          ],
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(enrichSessionWithWeather).toHaveBeenCalled();
+      expect(data.count).toBe(1);
     });
   });
 

@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { ActivityHeatmap } from './activity-heatmap';
 import { CalendarViewInline } from './calendar-view-inline';
@@ -20,6 +21,7 @@ import { IntervalDetailsView } from '@/features/dashboard/components/interval-de
 import { formatMinutesToHHMMSS, formatDisplayDuration } from '@/lib/utils/duration';
 import { formatDisplayPace } from '@/lib/utils/pace';
 import { capitalize } from '@/lib/utils/text';
+import { isFractionneType } from '@/lib/utils/session-type';
 
 interface ActivityHistoryProps {
   sessions: TrainingSession[];
@@ -115,10 +117,10 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
             <DialogTitle className="text-2xl font-bold tracking-tight">
               {selectedDate && capitalize(format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr }))}
             </DialogTitle>
-            <p className="text-base text-muted-foreground font-normal flex items-center gap-2 mt-1">
+            <DialogDescription className="text-base text-muted-foreground font-normal flex items-center gap-2 mt-1">
               <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
               {selectedSessions.length} séance{selectedSessions.length > 1 ? 's' : ''} répertoriée{selectedSessions.length > 1 ? 's' : ''}
-            </p>
+            </DialogDescription>
           </DialogHeader>
 
           <div 
@@ -201,7 +203,7 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
                   </div>
                 )}
 
-                {session.sessionType === 'Fractionné' && session.intervalDetails && (
+                {isFractionneType(session.sessionType) && session.intervalDetails && (
                   <div className="pt-8 border-t border-border/30">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="h-6 w-1 rounded-full bg-violet-600" />

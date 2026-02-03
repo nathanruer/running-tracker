@@ -1,7 +1,30 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExportWeeklyAnalytics } from '../export-weekly-analytics';
 import type { WeeklyChartDataPoint } from '@/lib/domain/analytics/weekly-calculator';
+
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <button type="button" onClick={onClick}>{children}</button>
+  ),
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+const mockGenerateWeeklyCSV = vi.fn(() => 'csv');
+const mockGenerateWeeklyJSON = vi.fn(() => 'json');
+const mockGenerateWeeklyXLSX = vi.fn(() => new Blob(['xlsx']));
+const mockFormatWeeklyData = vi.fn(() => [{ semaine: 'S01' }]);
+const originalCreateElement = document.createElement;
+
+vi.mock('@/lib/utils/export/weekly-export', () => ({
+  formatWeeklyData: () => mockFormatWeeklyData(),
+  generateWeeklyCSV: () => mockGenerateWeeklyCSV(),
+  generateWeeklyJSON: () => mockGenerateWeeklyJSON(),
+  generateWeeklyXLSX: () => mockGenerateWeeklyXLSX(),
+}));
 
 const mockData: WeeklyChartDataPoint[] = [
   {
@@ -45,6 +68,22 @@ const mockData: WeeklyChartDataPoint[] = [
 ];
 
 describe('ExportWeeklyAnalytics', () => {
+  beforeEach(() => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+      if (tagName === 'a') {
+        const anchor = originalCreateElement.call(document, tagName) as HTMLAnchorElement;
+        anchor.click = vi.fn();
+        return anchor;
+      }
+      return originalCreateElement.call(document, tagName);
+    });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should render export button', () => {
     render(<ExportWeeklyAnalytics data={mockData} />);
 
@@ -81,5 +120,25 @@ describe('ExportWeeklyAnalytics', () => {
 
     const button = screen.getByTestId('btn-analytics-export');
     expect(button).toHaveClass('rounded-xl');
+  });
+
+  it('exports CSV when clicking CSV item', () => {
+    render(<ExportWeeklyAnalytics data={mockData} />);
+    fireEvent.click(screen.getByText('Fichier CSV'));
+    expect(mockFormatWeeklyData).toHaveBeenCalled();
+    expect(mockGenerateWeeklyCSV).toHaveBeenCalled();
+    expect(URL.createObjectURL).toHaveBeenCalled();
+  });
+
+  it('exports JSON when clicking JSON item', () => {
+    render(<ExportWeeklyAnalytics data={mockData} />);
+    fireEvent.click(screen.getByText('Fichier JSON'));
+    expect(mockGenerateWeeklyJSON).toHaveBeenCalled();
+  });
+
+  it('exports XLSX when clicking XLSX item', () => {
+    render(<ExportWeeklyAnalytics data={mockData} />);
+    fireEvent.click(screen.getByText('Fichier Excel (XLSX)'));
+    expect(mockGenerateWeeklyXLSX).toHaveBeenCalled();
   });
 });

@@ -4,6 +4,20 @@ import { SessionTypeSelector, PREDEFINED_TYPES } from '../session-type-selector'
 import { Form, FormField } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 
+vi.mock('@/components/ui/select', () => ({
+  Select: ({ children, onValueChange }: { children: React.ReactNode; onValueChange?: (value: string) => void }) => (
+    <div>
+      <button type="button" onClick={() => onValueChange?.('custom')}>custom</button>
+      <button type="button" onClick={() => onValueChange?.('Footing')}>footing</button>
+      {children}
+    </div>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
+  SelectValue: () => <span>value</span>,
+}));
+
 const FormWrapper = ({ children, defaultValue = '' }: { children: React.ReactElement; defaultValue?: string }) => {
   const form = useForm({
     defaultValues: { sessionType: defaultValue },
@@ -118,6 +132,46 @@ describe('SessionTypeSelector', () => {
     );
 
     expect(screen.getByTestId('input-custom-session-type')).toHaveValue('Mon type');
+  });
+
+  it('should switch to custom when selecting custom option', () => {
+    const onCustomTypeChange = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <FormWrapper>
+        <SessionTypeSelector
+          value=""
+          onChange={onChange}
+          isCustomType={false}
+          onCustomTypeChange={onCustomTypeChange}
+        />
+      </FormWrapper>
+    );
+
+    fireEvent.click(screen.getByText('custom'));
+
+    expect(onCustomTypeChange).toHaveBeenCalledWith(true);
+    expect(onChange).toHaveBeenCalledWith('');
+  });
+
+  it('should update value when selecting predefined type', () => {
+    const onCustomTypeChange = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <FormWrapper>
+        <SessionTypeSelector
+          value=""
+          onChange={onChange}
+          isCustomType={false}
+          onCustomTypeChange={onCustomTypeChange}
+        />
+      </FormWrapper>
+    );
+
+    fireEvent.click(screen.getByText('footing'));
+
+    expect(onChange).toHaveBeenCalledWith('Footing');
+    expect(onCustomTypeChange).not.toHaveBeenCalled();
   });
 });
 

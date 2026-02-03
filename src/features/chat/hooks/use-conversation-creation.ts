@@ -1,79 +1,46 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createConversation, sendMessage, type Conversation } from '@/lib/services/api-client';
-import type { Message } from '../components/chat-view';
+import { createConversationWithMessage, type Conversation } from '@/lib/services/api-client';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 interface UseConversationCreationProps {
-  conversationId: string | null;
   onConversationCreated?: (id: string) => void;
 }
 
-export function useConversationCreation({ conversationId, onConversationCreated }: UseConversationCreationProps) {
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
-  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+export function useConversationCreation({ onConversationCreated }: UseConversationCreationProps) {
+  const [isCreating, setIsCreating] = useState(false);
   const queryClient = useQueryClient();
 
-  const [prevId, setPrevId] = useState(conversationId);
-  if (conversationId !== prevId) {
-    setPrevId(conversationId);
-    if (optimisticMessages.length > 0) {
-      setOptimisticMessages([]);
-    }
-    if (isWaitingForResponse) {
-      setIsWaitingForResponse(false);
-    }
-  }
+  const createAndRedirect = useCallback(async (userMessage: string) => {
+    if (isCreating) return;
 
-  const createConversationWithMessage = async (userMessage: string) => {
-    const optimisticUserMessage: Message = {
-      id: 'temp-user',
-      role: 'user',
-      content: userMessage,
-      recommendations: null,
-      createdAt: new Date().toISOString(),
-    };
-    setOptimisticMessages([optimisticUserMessage]);
-    setIsWaitingForResponse(true);
+    setIsCreating(true);
 
     try {
+      const { conversationId } = await createConversationWithMessage(userMessage);
+
       const title = userMessage.length > 50
         ? userMessage.substring(0, 50) + '...'
         : userMessage;
 
-      const newConversation = await createConversation(title);
-      const newConversationId = newConversation.id;
-
-      const messageData = await sendMessage(newConversationId, userMessage);
-
-      queryClient.setQueryData(['conversation', newConversationId], {
-        id: newConversationId,
-        title,
-        chat_messages: [messageData.userMessage, messageData.assistantMessage],
-      });
-
-      queryClient.setQueryData(['conversations'], (old: Conversation[] | undefined) => {
-        const newConvSync: Conversation = {
-          id: newConversationId,
+      queryClient.setQueryData(queryKeys.conversations(), (old: Conversation[] | undefined) => {
+        const newConv: Conversation = {
+          id: conversationId,
           title,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        return old ? [newConvSync, ...old] : [newConvSync];
+        return old ? [newConv, ...old] : [newConv];
       });
 
-      onConversationCreated?.(newConversationId);
-
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-    } catch (error) {
-      setOptimisticMessages([]);
-      setIsWaitingForResponse(false);
-      throw error;
+      onConversationCreated?.(conversationId);
+    } finally {
+      setIsCreating(false);
     }
-  };
+  }, [isCreating, queryClient, onConversationCreated]);
 
   return {
-    optimisticMessages,
-    isWaitingForResponse,
-    createConversationWithMessage,
+    isCreating,
+    createAndRedirect,
   };
 }

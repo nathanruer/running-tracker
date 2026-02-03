@@ -4,6 +4,14 @@ import { GET, PUT } from '../me/route';
 import { prisma } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/auth';
 
+vi.mock('@/lib/infrastructure/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 vi.mock('@/lib/database', () => ({
   prisma: {
     users: {

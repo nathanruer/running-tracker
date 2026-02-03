@@ -9,12 +9,16 @@ vi.mock('@/lib/services/api-client', () => ({
   completeSession: vi.fn(),
 }));
 
+const handleError = vi.fn();
+const handleSuccess = vi.fn();
+const clearError = vi.fn();
+
 vi.mock('@/hooks/use-error-handler', () => ({
   useErrorHandler: () => ({
     error: null,
-    handleError: vi.fn(),
-    handleSuccess: vi.fn(),
-    clearError: vi.fn(),
+    handleError,
+    handleSuccess,
+    clearError,
   }),
 }));
 
@@ -249,5 +253,69 @@ describe('useSessionForm', () => {
     });
 
     expect(result.current.form.formState.errors.date).toBeUndefined();
+  });
+
+  it('should auto-calculate pace when duration and distance change', async () => {
+    const { result } = renderHook(() => useSessionForm({ mode: 'create', onClose }));
+
+    act(() => {
+      result.current.form.setValue('duration', '01:00:00');
+      result.current.form.setValue('distance', 10);
+    });
+
+    expect(result.current.form.getValues('avgPace')).toBe('06:00');
+  });
+
+  it('should call addSession and onSuccess in create mode', async () => {
+    const { addSession } = await import('@/lib/services/api-client');
+    const onSuccess = vi.fn();
+    vi.mocked(addSession).mockResolvedValue({ id: 'new-session' } as TrainingSession);
+
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'create',
+        onClose,
+        onSuccess,
+      })
+    );
+
+    act(() => {
+      result.current.form.setValue('duration', '01:00:00');
+      result.current.form.setValue('distance', 10);
+      result.current.form.setValue('avgPace', '06:00');
+    });
+
+    await act(async () => {
+      await result.current.onSubmit(result.current.form.getValues());
+    });
+
+    expect(addSession).toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+    expect(handleSuccess).toHaveBeenCalled();
+  });
+
+  it('should map validation errors to form fields', async () => {
+    const { addSession } = await import('@/lib/services/api-client');
+    const error = new Error('Validation');
+    (error as { details?: unknown }).details = [
+      { path: ['intervalDetails', 'effortDuration'], message: 'expected string, received ""' },
+    ];
+    vi.mocked(addSession).mockRejectedValue(error);
+
+    const { result } = renderHook(() => useSessionForm({ mode: 'create', onClose }));
+
+    act(() => {
+      result.current.form.setValue('duration', '01:00:00');
+      result.current.form.setValue('distance', 10);
+      result.current.form.setValue('avgPace', '06:00');
+    });
+
+    await act(async () => {
+      await result.current.onSubmit(result.current.form.getValues());
+    });
+
+    expect(result.current.form.formState.errors.effortDuration?.message).toBe('Ce champ est requis');
+    expect(handleError).not.toHaveBeenCalled();
   });
 });

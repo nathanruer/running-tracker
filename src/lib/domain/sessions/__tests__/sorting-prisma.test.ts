@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildPrismaOrderBy,
   buildRawOrderByClause,
+  getSortedSessionsQuery,
   isSimpleSortConfig,
 } from '../sorting-prisma';
 import type { SortConfig } from '../sorting';
@@ -83,6 +84,20 @@ describe('sorting-prisma', () => {
       const result = buildRawOrderByClause(config);
       expect(result).toContain('ASC NULLS LAST');
     });
+
+    it('should build duration order by using interval extraction', () => {
+      const config: SortConfig = [{ column: 'duration', direction: 'asc' }];
+      const result = buildRawOrderByClause(config);
+      expect(result).toContain('EXTRACT(EPOCH FROM "duration"::interval)');
+      expect(result).toContain('"targetDuration" * 60');
+    });
+
+    it('should build avgHeartRate order by casting target', () => {
+      const config: SortConfig = [{ column: 'avgHeartRate', direction: 'asc' }];
+      const result = buildRawOrderByClause(config);
+      expect(result).toContain('"avgHeartRate"');
+      expect(result).toContain('"targetHeartRateBpm"::integer');
+    });
   });
 
   describe('isSimpleSortConfig', () => {
@@ -109,6 +124,53 @@ describe('sorting-prisma', () => {
         { column: 'distance', direction: 'asc' },
       ];
       expect(isSimpleSortConfig(config)).toBe(false);
+    });
+  });
+
+  describe('getSortedSessionsQuery', () => {
+    it('should include filters and pagination when provided', () => {
+      const query = getSortedSessionsQuery(
+        'user-1',
+        [{ column: 'duration', direction: 'asc' }],
+        { status: 'completed', sessionType: 'Footing', limit: 10, offset: 20 }
+      );
+
+      const sql = query.strings.join('');
+
+      expect(sql).toContain('"userId" = \'user-1\'');
+      expect(sql).toContain('"status" = \'completed\'');
+      expect(sql).toContain('"sessionType" = \'Footing\'');
+      expect(sql).toContain('ORDER BY');
+      expect(sql).toContain('LIMIT 10');
+      expect(sql).toContain('OFFSET 20');
+    });
+
+    it('should skip all filters and pagination when not provided', () => {
+      const query = getSortedSessionsQuery(
+        'user-1',
+        [],
+        { status: 'all', sessionType: 'all' }
+      );
+
+      const sql = query.strings.join('');
+
+      expect(sql).toContain('"userId" = \'user-1\'');
+      expect(sql).not.toContain('"status" =');
+      expect(sql).not.toContain('"sessionType" =');
+      expect(sql).toContain('ORDER BY "status" DESC, "sessionNumber" DESC');
+    });
+
+    it('should include limit without offset when offset is missing', () => {
+      const query = getSortedSessionsQuery(
+        'user-1',
+        [{ column: 'distance', direction: 'desc' }],
+        { limit: 5 }
+      );
+
+      const sql = query.strings.join('');
+
+      expect(sql).toContain('LIMIT 5');
+      expect(sql).not.toContain('OFFSET');
     });
   });
 });

@@ -166,4 +166,41 @@ describe('/api/strava/activities', () => {
 
     expect(data.hasMore).toBe(true);
   });
+
+  it('should return 404 when user not found', async () => {
+    vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
+
+    const request = new NextRequest('http://localhost/api/strava/activities', {
+      method: 'GET',
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(data.error).toBe('Utilisateur non trouvé');
+  });
+
+  it('should return 400 when user has no Strava account connected', async () => {
+    const mockUserWithoutStrava = {
+      id: 'user-123',
+      email: 'test@example.com',
+      stravaId: null,
+      stravaAccessToken: null,
+      stravaRefreshToken: null,
+      stravaTokenExpiresAt: null,
+    };
+
+    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUserWithoutStrava as never);
+
+    const request = new NextRequest('http://localhost/api/strava/activities', {
+      method: 'GET',
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe('Compte Strava non connecté');
+  });
 });
