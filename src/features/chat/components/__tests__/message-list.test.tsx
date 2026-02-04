@@ -10,20 +10,13 @@ vi.mock('../recommendation-card', () => ({
   RecommendationCard: ({ session, isAdded, getAddedSessionId }: {
     session: AIRecommendedSession;
     isAdded?: boolean;
-    getAddedSessionId?: (session: AIRecommendedSession) => string | null;
+    getAddedSessionId?: (session: AIRecommendedSession) => string | undefined;
   }) => (
     <div data-testid={`recommendation-${session.recommendation_id}`} data-added={String(isAdded)}>
       {getAddedSessionId ? getAddedSessionId(session) : null}
       {session.session_type}
     </div>
   ),
-}));
-
-vi.mock('@/lib/domain/sessions/helpers', () => ({
-  getAddedSessionId: vi.fn((session: AIRecommendedSession, sessions: TrainingSession[]) => {
-    const match = sessions.find((s) => s.recommendationId === session.recommendation_id);
-    return match?.id ?? null;
-  }),
 }));
 
 describe('MessageList', () => {
@@ -350,6 +343,59 @@ describe('MessageList', () => {
       );
 
       expect(screen.getByTestId('recommendation-rec-1')).toHaveAttribute('data-added', 'true');
+    });
+
+    it('should pass planned session id to recommendation card when available', () => {
+      const mockSession: AIRecommendedSession = {
+        recommendation_id: 'rec-2',
+        session_type: 'Endurance',
+        duration_min: 30,
+        estimated_distance_km: 5,
+      };
+
+      const plannedSession: TrainingSession = {
+        id: 'session-planned-1',
+        userId: 'user-1',
+        sessionNumber: 2,
+        week: 1,
+        date: null,
+        sessionType: 'Endurance',
+        duration: null,
+        distance: null,
+        avgPace: null,
+        avgHeartRate: null,
+        perceivedExertion: null,
+        comments: '',
+        status: 'planned',
+        intervalDetails: null,
+        recommendationId: 'rec-2',
+        plannedDate: '2024-01-02T00:00:00.000Z',
+        targetDuration: 30,
+        targetDistance: 5,
+        targetPace: '06:00',
+        targetHeartRateBpm: null,
+        targetRPE: null,
+      };
+
+      render(
+        <MessageList
+          {...defaultProps}
+          allSessions={[plannedSession]}
+          messages={[
+            {
+              id: '1',
+              role: 'assistant',
+              content: 'Voici une recommandation',
+              recommendations: {
+                recommended_sessions: [mockSession],
+              },
+              createdAt: new Date().toISOString(),
+            },
+          ]}
+        />
+      );
+
+      expect(screen.getByTestId('recommendation-rec-2')).toHaveTextContent('session-planned-1');
     });
   });
 

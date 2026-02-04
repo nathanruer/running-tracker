@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { prisma } from '@/lib/database';
-import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
+import { prisma } from '@/server/database';
+import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 
 export const runtime = 'nodejs';
 

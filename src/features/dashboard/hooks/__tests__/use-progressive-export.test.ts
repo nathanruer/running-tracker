@@ -109,7 +109,9 @@ describe('useProgressiveExport', () => {
       'running',
       undefined,
       'marathon',
-      '2024-01-01'
+      '2024-01-01',
+      undefined,
+      'export'
     );
   });
 

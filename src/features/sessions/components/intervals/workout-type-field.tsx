@@ -50,7 +50,7 @@ export function WorkoutTypeField({
           value={value || ''}
         >
           <FormControl>
-            <SelectTrigger className="rounded-xl h-10 border-border/50 bg-[#141414]">
+            <SelectTrigger variant="form">
               <SelectValue placeholder="Type de fractionné" />
             </SelectTrigger>
           </FormControl>
@@ -70,7 +70,7 @@ export function WorkoutTypeField({
               placeholder="Type personnalisé"
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
-              className="rounded-xl h-10 border-border/50 bg-[#141414]"
+              variant="form"
             />
           </FormControl>
           <Button

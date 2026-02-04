@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleGetRequest } from '@/lib/services/api-handlers';
-import { fetchSessionCount } from '@/lib/domain/sessions/sessions-read';
+import { handleGetRequest } from '@/server/services/api-handlers';
+import { fetchSessionCount } from '@/server/domain/sessions/sessions-read';
 
 export const runtime = 'nodejs';
 

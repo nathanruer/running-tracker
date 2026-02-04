@@ -83,6 +83,17 @@ describe('useErrorHandler', () => {
       expect(result.current.error).toBeInstanceOf(AppError);
       expect(result.current.error?.code).toBe(ErrorCode.UNKNOWN);
     });
+
+    it('should override message when customMessage is provided', () => {
+      const { result } = renderHook(() => useErrorHandler({ scope: 'local' }));
+
+      act(() => {
+        result.current.handleError(new AppError({ code: ErrorCode.SESSION_SAVE_FAILED }), 'Custom message');
+      });
+
+      expect(result.current.error?.message).toBe('Custom message');
+      expect(result.current.error?.userMessage).toBe('Custom message');
+    });
   });
 
   describe('handleSuccess', () => {
@@ -229,6 +240,18 @@ describe('useErrorHandler', () => {
       expect(onError).toHaveBeenCalledWith(expect.any(AppError));
     });
 
+    it('should apply custom error message when provided', async () => {
+      const { result } = renderHook(() => useErrorHandler({ scope: 'local' }));
+
+      const testFn = vi.fn().mockRejectedValue(new AppError({ code: ErrorCode.SESSION_SAVE_FAILED }));
+
+      await act(async () => {
+        await result.current.wrapAsync(testFn, undefined, 'Custom error')();
+      });
+
+      expect(result.current.error?.message).toBe('Custom error');
+    });
+
     it('should clear error before executing', async () => {
       const { result } = renderHook(() => useErrorHandler({ scope: 'local' }));
 
@@ -245,6 +268,43 @@ describe('useErrorHandler', () => {
       });
 
       expect(result.current.error).toBeNull();
+    });
+  });
+
+  describe('wrapAsyncWithSuccess', () => {
+    it('should show success toast and return result', async () => {
+      const { result } = renderHook(() => useErrorHandler());
+
+      const testFn = vi.fn().mockResolvedValue('ok');
+
+      let wrappedResult: unknown;
+      await act(async () => {
+        wrappedResult = await result.current.wrapAsyncWithSuccess(testFn, {
+          successTitle: 'Done',
+          successDescription: 'Saved',
+        });
+      });
+
+      expect(wrappedResult).toBe('ok');
+      expect(mockToast).toHaveBeenCalledWith({
+        title: 'Done',
+        description: 'Saved',
+      });
+    });
+
+    it('should handle error with custom message', async () => {
+      const { result } = renderHook(() => useErrorHandler({ scope: 'local' }));
+
+      const testFn = vi.fn().mockRejectedValue(new AppError({ code: ErrorCode.SESSION_SAVE_FAILED }));
+
+      await act(async () => {
+        await result.current.wrapAsyncWithSuccess(testFn, {
+          successTitle: 'Done',
+          errorMessage: 'Custom error',
+        });
+      });
+
+      expect(result.current.error?.message).toBe('Custom error');
     });
   });
 

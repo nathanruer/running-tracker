@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { POST } from '../password/route';
-import { prisma } from '@/lib/database';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { prisma } from '@/server/database';
+import { getUserIdFromRequest } from '@/server/auth';
 
-vi.mock('@/lib/database', () => ({
+vi.mock('@/server/database', () => ({
   prisma: {
     users: {
       findUnique: vi.fn(),
@@ -21,11 +21,11 @@ vi.mock('bcryptjs', () => ({
   },
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(),
 }));
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),

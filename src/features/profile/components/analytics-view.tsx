@@ -1,11 +1,21 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { type TrainingSession } from '@/lib/types';
 import { useAnalyticsData } from '../hooks/use-analytics-data';
 import { StatsCards } from './analytics/stats-cards';
-import { WeeklyEvolutionChart } from './analytics/weekly-evolution-chart';
 import { DateRangeSelector } from './analytics/date-range-selector';
 import { ExportWeeklyAnalytics } from './analytics/export-weekly-analytics';
+
+const WeeklyEvolutionChart = dynamic(
+  () => import('./analytics/weekly-evolution-chart').then((mod) => mod.WeeklyEvolutionChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[380px] rounded-xl border border-border/50 bg-muted/10 animate-pulse" />
+    ),
+  }
+);
 
 interface AnalyticsViewProps {
   sessions: TrainingSession[];

@@ -45,7 +45,7 @@ export function PerceivedExertionField({
         value={value ? value.toString() : undefined}
       >
         <FormControl>
-          <SelectTrigger data-testid="select-rpe" className="rounded-xl h-10 border-border/50 bg-[#141414]">
+          <SelectTrigger data-testid="select-rpe" variant="form">
             <SelectValue placeholder="Note" />
           </SelectTrigger>
         </FormControl>

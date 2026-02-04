@@ -5,17 +5,6 @@ import { SessionsTable } from '../sessions-table';
 import type { TrainingSession } from '@/lib/types';
 import type { SortConfig } from '@/lib/domain/sessions';
 
-let intersectionCallback: ((entries: Array<{ isIntersecting: boolean }>) => void) | null = null;
-
-global.IntersectionObserver = class {
-  constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
-    intersectionCallback = callback;
-  }
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-} as never;
-
 const mockSessions: TrainingSession[] = [
   {
     id: '1',
@@ -340,7 +329,27 @@ describe('SessionsTable', () => {
     expect(mockOnPeriodChange).toHaveBeenCalledWith('all');
   });
 
-  it('should call onLoadMore when observer intersects', () => {
+  it('should render active filter chips and allow removing one', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionsTable
+        {...defaultProps}
+        selectedType="Fractionné"
+        searchQuery="tempo"
+        period="week"
+      />
+    );
+
+    expect(screen.getByTestId('active-filter-type')).toBeInTheDocument();
+    expect(screen.getByTestId('active-filter-period')).toBeInTheDocument();
+    expect(screen.getByTestId('active-filter-search')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('active-filter-type'));
+    expect(mockOnTypeChange).toHaveBeenCalledWith('all');
+  });
+
+  it('should call onLoadMore when clicking load more button', async () => {
+    const user = userEvent.setup();
     const onLoadMore = vi.fn();
     render(
       <SessionsTable
@@ -351,7 +360,8 @@ describe('SessionsTable', () => {
       />
     );
 
-    intersectionCallback?.([{ isIntersecting: true }]);
+    const loadMoreButton = screen.getByRole('button', { name: /afficher plus/i });
+    await user.click(loadMoreButton);
 
     expect(onLoadMore).toHaveBeenCalled();
   });

@@ -285,6 +285,36 @@ describe('useTableSelection', () => {
     });
   });
 
+  describe('Keyed selection mode', () => {
+    it('should select by key and return selected items', () => {
+      const { result } = renderHook(() =>
+        useTableSelection(testItems, { mode: 'multiple', getKey: (item) => item.id })
+      );
+
+      act(() => {
+        result.current.toggleSelectByKey(2);
+      });
+
+      expect(result.current.isSelectedByKey(2)).toBe(true);
+      expect(result.current.selectedCount).toBe(1);
+      expect(result.current.getSelectedItems()).toEqual([{ id: 2, name: 'Item 2' }]);
+      expect(result.current.getSelectedIndices()).toEqual([1]);
+    });
+
+    it('should allow index-based toggling with keyed selection', () => {
+      const { result } = renderHook(() =>
+        useTableSelection(testItems, { mode: 'multiple', getKey: (item) => item.id })
+      );
+
+      act(() => {
+        result.current.toggleSelect(3);
+      });
+
+      expect(result.current.isSelectedByKey(4)).toBe(true);
+      expect(result.current.getSelectedItems()).toEqual([{ id: 4, name: 'Item 4' }]);
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle empty items array', () => {
       const { result } = renderHook(() => useTableSelection([], 'multiple'));

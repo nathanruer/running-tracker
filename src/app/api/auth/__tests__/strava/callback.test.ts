@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/database';
-import { getUserIdFromRequest, createSessionToken } from '@/lib/auth';
+import { prisma } from '@/server/database';
+import { getUserIdFromRequest, createSessionToken } from '@/server/auth';
 import { STRAVA_ERRORS } from '@/lib/constants';
 
-vi.mock('@/lib/database', () => ({
+vi.mock('@/server/database', () => ({
   prisma: {
     users: {
       findUnique: vi.fn(),
@@ -15,12 +15,12 @@ vi.mock('@/lib/database', () => ({
   },
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(),
   createSessionToken: vi.fn(),
 }));
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     info: vi.fn(),

@@ -14,7 +14,7 @@ describe('SessionsTableFooter', () => {
     render(
       <SessionsTableFooter hasMore={true} sessionsCount={5} isFetchingNextPage={false} />
     );
-    expect(screen.getByText('DÉFILEZ POUR PLUS')).toBeInTheDocument();
+    expect(screen.getByText('Afficher plus de séances')).toBeInTheDocument();
   });
 
   it('renders end of history when no more and enough sessions', () => {

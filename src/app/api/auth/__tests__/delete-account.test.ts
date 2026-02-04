@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { DELETE } from '../delete-account/route';
-import { prisma } from '@/lib/database/prisma';
-import { getUserIdFromRequest, clearSessionCookie } from '@/lib/auth';
+import { prisma } from '@/server/database/prisma';
+import { getUserIdFromRequest, clearSessionCookie } from '@/server/auth';
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock('@/lib/infrastructure/logger', () => ({
   },
 }));
 
-vi.mock('@/lib/database/prisma', () => ({
+vi.mock('@/server/database/prisma', () => ({
   prisma: {
     users: {
       delete: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('@/lib/database/prisma', () => ({
   },
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(),
   clearSessionCookie: vi.fn(),
 }));

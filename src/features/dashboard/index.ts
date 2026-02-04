@@ -19,7 +19,6 @@ export {
 } from './components/session-row';
 
 export { useBulkDelete } from './hooks/use-bulk-delete';
-export { useSessionsSelection } from './hooks/use-sessions-selection';
 export { useMultiSort } from './hooks/use-multi-sort';
 export { useSessionRowData, type SessionRowDisplayData } from './hooks/use-session-row-data';
 export { usePeriodFilter, type Period } from './hooks/use-period-filter';

@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './e2e/tests',
+  testDir: './tests/e2e/specs',
   timeout: 20 * 1000,
   expect: {
     timeout: 3000,
@@ -19,7 +19,7 @@ export default defineConfig({
     : [['list']],
 
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
@@ -38,8 +38,8 @@ export default defineConfig({
       ],
 
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
+    command: 'npm run dev -- --hostname 127.0.0.1 --port 3000',
+    url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 60 * 1000,
     env: {

@@ -15,6 +15,16 @@ interface UseEntityMutationsOptions<T> {
     bulkDeleteSuccess?: (count: number) => string;
   };
   sortFn?: (a: T, b: T) => number;
+  invalidateOnEntitySuccess?: boolean;
+  shouldIncludeEntityInQuery?: (queryKey: QueryKey, entity: T) => boolean;
+  pageSize?: number;
+  /**
+   * If true, skip immediate refetch after delete operations.
+   * The optimistic update handles the UI, and data is marked stale for next access.
+   * This significantly improves perceived performance for deletions.
+   * @default true
+   */
+  skipRefetchOnDelete?: boolean;
 }
 
 /**
@@ -44,6 +54,10 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     relatedQueryKeys = [],
     messages = {},
     sortFn,
+    invalidateOnEntitySuccess = true,
+    shouldIncludeEntityInQuery,
+    pageSize,
+    skipRefetchOnDelete = true,
   } = options;
 
   const queryClient = useQueryClient();
@@ -63,6 +77,93 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   };
 
   const sortEntities = sortFn || defaultSortFn;
+
+  const upsertEntityInCollection = (
+    collection: T[],
+    savedEntity: T,
+    shouldInclude: boolean
+  ) => {
+    const index = collection.findIndex((item) => item.id === savedEntity.id);
+
+    if (!shouldInclude) {
+      if (index === -1) return collection;
+      return collection.filter((item) => item.id !== savedEntity.id);
+    }
+
+    if (index !== -1) {
+      const next = [...collection];
+      next[index] = savedEntity;
+      return next;
+    }
+
+    return [savedEntity, ...collection].sort(sortEntities);
+  };
+
+  const upsertEntityInInfiniteCollection = (
+    data: InfiniteData<T[]>,
+    savedEntity: T,
+    shouldInclude: boolean
+  ) => {
+    const existsInPages = data.pages.some(
+      (page) => Array.isArray(page) && page.some((item) => item.id === savedEntity.id)
+    );
+
+    let changed = false;
+    const pages = data.pages.map((page) => {
+      if (!Array.isArray(page)) return page;
+
+      const index = page.findIndex((item) => item.id === savedEntity.id);
+
+      if (!shouldInclude) {
+        if (index === -1) return page;
+        changed = true;
+        return page.filter((item) => item.id !== savedEntity.id);
+      }
+
+      if (index !== -1) {
+        const next = [...page];
+        next[index] = savedEntity;
+        changed = true;
+        return next;
+      }
+
+      return page;
+    });
+
+    if (!shouldInclude) {
+      return changed ? { ...data, pages } : data;
+    }
+
+    if (!existsInPages && pages.length > 0 && Array.isArray(pages[0])) {
+      pages[0] = [savedEntity, ...pages[0]].sort(sortEntities);
+      changed = true;
+    }
+
+    if (pageSize && pages.length > 0 && Array.isArray(pages[0]) && pages[0].length > pageSize) {
+      pages[0] = pages[0].slice(0, pageSize);
+      changed = true;
+    }
+
+    return changed ? { ...data, pages } : data;
+  };
+
+  const updateQueryDataWithEntity = (
+    old: T[] | InfiniteData<T[]> | undefined,
+    savedEntity: T,
+    shouldInclude: boolean
+  ) => {
+    if (!old) return old;
+
+    if (Array.isArray(old)) {
+      return upsertEntityInCollection(old, savedEntity, shouldInclude);
+    }
+
+    if ('pages' in old && Array.isArray(old.pages)) {
+      return upsertEntityInInfiniteCollection(old, savedEntity, shouldInclude);
+    }
+
+    return old;
+  };
 
   /**
    * Snapshots all queries matching baseQueryKey for rollback
@@ -109,7 +210,9 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   };
 
   /**
-   * Handles single entity deletion with optimistic updates
+   * Handles single entity deletion with optimistic updates.
+   * When skipRefetchOnDelete is true (default), data is marked stale without immediate refetch.
+   * This provides instant UI feedback while ensuring fresh data on next access.
    * @param id Entity ID to delete
    */
   const handleDelete = async (id: string) => {
@@ -124,9 +227,16 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     try {
       await deleteEntity(id);
 
-      await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
+      // When skipRefetchOnDelete is true, mark as stale without immediate refetch.
+      // The optimistic update already reflects the deletion in the UI.
+      // Data will be refetched on next access (e.g., page navigation, window focus).
+      const refetchType = skipRefetchOnDelete ? 'none' : 'active';
+      await queryClient.invalidateQueries({ 
+        queryKey: [baseQueryKey],
+        refetchType,
+      });
       relatedQueryKeys.forEach((key) => {
-        queryClient.invalidateQueries({ queryKey: key });
+        queryClient.invalidateQueries({ queryKey: key, refetchType });
       });
     } catch (error) {
       // Rollback all queries from snapshot
@@ -158,9 +268,15 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
       setIsDeleting(true);
       await bulkDeleteEntities(ids);
 
-      await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
+      // When skipRefetchOnDelete is true, mark as stale without immediate refetch.
+      // The optimistic update already reflects the deletions in the UI.
+      const refetchType = skipRefetchOnDelete ? 'none' : 'active';
+      await queryClient.invalidateQueries({ 
+        queryKey: [baseQueryKey],
+        refetchType,
+      });
       relatedQueryKeys.forEach((key) => {
-        queryClient.invalidateQueries({ queryKey: key });
+        queryClient.invalidateQueries({ queryKey: key, refetchType });
       });
 
       handleSuccess(
@@ -181,50 +297,24 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
    * @param savedEntity Newly created or updated entity
    */
   const handleEntitySuccess = (savedEntity: T) => {
-    // Update ALL matching queries (handles any query key structure)
-    queryClient.setQueriesData<T[] | InfiniteData<T[]>>(
-      { queryKey: [baseQueryKey] },
-      (old) => {
-        if (!old) return old;
+    const queries = queryClient.getQueriesData<T[] | InfiniteData<T[]>>({
+      queryKey: [baseQueryKey],
+    });
 
-        // Handle array format (simple queries)
-        if (Array.isArray(old)) {
-          const exists = old.find((item) => item.id === savedEntity.id);
-          if (exists) {
-            return old.map((item) => (item.id === savedEntity.id ? savedEntity : item));
-          } else {
-            return [savedEntity, ...old].sort(sortEntities);
-          }
-        }
+    for (const [queryKey, data] of queries) {
+      const shouldInclude = shouldIncludeEntityInQuery
+        ? shouldIncludeEntityInQuery(queryKey, savedEntity)
+        : true;
+      const nextData = updateQueryDataWithEntity(data, savedEntity, shouldInclude);
 
-        // Handle infinite query format
-        if ('pages' in old && Array.isArray(old.pages)) {
-          const newPages = old.pages.map((page) => {
-            if (!Array.isArray(page)) return page;
-            const index = page.findIndex((item) => item.id === savedEntity.id);
-            if (index !== -1) {
-              const newPage = [...page];
-              newPage[index] = savedEntity;
-              return newPage;
-            }
-            return page;
-          });
-
-          const existsInPages = old.pages.some((p) =>
-            Array.isArray(p) && p.some((item) => item.id === savedEntity.id)
-          );
-          if (!existsInPages && newPages.length > 0 && Array.isArray(newPages[0])) {
-            newPages[0] = [savedEntity, ...newPages[0]];
-          }
-
-          return { ...old, pages: newPages };
-        }
-
-        return old;
+      if (nextData !== data) {
+        queryClient.setQueryData(queryKey, nextData);
       }
-    );
+    }
 
-    queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
+    if (invalidateOnEntitySuccess) {
+      queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
+    }
     relatedQueryKeys.forEach((key) => {
       queryClient.invalidateQueries({ queryKey: key });
     });

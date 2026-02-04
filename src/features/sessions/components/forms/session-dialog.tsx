@@ -195,16 +195,14 @@ const SessionDialog = ({
             </Tabs>
           )}
 
-          {mode === 'complete' && completeStep === 'done' && !isStravaImport && (
-            <div className="animate-in fade-in zoom-in-95 duration-300">
-              <FileImportButtons
-                mode={mode}
-                onStravaClick={onRequestStravaImport}
-              />
-            </div>
+          {((mode === 'complete' && completeStep === 'done') || mode === 'create') && !isStravaImport && (
+            <FileImportButtons
+              mode={mode}
+              onStravaClick={onRequestStravaImport}
+            />
           )}
 
-          {isStravaImport && mode === 'complete' && (
+          {isStravaImport && (mode === 'complete' || mode === 'create') && (
             <div className="flex flex-col gap-5 p-5 rounded-2xl bg-muted/20 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-500">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/10">
                 <div className="flex items-center gap-3">

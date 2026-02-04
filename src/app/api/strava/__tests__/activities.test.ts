@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET } from '../activities/route';
-import { prisma } from '@/lib/database';
-import { getActivities, getValidAccessToken, getAthleteStats } from '@/lib/services/strava';
+import { prisma } from '@/server/database';
+import { getActivities, getValidAccessToken, getAthleteStats } from '@/server/services/strava';
 
-vi.mock('@/lib/database', () => ({
+vi.mock('@/server/database', () => ({
   prisma: {
     users: {
       findUnique: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@/lib/database', () => ({
   },
 }));
 
-vi.mock('@/lib/services/strava', () => ({
+vi.mock('@/server/services/strava', () => ({
   getActivities: vi.fn(),
   getValidAccessToken: vi.fn(),
   getAthleteStats: vi.fn(),
@@ -31,11 +31,11 @@ vi.mock('@/lib/services/strava', () => ({
   })),
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(() => 'user-123'),
 }));
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     info: vi.fn(),

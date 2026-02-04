@@ -20,6 +20,7 @@ export const queryKeys = {
   user: () => [QUERY_KEYS.USER] as const,
   sessions: () => [QUERY_KEYS.SESSIONS] as const,
   sessionsAll: (userId?: string | null) => [QUERY_KEYS.SESSIONS, 'all', userId ?? null] as const,
+  sessionById: (id: string | null) => [QUERY_KEYS.SESSIONS, 'detail', id] as const,
   sessionsHistory: () => [QUERY_KEYS.SESSIONS, 'history'] as const,
   sessionsPaginated: (params: {
     selectedType: string;

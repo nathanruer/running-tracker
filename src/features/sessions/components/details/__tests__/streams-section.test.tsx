@@ -17,6 +17,9 @@ vi.mock('@/lib/utils/geo/stream-charts', () => ({
 
 vi.mock('@/lib/constants/stream-charts', () => ({
   CHART_DISPLAY_ORDER: ['pace', 'altitude'],
+  STREAM_CHART_CONSTANTS: {
+    CHART_HEIGHT: 220,
+  },
 }));
 
 const mockUseStreamData = vi.fn();
@@ -37,7 +40,7 @@ describe('StreamsSection', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders charts in display order and applies pace domain', () => {
+  it('renders charts in display order and applies pace domain', async () => {
     mockUseStreamData.mockReturnValue({
       validatedStreams: { ok: true },
       availableStreams: ['pace', 'altitude'],
@@ -50,15 +53,15 @@ describe('StreamsSection', () => {
 
     render(<StreamsSection streams={{}} />);
 
-    const pace = screen.getByTestId('chart-pace');
+    const pace = await screen.findByTestId('chart-pace');
     expect(pace).toBeInTheDocument();
     expect(pace.getAttribute('data-domain')).toBe('3,8');
 
-    const altitude = screen.getByTestId('chart-altitude');
+    const altitude = await screen.findByTestId('chart-altitude');
     expect(altitude).toBeInTheDocument();
   });
 
-  it('skips charts with empty data', () => {
+  it('skips charts with empty data', async () => {
     mockUseStreamData.mockReturnValue({
       validatedStreams: { ok: true },
       availableStreams: ['pace', 'altitude'],
@@ -72,6 +75,6 @@ describe('StreamsSection', () => {
     render(<StreamsSection streams={{}} />);
 
     expect(screen.queryByTestId('chart-pace')).toBeNull();
-    expect(screen.getByTestId('chart-altitude')).toBeInTheDocument();
+    expect(await screen.findByTestId('chart-altitude')).toBeInTheDocument();
   });
 });

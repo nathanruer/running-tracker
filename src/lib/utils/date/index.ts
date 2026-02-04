@@ -2,6 +2,15 @@
  * Date formatting utilities
  */
 
+// Week utilities
+export {
+  getISOWeekKey,
+  getISOWeekNumber,
+  getISOWeekYear,
+  getISOWeekStart,
+  getISOWeekEnd,
+} from './week';
+
 /**
  * Formats a date to a localized string
  * @param date - Date string or Date object

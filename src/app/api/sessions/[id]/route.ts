@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { partialSessionSchema } from '@/lib/validation';
-import { handleApiRequest, handleGetRequest } from '@/lib/services/api-handlers';
+import { handleApiRequest, handleGetRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
-import { updateSession, deleteSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
+import { updateSession, deleteSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
 export const runtime = 'nodejs';
 

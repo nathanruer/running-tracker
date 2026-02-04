@@ -6,6 +6,7 @@ import {
   prefetchChatData,
   prefetchDataForRoute,
 } from '../prefetch';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 vi.mock('../api-client', () => ({
   getCurrentUser: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock('../api-client', () => ({
 
 describe('prefetch utilities', () => {
   let queryClient: QueryClient;
+  const user = { id: 'user-1' };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,103 +26,104 @@ describe('prefetch utilities', () => {
       },
     });
     vi.spyOn(queryClient, 'prefetchQuery').mockResolvedValue(undefined);
+    vi.spyOn(queryClient, 'prefetchInfiniteQuery').mockResolvedValue(undefined);
+    vi.spyOn(queryClient, 'fetchQuery').mockResolvedValue(user);
   });
 
   describe('prefetchProfileData', () => {
-    it('should prefetch user data', () => {
-      prefetchProfileData(queryClient);
+    it('should prefetch user data', async () => {
+      await prefetchProfileData(queryClient);
 
-      expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
+      expect(queryClient.fetchQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['user'],
+          queryKey: queryKeys.user(),
           staleTime: 10 * 60 * 1000,
         })
       );
     });
 
-    it('should prefetch sessions data with "all" key', () => {
-      prefetchProfileData(queryClient);
+    it('should prefetch sessions data with user key', async () => {
+      await prefetchProfileData(queryClient);
 
       expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['sessions', 'all'],
+          queryKey: queryKeys.sessionsAll(user.id),
           staleTime: 5 * 60 * 1000,
         })
       );
     });
 
-    it('should call prefetchQuery twice', () => {
-      prefetchProfileData(queryClient);
-
-      expect(queryClient.prefetchQuery).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  describe('prefetchDashboardData', () => {
-    it('should prefetch sessions data', () => {
-      prefetchDashboardData(queryClient);
-
-      expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queryKey: ['sessions'],
-          staleTime: 5 * 60 * 1000,
-        })
-      );
-    });
-
-    it('should call prefetchQuery once', () => {
-      prefetchDashboardData(queryClient);
+    it('should call prefetchQuery once', async () => {
+      await prefetchProfileData(queryClient);
 
       expect(queryClient.prefetchQuery).toHaveBeenCalledTimes(1);
     });
   });
 
+  describe('prefetchDashboardData', () => {
+    it('should prefetch sessions data with paginated key', async () => {
+      await prefetchDashboardData(queryClient);
+
+      expect(queryClient.prefetchInfiniteQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: queryKeys.sessionsPaginated({
+            selectedType: 'all',
+            sortKey: 'default',
+            search: '',
+            dateFrom: undefined,
+            userId: user.id,
+          }),
+          staleTime: 5 * 60 * 1000,
+        })
+      );
+    });
+
+    it('should call prefetchInfiniteQuery once', async () => {
+      await prefetchDashboardData(queryClient);
+
+      expect(queryClient.prefetchInfiniteQuery).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('prefetchChatData', () => {
-    it('should prefetch conversations data', () => {
-      prefetchChatData(queryClient);
+    it('should prefetch conversations data', async () => {
+      await prefetchChatData(queryClient);
 
       expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['conversations'],
+          queryKey: queryKeys.conversations(),
           staleTime: 1 * 60 * 1000,
         })
       );
     });
 
-    it('should call prefetchQuery once', () => {
-      prefetchChatData(queryClient);
+    it('should call prefetchQuery once', async () => {
+      await prefetchChatData(queryClient);
 
       expect(queryClient.prefetchQuery).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('prefetchDataForRoute', () => {
-    it('should call prefetchProfileData for /profile route', () => {
-      prefetchDataForRoute(queryClient, '/profile');
+    it('should call prefetchProfileData for /profile route', async () => {
+      await prefetchDataForRoute(queryClient, '/profile');
 
-      expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queryKey: ['user'],
-        })
-      );
+      expect(queryClient.fetchQuery).toHaveBeenCalled();
+      expect(queryClient.prefetchQuery).toHaveBeenCalled();
     });
 
-    it('should call prefetchDashboardData for /dashboard route', () => {
-      prefetchDataForRoute(queryClient, '/dashboard');
+    it('should call prefetchDashboardData for /dashboard route', async () => {
+      await prefetchDataForRoute(queryClient, '/dashboard');
 
-      expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queryKey: ['sessions'],
-        })
-      );
+      expect(queryClient.prefetchInfiniteQuery).toHaveBeenCalled();
     });
 
-    it('should call prefetchChatData for /chat route', () => {
-      prefetchDataForRoute(queryClient, '/chat');
+    it('should call prefetchChatData for /chat route', async () => {
+      await prefetchDataForRoute(queryClient, '/chat');
 
       expect(queryClient.prefetchQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['conversations'],
+          queryKey: queryKeys.conversations(),
         })
       );
     });
@@ -129,12 +132,14 @@ describe('prefetch utilities', () => {
       prefetchDataForRoute(queryClient, '/unknown');
 
       expect(queryClient.prefetchQuery).not.toHaveBeenCalled();
+      expect(queryClient.prefetchInfiniteQuery).not.toHaveBeenCalled();
     });
 
     it('should not call any prefetch for empty route', () => {
       prefetchDataForRoute(queryClient, '');
 
       expect(queryClient.prefetchQuery).not.toHaveBeenCalled();
+      expect(queryClient.prefetchInfiniteQuery).not.toHaveBeenCalled();
     });
   });
 });

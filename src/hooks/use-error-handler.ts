@@ -13,15 +13,31 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
   const { toast } = useToast();
   const [localError, setLocalError] = useState<AppError | null>(null);
 
-  const handleError = useCallback((error: unknown) => {
+  const resolveError = useCallback((error: unknown, customMessage?: string) => {
     const appError = AppError.fromUnknown(error);
+    if (!customMessage) {
+      return appError;
+    }
+    return new AppError({
+      code: appError.code,
+      message: customMessage,
+      severity: appError.severity,
+      isRecoverable: appError.isRecoverable,
+      action: appError.action,
+      statusCode: appError.statusCode,
+      details: appError.details,
+    });
+  }, []);
+
+  const handleError = useCallback((error: unknown, customMessage?: string) => {
+    const appError = resolveError(error, customMessage);
     
     if (scope === 'global' || AppError.isBlockingError(appError)) {
       reportGlobalError(appError);
     } else {
       setLocalError(appError);
     }
-  }, [scope, reportGlobalError]);
+  }, [scope, reportGlobalError, resolveError]);
 
   const handleSuccess = useCallback((title: string, description?: string) => {
     toast({ title, description });
@@ -49,20 +65,39 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
    */
   const wrapAsync = useCallback(<T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
-    onError?: (error: AppError) => void
+    onError?: (error: AppError) => void,
+    errorMessage?: string
   ) => {
     return async (...args: T): Promise<R | undefined> => {
       try {
         clearError();
         return await fn(...args);
       } catch (error) {
-        const appError = AppError.fromUnknown(error);
+        const appError = resolveError(error, errorMessage);
         handleError(appError);
         onError?.(appError);
         return undefined;
       }
     };
-  }, [handleError, clearError]);
+  }, [handleError, clearError, resolveError]);
+
+  const wrapAsyncWithSuccess = useCallback(async <T,>(
+    fn: () => Promise<T>,
+    options: {
+      successTitle: string;
+      successDescription?: string;
+      errorMessage?: string;
+    }
+  ): Promise<T | undefined> => {
+    try {
+      const result = await fn();
+      handleSuccess(options.successTitle, options.successDescription);
+      return result;
+    } catch (error) {
+      handleError(error, options.errorMessage);
+      return undefined;
+    }
+  }, [handleError, handleSuccess]);
 
   return {
     error: localError,
@@ -73,5 +108,6 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
     setLocalError,
     clearError,
     wrapAsync,
+    wrapAsyncWithSuccess,
   };
 }

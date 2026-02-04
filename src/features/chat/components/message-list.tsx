@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo, useCallback } from 'react';
+import { useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import type { Message } from '@/lib/services/api-client';
 import { RecommendationCard } from './recommendation-card';
-import { getAddedSessionId } from '@/lib/domain/sessions/helpers';
 
 function useDebouncedCallback(callback: () => void, delay: number): () => void {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -50,6 +49,35 @@ export const MessageList = memo(function MessageList({
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const streamingRef = useRef<HTMLDivElement>(null);
+  const recommendationSessionMap = useMemo(() => {
+    const map = new Map<string, TrainingSession>();
+    for (const session of allSessions) {
+      if (!session.recommendationId) continue;
+      if (!map.has(session.recommendationId)) {
+        map.set(session.recommendationId, session);
+      }
+    }
+    return map;
+  }, [allSessions]);
+
+  const plannedSessionIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const session of allSessions) {
+      if (session.status !== 'planned' || !session.recommendationId) continue;
+      if (!map.has(session.recommendationId)) {
+        map.set(session.recommendationId, session.id);
+      }
+    }
+    return map;
+  }, [allSessions]);
+
+  const getAddedSessionId = useCallback(
+    (session: AIRecommendedSession) => {
+      if (!session.recommendation_id) return undefined;
+      return plannedSessionIdMap.get(session.recommendation_id);
+    },
+    [plannedSessionIdMap]
+  );
 
   const scrollToBottom = useDebouncedCallback(() => {
     if (containerRef.current) {
@@ -126,7 +154,9 @@ export const MessageList = memo(function MessageList({
                 
                 <div className="space-y-4">
                   {message.recommendations.recommended_sessions.map((session: AIRecommendedSession, idx: number) => {
-                    const matchedSession = allSessions.find(s => s.recommendationId === session.recommendation_id);
+                    const matchedSession = session.recommendation_id
+                      ? recommendationSessionMap.get(session.recommendation_id)
+                      : undefined;
                     const isAdded = !!matchedSession;
                     const isCompleted_ = matchedSession?.status === 'completed';
                     const completedSession = isCompleted_ ? matchedSession : null;
@@ -141,7 +171,7 @@ export const MessageList = memo(function MessageList({
                         loadingSessionId={loadingSessionId}
                         onAccept={onAcceptSession}
                         onDelete={onDeleteSession}
-                        getAddedSessionId={(s) => getAddedSessionId(s, allSessions)}
+                        getAddedSessionId={getAddedSessionId}
                       />
                     );
                   })}

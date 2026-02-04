@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
+import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { updateSessionWeather, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
-import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
+import { updateSessionWeather, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 
 /**
  * Endpoint to re-enrich a session with weather data

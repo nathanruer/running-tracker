@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { getUserIdFromRequest, createSessionToken } from '@/lib/auth';
-import { logger } from '@/lib/infrastructure/logger';
+import { prisma } from '@/server/database';
+import { getUserIdFromRequest, createSessionToken } from '@/server/auth';
+import { logger } from '@/server/infrastructure/logger';
 import {
   HTTP_STATUS,
   STRAVA_URLS,

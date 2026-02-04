@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { FilterX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
@@ -8,14 +9,21 @@ interface SessionsTableBodyProps {
   initialLoading: boolean;
   sessions: TrainingSession[];
   isFetching?: boolean;
+  hasActiveFilters?: boolean;
   selectedSessions: Set<string>;
   onToggleSelect: (id: string) => void;
   actions: {
     onEdit: (session: TrainingSession) => void;
     onDelete: (id: string) => void;
     onView?: (session: TrainingSession) => void;
+    onPrefetchDetails?: (sessionId: string) => void;
   };
 }
+
+// Progressive rendering keeps large tables responsive by chunking row mounts.
+const INITIAL_RENDER_COUNT = 50;
+const RENDER_BATCH_SIZE = 50;
+const RENDER_BATCH_DELAY_MS = 16;
 
 function SessionsTableSkeleton() {
   return (
@@ -54,7 +62,18 @@ function SessionsTableSkeleton() {
   );
 }
 
-function SessionsEmptyState({ isFetching }: { isFetching?: boolean }) {
+function SessionsEmptyState({
+  isFetching,
+  hasActiveFilters,
+}: {
+  isFetching?: boolean;
+  hasActiveFilters?: boolean;
+}) {
+  const title = hasActiveFilters ? 'Aucun résultat avec ces filtres' : 'Aucun résultat trouvé';
+  const description = hasActiveFilters
+    ? 'Essayez de retirer un filtre ou utilisez le bouton tout effacer.'
+    : 'Essayez de modifier votre recherche.';
+
   return (
     <TableRow>
       <TableCell colSpan={12} className="h-64 text-center">
@@ -66,9 +85,9 @@ function SessionsEmptyState({ isFetching }: { isFetching?: boolean }) {
             <FilterX className="h-6 w-6 text-muted-foreground/50" />
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-bold text-foreground">Aucun résultat trouvé</p>
+            <p className="text-sm font-bold text-foreground">{title}</p>
             <p className="text-xs text-muted-foreground">
-              Essayez de modifier vos filtres ou utilisez le bouton réinitialiser en haut.
+              {description}
             </p>
           </div>
         </div>
@@ -81,10 +100,30 @@ export function SessionsTableBody({
   initialLoading,
   sessions,
   isFetching,
+  hasActiveFilters,
   selectedSessions,
   onToggleSelect,
   actions,
 }: SessionsTableBodyProps) {
+  const baseCount = Math.min(sessions.length, INITIAL_RENDER_COUNT);
+  const [renderedCount, setRenderedCount] = useState(baseCount);
+  const effectiveCount = Math.max(baseCount, Math.min(renderedCount, sessions.length));
+
+  useEffect(() => {
+    if (effectiveCount >= sessions.length) return;
+
+    const handle = setTimeout(() => {
+      setRenderedCount((current) => Math.min(current + RENDER_BATCH_SIZE, sessions.length));
+    }, RENDER_BATCH_DELAY_MS);
+
+    return () => clearTimeout(handle);
+  }, [effectiveCount, sessions.length]);
+
+  const visibleSessions = useMemo(
+    () => sessions.slice(0, effectiveCount),
+    [sessions, effectiveCount]
+  );
+
   if (initialLoading && sessions.length === 0) {
     return (
       <TableBody>
@@ -96,14 +135,14 @@ export function SessionsTableBody({
   if (sessions.length === 0) {
     return (
       <TableBody>
-        <SessionsEmptyState isFetching={isFetching} />
+        <SessionsEmptyState isFetching={isFetching} hasActiveFilters={hasActiveFilters} />
       </TableBody>
     );
   }
 
   return (
     <TableBody>
-      {sessions.map((session) => (
+      {visibleSessions.map((session) => (
         <SessionRow
           key={session.id}
           session={session}
@@ -113,6 +152,7 @@ export function SessionsTableBody({
           isSelected={selectedSessions.has(session.id)}
           onToggleSelect={() => onToggleSelect(session.id)}
           onView={actions.onView}
+          onPrefetchDetails={actions.onPrefetchDetails}
         />
       ))}
     </TableBody>

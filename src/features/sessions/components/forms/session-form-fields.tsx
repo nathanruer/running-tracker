@@ -9,6 +9,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { type FormValues } from '@/lib/validation/session-form';
+import { parseNullableNumberInput } from '@/lib/utils/numbers';
 
 interface SessionFormFieldsProps {
   control: Control<FormValues>;
@@ -25,7 +26,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormItem>
               <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Durée</FormLabel>
               <FormControl>
-                <Input data-testid="input-duration" placeholder="00:00:00" className="rounded-xl h-10 border-border/50 bg-[#141414]" {...field} />
+                <Input data-testid="input-duration" placeholder="00:00:00" variant="form" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -43,21 +44,17 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
                   type="number"
                   step="0.01"
                   placeholder="0"
-                  className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                  variant="form"
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === '') {
-                      field.onChange(null);
-                    } else if (value === '-') {
-                      field.onChange(value);
-                    } else {
-                      const numValue = parseFloat(value);
-                      if (!isNaN(numValue)) {
-                        const rounded = Math.round(numValue * 100) / 100;
-                        field.onChange(rounded);
-                      }
+                    const parsed = parseNullableNumberInput(e.target.value, {
+                      mode: 'float',
+                      decimals: 2,
+                      allowNegativeSign: true,
+                    });
+                    if (parsed !== undefined) {
+                      field.onChange(parsed);
                     }
                   }}
                 />
@@ -75,7 +72,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormItem>
               <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Allure moy (mn/km)</FormLabel>
               <FormControl>
-                <Input data-testid="input-avgpace" placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-[#141414]" {...field} />
+                <Input data-testid="input-avgpace" placeholder="00:00" variant="form" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -92,14 +89,15 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
                   data-testid="input-avgheartrate"
                   type="number"
                   placeholder="0"
-                  className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                  variant="form"
                   {...field}
                   value={field.value ?? ''}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value === '' ? null : parseInt(e.target.value)
-                    )
-                  }
+                  onChange={(e) => {
+                    const parsed = parseNullableNumberInput(e.target.value, { mode: 'int' });
+                    if (parsed !== undefined) {
+                      field.onChange(parsed);
+                    }
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -117,7 +115,8 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
               <Textarea
                 data-testid="input-comments"
                 placeholder="Comment s'est passée votre séance ?"
-                className="resize-none rounded-2xl border-border/50 min-h-[100px] bg-[#141414]"
+                variant="form"
+                className="resize-none"
                 {...field}
               />
             </FormControl>

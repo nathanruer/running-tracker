@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../route';
-import { prisma } from '@/lib/database';
+import { prisma } from '@/server/database';
 
-vi.mock('@/lib/database', () => ({
+vi.mock('@/server/database', () => ({
   prisma: {
     chat_conversations: {
       findMany: vi.fn(),
@@ -12,11 +12,11 @@ vi.mock('@/lib/database', () => ({
   },
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(() => 'user-123'),
 }));
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     info: vi.fn(),

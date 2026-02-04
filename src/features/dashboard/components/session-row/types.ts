@@ -8,4 +8,5 @@ export interface SessionRowProps {
   isSelected?: boolean;
   onToggleSelect?: () => void;
   onView?: (session: TrainingSession) => void;
+  onPrefetchDetails?: (sessionId: string) => void;
 }

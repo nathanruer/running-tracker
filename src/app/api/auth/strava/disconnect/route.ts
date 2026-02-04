@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { prisma } from '@/server/database';
+import { handleApiRequest } from '@/server/services/api-handlers';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(

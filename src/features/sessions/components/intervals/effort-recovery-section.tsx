@@ -9,6 +9,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ModeToggleButton } from './mode-toggle-button';
 import { type IntervalFormValues } from '@/lib/validation/session-form';
+import { parseNullableNumberInput } from '@/lib/utils/numbers';
 
 interface EffortRecoverySectionProps {
   label: string;
@@ -52,7 +53,7 @@ export function EffortRecoverySection({
               <FormItem className={hasExtraFields ? "" : "w-full"}>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Durée</FormLabel>
                 <FormControl>
-                  <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-[#141414]" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00" variant="form" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -70,11 +71,14 @@ export function EffortRecoverySection({
                     type="number"
                     step="0.01"
                     placeholder="0"
-                    className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                    variant="form"
                     value={(field.value as number) ?? ''}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
-                    }
+                    onChange={(e) => {
+                      const parsed = parseNullableNumberInput(e.target.value, { mode: 'float', decimals: 2 });
+                      if (parsed !== undefined) {
+                        field.onChange(parsed);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -91,7 +95,7 @@ export function EffortRecoverySection({
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Allure cible</FormLabel>
                 <FormControl>
-                  <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-[#141414]" value={(field.value as string) || ''} onChange={field.onChange} />
+                  <Input placeholder="00:00" variant="form" value={(field.value as string) || ''} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,11 +114,14 @@ export function EffortRecoverySection({
                   <Input
                     type="number"
                     placeholder="0"
-                    className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                    variant="form"
                     value={(field.value as number) ?? ''}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                    }
+                    onChange={(e) => {
+                      const parsed = parseNullableNumberInput(e.target.value, { mode: 'int' });
+                      if (parsed !== undefined) {
+                        field.onChange(parsed);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />

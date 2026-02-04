@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { clearSessionCookie } from '@/lib/auth';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { clearSessionCookie } from '@/server/auth';
+import { handleApiRequest } from '@/server/services/api-handlers';
 
 export const runtime = 'nodejs';
 

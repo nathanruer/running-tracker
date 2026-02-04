@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { recalculateSessionNumbers } from '@/lib/domain/sessions/sessions-write';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { recalculateSessionNumbers } from '@/server/domain/sessions/sessions-write';
+import { handleApiRequest } from '@/server/services/api-handlers';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(

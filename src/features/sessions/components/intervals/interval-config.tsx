@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { WorkoutTypeField } from './workout-type-field';
 import { EffortRecoverySection } from './effort-recovery-section';
+import { parseNullableNumberInput } from '@/lib/utils/numbers';
 
 interface FormValues {
   intervalDetails?: string | null;
@@ -57,12 +58,15 @@ export function IntervalConfig({ control, isCustomType, onCustomTypeChange }: In
                   type="number"
                   min="1"
                   placeholder="0"
-                  className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                  variant="form"
                   {...field}
                   value={field.value ?? ''}
-                  onChange={(e) =>
-                    field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                  }
+                  onChange={(e) => {
+                    const parsed = parseNullableNumberInput(e.target.value, { mode: 'int' });
+                    if (parsed !== undefined) {
+                      field.onChange(parsed);
+                    }
+                  }}
                 />
               </FormControl>
               <FormMessage />

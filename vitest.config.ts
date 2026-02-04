@@ -11,6 +11,7 @@ export default defineConfig({
     include: ['**/*.test.{ts,tsx}'],
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'server-only': path.resolve(__dirname, './tests/stubs/server-only.ts'),
     },
     testTimeout: 10000,
     coverage: {
@@ -24,8 +25,11 @@ export default defineConfig({
         '**/types/**',
         '**/types.ts',
         '**/index.ts',
-        'src/lib/services/ai/context.ts',
+        'src/server/services/ai/context.ts',
         'src/components/ui/**',
+        'tests/**',
+        'test-results/**',
+        'playwright-report/**',
         'vitest.*.ts',
         'next.config.ts',
         'postcss.config.mjs',

@@ -4,7 +4,6 @@
  * Supports both standard (one line per session) and detailed (one line per interval) exports
  */
 
-import * as XLSX from 'xlsx';
 import { type TrainingSession, type IntervalStep } from '@/lib/types';
 import { generateIntervalStructure } from '@/lib/utils/intervals';
 import { getSessionDisplayData } from '@/lib/domain/forms/session-helpers';
@@ -19,6 +18,15 @@ export interface ExportOptions {
   includeWeather: boolean;
   startDate?: Date;
   endDate?: Date;
+}
+
+let xlsxModulePromise: Promise<typeof import('xlsx')> | null = null;
+
+async function loadXlsxModule() {
+  if (!xlsxModulePromise) {
+    xlsxModulePromise = import('xlsx');
+  }
+  return xlsxModulePromise;
 }
 
 // ============================================================================
@@ -527,7 +535,8 @@ export function generateCSV(headers: string[], rows: Record<string, unknown>[]):
  * Generates a real Excel .xlsx file from rows
  * Returns a Blob that can be downloaded
  */
-export function generateXLSX(headers: string[], rows: Record<string, unknown>[]): Blob {
+export async function generateXLSX(headers: string[], rows: Record<string, unknown>[]): Promise<Blob> {
+  const XLSX = await loadXlsxModule();
   const worksheetData = [
     headers,
     ...rows.map((row) => Object.values(row)),

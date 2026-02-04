@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST } from '../logout/route';
-import { clearSessionCookie } from '@/lib/auth';
+import { clearSessionCookie } from '@/server/auth';
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   clearSessionCookie: vi.fn(),
 }));
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),

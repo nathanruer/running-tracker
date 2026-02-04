@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ExportSessions } from './export-sessions';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -8,7 +8,7 @@ import { LoadingBar } from '@/components/ui/loading-bar';
 import { type TrainingSession } from '@/lib/types';
 import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
 import type { Period } from '../hooks/use-period-filter';
-import { useSessionsSelection } from '../hooks/use-sessions-selection';
+import { useTableSelection } from '@/hooks/use-table-selection';
 import { useBulkDelete } from '../hooks/use-bulk-delete';
 import { SessionsTableToolbar } from './sessions-table-toolbar';
 import { SessionsTableHead } from './sessions-table-head';
@@ -20,6 +20,7 @@ export interface SessionActions {
   onDelete: (id: string) => void;
   onBulkDelete: (ids: string[]) => Promise<void>;
   onView?: (session: TrainingSession) => void;
+  onPrefetchDetails?: (sessionId: string) => void;
   onNewSession?: () => void;
 }
 
@@ -65,33 +66,14 @@ export function SessionsTable({
   dateFrom,
 }: SessionsTableProps) {
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const observerTarget = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!hasMore || isFetchingNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          onLoadMore();
-        }
-      },
-      { threshold: 0.1, rootMargin: '400px' }
-    );
-
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-  }, [hasMore, isFetchingNextPage, onLoadMore]);
-
-  const { selectedSessions, toggleSessionSelection, toggleSelectAll, clearSelection, isAllSelected } = useSessionsSelection(sessions);
+  const {
+    selectedKeys: selectedSessions,
+    toggleSelectByKey,
+    toggleSelectAll,
+    clearSelection,
+    isAllSelected,
+  } = useTableSelection(sessions, { mode: 'multiple', getKey: (session) => session.id });
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
 
   const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all';
@@ -134,19 +116,21 @@ export function SessionsTable({
               <SessionsTableHead
                 sortConfig={sortConfig}
                 onSort={onSort}
-                isAllSelected={isAllSelected}
+                isAllSelected={isAllSelected()}
                 onToggleSelectAll={toggleSelectAll}
               />
               <SessionsTableBody
                 initialLoading={initialLoading}
                 sessions={sessions}
                 isFetching={isFetching}
+                hasActiveFilters={hasActiveFilters}
                 selectedSessions={selectedSessions}
-                onToggleSelect={toggleSessionSelection}
+                onToggleSelect={toggleSelectByKey}
                 actions={{
                   onEdit: actions.onEdit,
                   onDelete: actions.onDelete,
                   onView: actions.onView,
+                  onPrefetchDetails: actions.onPrefetchDetails,
                 }}
               />
             </Table>
@@ -154,13 +138,12 @@ export function SessionsTable({
         </CardContent>
       </Card>
 
-      <div ref={observerTarget}>
-        <SessionsTableFooter
-          hasMore={hasMore}
-          sessionsCount={sessions.length}
-          isFetchingNextPage={isFetchingNextPage}
-        />
-      </div>
+      <SessionsTableFooter
+        hasMore={hasMore}
+        sessionsCount={sessions.length}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={onLoadMore}
+      />
 
       <ConfirmationDialog
         open={showBulkDeleteDialog}

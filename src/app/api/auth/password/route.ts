@@ -2,8 +2,8 @@ import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { prisma } from '@/lib/database';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { prisma } from '@/server/database';
+import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 
 const passwordSchema = z.object({

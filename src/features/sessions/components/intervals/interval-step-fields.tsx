@@ -10,6 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { type IntervalFormValues } from '@/lib/validation/session-form';
 import { calculatePaceFromDurationAndDistance } from '@/lib/utils/pace';
+import { parseNullableNumberInput } from '@/lib/utils/numbers';
 
 interface IntervalStepFieldsProps {
   stepIndex: number;
@@ -56,7 +57,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
                 placeholder="00:00"
                 {...field}
                 value={field.value || ''}
-                className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                variant="form"
               />
             </FormControl>
             <FormMessage />
@@ -76,10 +77,13 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
                 placeholder="0"
                 {...field}
                 value={field.value ?? ''}
-                onChange={(e) =>
-                  field.onChange(e.target.value === '' ? null : parseFloat(e.target.value))
-                }
-                className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                onChange={(e) => {
+                  const parsed = parseNullableNumberInput(e.target.value, { mode: 'float', decimals: 2 });
+                  if (parsed !== undefined) {
+                    field.onChange(parsed);
+                  }
+                }}
+                variant="form"
               />
             </FormControl>
             <FormMessage />
@@ -97,7 +101,7 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
                 placeholder="00:00"
                 {...field}
                 value={field.value || ''}
-                className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                variant="form"
               />
             </FormControl>
             <FormMessage />
@@ -116,10 +120,13 @@ export function IntervalStepFields({ stepIndex, control, setValue }: IntervalSte
                 placeholder="0"
                 {...field}
                 value={field.value ?? ''}
-                onChange={(e) =>
-                  field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                }
-                className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                onChange={(e) => {
+                  const parsed = parseNullableNumberInput(e.target.value, { mode: 'int' });
+                  if (parsed !== undefined) {
+                    field.onChange(parsed);
+                  }
+                }}
+                variant="form"
               />
             </FormControl>
             <FormMessage />

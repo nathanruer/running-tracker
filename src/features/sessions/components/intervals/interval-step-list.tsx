@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { ChevronDown, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { type IntervalStep } from '@/lib/types';
+import { parseNullableNumberInput } from '@/lib/utils/numbers';
 import { SortableIntervalStep } from './sortable-interval-step';
 import {
   DndContext,
@@ -139,7 +140,7 @@ export function IntervalStepList({
                     <FormItem>
                       <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Allure cible effort</FormLabel>
                       <FormControl>
-                        <Input placeholder="00:00" className="rounded-xl h-10 border-border/50 bg-[#141414]" {...field} value={field.value || ''} />
+                        <Input placeholder="00:00" variant="form" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -155,12 +156,15 @@ export function IntervalStepList({
                         <Input
                           type="number"
                           placeholder="0"
-                          className="rounded-xl h-10 border-border/50 bg-[#141414]"
+                          variant="form"
                           {...field}
                           value={field.value || ''}
-                          onChange={(e) =>
-                            field.onChange(e.target.value === '' ? null : parseInt(e.target.value))
-                          }
+                          onChange={(e) => {
+                            const parsed = parseNullableNumberInput(e.target.value, { mode: 'int' });
+                            if (parsed !== undefined) {
+                              field.onChange(parsed);
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

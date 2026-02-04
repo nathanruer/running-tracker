@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { prisma } from '@/lib/database';
-import { createSessionToken, persistSessionCookie } from '@/lib/auth';
+import { prisma } from '@/server/database';
+import { createSessionToken, persistSessionCookie } from '@/server/auth';
 import { loginSchema } from '@/lib/validation';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 
 export const runtime = 'nodejs';

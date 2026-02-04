@@ -9,6 +9,7 @@ export async function getSessions(
   search?: string,
   dateFrom?: string,
   context?: 'analytics',
+  view?: 'table' | 'full' | 'export',
 ): Promise<TrainingSession[]> {
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
@@ -18,6 +19,7 @@ export async function getSessions(
   if (search) params.append('search', search);
   if (dateFrom) params.append('dateFrom', dateFrom);
   if (context) params.append('context', context);
+  if (view && view !== 'full') params.append('view', view);
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
 

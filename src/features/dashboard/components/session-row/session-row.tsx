@@ -26,6 +26,7 @@ export const SessionRow = React.memo(function SessionRow({
   isSelected = false,
   onToggleSelect,
   onView,
+  onPrefetchDetails,
 }: SessionRowProps) {
   const [isOpen, setIsOpen] = useState(false);
   const data = useSessionRowData(session);
@@ -60,7 +61,13 @@ export const SessionRow = React.memo(function SessionRow({
 
   return (
     <>
-      <TableRow data-testid={`session-row-${session.id}`} className={rowClassName} onClick={handleRowClick}>
+      <TableRow
+        data-testid={`session-row-${session.id}`}
+        className={rowClassName}
+        onClick={handleRowClick}
+        onMouseEnter={() => onPrefetchDetails?.(session.id)}
+        onFocus={() => onPrefetchDetails?.(session.id)}
+      >
         <CheckboxCell
           showCheckbox={showCheckbox}
           isSelected={isSelected}

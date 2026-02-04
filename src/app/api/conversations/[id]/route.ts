@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { handleGetRequest, handleApiRequest, handleDeleteRequest } from '@/lib/services/api-handlers';
+import { prisma } from '@/server/database';
+import { handleGetRequest, handleApiRequest, handleDeleteRequest } from '@/server/services/api-handlers';
 
 export async function GET(
   request: NextRequest,

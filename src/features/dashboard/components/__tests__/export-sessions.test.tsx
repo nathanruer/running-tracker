@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExportSessions } from '@/features/dashboard/components/export-sessions';
@@ -219,7 +219,7 @@ describe('ExportSessions', () => {
     mockFormatSessionsStandard.mockReturnValue([['row1']]);
     mockGetStandardHeaders.mockReturnValue(['header1']);
     const mockBlob = new Blob(['xlsx-content']);
-    mockGenerateXLSX.mockReturnValue(mockBlob);
+    mockGenerateXLSX.mockResolvedValue(mockBlob);
 
     render(
       <ExportSessions
@@ -234,10 +234,12 @@ describe('ExportSessions', () => {
     await user.click(screen.getByTestId('include-intervals'));
     await user.click(screen.getByRole('button', { name: /EXCEL/i }));
 
-    expect(mockFormatSessionsStandard).toHaveBeenCalled();
-    expect(mockGetStandardHeaders).toHaveBeenCalled();
-    expect(mockGenerateXLSX).toHaveBeenCalled();
-    expect(mockDownloadBlob).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockFormatSessionsStandard).toHaveBeenCalled();
+      expect(mockGetStandardHeaders).toHaveBeenCalled();
+      expect(mockGenerateXLSX).toHaveBeenCalled();
+      expect(mockDownloadBlob).toHaveBeenCalled();
+    });
   });
 
   it('exports detailed JSON when intervals are enabled', async () => {
@@ -297,7 +299,7 @@ describe('ExportSessions', () => {
     mockFormatSessionsDetailed.mockReturnValue([['row1']]);
     mockGetDetailedHeaders.mockReturnValue(['header1']);
     const mockBlob = new Blob(['xlsx-content']);
-    mockGenerateXLSX.mockReturnValue(mockBlob);
+    mockGenerateXLSX.mockResolvedValue(mockBlob);
 
     render(
       <ExportSessions
@@ -311,10 +313,12 @@ describe('ExportSessions', () => {
 
     await user.click(screen.getByRole('button', { name: /EXCEL/i }));
 
-    expect(mockFormatSessionsDetailed).toHaveBeenCalled();
-    expect(mockGetDetailedHeaders).toHaveBeenCalled();
-    expect(mockGenerateXLSX).toHaveBeenCalled();
-    expect(mockDownloadBlob).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockFormatSessionsDetailed).toHaveBeenCalled();
+      expect(mockGetDetailedHeaders).toHaveBeenCalled();
+      expect(mockGenerateXLSX).toHaveBeenCalled();
+      expect(mockDownloadBlob).toHaveBeenCalled();
+    });
   });
 
   it('shows error toast when export fails', async () => {

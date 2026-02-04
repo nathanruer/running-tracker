@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { requireAuth } from '@/lib/auth/middleware';
-import { logger } from '@/lib/infrastructure/logger';
-import { processStreamingMessage } from '@/lib/services/ai/stream-service';
+import { prisma } from '@/server/database';
+import { requireAuth } from '@/server/auth/middleware';
+import { logger } from '@/server/infrastructure/logger';
+import { processStreamingMessage } from '@/server/services/ai/stream-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

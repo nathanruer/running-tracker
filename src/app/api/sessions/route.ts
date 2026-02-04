@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
+import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { sessionSchema } from '@/lib/validation';
-import { handleGetRequest, handleApiRequest } from '@/lib/services/api-handlers';
+import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSession } from '@/lib/services/strava';
-import { toPrismaJson } from '@/lib/utils/api';
-import { fetchSessions } from '@/lib/domain/sessions/sessions-read';
-import { createCompletedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchStreamsForSession } from '@/server/services/strava';
+import { toPrismaJson } from '@/server/utils/prisma-json';
+import { fetchSessions } from '@/server/domain/sessions/sessions-read';
+import { createCompletedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +23,14 @@ export async function GET(request: NextRequest) {
       const search = searchParams.get('search');
       const dateFrom = searchParams.get('dateFrom');
       const context = searchParams.get('context');
+      const viewParam = searchParams.get('view');
+      const fieldsParam = searchParams.get('fields');
+      const view =
+        viewParam === 'table' || fieldsParam === 'summary'
+          ? 'table'
+          : viewParam === 'export'
+            ? 'export'
+            : undefined;
 
       const sessions = await fetchSessions({
         userId,
@@ -34,6 +42,7 @@ export async function GET(request: NextRequest) {
         dateFrom,
         sort: sortParam,
         includePlannedDateAsDate: context === 'analytics',
+        view,
       });
 
       return NextResponse.json({ sessions });
@@ -70,7 +79,7 @@ export async function POST(request: NextRequest) {
           userId
         );
 
-        const { fetchSessionById } = await import('@/lib/domain/sessions/sessions-read');
+        const { fetchSessionById } = await import('@/server/domain/sessions/sessions-read');
         const session = await fetchSessionById(userId, workout.id);
 
         return NextResponse.json(

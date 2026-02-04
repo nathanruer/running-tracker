@@ -1,10 +1,25 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { StreamChart } from './stream-chart';
+import dynamic from 'next/dynamic';
 import { STREAM_CONFIGS } from '@/lib/utils/geo/stream-charts';
 import { useStreamData } from '../../hooks/details/use-stream-data';
-import { CHART_DISPLAY_ORDER } from '@/lib/constants/stream-charts';
+import { CHART_DISPLAY_ORDER, STREAM_CHART_CONSTANTS } from '@/lib/constants/stream-charts';
+
+const StreamChart = dynamic(
+  () => import('./stream-chart').then((mod) => mod.StreamChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="flex items-center justify-center text-sm text-muted-foreground"
+        style={{ height: STREAM_CHART_CONSTANTS.CHART_HEIGHT }}
+      >
+        Chargement du graphique...
+      </div>
+    ),
+  }
+);
 
 interface StreamsSectionProps {
   streams: unknown;

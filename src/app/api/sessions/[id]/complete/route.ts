@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
+import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSession } from '@/lib/services/strava';
-import { completePlannedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
+import { fetchStreamsForSession } from '@/server/services/strava';
+import { completePlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
 export async function PATCH(
   request: NextRequest,

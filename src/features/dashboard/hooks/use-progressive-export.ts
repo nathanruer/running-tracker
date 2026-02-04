@@ -46,7 +46,16 @@ export function useProgressiveExport() {
         let offset = 0;
 
         while (offset < totalCount) {
-          const chunk = await getSessions(CHUNK_SIZE, offset, type, undefined, search, dateFrom);
+          const chunk = await getSessions(
+            CHUNK_SIZE,
+            offset,
+            type,
+            undefined,
+            search,
+            dateFrom,
+            undefined,
+            'export'
+          );
 
           if (chunk.length === 0) break;
 

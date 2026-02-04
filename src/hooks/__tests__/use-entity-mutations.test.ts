@@ -473,8 +473,8 @@ describe('useEntityMutations', () => {
         await result.current.handleDelete('entity-1');
       });
 
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'], refetchType: 'none' });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'], refetchType: 'none' });
     });
 
     it('should invalidate related query keys on bulk delete', async () => {
@@ -501,8 +501,8 @@ describe('useEntityMutations', () => {
         await result.current.handleBulkDelete(['entity-1', 'entity-2']);
       });
 
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'], refetchType: 'none' });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'], refetchType: 'none' });
     });
 
     it('should invalidate related query keys on entity success', () => {
@@ -527,6 +527,62 @@ describe('useEntityMutations', () => {
 
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
+    });
+
+    it('should use refetchType active when skipRefetchOnDelete is false', async () => {
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+            relatedQueryKeys: [['related1']],
+            skipRefetchOnDelete: false,
+          }),
+        { wrapper }
+      );
+
+      await act(async () => {
+        await result.current.handleDelete('entity-1');
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ 
+        queryKey: ['entities'],
+        refetchType: 'active',
+      });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ 
+        queryKey: ['related1'], 
+        refetchType: 'active' 
+      });
+    });
+
+    it('should use refetchType none by default for delete operations', async () => {
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
+      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
+
+      await act(async () => {
+        await result.current.handleDelete('entity-1');
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ 
+        queryKey: ['entities'],
+        refetchType: 'none',
+      });
     });
   });
 

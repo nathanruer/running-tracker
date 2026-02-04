@@ -115,7 +115,7 @@ export function ExportSessions({
             const content = generateCSV(headers, rows);
             downloadFile(content, filename, 'text/csv');
           } else {
-            const blob = generateXLSX(headers, rows);
+            const blob = await generateXLSX(headers, rows);
             downloadBlob(blob, filename);
           }
         }
@@ -132,7 +132,7 @@ export function ExportSessions({
             const content = generateCSV(headers, rows);
             downloadFile(content, filename, 'text/csv');
           } else {
-            const blob = generateXLSX(headers, rows);
+            const blob = await generateXLSX(headers, rows);
             downloadBlob(blob, filename);
           }
         }

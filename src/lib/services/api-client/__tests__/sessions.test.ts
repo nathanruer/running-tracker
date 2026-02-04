@@ -74,6 +74,22 @@ describe('Sessions API', () => {
 
       expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions?limit=10&sort=date%3Aasc&search=test&dateFrom=2024-01-01');
     });
+
+    it('includes view parameter', async () => {
+      mockApiRequest.mockResolvedValue({ sessions: [] });
+
+      await getSessions(undefined, undefined, 'all', undefined, undefined, undefined, undefined, 'table');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions?view=table');
+    });
+
+    it('includes export view parameter', async () => {
+      mockApiRequest.mockResolvedValue({ sessions: [] });
+
+      await getSessions(undefined, undefined, 'all', undefined, undefined, undefined, undefined, 'export');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions?view=export');
+    });
   });
 
   describe('getSessionsCount', () => {

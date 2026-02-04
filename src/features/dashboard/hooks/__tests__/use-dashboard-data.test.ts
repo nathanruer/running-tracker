@@ -717,7 +717,7 @@ describe('useDashboardData', () => {
       const infiniteCall = vi.mocked(useInfiniteQuery).mock.calls[0][0];
       await (infiniteCall.queryFn as (ctx: { pageParam: number }) => Promise<unknown>)({ pageParam: 20 });
 
-      expect(getSessions).toHaveBeenCalledWith(10, 20, 'Footing', 'date:desc', 'tempo', '2024-01-01');
+      expect(getSessions).toHaveBeenCalledWith(10, 20, 'Footing', 'date:desc', 'tempo', '2024-01-01', undefined, 'table');
 
       const getNextPageParam = infiniteCall.getNextPageParam as (lastPage: unknown[], allPages: unknown[][], lastPageParam: number, allPageParams: number[]) => number | undefined;
       const nextPage = getNextPageParam(new Array(10).fill(createSession('x')), [new Array(10)], 0, [0]);

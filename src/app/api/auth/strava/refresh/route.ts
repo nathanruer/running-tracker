@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { refreshAccessToken } from '@/lib/services/strava';
-import { handleApiRequest } from '@/lib/services/api-handlers';
+import { prisma } from '@/server/database';
+import { refreshAccessToken } from '@/server/services/strava';
+import { handleApiRequest } from '@/server/services/api-handlers';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(

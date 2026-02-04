@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sessionSchema } from '@/lib/validation';
-import { enrichSessionWithWeather } from '@/lib/domain/sessions/enrichment';
-import { handleApiRequest } from '@/lib/services/api-handlers';
-import { HTTP_STATUS, SESSION_STATUS } from '@/lib/constants';
-import { createCompletedSession, deleteSessions, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
-import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
+import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
+import { handleApiRequest } from '@/server/services/api-handlers';
+import { HTTP_STATUS } from '@/lib/constants';
+import { createCompletedSession, deleteSessions, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 
 export const runtime = 'nodejs';
 

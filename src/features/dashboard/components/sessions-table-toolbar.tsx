@@ -1,4 +1,4 @@
-import { FilterX, Download, FileUp, Plus } from 'lucide-react';
+import { FilterX, Download, FileUp, Plus, X } from 'lucide-react';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
@@ -19,6 +19,36 @@ import {
 import { SelectionBar } from './selection-bar';
 import { PeriodFilter } from './period-filter';
 import type { Period } from '../hooks/use-period-filter';
+
+const PERIOD_LABELS: Record<Period, string> = {
+  all: 'Tout',
+  week: 'Semaine',
+  month: 'Mois',
+  year: 'Année',
+};
+
+interface ActiveFilterChipProps {
+  id: string;
+  label: string;
+  onRemove: () => void;
+}
+
+function ActiveFilterChip({ id, label, onRemove }: ActiveFilterChipProps) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      data-testid={`active-filter-${id}`}
+      onClick={onRemove}
+      className="h-8 px-2.5 rounded-full border border-border/40 bg-muted/10 text-[9px] md:text-[10px] font-bold text-muted-foreground/80 hover:text-foreground hover:bg-muted/20 transition-colors flex items-center gap-2"
+      aria-label={`Retirer le filtre ${label}`}
+    >
+      <span className="max-w-[160px] truncate">{label}</span>
+      <X className="h-3 w-3" />
+    </Button>
+  );
+}
 
 interface SessionsTableToolbarProps {
   initialLoading: boolean;
@@ -61,6 +91,37 @@ export function SessionsTableToolbar({
   hasActiveFilters,
   onClearFilters,
 }: SessionsTableToolbarProps) {
+  const trimmedSearch = searchQuery.trim();
+  const activeFilters = [
+    ...(selectedType !== 'all'
+      ? [
+          {
+            id: 'type',
+            label: `Type: ${selectedType}`,
+            onRemove: () => onTypeChange('all'),
+          },
+        ]
+      : []),
+    ...(period !== 'all'
+      ? [
+          {
+            id: 'period',
+            label: `Période: ${PERIOD_LABELS[period]}`,
+            onRemove: () => onPeriodChange('all'),
+          },
+        ]
+      : []),
+    ...(trimmedSearch
+      ? [
+          {
+            id: 'search',
+            label: `Recherche: ${trimmedSearch}`,
+            onRemove: () => onSearchChange(''),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <CardHeader className="flex flex-col gap-4 px-3 py-4 md:px-8 md:py-8 border-b border-border/40">
       <div className="flex flex-col gap-4 md:gap-6">
@@ -145,21 +206,31 @@ export function SessionsTableToolbar({
             </Select>
 
             <PeriodFilter period={period} onPeriodChange={onPeriodChange} />
-
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClearFilters}
-                className="h-9 px-2.5 rounded-xl text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[9px] md:text-[10px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5 ml-auto sm:ml-0"
-              >
-                <FilterX className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Effacer</span>
-              </Button>
-            )}
           </div>
         </div>
       </div>
+
+      {hasActiveFilters && activeFilters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilters.map((filter) => (
+            <ActiveFilterChip
+              key={filter.id}
+              id={filter.id}
+              label={filter.label}
+              onRemove={filter.onRemove}
+            />
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearFilters}
+            className="h-8 px-2.5 rounded-full text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[9px] md:text-[10px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5"
+          >
+            <FilterX className="h-3.5 w-3.5" />
+            <span>Tout effacer</span>
+          </Button>
+        </div>
+      )}
 
       {selectedCount > 0 && (
         <SelectionBar

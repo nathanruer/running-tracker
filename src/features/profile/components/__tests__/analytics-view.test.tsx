@@ -26,7 +26,7 @@ vi.mock('../analytics/weekly-evolution-chart', () => ({
 }));
 
 describe('AnalyticsView', () => {
-  it('renders analytics sections', () => {
+  it('renders analytics sections', async () => {
     mockUseAnalyticsData.mockReturnValue({
       dateRange: 'last_4_weeks',
       setDateRange: vi.fn(),
@@ -48,6 +48,6 @@ describe('AnalyticsView', () => {
     expect(screen.getByTestId('date-range')).toBeInTheDocument();
     expect(screen.getByTestId('export-weekly')).toBeInTheDocument();
     expect(screen.getByTestId('stats-cards')).toBeInTheDocument();
-    expect(screen.getByTestId('weekly-chart')).toBeInTheDocument();
+    expect(await screen.findByTestId('weekly-chart')).toBeInTheDocument();
   });
 });

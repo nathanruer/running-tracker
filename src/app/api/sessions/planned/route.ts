@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleApiRequest } from '@/lib/services/api-handlers';
-import { createPlannedSession, logSessionWriteError } from '@/lib/domain/sessions/sessions-write';
-import { fetchSessionById } from '@/lib/domain/sessions/sessions-read';
+import { handleApiRequest } from '@/server/services/api-handlers';
+import { createPlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
+import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(

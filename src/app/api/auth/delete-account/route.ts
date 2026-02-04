@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database/prisma';
-import { getUserIdFromRequest, clearSessionCookie } from '@/lib/auth';
-import { logger } from '@/lib/infrastructure/logger';
+import { prisma } from '@/server/database/prisma';
+import { getUserIdFromRequest, clearSessionCookie } from '@/server/auth';
+import { logger } from '@/server/infrastructure/logger';
 
 export async function DELETE(request: NextRequest) {
   try {

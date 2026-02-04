@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, PUT } from '../route';
-import { prisma } from '@/lib/database';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { prisma } from '@/server/database';
+import { getUserIdFromRequest } from '@/server/auth';
 
-vi.mock('@/lib/database', () => ({
+vi.mock('@/server/database', () => ({
   prisma: {
     users: {
       findUnique: vi.fn(),
@@ -13,11 +13,11 @@ vi.mock('@/lib/database', () => ({
   },
 }));
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(),
 }));
 
-vi.mock('@/lib/infrastructure/logger', () => ({
+vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),
     info: vi.fn(),

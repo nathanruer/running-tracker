@@ -35,11 +35,11 @@ export function BottomNavigation() {
               key={item.href}
               onClick={() => router.push(item.href)}
               onMouseEnter={() => {
-                prefetchDataForRoute(queryClient, item.href);
+                void prefetchDataForRoute(queryClient, item.href);
                 router.prefetch(item.href);
               }}
               onTouchStart={() => {
-                prefetchDataForRoute(queryClient, item.href);
+                void prefetchDataForRoute(queryClient, item.href);
                 router.prefetch(item.href);
               }}
               className={`flex flex-col items-center justify-center gap-1 flex-1 h-full active:scale-95 transition-all ${

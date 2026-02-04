@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
@@ -24,6 +24,9 @@ import {
   type TrainingSessionPayload,
 } from '@/lib/types';
 import { getSessionById } from '@/lib/services/api-client';
+import { queryKeys } from '@/lib/constants/query-keys';
+
+const SESSION_DETAILS_STALE_TIME = 5 * 60 * 1000;
 
 function DashboardContent() {
   const queryClient = useQueryClient();
@@ -94,10 +97,6 @@ function DashboardContent() {
     };
   }, [importedData]);
 
-  if (initialLoading || !user) {
-    return <DashboardSkeleton />;
-  }
-
   const handleDelete = async (id: string) => {
     setDeletingId(null);
     await deleteMutation(id);
@@ -137,23 +136,54 @@ function DashboardContent() {
     setIsStravaDialogOpen(true);
   };
 
+  const prefetchSessionDetails = useCallback(
+    (sessionId: string) => {
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.sessionById(sessionId),
+        queryFn: () => getSessionById(sessionId),
+        staleTime: SESSION_DETAILS_STALE_TIME,
+      });
+    },
+    [queryClient]
+  );
+
+  const handleViewSession = useCallback(
+    (session: TrainingSession) => {
+      setViewingSession(session);
+      setIsDetailsSheetOpen(true);
+
+      const cached = queryClient.getQueryData<TrainingSession>(
+        queryKeys.sessionById(session.id)
+      );
+      if (cached) {
+        setViewingSession(cached);
+      }
+
+      void queryClient.fetchQuery({
+        queryKey: queryKeys.sessionById(session.id),
+        queryFn: () => getSessionById(session.id),
+        staleTime: SESSION_DETAILS_STALE_TIME,
+      }).then((freshSession) => {
+        setViewingSession(freshSession);
+      }).catch(() => {
+        // Keep existing session data if refresh fails.
+      });
+    },
+    [queryClient]
+  );
+
   const sessionActions: SessionActions = {
     onEdit: handleEdit,
     onDelete: setDeletingId,
     onBulkDelete: handleBulkDelete,
-    onView: (session) => {
-      setViewingSession(session);
-      setIsDetailsSheetOpen(true);
-      getSessionById(session.id)
-        .then((freshSession) => {
-          setViewingSession(freshSession);
-        })
-        .catch(() => {
-          // Keep existing session data if refresh fails.
-        });
-    },
+    onView: handleViewSession,
+    onPrefetchDetails: prefetchSessionDetails,
     onNewSession: openNewSession,
   };
+
+  if (initialLoading || !user) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <PageContainer testId="dashboard-container" mobileTitle="Dashboard">

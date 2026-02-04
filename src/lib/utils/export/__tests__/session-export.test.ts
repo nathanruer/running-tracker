@@ -492,11 +492,11 @@ describe('generateJSON', () => {
 // ============================================================================
 
 describe('generateXLSX', () => {
-  it('generates a blob with xlsx mime type', () => {
+  it('generates a blob with xlsx mime type', async () => {
     const headers = ['Nom'];
     const rows = [{ nom: 'Alice' }];
 
-    const blob = generateXLSX(headers, rows);
+    const blob = await generateXLSX(headers, rows);
 
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database';
-import { getActivities, formatStravaActivity, getValidAccessToken, getAthleteStats } from '@/lib/services/strava';
-import { handleGetRequest } from '@/lib/services/api-handlers';
+import { prisma } from '@/server/database';
+import { getActivities, formatStravaActivity, getValidAccessToken, getAthleteStats } from '@/server/services/strava';
+import { handleGetRequest } from '@/server/services/api-handlers';
 import { StravaActivity } from '@/lib/types/strava';
 
 export async function GET(request: NextRequest) {
