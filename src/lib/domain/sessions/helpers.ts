@@ -53,9 +53,6 @@ export function getCompletedSession(
   );
 }
 
-/**
- * Retrieves a session (planned or completed) from a recommendation
- */
 export function getAddedSession(
   recommendedSession: AIRecommendedSession,
   allSessions: TrainingSession[]
@@ -64,12 +61,4 @@ export function getAddedSession(
     (s) => (s.status === 'planned' || s.status === 'completed') &&
            s.recommendationId === recommendedSession.recommendation_id
   );
-}
-
-/**
- * Calculates the next available session number
- */
-export function getNextSessionNumber(allSessions: TrainingSession[]): number {
-  if (allSessions.length === 0) return 1;
-  return Math.max(...allSessions.map(s => s.sessionNumber)) + 1;
 }

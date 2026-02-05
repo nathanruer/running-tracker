@@ -9,7 +9,6 @@ export {
 } from './sessions-read';
 export {
   recalculateSessionNumbers,
-  recalculateSessionNumbersDeferred,
   updateSessionWeather,
   createPlannedSession,
   createCompletedSession,

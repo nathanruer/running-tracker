@@ -32,107 +32,63 @@ function getWeekKey(date: Date): string {
   return `${d.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
 }
 
-async function getEarliestWorkoutDate(userId: string): Promise<Date | null> {
-  const first = await prisma.workouts.findFirst({
-    where: { userId },
-    orderBy: { date: 'asc' },
-    select: { date: true },
-  });
-  return first?.date ?? null;
-}
-
-async function getNextSessionNumber(userId: string): Promise<number> {
-  const workoutStats = await prisma.workouts.aggregate({
-    where: { userId },
-    _max: { sessionNumber: true },
-  });
-
-  return (workoutStats._max.sessionNumber ?? 0) + 1;
-}
-
-async function calculateSessionPosition(userId: string, date: Date) {
-  const workouts = await prisma.workouts.findMany({
-    where: { userId },
-    orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-    select: { id: true, date: true },
-  });
-
-  const newSessionWeekKey = getWeekKey(date);
-  const weekMap = new Map<string, typeof workouts>();
-  for (const workout of workouts) {
-    const weekKey = getWeekKey(workout.date);
-    if (!weekMap.has(weekKey)) {
-      weekMap.set(weekKey, []);
-    }
-    weekMap.get(weekKey)!.push(workout);
-  }
-
-  const sortedWeeks = Array.from(weekMap.keys()).sort();
-  let weekIndex = sortedWeeks.indexOf(newSessionWeekKey);
-  if (weekIndex === -1) {
-    sortedWeeks.push(newSessionWeekKey);
-    sortedWeeks.sort();
-    weekIndex = sortedWeeks.indexOf(newSessionWeekKey);
-  }
-
-  const week = weekIndex + 1;
-
-  let sessionNumber = 1;
-  for (const workout of workouts) {
-    if (workout.date < date) {
-      sessionNumber++;
-    }
-  }
-
-  const sameDateSessions = workouts.filter((w) => w.date.getTime() === date.getTime());
-  sessionNumber += sameDateSessions.length;
-
-  return { sessionNumber, week };
+function computeWeek(date: Date, sortedWeekKeys: string[]): number {
+  const weekKey = getWeekKey(date);
+  const index = sortedWeekKeys.indexOf(weekKey);
+  return index === -1 ? sortedWeekKeys.length + 1 : index + 1;
 }
 
 export async function recalculateSessionNumbers(userId: string) {
   const workouts = await prisma.workouts.findMany({
     where: { userId },
     orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-    select: { id: true, date: true, planSessionId: true },
+    select: { id: true, date: true, planSessionId: true, sessionNumber: true, week: true },
   });
 
-  const planSessions = await prisma.plan_sessions.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'asc' },
-    select: { id: true, status: true },
+  const unlinkedPlans = await prisma.plan_sessions.findMany({
+    where: { userId, workouts: { none: {} } },
+    orderBy: [{ plannedDate: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, plannedDate: true, sessionNumber: true, week: true },
+  });
+
+  const linkedPlans = await prisma.plan_sessions.findMany({
+    where: { userId, workouts: { some: {} } },
+    select: { id: true, sessionNumber: true },
   });
 
   const updates: Prisma.PrismaPromise<unknown>[] = [];
   let sessionNumber = 1;
 
-  // Build a map of planSessionId -> workoutSessionNumber for syncing
   const planToWorkoutNumber = new Map<string, number>();
 
-  const weekMap = new Map<string, typeof workouts>();
+  const weekMap = new Map<string, string[]>();
   for (const workout of workouts) {
     const weekKey = getWeekKey(workout.date);
-    if (!weekMap.has(weekKey)) {
-      weekMap.set(weekKey, []);
-    }
-    weekMap.get(weekKey)!.push(workout);
+    if (!weekMap.has(weekKey)) weekMap.set(weekKey, []);
+    weekMap.get(weekKey)!.push(workout.id);
   }
+
+  const sortedWeekKeys = Array.from(weekMap.keys()).sort();
 
   const sortedWeeks = Array.from(weekMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
   for (let weekIndex = 0; weekIndex < sortedWeeks.length; weekIndex++) {
-    const [, weekWorkouts] = sortedWeeks[weekIndex];
+    const [, weekWorkoutIds] = sortedWeeks[weekIndex];
     const trainingWeek = weekIndex + 1;
-
+    const weekWorkouts = weekWorkoutIds.map(
+      (wid) => workouts.find((w) => w.id === wid)!
+    );
     weekWorkouts.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     for (const workout of weekWorkouts) {
-      updates.push(
-        prisma.workouts.update({
-          where: { id: workout.id },
-          data: { sessionNumber, week: trainingWeek },
-        })
-      );
+      if (workout.sessionNumber !== sessionNumber || workout.week !== trainingWeek) {
+        updates.push(
+          prisma.workouts.update({
+            where: { id: workout.id },
+            data: { sessionNumber, week: trainingWeek },
+          })
+        );
+      }
       if (workout.planSessionId) {
         planToWorkoutNumber.set(workout.planSessionId, sessionNumber);
       }
@@ -140,57 +96,49 @@ export async function recalculateSessionNumbers(userId: string) {
     }
   }
 
-  let plannedSessionNumber = sessionNumber;
+  const plansWithDate = unlinkedPlans.filter((p) => p.plannedDate !== null);
+  const plansWithoutDate = unlinkedPlans.filter((p) => p.plannedDate === null);
 
-  for (const plan of planSessions) {
-    if (plan.status === 'completed') {
-      const linkedNumber = planToWorkoutNumber.get(plan.id);
-      if (linkedNumber !== undefined) {
-        updates.push(
-          prisma.plan_sessions.update({
-            where: { id: plan.id },
-            data: { sessionNumber: linkedNumber },
-          })
-        );
-      }
-    } else {
+  for (const plan of plansWithDate) {
+    const week = computeWeek(plan.plannedDate!, sortedWeekKeys);
+    if (plan.sessionNumber !== sessionNumber || plan.week !== week) {
       updates.push(
         prisma.plan_sessions.update({
           where: { id: plan.id },
-          data: { sessionNumber: plannedSessionNumber, week: null },
+          data: { sessionNumber, week },
         })
       );
-      plannedSessionNumber++;
+    }
+    sessionNumber++;
+  }
+
+  for (const plan of plansWithoutDate) {
+    if (plan.sessionNumber !== sessionNumber || plan.week !== null) {
+      updates.push(
+        prisma.plan_sessions.update({
+          where: { id: plan.id },
+          data: { sessionNumber, week: null },
+        })
+      );
+    }
+    sessionNumber++;
+  }
+
+  for (const plan of linkedPlans) {
+    const linkedNumber = planToWorkoutNumber.get(plan.id);
+    if (linkedNumber !== undefined && plan.sessionNumber !== linkedNumber) {
+      updates.push(
+        prisma.plan_sessions.update({
+          where: { id: plan.id },
+          data: { sessionNumber: linkedNumber },
+        })
+      );
     }
   }
 
   if (updates.length) {
     await prisma.$transaction(updates);
   }
-}
-
-/**
- * Deferred version of recalculateSessionNumbers that runs in the background.
- * Use this for operations where immediate recalculation is not critical
- * (e.g., after deletions where the UI optimistically removes the item).
- * 
- * This significantly improves API response times as the caller doesn't wait
- * for the potentially expensive recalculation.
- * 
- * @param userId - The user ID to recalculate session numbers for
- * @returns void - The function returns immediately, recalculation happens in background
- */
-export function recalculateSessionNumbersDeferred(userId: string): void {
-  // Use setImmediate-like pattern to defer execution to next event loop tick
-  // This allows the current request to complete before recalculation starts
-  Promise.resolve().then(async () => {
-    try {
-      await recalculateSessionNumbers(userId);
-    } catch (error) {
-      // Log error but don't throw - this is a background operation
-      logger.error({ error, userId }, 'deferred-recalculation-failed');
-    }
-  });
 }
 
 async function upsertWeatherObservation(workoutId: string, weather: Record<string, unknown> | null, date: Date | null) {
@@ -306,29 +254,14 @@ export async function updateSessionWeather(
 
 export async function createPlannedSession(payload: Record<string, unknown>, userId: string) {
   const plannedDate = payload.plannedDate ? new Date(String(payload.plannedDate)) : null;
-  const sessionType = String(payload.sessionType ?? '');
-  const comments = String(payload.comments ?? '');
-
-  const sessionNumber = await getNextSessionNumber(userId);
-  let week: number | null = null;
-  if (plannedDate) {
-    const firstWorkoutDate = await getEarliestWorkoutDate(userId);
-    if (firstWorkoutDate) {
-      const diffTime = Math.abs(plannedDate.getTime() - firstWorkoutDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      week = Math.floor(diffDays / 7) + 1;
-    } else {
-      week = 1;
-    }
-  }
 
   const plan = await prisma.plan_sessions.create({
     data: {
       userId,
-      sessionNumber,
-      week,
+      sessionNumber: 0,
+      week: null,
       plannedDate,
-      sessionType,
+      sessionType: String(payload.sessionType ?? ''),
       status: 'planned',
       targetDuration: (payload.targetDuration as number | null) ?? null,
       targetDistance: (payload.targetDistance as number | null) ?? null,
@@ -337,16 +270,17 @@ export async function createPlannedSession(payload: Record<string, unknown>, use
       targetRPE: (payload.targetRPE as number | null) ?? null,
       intervalDetails: (payload.intervalDetails as Prisma.JsonValue) ?? Prisma.JsonNull,
       recommendationId: (payload.recommendationId as string | null) ?? null,
-      comments,
+      comments: String(payload.comments ?? ''),
     },
   });
+
+  await recalculateSessionNumbers(userId);
 
   return plan;
 }
 
 export async function createCompletedSession(payload: Record<string, unknown>, userId: string) {
   const date = new Date(String(payload.date));
-  const { sessionNumber, week } = await calculateSessionPosition(userId, date);
 
   const sanitizedWeather = parsePayload(weatherPayloadSchema, payload.weather, 'weather');
   const sanitizedStrava = parsePayload(stravaPayloadSchema, payload.stravaData, 'strava');
@@ -359,8 +293,8 @@ export async function createCompletedSession(payload: Record<string, unknown>, u
     ? await prisma.plan_sessions.create({
         data: {
           userId,
-          sessionNumber,
-          week,
+          sessionNumber: 0,
+          week: null,
           plannedDate: null,
           sessionType: String(payload.sessionType ?? ''),
           status: 'completed',
@@ -376,8 +310,8 @@ export async function createCompletedSession(payload: Record<string, unknown>, u
       planSessionId: plan?.id ?? null,
       date,
       status: 'completed',
-      sessionNumber,
-      week,
+      sessionNumber: 0,
+      week: null,
       sessionType: String(payload.sessionType ?? ''),
       comments: String(payload.comments ?? ''),
       perceivedExertion: (payload.perceivedExertion as number | null) ?? null,
@@ -413,6 +347,8 @@ export async function createCompletedSession(payload: Record<string, unknown>, u
 
   await replaceStreams(workout.id, (sanitizedStreams as Prisma.JsonValue | null) ?? null);
 
+  await recalculateSessionNumbers(userId);
+
   return workout;
 }
 
@@ -428,7 +364,6 @@ export async function completePlannedSession(
   if (!plan) return null;
 
   const date = new Date(String(payload.date));
-  const { sessionNumber, week } = await calculateSessionPosition(userId, date);
 
   const sanitizedWeather = parsePayload(weatherPayloadSchema, payload.weather, 'weather');
   const sanitizedStrava = parsePayload(stravaPayloadSchema, payload.stravaData, 'strava');
@@ -441,8 +376,8 @@ export async function completePlannedSession(
       planSessionId: plan.id,
       date,
       status: 'completed',
-      sessionNumber,
-      week,
+      sessionNumber: 0,
+      week: null,
       sessionType: String(payload.sessionType ?? plan.sessionType ?? ''),
       comments: String(payload.comments ?? plan.comments ?? ''),
       perceivedExertion: (payload.perceivedExertion as number | null) ?? null,
@@ -451,10 +386,7 @@ export async function completePlannedSession(
 
   await prisma.plan_sessions.update({
     where: { id: plan.id },
-    data: { 
-      status: 'completed',
-      sessionNumber, // Sync with workout's sessionNumber
-    },
+    data: { status: 'completed' },
   });
 
   await prisma.workout_metrics_raw.create({
@@ -621,7 +553,7 @@ export async function deleteSession(id: string, userId: string) {
     await prisma.plan_sessions.delete({ where: { id: plan.id } });
   }
 
-  recalculateSessionNumbersDeferred(userId);
+  await recalculateSessionNumbers(userId);
 }
 
 export async function deleteSessions(ids: string[], userId: string) {
@@ -635,7 +567,7 @@ export async function deleteSessions(ids: string[], userId: string) {
     where: { userId, id: { in: ids } },
   });
 
-  recalculateSessionNumbersDeferred(userId);
+  await recalculateSessionNumbers(userId);
 }
 
 export async function logSessionWriteError(error: unknown, context: Record<string, unknown>) {
