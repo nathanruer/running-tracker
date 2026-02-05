@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useTransition, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useCallback, useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,9 +21,7 @@ function getIdFromParams(params: ReturnType<typeof useParams>): string | null {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
   const params = useParams();
-  const [, startTransition] = useTransition();
 
   const urlId = useMemo(() => getIdFromParams(params), [params]);
   const [localId, setLocalId] = useState<string | null | undefined>(undefined);
@@ -36,12 +34,8 @@ export default function ChatPage() {
   const handleSelectConversation = useCallback((id: string) => {
     const newId = id || null;
     setLocalId(newId);
-
-    startTransition(() => {
-      const newUrl = newId ? `/chat/${newId}` : '/chat';
-      router.replace(newUrl, { scroll: false });
-    });
-  }, [router]);
+    window.history.replaceState(null, '', newId ? `/chat/${newId}` : '/chat');
+  }, []);
 
   const handleSelectConversationMobile = useCallback((id: string) => {
     handleSelectConversation(id);
@@ -50,10 +44,8 @@ export default function ChatPage() {
 
   const handleConversationCreated = useCallback((id: string) => {
     setLocalId(id);
-    startTransition(() => {
-      router.replace(`/chat/${id}`, { scroll: false });
-    });
-  }, [router]);
+    window.history.replaceState(null, '', `/chat/${id}`);
+  }, []);
 
   if (showSkeleton) {
     return <ChatSkeleton mode={selectedConversationId ? 'conversation' : 'landing'} />;
