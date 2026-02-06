@@ -1,26 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { generateIntervalStructure, calculateIntervalTotals, cleanIntervalSteps } from '@/lib/utils/intervals';
-import { secondsToPace, normalizePaceFormat } from '@/lib/utils/pace';
-import { parseDuration, normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
-import { estimateEffectiveDistance } from '@/lib/utils/distance';
-import { extractStepHR } from '@/lib/utils/heart-rate';
-import { getStepLabelAuto, filterStepsByType } from '@/lib/utils/intervals';
-import { Target, ListChecks } from 'lucide-react';
+import { secondsToPace } from '@/lib/utils/pace';
+import { parseDuration, formatDuration } from '@/lib/utils/duration';
+import { filterStepsByType } from '@/lib/utils/intervals';
+import { Target } from 'lucide-react';
+import { IntervalStepsTable } from './interval-steps-table';
 
 interface IntervalDetailsViewProps {
   intervalDetails: IntervalDetails;
   isPlanned?: boolean;
+  compact?: boolean;
 }
 
 export function IntervalDetailsView({
   intervalDetails,
-  isPlanned = false,
-}: IntervalDetailsViewProps) {
+  compact = false,
+  className,
+}: IntervalDetailsViewProps & { className?: string }) {
   const [filter, setFilter] = useState<'all' | 'effort' | 'recovery'>('all');
 
   const {
@@ -48,10 +49,10 @@ export function IntervalDetailsView({
 
   const averages = getAverages();
 
-  const getTargetEffortHR = (): string | null => {
-    const effortSteps = filterStepsByType(steps, 'effort');
-    if (effortSteps.length > 0) {
-      const hrRanges = effortSteps
+  const getTargetHRByType = (type: 'effort' | 'recovery'): string | null => {
+    const typeSteps = filterStepsByType(steps, type);
+    if (typeSteps.length > 0) {
+      const hrRanges = typeSteps
         .map((step: IntervalStep) => step.hrRange)
         .filter(Boolean);
 
@@ -63,12 +64,12 @@ export function IntervalDetailsView({
       }
     }
 
-    if (targetEffortHR) {
+    if (type === 'effort' && targetEffortHR) {
       return `${targetEffortHR}`;
     }
 
-    if (effortSteps.length > 0) {
-      const hrValues = effortSteps
+    if (typeSteps.length > 0) {
+      const hrValues = typeSteps
         .map((step: IntervalStep) => step.hr ? `${step.hr}` : null)
         .filter(Boolean);
 
@@ -83,173 +84,145 @@ export function IntervalDetailsView({
     return null;
   };
 
-  const targetHRDisplay = getTargetEffortHR();
+  const targetHRDisplay = getTargetHRByType('effort');
 
   const displayStructure = generateIntervalStructure(intervalDetails) || '-';
 
   return (
-    <div className="space-y-4 py-3 px-3">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-transparent border border-border/40">
-        <div className="flex items-start gap-4">
-          <div className="hidden sm:flex p-2.5 rounded-lg bg-violet-500/10 shrink-0">
-            <Target className="h-5 w-5 text-violet-500" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Objectif Séance</span>
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-base font-black text-foreground tracking-tight underline decoration-violet-500/30 underline-offset-4">
-                {displayStructure}
-              </span>
-              <span className="text-xs font-mono text-muted-foreground/80">
-                Cible : <span className="text-foreground/90 font-bold">{secondsToPace(parseDuration(targetEffortPace)) || '-'}/km</span>
-                {targetHRDisplay ? <span className="ml-1.5 opacity-40">|</span> : ''}
-                {targetHRDisplay ? <span className="ml-1.5 font-bold text-orange-400/80">{targetHRDisplay} bpm</span> : ''}
-              </span>
+    <div className={cn("space-y-6 pt-2 pb-4", !compact && "px-3", className)}>
+      <div className={cn(
+        "relative flex flex-col justify-between gap-6 p-6 rounded-2xl overflow-hidden shadow-xl",
+        "bg-muted/30 backdrop-blur-md border border-white/[0.05]",
+        !compact ? "md:flex-row md:items-center" : "space-y-6"
+      )}>
+        <div className="flex items-start gap-5 relative z-10">
+          {!compact && (
+            <div className="hidden sm:flex p-3 rounded-2xl bg-violet-500/10 border border-violet-500/20 shrink-0">
+              <Target className="h-6 w-6 text-violet-500" />
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] leading-none">
+              Objectif Séance
+            </span>
+            <div className="flex flex-col gap-1.5">
+              <div className={cn(
+                "font-black tracking-tighter leading-tight flex flex-wrap items-baseline gap-x-2",
+                compact ? "text-base" : "text-lg"
+              )}>
+                {(() => {
+                  const workoutType = intervalDetails.workoutType;
+                  const targetPaceStr = secondsToPace(parseDuration(targetEffortPace));
+                  
+                  let structure = displayStructure;
+                  if (workoutType && displayStructure.startsWith(`${workoutType}: `)) {
+                    structure = displayStructure.substring(workoutType.length + 2);
+                  }
+
+                  return (
+                    <>
+                      {workoutType && <span className="text-violet-500">{workoutType}</span>}
+                      {workoutType && <span className="text-foreground/20">:</span>}
+                      <span className="text-foreground/90">{structure}</span>
+                      
+                      {(targetPaceStr || targetHRDisplay) && (
+                        <div className="flex items-center gap-2 ml-1">
+                          <span className="text-foreground/20 font-light">@</span>
+                          <span className="text-violet-400/80 font-bold font-mono text-[0.9em]">
+                            {targetPaceStr || '--:--'}/km
+                          </span>
+                          {targetHRDisplay && (
+                            <>
+                              <span className="text-foreground/10">·</span>
+                              <span className="text-muted-foreground font-bold font-mono text-[0.9em]">
+                                {targetHRDisplay} bpm
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-6 self-end md:self-auto">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-              {isPlanned ? 'Moy. Prévue' : 'Moy. Réelle'} ({filter === 'all' ? 'Totale' : filter === 'effort' ? 'Efforts' : 'Récups'})
-            </span>
-            <div className="flex items-baseline text-xl font-black font-mono text-foreground tracking-tighter">
-              {averages.avgPace !== '-' ? (
-                <>
-                  <span>{averages.avgPace}</span>
-                  <span className="text-xs font-normal text-muted-foreground">/km</span>
-                </>
-              ) : (
-                <span className="text-muted-foreground/30 font-medium">--:--</span>
-              )}
-              {averages.avgHR ? (
-                <>
-                  <span className="text-sm font-normal opacity-30 ml-3">|</span>
-                  <span className="text-xs font-bold text-orange-400/80 ml-3">
-                    {averages.avgHR} <span className="text-xs text-muted-foreground">bpm</span>
+        <div className={cn(
+          "grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 relative z-10",
+          compact ? "border-t border-white/[0.05] pt-6" : "md:border-l md:border-white/10 md:pl-10"
+        )}>
+          {[
+            { label: 'Temps', value: averages.totalTime },
+            { label: 'Distance', value: averages.totalDist, unit: 'km' },
+            { 
+              label: 'Allure', 
+              value: averages.avgPace, 
+              unit: '/km',
+              target: filter === 'effort' ? secondsToPace(parseDuration(targetEffortPace)) : null
+            },
+            { 
+              label: 'FC', 
+              value: averages.avgHR, 
+              unit: 'bpm',
+              target: filter === 'effort' ? targetHRDisplay : null
+            }
+          ].map((stat) => (
+            <div key={stat.label} className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] leading-none">
+                {stat.label}
+              </span>
+              <div className="flex flex-col">
+                <div className="flex items-baseline gap-1">
+                  <span className={cn(
+                    "font-mono font-black text-foreground tracking-tighter",
+                    compact ? "text-base" : "text-lg"
+                  )}>
+                    {stat.value || '--'}
                   </span>
-                </>
-              ) : ''}
+                  {stat.unit && stat.value && stat.value !== '-' && (
+                    <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                      {stat.unit}
+                    </span>
+                  )}
+                </div>
+                {stat.target && stat.value && stat.value !== '-' && (
+                  <span className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-tight leading-none mt-0.5">
+                    Obj. {stat.target}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-          
-          <div className="h-10 w-[1px] bg-border/60" />
-
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as 'all' | 'effort' | 'recovery')} className="w-[180px]">
-            <TabsList className="grid grid-cols-3 h-9 bg-background/50 border border-border/40 p-1">
-              <TabsTrigger value="all" className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-muted/60">Toutes</TabsTrigger>
-              <TabsTrigger value="effort" disabled={!hasEffortSteps} className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-violet-500/10 data-[state=active]:text-violet-500">Effort</TabsTrigger>
-              <TabsTrigger value="recovery" disabled={!hasRecoverySteps} className="text-[10px] uppercase font-bold px-0 h-7 transition-all data-[state=active]:bg-green-500/10 data-[state=active]:text-green-500">Récup</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          ))}
         </div>
       </div>
 
-      <Card className="border-border/40 shadow-none overflow-hidden bg-transparent">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="bg-muted/30 border-b border-border/40 text-muted-foreground/50 uppercase tracking-tighter">
-                  <th className="py-2.5 px-4 text-left font-bold w-16">Intervalle</th>
-                  <th className="py-2.5 px-4 text-center font-bold">Durée</th>
-                  <th className="py-2.5 px-4 text-center font-bold">Distance</th>
-                  <th className="py-2.5 px-4 text-center font-bold">Allure</th>
-                  <th className="py-2.5 px-4 text-center font-bold">FC</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/20">
-                {filteredSteps.map((step: IntervalStep, index: number) => {
-                  const durationSec = parseDuration(step.duration) || 0;
-                  const paceSec = parseDuration(step.pace) || 0;
-
-                  const distanceResult = estimateEffectiveDistance(
-                    durationSec,
-                    paceSec > 0 ? paceSec : null,
-                    step.distance || null
-                  );
-                  const displayDistance = distanceResult.distance;
-
-                  let displayPace = step.pace;
-
-                  if (!displayPace && durationSec > 0 && displayDistance > 0) {
-                     const estimatedPaceSec = durationSec / displayDistance;
-                     displayPace = secondsToPace(estimatedPaceSec);
-                  }
-
-
-                  return (
-                  <tr
-                    key={`${step.stepNumber}-${index}`}
-                    className={index % 2 === 0 ? 'bg-violet-500/[0.02]' : ''}
-                  >
-                    <td className="py-2 px-4 text-left">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          step.stepType === 'effort' ? 'bg-violet-500' : 
-                          step.stepType === 'recovery' ? 'bg-green-500' : 'bg-muted-foreground'
-                        }`} />
-                        <span className="font-semibold text-muted-foreground">{getStepLabelAuto(step, steps)}</span>
-                      </div>
-                    </td>
-                    <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
-                      {step.duration === '00:00' || step.duration === '00:00:00' ? '-' : (normalizeDurationFormat(step.duration || '') || step.duration || '-')}
-                    </td>
-                    <td className="py-2 px-4 text-center font-mono">
-                      {displayDistance && displayDistance > 0 ? (
-                        <>
-                          {displayDistance.toFixed(2)} <span className="text-xs text-muted-foreground">km</span>
-                        </>
-                      ) : '-'}
-                    </td>
-                    <td className="py-2 px-4 text-center font-mono font-bold text-foreground underline decoration-violet-500/20 underline-offset-4">
-                      {displayPace ? (
-                          <>
-                           {(normalizePaceFormat(displayPace) || displayPace)}
-                           <span className="text-xs text-muted-foreground">/km</span>
-                          </>
-                      ) : '-'}
-                    </td>
-                    <td className="py-2 px-4 text-center font-mono text-muted-foreground/70">
-                      {(() => {
-                        const hrValue = extractStepHR(step);
-                        return hrValue ? (
-                          <>
-                            {step.hrRange || Math.round(hrValue)} <span className="text-xs text-muted-foreground">bpm</span>
-                          </>
-                        ) : '-';
-                      })()}
-                    </td>
-                  </tr>
-                );})}
-                {filteredSteps.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-muted-foreground italic text-sm">
-                      Aucune donnée pour ce filtre
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {(averages.totalDist !== "0.00" || averages.totalTime !== "-") && (
-        <div className="flex items-center gap-4 text-[10px] text-muted-foreground/60 pl-1 uppercase font-bold tracking-widest">
-           <div className="flex items-center gap-2">
-             <ListChecks className="h-3 w-3" />
-             <span>Totaux ({filter === 'all' ? 'Toutes' : filter === 'effort' ? 'Efforts' : 'Récupérations'}):</span>
-           </div>
-           {averages.totalTime !== "-" && (
-             <span>Temps: {averages.totalTime}</span>
-           )}
-           {averages.totalDist !== "0.00" && (
-             <span>Distance: {averages.totalDist} km</span>
-           )}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-3 rounded-full bg-violet-500/40" />
+          <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
+            Détails des Intervalles
+          </span>
         </div>
-      )}
+        <Tabs 
+          value={filter} 
+          onValueChange={(v) => setFilter(v as 'all' | 'effort' | 'recovery')} 
+          className="w-[210px]"
+        >
+          <TabsList className="grid grid-cols-3 h-8 bg-white/[0.03] border border-white/[0.05] p-0.5 shadow-sm">
+            <TabsTrigger value="all" className="text-[9px] uppercase font-bold h-7 data-[state=active]:bg-white/10">Tous</TabsTrigger>
+            <TabsTrigger value="effort" disabled={!hasEffortSteps} className="text-[9px] uppercase font-bold h-7 data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-400">Efforts</TabsTrigger>
+            <TabsTrigger value="recovery" disabled={!hasRecoverySteps} className="text-[9px] uppercase font-bold h-7 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Récups</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <IntervalStepsTable 
+        steps={filteredSteps} 
+        allSteps={steps}
+        compact={compact}
+      />
     </div>
   );
 }

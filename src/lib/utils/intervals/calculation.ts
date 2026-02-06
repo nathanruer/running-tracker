@@ -2,7 +2,7 @@ import { type IntervalDetails, type IntervalStep } from '@/lib/types';
 import { parseDuration } from '@/lib/utils/duration';
 import { estimateEffectiveDistance } from '@/lib/utils/distance';
 import { extractStepHR } from '@/lib/utils/heart-rate';
-import { filterStepsWithProperty, filterWorkSteps, cleanIntervalSteps } from './steps';
+import { filterStepsWithProperty, filterWorkSteps } from './steps';
 import { formatDurationAlwaysMMSS } from './format';
 
 export interface IntervalTotals {
@@ -85,10 +85,8 @@ export function getEffortPace(details: IntervalDetails | null): string | null {
 /**
  * Calculates global totals for an interval session (Duration, Distance, Pace, HR)
  */
-export function calculateIntervalTotals(rawSteps: IntervalStep[] | undefined | null): IntervalTotals {
-  const steps = cleanIntervalSteps(rawSteps || []);
-  
-  if (!steps.length) {
+export function calculateIntervalTotals(steps: IntervalStep[] | undefined | null): IntervalTotals {
+  if (!steps || !steps.length) {
     return { totalDurationMin: 0, totalDistanceKm: 0, avgPaceSec: null, avgPaceFormatted: null, avgBpm: null, isEstimated: false };
   }
 

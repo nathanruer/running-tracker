@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { TrainingSession } from '@/lib/types';
-import { calculateIntervalTotals, generateIntervalStructure } from '@/lib/utils/intervals';
+import { calculateIntervalTotals, generateIntervalStructure, cleanIntervalSteps } from '@/lib/utils/intervals';
 import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { normalizePaceOrRange } from '@/lib/utils/pace';
 import { formatHRDisplay } from '@/lib/utils/heart-rate';
@@ -32,7 +32,7 @@ export function useSessionRowData(session: TrainingSession): SessionRowDisplayDa
     const hasIntervalDetails = isFractionneType(session.sessionType) && !!session.intervalDetails;
     
     const totals = hasIntervalDetails 
-      ? calculateIntervalTotals(session.intervalDetails?.steps) 
+      ? calculateIntervalTotals(cleanIntervalSteps(session.intervalDetails?.steps || [])) 
       : null;
     
     let duration = '-';

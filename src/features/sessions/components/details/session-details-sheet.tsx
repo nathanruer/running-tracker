@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
 import { ExternalLink, Map, Calendar, MessageSquare } from 'lucide-react';
-import type { TrainingSession, IntervalStep } from '@/lib/types';
+import type { TrainingSession } from '@/lib/types';
 import { decodePolyline, coordinatesToSVG } from '@/lib/utils/geo/polyline';
 import { cn } from '@/lib/utils/cn';
 import { validateStravaData } from '@/lib/validation/strava';
@@ -37,6 +37,7 @@ import { StreamsSection } from './streams-section';
 import { formatCadence } from '@/lib/utils/strava/cadence';
 import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { calculateIntervalTotals } from '@/lib/utils/intervals';
+import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
 
 interface SessionDetailsSheetProps {
   session: TrainingSession | null;
@@ -303,43 +304,12 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       {session.intervalDetails.steps.length} segments
                     </span>
                   </div>
-                  <div className="bg-muted/20 dark:bg-white/[0.02] border border-border/40 rounded-[2rem] overflow-hidden backdrop-blur-sm">
-                    <div className="grid grid-cols-4 px-6 py-4 bg-muted/40 dark:bg-white/[0.03] text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-                      <div>Segment</div>
-                      <div className="text-center">Durée</div>
-                      <div className="text-center">Dist.</div>
-                      <div className="text-center">Allure</div>
-                    </div>
-                    <div className="divide-y divide-border/20 px-2 pb-2">
-                      {session.intervalDetails.steps.map((step: IntervalStep, i: number) => (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "grid grid-cols-4 px-4 py-3 text-xs items-center transition-all duration-300 rounded-xl hover:bg-muted/30 dark:hover:bg-white/[0.05]",
-                            step.stepType === 'effort' && "bg-primary/[0.03] dark:bg-primary/[0.05]"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "w-1.5 h-1.5 rounded-full ring-4 shadow-sm",
-                              step.stepType === 'effort' ? "bg-primary ring-primary/10" : 
-                              step.stepType === 'warmup' || step.stepType === 'cooldown' ? "bg-blue-500 ring-blue-500/10" : 
-                              "bg-emerald-500 ring-emerald-500/10"
-                            )} />
-                            <span className="font-bold text-foreground/70 uppercase tracking-wider text-[10px]">
-                              {step.stepType === 'effort' ? 'Effort' : 
-                               step.stepType === 'recovery' ? 'Récup' : 
-                               step.stepType === 'warmup' ? 'Échauff.' :
-                               step.stepType === 'cooldown' ? 'Retour' : step.stepType}
-                            </span>
-                          </div>
-                          <div className="text-center font-bold tabular-nums text-foreground/80">{step.duration || '-'}</div>
-                          <div className="text-center font-bold tabular-nums text-foreground/80">{step.distance ? `${step.distance}m` : '-'}</div>
-                          <div className="text-center font-bold tabular-nums text-foreground/80">{step.pace || '-'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <IntervalDetailsView 
+                    intervalDetails={session.intervalDetails}
+                    isPlanned={isPlanned}
+                    compact={true}
+                    className="px-0 py-2"
+                  />
                 </div>
               )}
             </div>

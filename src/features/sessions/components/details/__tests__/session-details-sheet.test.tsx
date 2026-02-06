@@ -106,8 +106,8 @@ describe('SessionDetailsSheet', () => {
     expect(screen.getByText(/Structure de la séance/i)).toBeInTheDocument();
     expect(screen.getByText(/2 segments/i)).toBeInTheDocument();
     
-    expect(screen.getByText('Effort', { exact: true })).toBeInTheDocument();
-    expect(screen.getByText('1:30')).toBeInTheDocument();
+    expect(screen.getByText('E1')).toBeInTheDocument();
+    expect(screen.getByText('01:30')).toBeInTheDocument();
   });
 
   it('should not render Intervals section if no details', () => {
