@@ -215,7 +215,6 @@ export function SessionsTableToolbar({
               value={searchQuery}
               onChange={onSearchChange}
               className="w-full xl:w-[320px]"
-              isLoading={isFetching}
             />
 
             <div className="flex flex-wrap items-center gap-2">
