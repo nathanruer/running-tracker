@@ -14,6 +14,7 @@ import { bulkImportSessions, getStravaActivityDetails, type FormattedStravaActiv
 import { useStravaActivities } from '../../hooks/use-strava-activities';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
+import { useInfiniteScrollObserver } from '@/hooks/use-infinite-scroll-observer';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorMessage } from '@/components/ui/error-message';
@@ -36,7 +37,6 @@ export function StravaImportContent({
 }: StravaImportContentProps) {
   const [importing, setImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const observerTarget = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLTableSectionElement>(null);
 
   const {
@@ -58,29 +58,10 @@ export function StravaImportContent({
   const { toast } = useToast();
   const { error: importError, wrapAsync } = useErrorHandler({ scope: 'local' });
 
-  useEffect(() => {
-    if (!hasMore || loadingMore || !isConnected) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1, rootMargin: '400px' }
-    );
-
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-  }, [hasMore, loadingMore, isConnected, loadMore]);
+  const { observerRef: observerTarget } = useInfiniteScrollObserver({
+    enabled: hasMore && !loadingMore && !!isConnected,
+    onIntersect: loadMore,
+  });
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 

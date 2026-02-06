@@ -56,6 +56,9 @@ function DashboardContent() {
     hasMore,
     isFetchingNextPage,
     fetchNextPage,
+    loadAllPages,
+    cancelLoadAll,
+    isLoadingAll,
     mutations,
   } = useDashboardData(selectedType, sortParam, searchQuery, dateFrom);
 
@@ -207,6 +210,9 @@ function DashboardContent() {
           period={period}
           onPeriodChange={handlePeriodChange}
           dateFrom={dateFrom}
+          loadAllPages={loadAllPages}
+          cancelLoadAll={cancelLoadAll}
+          isLoadingAll={isLoadingAll}
         />
       ) : (
         <SessionsEmptyState onAction={openNewSession} />

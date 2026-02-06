@@ -20,20 +20,10 @@ describe('DashboardSkeleton', () => {
     expect(headerRow).toBeInTheDocument();
   });
 
-  it('should render 10 skeleton rows', () => {
+  it('should render 8 skeleton rows', () => {
     const { container } = render(<DashboardSkeleton />);
     const bodyRows = container.querySelectorAll('tbody tr');
-    expect(bodyRows).toHaveLength(10);
-  });
-
-  it('should render skeleton title', () => {
-    render(<DashboardSkeleton />);
-    expect(screen.getByTestId('skeleton-title')).toBeInTheDocument();
-  });
-
-  it('should render main skeleton action', () => {
-    render(<DashboardSkeleton />);
-    expect(screen.getByTestId('skeleton-action')).toBeInTheDocument();
+    expect(bodyRows).toHaveLength(8);
   });
 
   it('should have animated elements', () => {

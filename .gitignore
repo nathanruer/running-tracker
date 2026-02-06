@@ -47,3 +47,7 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /.auth/
+
+# claude
+CLAUDE.md
+.claude/

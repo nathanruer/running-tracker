@@ -8,7 +8,6 @@ export {
   StravaTableHeader,
   StravaImportFooter,
   StravaLoadingSkeleton,
-  StravaLoadingMoreSkeleton,
   type StravaImportDialogProps,
   type StravaImportContentProps,
   type StravaToolbarProps,

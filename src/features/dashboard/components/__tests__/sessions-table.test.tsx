@@ -1,9 +1,28 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SessionsTable } from '../sessions-table';
 import type { TrainingSession } from '@/lib/types';
 import type { SortConfig } from '@/lib/domain/sessions';
+
+const originalIO = globalThis.IntersectionObserver;
+
+beforeEach(() => {
+  globalThis.IntersectionObserver = class MockIntersectionObserver {
+    constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {} // eslint-disable-line @typescript-eslint/no-unused-vars
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+    root = null;
+    rootMargin = '';
+    thresholds = [];
+    takeRecords = vi.fn();
+  } as unknown as typeof IntersectionObserver;
+});
+
+afterEach(() => {
+  globalThis.IntersectionObserver = originalIO;
+});
 
 const mockSessions: TrainingSession[] = [
   {
@@ -94,6 +113,9 @@ describe('SessionsTable', () => {
     onSearchChange: mockOnSearchChange,
     period: 'all' as const,
     onPeriodChange: mockOnPeriodChange,
+    loadAllPages: vi.fn(),
+    cancelLoadAll: vi.fn(),
+    isLoadingAll: false,
   };
 
   beforeEach(() => {
@@ -117,7 +139,7 @@ describe('SessionsTable', () => {
       return cells.length > 0 && cells[0].querySelector('.animate-pulse');
     });
 
-    expect(skeletons.length).toBe(6);
+    expect(skeletons.length).toBe(8);
   });
 
   it('should render "Nouvelle séance" button when onNewSession is provided', () => {
@@ -257,9 +279,14 @@ describe('SessionsTable', () => {
     expect(screen.getByText('Tous les types')).toBeInTheDocument();
   });
 
-  it('should render total count badge', () => {
-    render(<SessionsTable {...defaultProps} totalCount={50} />);
-    expect(screen.getByText('50')).toBeInTheDocument();
+  it('should render scope indicator with loaded/total count', () => {
+    render(<SessionsTable {...defaultProps} totalCount={50} hasMore={true} />);
+    expect(screen.getByText('3 / 50 séances')).toBeInTheDocument();
+  });
+
+  it('should render scope indicator with total only when all loaded', () => {
+    render(<SessionsTable {...defaultProps} totalCount={3} hasMore={false} />);
+    expect(screen.getByText('3 séances')).toBeInTheDocument();
   });
 
   it('should call onSearchChange when typing in search input', async () => {
@@ -297,16 +324,16 @@ describe('SessionsTable', () => {
 
   it('should render and handle options menu', async () => {
     const user = userEvent.setup();
-    render(<SessionsTable {...defaultProps} />);
+    const { container } = render(<SessionsTable {...defaultProps} />);
 
-    const optionsTrigger = screen.getByTitle('Actions de données');
+    const optionsTrigger = container.querySelector('button[aria-haspopup="menu"]');
     expect(optionsTrigger).toBeInTheDocument();
 
-    await user.click(optionsTrigger);
+    await user.click(optionsTrigger!);
 
-    expect(screen.getAllByText('Exporter').length).toBeGreaterThan(0);
-    
-    const importItem = screen.getByText(/Importer \(Bientôt\)/i);
+    expect(screen.getByText(/Exporter/)).toBeInTheDocument();
+
+    const importItem = screen.getByText(/Importer.*Bientôt/i);
     expect(importItem).toBeInTheDocument();
   });
 
@@ -348,21 +375,41 @@ describe('SessionsTable', () => {
     expect(mockOnTypeChange).toHaveBeenCalledWith('all');
   });
 
-  it('should call onLoadMore when clicking load more button', async () => {
-    const user = userEvent.setup();
-    const onLoadMore = vi.fn();
+  it('should render infinite scroll trigger when hasMore', () => {
     render(
       <SessionsTable
         {...defaultProps}
         hasMore={true}
         isFetchingNextPage={false}
-        onLoadMore={onLoadMore}
       />
     );
 
-    const loadMoreButton = screen.getByRole('button', { name: /afficher plus/i });
-    await user.click(loadMoreButton);
+    expect(screen.getByText('Défilez pour charger plus')).toBeInTheDocument();
+  });
 
-    expect(onLoadMore).toHaveBeenCalled();
+  it('should show load all button when hasMore', () => {
+    render(
+      <SessionsTable
+        {...defaultProps}
+        hasMore={true}
+      />
+    );
+
+    expect(screen.getByText('Tout charger')).toBeInTheDocument();
+  });
+
+  it('should call loadAllPages when clicking load all button', async () => {
+    const user = userEvent.setup();
+    const loadAllPages = vi.fn();
+    render(
+      <SessionsTable
+        {...defaultProps}
+        hasMore={true}
+        loadAllPages={loadAllPages}
+      />
+    );
+
+    await user.click(screen.getByText('Tout charger'));
+    expect(loadAllPages).toHaveBeenCalled();
   });
 });

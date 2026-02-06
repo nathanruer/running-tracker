@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState, useCallback } from 'react';
 import { useQuery, useInfiniteQuery, type QueryKey } from '@tanstack/react-query';
 import { useEntityMutations } from '@/hooks/use-entity-mutations';
 import {
@@ -197,6 +197,29 @@ export function useDashboardData(
   const isInitialLoad = paginatedSessionsLoading && !uniqueSessions.length;
   const initialLoading = userLoading || isInitialLoad;
 
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
+  const loadAllCancelledRef = useRef(false);
+
+  const loadAllPages = useCallback(async () => {
+    if (!hasNextPage) return;
+    setIsLoadingAll(true);
+    loadAllCancelledRef.current = false;
+
+    try {
+      let result = await fetchNextPage();
+      while (result.hasNextPage && !loadAllCancelledRef.current) {
+        await new Promise((r) => setTimeout(r, 50));
+        result = await fetchNextPage();
+      }
+    } finally {
+      setIsLoadingAll(false);
+    }
+  }, [hasNextPage, fetchNextPage]);
+
+  const cancelLoadAll = useCallback(() => {
+    loadAllCancelledRef.current = true;
+  }, []);
+
   return {
     user,
     userLoading,
@@ -209,6 +232,9 @@ export function useDashboardData(
     hasMore: hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    loadAllPages,
+    cancelLoadAll,
+    isLoadingAll,
     mutations,
   };
 }

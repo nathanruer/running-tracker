@@ -61,9 +61,10 @@ describe('StravaToolbar', () => {
     expect(screen.getByText('20 / 100 activités')).toBeInTheDocument();
   });
 
-  it('displays "..." when loading', () => {
-    render(<StravaToolbar {...defaultProps} loading={true} />);
-    expect(screen.getByText('...')).toBeInTheDocument();
+  it('displays skeleton placeholder when loading', () => {
+    const { container } = render(<StravaToolbar {...defaultProps} loading={true} />);
+    const skeleton = container.querySelector('.animate-pulse.rounded-full');
+    expect(skeleton).toBeInTheDocument();
   });
 
   it('displays Tout charger button when hasMore', () => {
@@ -77,29 +78,20 @@ describe('StravaToolbar', () => {
     expect(mockOnLoadAll).toHaveBeenCalled();
   });
 
-  it('displays Annuler button when searchLoading', () => {
-    render(<StravaToolbar {...defaultProps} searchLoading={true} />);
-    expect(screen.getByText('Annuler')).toBeInTheDocument();
-  });
-
-  it('calls onCancelSearch when clicking Annuler', () => {
-    render(<StravaToolbar {...defaultProps} searchLoading={true} />);
-    fireEvent.click(screen.getByText('Annuler'));
-    expect(mockOnCancelSearch).toHaveBeenCalled();
-  });
-
   it('displays search progress when searchLoading', () => {
     render(<StravaToolbar {...defaultProps} searchLoading={true} />);
-    expect(screen.getByText(/Recherche.../)).toBeInTheDocument();
+    expect(screen.getByText(/Recherche/)).toBeInTheDocument();
   });
 
-  it('displays filtered count when searching', () => {
-    render(<StravaToolbar {...defaultProps} searchQuery="test" filteredCount={5} />);
-    expect(screen.getByText('5 sur 20 chargées')).toBeInTheDocument();
+  it('displays spin indicator when searchLoading', () => {
+    const { container } = render(<StravaToolbar {...defaultProps} searchLoading={true} />);
+    const spinner = container.querySelector('.animate-spin');
+    expect(spinner).toBeInTheDocument();
   });
 
-  it('hides Tout charger button when no more pages', () => {
-    render(<StravaToolbar {...defaultProps} hasMore={false} />);
-    expect(screen.queryByText('Tout charger')).not.toBeInTheDocument();
+  it('does not show Tout charger when all pages loaded', () => {
+    render(<StravaToolbar {...defaultProps} hasMore={false} totalCount={20} />);
+    const actionWrapper = document.querySelector('[class*="max-w-0"]');
+    expect(actionWrapper).toBeInTheDocument();
   });
 });

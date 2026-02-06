@@ -6,7 +6,7 @@ export { StravaActivitiesTable } from './strava-activities-table';
 export { StravaActivityRow } from './strava-activity-row';
 export { StravaTableHeader } from './strava-table-header';
 export { StravaImportFooter } from './strava-import-footer';
-export { StravaLoadingSkeleton, StravaLoadingMoreSkeleton } from './strava-loading-skeleton';
+export { StravaLoadingSkeleton } from './strava-loading-skeleton';
 export {
   ActivityCheckboxCell,
   ActivityDateCell,

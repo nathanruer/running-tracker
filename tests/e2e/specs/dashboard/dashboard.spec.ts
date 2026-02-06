@@ -91,7 +91,7 @@ test.describe('Dashboard - Core Functionality', () => {
     const table = page.locator('[data-testid="sessions-table"]');
     await expect(table).toBeVisible({ timeout: 15000 });
     await expect(table.getByText('Fractionné', { exact: true })).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('svg.lucide-chevron-down').first()).toBeVisible();
+    await expect(table.locator('tbody tr').first()).toBeVisible();
   });
 
   test('should display RPE indicator', async ({ page }) => {

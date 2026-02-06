@@ -5,15 +5,16 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table } from '@/components/ui/table';
 import { LoadingBar } from '@/components/ui/loading-bar';
+import { InfiniteScrollTrigger, EndOfList } from '@/components/ui/data-table';
 import { type TrainingSession } from '@/lib/types';
 import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
 import type { Period } from '../hooks/use-period-filter';
 import { useTableSelection } from '@/hooks/use-table-selection';
+import { useInfiniteScrollObserver } from '@/hooks/use-infinite-scroll-observer';
 import { useBulkDelete } from '../hooks/use-bulk-delete';
 import { SessionsTableToolbar } from './sessions-table-toolbar';
 import { SessionsTableHead } from './sessions-table-head';
 import { SessionsTableBody } from './sessions-table-body';
-import { SessionsTableFooter } from './sessions-table-footer';
 
 export interface SessionActions {
   onEdit: (session: TrainingSession) => void;
@@ -43,6 +44,9 @@ interface SessionsTableProps {
   period: Period;
   onPeriodChange: (period: Period) => void;
   dateFrom?: string;
+  loadAllPages: () => Promise<void>;
+  cancelLoadAll: () => void;
+  isLoadingAll: boolean;
 }
 
 export function SessionsTable({
@@ -64,6 +68,9 @@ export function SessionsTable({
   period,
   onPeriodChange,
   dateFrom,
+  loadAllPages,
+  cancelLoadAll,
+  isLoadingAll,
 }: SessionsTableProps) {
   const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -84,12 +91,22 @@ export function SessionsTable({
     onPeriodChange('all');
   };
 
+  const { observerRef } = useInfiniteScrollObserver({
+    enabled: hasMore && !isFetchingNextPage,
+    onIntersect: onLoadMore,
+  });
+
   return (
     <>
       <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
         <SessionsTableToolbar
           initialLoading={initialLoading}
           totalCount={totalCount}
+          loadedCount={sessions.length}
+          hasMore={hasMore}
+          isLoadingAll={isLoadingAll}
+          onLoadAll={loadAllPages}
+          onCancelLoadAll={cancelLoadAll}
           selectedCount={selectedSessions.size}
           onClearSelection={clearSelection}
           onOpenBulkDelete={() => setShowBulkDeleteDialog(true)}
@@ -138,12 +155,14 @@ export function SessionsTable({
         </CardContent>
       </Card>
 
-      <SessionsTableFooter
-        hasMore={hasMore}
-        sessionsCount={sessions.length}
-        isFetchingNextPage={isFetchingNextPage}
-        onLoadMore={onLoadMore}
-      />
+      <div className="mt-8 mb-12">
+        <InfiniteScrollTrigger
+          hasMore={hasMore}
+          loading={isFetchingNextPage}
+          observerRef={observerRef}
+        />
+        <EndOfList visible={!hasMore && sessions.length > 10} />
+      </div>
 
       <ConfirmationDialog
         open={showBulkDeleteDialog}

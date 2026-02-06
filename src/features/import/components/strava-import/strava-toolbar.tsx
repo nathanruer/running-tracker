@@ -1,6 +1,5 @@
 import { SearchInput } from '@/components/ui/search-input';
-import { SearchScopeIndicator } from './search-scope-indicator';
-import { SearchAllButton } from './search-all-button';
+import { ScopeIndicator } from '@/components/ui/data-table';
 import type { StravaToolbarProps } from './types';
 
 export function StravaToolbar({
@@ -25,20 +24,10 @@ export function StravaToolbar({
         className="md:w-[320px]"
       />
       <div className="flex items-center gap-2 ml-auto">
-        <SearchAllButton
-          hasMore={hasMore}
-          searchLoading={searchLoading}
-          onLoadAll={onLoadAll}
-          onCancel={onCancelSearch}
-        />
         {loading ? (
-          <div className="flex items-center bg-muted/5 border border-border/40 rounded-xl px-3 py-1.5">
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/30">
-              ...
-            </span>
-          </div>
+          <div className="h-7 w-[180px] bg-muted/5 animate-pulse rounded-full border border-border/10" />
         ) : (
-          <SearchScopeIndicator
+          <ScopeIndicator
             loadedCount={activitiesCount}
             totalCount={totalCount}
             hasMore={hasMore}
@@ -46,6 +35,9 @@ export function StravaToolbar({
             searchProgress={searchProgress}
             filteredCount={filteredCount}
             searchQuery={searchQuery}
+            onLoadAll={onLoadAll}
+            isLoadingAll={searchLoading}
+            onCancelLoadAll={onCancelSearch}
           />
         )}
       </div>

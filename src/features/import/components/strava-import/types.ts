@@ -78,23 +78,6 @@ export interface StravaActivitiesTableProps {
   onSearchAll: () => void;
 }
 
-export interface SearchScopeIndicatorProps {
-  loadedCount: number;
-  totalCount: number | undefined;
-  hasMore: boolean;
-  searchLoading: boolean;
-  searchProgress: { loaded: number; total: number };
-  filteredCount: number;
-  searchQuery: string;
-}
-
-export interface SearchAllButtonProps {
-  hasMore: boolean;
-  searchLoading: boolean;
-  onLoadAll: () => void;
-  onCancel: () => void;
-}
-
 export interface SmartSearchEmptyStateProps {
   searchQuery: string;
   hasMore: boolean;

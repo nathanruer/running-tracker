@@ -12,47 +12,32 @@ export function DashboardSkeleton() {
         data-testid="dashboard-skeleton"
         className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden"
       >
-        <CardHeader className="flex flex-col gap-6 px-4 md:px-8 py-6 md:py-8 border-b border-border/40">
-          <div className="flex flex-col gap-6">
-            {/* Top row: Title and Primary Actions */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div 
-                  data-testid="skeleton-title"
-                  className="h-8 w-32 md:h-10 md:w-44 bg-muted/20 animate-pulse rounded-lg" 
-                />
-                <div className="h-6 w-10 bg-violet-600/20 animate-pulse rounded-full border border-violet-600/10" />
+        <CardHeader className="flex flex-col gap-4 px-3 py-4 md:px-8 md:py-8 border-b border-border/40">
+          <div className="flex flex-col gap-4 md:gap-6">
+            <div className="flex items-center justify-between gap-2 md:gap-4">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                <div className="h-7 w-24 md:h-10 md:w-44 bg-muted/20 animate-pulse rounded-lg shrink-0" />
+                
+                {/* Unified Indicator Placeholder */}
+                <div className="h-7 w-[120px] md:w-[180px] bg-muted/5 animate-pulse rounded-full" />
               </div>
-              
-              <div className="flex items-center gap-2">
-                {/* Active Action Button (Violet) */}
-                <div 
-                  data-testid="skeleton-action"
-                  className="h-10 md:h-12 w-32 md:w-48 bg-violet-600/20 animate-pulse rounded-xl md:rounded-2xl border border-violet-600/10" 
-                />
-                {/* Secondary Action (Export) */}
-                <div className="h-10 md:h-12 w-10 md:w-12 bg-muted/10 animate-pulse rounded-xl md:rounded-2xl border border-border/40" />
+
+              <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+                {/* Action Button Placeholder (New Session) */}
+                <div className="h-9 w-9 md:h-12 md:w-48 bg-violet-600/20 animate-pulse rounded-xl border border-violet-600/10 shadow-lg shadow-violet-500/5" />
+                {/* Secondary Action Placeholder (Menu) */}
+                <div className="h-9 w-9 md:h-12 md:w-12 bg-muted/10 animate-pulse rounded-xl border border-border/40" />
               </div>
             </div>
 
-            {/* Filter row: Search, Type, and Period */}
-            <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-4">
-              {/* Search Bar Skeleton */}
-              <div className="w-full xl:w-[320px]">
-                <div className="h-10 w-full bg-muted/5 animate-pulse rounded-xl border border-border/40" />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Type Select Skeleton */}
-                <div className="h-10 w-[140px] md:w-[160px] bg-muted/5 animate-pulse rounded-xl border border-border/40" />
-                
-                {/* Period Filter Skeleton (Tabs look) */}
-                <div className="flex gap-1 p-1 bg-muted/5 backdrop-blur-md rounded-xl border border-border/40">
-                  <div className="h-8 w-16 bg-violet-600/20 animate-pulse rounded-lg" />
-                  <div className="h-8 w-20 bg-muted/5 animate-pulse rounded-lg" />
-                  <div className="h-8 w-16 bg-muted/5 animate-pulse rounded-lg" />
-                  <div className="h-8 w-16 bg-muted/5 animate-pulse rounded-lg" />
-                </div>
+            {/* Filter row */}
+            <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3">
+              <div className="h-10 w-full xl:w-[320px] bg-muted/5 animate-pulse rounded-xl border border-border/40" />
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Type Filter */}
+                <div className="h-9 w-24 md:w-32 bg-muted/5 animate-pulse rounded-xl border border-border/40" />
+                {/* Period Filter */}
+                <div className="h-9 w-48 md:w-64 bg-muted/5 animate-pulse rounded-xl border border-border/40" />
               </div>
             </div>
           </div>
@@ -60,97 +45,63 @@ export function DashboardSkeleton() {
         
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="table-auto min-w-[1200px] xl:min-w-0">
+            <Table className="table-auto min-w-[800px] md:min-w-0">
               <TableHeader className="bg-transparent border-b border-border/40">
-                <TableRow className="hover:bg-transparent border-none">
-                  {/* Matching sessions-table columns precisely */}
-                  <TableHead className="w-12 px-6">
-                    <div className="h-4 w-4 bg-muted/20 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-12 text-center py-6">
-                    <div className="h-3 w-4 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-16 text-center">
-                    <div className="h-3 w-8 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-32 text-center">
-                    <div className="h-3 w-20 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-40">
-                    <div className="h-3 w-16 bg-muted/10 animate-pulse rounded" />
-                  </TableHead>
-                  <TableHead className="w-24 text-center">
-                    <div className="h-3 w-12 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-20 text-center">
-                    <div className="h-3 w-8 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-24 text-center">
-                    <div className="h-3 w-12 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-20 text-center">
-                    <div className="h-3 w-6 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="w-16 text-center">
-                    <div className="h-3 w-6 bg-muted/10 animate-pulse rounded mx-auto" />
-                  </TableHead>
-                  <TableHead className="min-w-[300px]">
-                    <div className="h-3 w-32 bg-muted/10 animate-pulse rounded" />
-                  </TableHead>
-                  <TableHead className="w-12 px-6">
-                    <div className="h-4 w-1 bg-muted/10 animate-pulse rounded-full mx-auto" />
-                  </TableHead>
+                <TableRow className="hover:bg-transparent border-none h-14">
+                  <TableHead className="w-12 px-6"><div className="h-4 w-4 bg-muted/20 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead className="hidden sm:table-cell py-6"><div className="h-3 w-4 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead className="hidden lg:table-cell"><div className="h-3 w-4 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-20 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-24 bg-muted/15 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-12 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-12 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-12 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-12 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead><div className="h-3 w-8 bg-muted/10 animate-pulse rounded mx-auto" /></TableHead>
+                  <TableHead className="hidden xl:table-cell min-w-[320px] px-8"><div className="h-3 w-32 bg-muted/10 animate-pulse rounded" /></TableHead>
+                  <TableHead className="px-6"><div className="h-4 w-1 bg-muted/10 animate-pulse rounded-full mx-auto" /></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[...Array(10)].map((_, i) => (
-                  <TableRow key={i} className="border-border/10 hover:bg-transparent">
-                    <TableCell className="px-6 py-5">
-                      <div className="h-4 w-4 bg-muted/10 animate-pulse rounded mx-auto" />
+                {[...Array(8)].map((_, i) => (
+                  <TableRow key={i} className="border-border/5 hover:bg-transparent h-16">
+                    <TableCell className="px-6 py-4">
+                      <div className="h-5 w-5 bg-muted/20 animate-pulse rounded-lg mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
                     </TableCell>
-                    {/* # */}
-                    <TableCell className="text-center py-5">
-                      <div className="h-4 w-4 bg-muted/10 animate-pulse rounded mx-auto" />
+                    <TableCell className="hidden sm:table-cell py-4">
+                      <div className="h-3 w-4 bg-muted/10 animate-pulse rounded-full mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
                     </TableCell>
-                    {/* SEM. */}
-                    <TableCell className="text-center">
-                      <div className="h-4 w-4 bg-muted/5 animate-pulse rounded mx-auto" />
+                    <TableCell className="hidden lg:table-cell py-4">
+                      <div className="h-3 w-4 bg-muted/5 animate-pulse rounded-full mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
                     </TableCell>
-                    {/* DATE */}
-                    <TableCell className="text-center">
-                      <div className="h-4 w-20 bg-muted/5 animate-pulse rounded mx-auto" />
+                    <TableCell className="py-4">
+                      <div className="h-4 w-20 bg-muted/10 animate-pulse rounded-full mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
                     </TableCell>
-                    {/* SÉANCE */}
-                    <TableCell>
-                      <div className="h-4 w-24 bg-muted/20 animate-pulse rounded-md" />
+                    <TableCell className="py-4">
+                      <div className="flex flex-col gap-1.5 items-center">
+                        <div className="h-4 w-24 bg-muted/20 animate-pulse rounded-full" style={{ animationDelay: `${i * 100}ms` }} />
+                        <div className="h-2.5 w-12 bg-muted/10 animate-pulse rounded-full" style={{ animationDelay: `${i * 100}ms` }} />
+                      </div>
                     </TableCell>
-                    {/* DURÉE */}
-                    <TableCell className="text-center">
-                      <div className="h-4 w-12 bg-muted/10 animate-pulse rounded-md mx-auto" />
+                    {[...Array(4)].map((_, mIdx) => (
+                      <TableCell key={mIdx} className="py-4">
+                        <div className="flex flex-col gap-1.5 items-center">
+                          <div className="h-4 w-10 bg-muted/15 animate-pulse rounded-full" style={{ animationDelay: `${i * 100 + mIdx * 50}ms` }} />
+                          <div className="h-2 w-6 bg-muted/5 animate-pulse rounded-full" style={{ animationDelay: `${i * 100 + mIdx * 50}ms` }} />
+                        </div>
+                      </TableCell>
+                    ))}
+                    <TableCell className="py-4">
+                      <div className="h-6 w-6 bg-muted/20 animate-pulse rounded-full mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
                     </TableCell>
-                    {/* DIST. */}
-                    <TableCell className="text-center">
-                      <div className="h-4 w-14 bg-muted/10 animate-pulse rounded-md mx-auto" />
+                    <TableCell className="hidden xl:table-cell min-w-[320px] px-8 py-4">
+                      <div className="flex flex-col gap-2">
+                        <div className="h-3 w-[100%] bg-muted/10 animate-pulse rounded-full" style={{ animationDelay: `${i * 100}ms` }} />
+                        <div className="h-3 w-[70%] bg-muted/5 animate-pulse rounded-full" style={{ animationDelay: `${i * 100}ms` }} />
+                      </div>
                     </TableCell>
-                    {/* ALLURE */}
-                    <TableCell className="text-center">
-                      <div className="h-4 w-16 bg-muted/10 animate-pulse rounded-md mx-auto" />
-                    </TableCell>
-                    {/* FC */}
-                    <TableCell className="text-center">
-                      <div className="h-4 w-14 bg-muted/10 animate-pulse rounded-md mx-auto" />
-                    </TableCell>
-                    {/* RPE */}
-                    <TableCell className="text-center">
-                       <div className="h-4 w-10 bg-muted/20 animate-pulse rounded-md mx-auto" />
-                    </TableCell>
-                    {/* COMMENTAIRES */}
-                    <TableCell className="max-w-[400px]">
-                      <div className="h-3.5 w-[90%] bg-muted/5 animate-pulse rounded-md" />
-                    </TableCell>
-                    {/* ACTIONS */}
-                    <TableCell className="px-6">
-                      <div className="h-4 w-1 bg-muted/5 animate-pulse rounded-full mx-auto" />
+                    <TableCell className="px-6 py-4">
+                      <div className="h-8 w-8 bg-muted/10 animate-pulse rounded-xl mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
                     </TableCell>
                   </TableRow>
                 ))}
