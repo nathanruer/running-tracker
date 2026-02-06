@@ -386,7 +386,14 @@ export async function completePlannedSession(
 
   await prisma.plan_sessions.update({
     where: { id: plan.id },
-    data: { status: 'completed' },
+    data: {
+      status: 'completed',
+      ...(payload.intervalDetails !== undefined && {
+        intervalDetails: payload.intervalDetails === null
+          ? Prisma.JsonNull
+          : (payload.intervalDetails as Prisma.InputJsonValue),
+      }),
+    },
   });
 
   await prisma.workout_metrics_raw.create({
@@ -490,6 +497,17 @@ export async function updateSession(
       if (sanitizedStreams) {
         await replaceStreams(workout.id, sanitizedStreams as Prisma.JsonValue);
       }
+    }
+
+    if (updates.intervalDetails !== undefined && workout.planSessionId) {
+      await prisma.plan_sessions.update({
+        where: { id: workout.planSessionId },
+        data: {
+          intervalDetails: updates.intervalDetails === null
+            ? Prisma.JsonNull
+            : (updates.intervalDetails as Prisma.InputJsonValue),
+        },
+      });
     }
 
     if (updates.date) {
