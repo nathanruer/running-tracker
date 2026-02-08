@@ -24,6 +24,7 @@ function isAuthError(error: unknown): boolean {
 
 export function useStravaActivities(open: boolean) {
   const [searchLoading, setSearchLoading] = useState(false);
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [searchProgress, setSearchProgress] = useState<SearchProgress>({ loaded: 0, total: 0 });
   const abortControllerRef = useRef<AbortController | null>(null);
   const { handleError } = useErrorHandler({ scope: 'local' });
@@ -41,12 +42,11 @@ export function useStravaActivities(open: boolean) {
   } = useInfiniteQuery({
     queryKey: queryKeys.stravaActivities(),
     queryFn: async ({ pageParam }) => {
-      const response = await getStravaActivities(pageParam, PAGE_SIZE);
-      return response;
+      return await getStravaActivities(PAGE_SIZE, pageParam);
     },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      return lastPage.hasMore ? lastPageParam + 1 : undefined;
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor ?? undefined;
     },
     enabled: open,
     staleTime: 0, // SWR: always refetch in background, show cache instantly
@@ -70,7 +70,7 @@ export function useStravaActivities(open: boolean) {
   }, [isLoading, isFetchingNextPage, hasMore, fetchNextPage]);
 
   const loadAllForSearch = useCallback(async (searchQuery: string) => {
-    if (!hasMore || searchLoading) return;
+    if (!hasMore || searchLoading || isLoadingAll) return;
 
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
@@ -117,15 +117,15 @@ export function useStravaActivities(open: boolean) {
     } finally {
       setSearchLoading(false);
     }
-  }, [hasMore, searchLoading, uniqueActivities.length, totalCount, fetchNextPage, handleError]);
+  }, [hasMore, searchLoading, isLoadingAll, uniqueActivities.length, totalCount, fetchNextPage, handleError]);
 
   const loadAllActivities = useCallback(async () => {
-    if (searchLoading) return;
+    if (isLoadingAll || searchLoading) return;
 
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
 
-    setSearchLoading(true);
+    setIsLoadingAll(true);
 
     setSearchProgress({ loaded: uniqueActivities.length, total: totalCount || 0 });
 
@@ -158,18 +158,20 @@ export function useStravaActivities(open: boolean) {
         handleError(err);
       }
     } finally {
-      setSearchLoading(false);
+      setIsLoadingAll(false);
     }
-  }, [searchLoading, hasMore, uniqueActivities.length, totalCount, fetchNextPage, handleError]);
+  }, [isLoadingAll, searchLoading, hasMore, uniqueActivities.length, totalCount, fetchNextPage, handleError]);
 
-  const cancelSearchLoading = useCallback(() => {
+  const cancelLoading = useCallback(() => {
     abortControllerRef.current?.abort();
     setSearchLoading(false);
+    setIsLoadingAll(false);
   }, []);
 
   const refresh = useCallback(() => {
     queryClient.removeQueries({ queryKey: queryKeys.stravaActivities() });
     setSearchLoading(false);
+    setIsLoadingAll(false);
     refetch();
   }, [queryClient, refetch]);
 
@@ -193,10 +195,11 @@ export function useStravaActivities(open: boolean) {
     connectToStrava,
     totalCount,
     searchLoading,
+    isLoadingAll,
     searchProgress,
     loadAllForSearch,
     loadAllActivities,
-    cancelSearchLoading,
+    cancelLoading,
     refresh,
   };
 }

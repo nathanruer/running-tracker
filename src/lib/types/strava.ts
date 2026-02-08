@@ -13,7 +13,7 @@ export type {
 } from '@/lib/validation/schemas/entities';
 
 export {
-  stravaActivityStoredSchema,
+  stravaActivitySchema,
   stravaStreamSchema,
   stravaStreamSetSchema,
   stravaTokensSchema,

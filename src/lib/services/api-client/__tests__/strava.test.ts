@@ -100,7 +100,7 @@ describe('Strava API', () => {
 
       const result = await getStravaActivities();
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=1&per_page=20');
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?per_page=30');
       expect(result.activities).toEqual(mockActivities);
     });
 
@@ -112,7 +112,7 @@ describe('Strava API', () => {
       expect(result.activities).toEqual([]);
     });
 
-    it('fetches activities with pagination', async () => {
+    it('fetches activities with cursor', async () => {
       const mockActivities = [
         {
           date: '2024-01-15',
@@ -126,12 +126,13 @@ describe('Strava API', () => {
           source: 'strava',
         },
       ];
-      mockApiRequest.mockResolvedValue({ activities: mockActivities, hasMore: true });
+      mockApiRequest.mockResolvedValue({ activities: mockActivities, hasMore: true, nextCursor: 1705276800 });
 
-      const result = await getStravaActivities(2);
+      const result = await getStravaActivities(30, 1705363200);
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?page=2&per_page=20');
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/strava/activities?per_page=30&before=1705363200');
       expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBe(1705276800);
     });
   });
 

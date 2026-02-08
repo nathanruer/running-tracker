@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/server/database';
 import { getActivities, formatStravaActivity, getValidAccessToken, getAthleteStats } from '@/server/services/strava';
 import { handleGetRequest } from '@/server/services/api-handlers';
-import { StravaActivity } from '@/lib/types/strava';
+import type { StravaActivity } from '@/lib/types/strava';
+
+const STRAVA_FETCH_SIZE = 50;
+const MAX_STRAVA_CALLS = 5;
 
 export async function GET(request: NextRequest) {
   return handleGetRequest(
@@ -21,23 +24,45 @@ export async function GET(request: NextRequest) {
       }
 
       const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get('page') || '1');
-      const perPage = parseInt(searchParams.get('per_page') || '20');
+      const perPage = parseInt(searchParams.get('per_page') || '30');
+      const before = searchParams.get('before') ? parseInt(searchParams.get('before')!) : undefined;
 
       const accessToken = await getValidAccessToken(user);
-      
-      const [activities, stats] = await Promise.all([
-        getActivities(accessToken, perPage, page),
-        getAthleteStats(accessToken, user.stravaId)
-      ]);
 
-      const runs = activities.filter((a: StravaActivity) => a.type === 'Run');
-      const formatted = runs.map(formatStravaActivity);
+      const statsPromise = getAthleteStats(accessToken, user.stravaId);
+
+      const runs: StravaActivity[] = [];
+      let currentBefore = before;
+      let stravaHasMore = true;
+      let calls = 0;
+
+      while (runs.length < perPage && stravaHasMore && calls < MAX_STRAVA_CALLS) {
+        const activities = await getActivities(accessToken, STRAVA_FETCH_SIZE, 1, currentBefore);
+        runs.push(...activities.filter((a) => a.type === 'Run'));
+        stravaHasMore = activities.length === STRAVA_FETCH_SIZE;
+        if (activities.length > 0) {
+          const last = activities[activities.length - 1];
+          currentBefore = Math.floor(new Date(last.start_date).getTime() / 1000);
+        }
+        calls++;
+      }
+
+      const stats = await statsPromise;
+
+      const trimmed = runs.slice(0, perPage);
+      const formatted = trimmed.map(formatStravaActivity);
+
+      const hasMore = stravaHasMore || runs.length > perPage;
+      const lastRun = trimmed[trimmed.length - 1];
+      const nextCursor = hasMore && lastRun
+        ? Math.floor(new Date(lastRun.start_date).getTime() / 1000)
+        : null;
 
       return NextResponse.json({
         activities: formatted,
-        hasMore: activities.length === perPage,
+        hasMore,
         totalCount: stats.all_run_totals.count,
+        nextCursor,
       });
     },
     { logContext: 'get-strava-activities' }

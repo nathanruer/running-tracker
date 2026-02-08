@@ -88,7 +88,7 @@ describe('useStravaActivities', () => {
 
     expect(result.current.activities).toEqual([mockActivity]);
     expect(result.current.isConnected).toBe(true);
-    expect(apiClient.getStravaActivities).toHaveBeenCalledWith(1, 30);
+    expect(apiClient.getStravaActivities).toHaveBeenCalledWith(30, undefined);
   });
 
   it('should handle 401 unauthorized error', async () => {
@@ -254,6 +254,7 @@ describe('useStravaActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
+        nextCursor: 1704067200,
       })
       .mockResolvedValueOnce({
         activities: [{ ...mockActivity, externalId: '2' }],
@@ -286,6 +287,7 @@ describe('useStravaActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
+        nextCursor: 1704067200,
       })
       .mockResolvedValueOnce({
         activities: [mockActivity],
@@ -321,12 +323,12 @@ describe('useStravaActivities', () => {
     expect(result.current.searchProgress).toEqual({ loaded: 0, total: 0 });
   });
 
-  it('should provide cancelSearchLoading function', () => {
+  it('should provide cancelLoading function', () => {
     const { result } = renderHook(() => useStravaActivities(false), {
       wrapper: createWrapper(),
     });
 
-    expect(typeof result.current.cancelSearchLoading).toBe('function');
+    expect(typeof result.current.cancelLoading).toBe('function');
   });
 
   it('should load all activities when loadAllActivities is called', async () => {
@@ -335,6 +337,7 @@ describe('useStravaActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
+        nextCursor: 1704067200,
       })
       .mockResolvedValueOnce({
         activities: [{ ...mockActivity, externalId: '2' }],
@@ -363,11 +366,13 @@ describe('useStravaActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
+        nextCursor: 1704067200,
       })
       .mockResolvedValueOnce({
         activities: [{ ...mockActivity, externalId: '2', comments: 'match here' }],
         hasMore: true,
         totalCount: 2,
+        nextCursor: 1704000000,
       });
 
     const { result } = renderHook(() => useStravaActivities(true), {

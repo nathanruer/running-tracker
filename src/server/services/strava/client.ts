@@ -2,7 +2,7 @@ import 'server-only';
 import type { StravaTokens, StravaActivity, StravaStreamSet, StravaStreamType } from '@/lib/types';
 import {
   stravaTokensSchema,
-  stravaActivityStoredSchema,
+  stravaActivitySchema,
   stravaStreamSetSchema,
 } from '@/lib/types/strava';
 import { logger } from '@/server/infrastructure/logger';
@@ -72,10 +72,17 @@ export async function refreshAccessToken(refreshToken: string): Promise<StravaTo
 export async function getActivities(
   accessToken: string,
   perPage: number = 30,
-  page: number = 1
+  page: number = 1,
+  before?: number
 ): Promise<StravaActivity[]> {
+  const params = new URLSearchParams({
+    per_page: String(perPage),
+    page: String(page),
+  });
+  if (before) params.set('before', String(before));
+
   const response = await fetch(
-    `${STRAVA_URLS.ACTIVITIES}?per_page=${perPage}&page=${page}`,
+    `${STRAVA_URLS.ACTIVITIES}?${params}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -88,7 +95,7 @@ export async function getActivities(
   }
 
   const data = await response.json();
-  return z.array(stravaActivityStoredSchema).parse(data);
+  return z.array(stravaActivitySchema).parse(data);
 }
 
 /**
@@ -122,7 +129,7 @@ export async function getActivityDetails(
   }
 
   const data = await response.json();
-  return stravaActivityStoredSchema.parse(data);
+  return stravaActivitySchema.parse(data);
 }
 
 /**

@@ -53,6 +53,14 @@ describe('validateStravaData', () => {
       expect(result?.map?.summary_polyline).toBe('encoded_polyline_string');
     });
 
+    it('should validate activity with null external_id and upload_id', () => {
+      const result = validateStravaData({ ...validStravaActivity, external_id: null, upload_id: null });
+
+      expect(result).not.toBeNull();
+      expect(result?.external_id).toBeNull();
+      expect(result?.upload_id).toBeNull();
+    });
+
     it('should validate with missing optional fields', () => {
       const result = validateStravaData(validStravaActivity);
 

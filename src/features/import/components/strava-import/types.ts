@@ -33,9 +33,10 @@ export interface StravaToolbarProps {
   loading: boolean;
   hasMore: boolean;
   searchLoading: boolean;
+  isLoadingAll: boolean;
   searchProgress: { loaded: number; total: number };
   onLoadAll: () => void;
-  onCancelSearch: () => void;
+  onCancelLoadAll: () => void;
 }
 
 export interface StravaTableHeaderProps {

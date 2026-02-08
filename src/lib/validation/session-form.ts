@@ -11,7 +11,7 @@ import {
   optionalNullableNumberSchema,
   isValidNullableNumber,
 } from './schemas/primitives';
-import { stravaActivityStoredSchema } from './schemas/entities';
+import { stravaActivitySchema } from './schemas/entities';
 import { RPE } from '@/lib/constants/validation';
 
 // ============================================================================
@@ -74,7 +74,7 @@ const formSchema = z.object({
   // External/Strava fields
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
-  stravaData: stravaActivityStoredSchema.optional().nullable(),
+  stravaData: stravaActivitySchema.optional().nullable(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),

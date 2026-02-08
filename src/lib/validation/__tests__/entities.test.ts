@@ -4,7 +4,7 @@ import {
   intervalStepEntitySchema,
   intervalDetailsEntitySchema,
   weatherDataSchema,
-  stravaActivityStoredSchema,
+  stravaActivitySchema,
   stravaStreamSchema,
   trainingSessionEntitySchema,
 } from '@/lib/validation/schemas/entities';
@@ -128,7 +128,7 @@ describe('Entity Schemas', () => {
     });
   });
 
-  describe('stravaActivityStoredSchema', () => {
+  describe('stravaActivitySchema', () => {
     it('validates minimal Strava activity', () => {
       const activity = {
         id: 123456,
@@ -143,7 +143,27 @@ describe('Entity Schemas', () => {
         average_speed: 2.78,
         max_speed: 3.5,
       };
-      const result = stravaActivityStoredSchema.safeParse(activity);
+      const result = stravaActivitySchema.safeParse(activity);
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts null external_id and upload_id (manual/non-GPS activities)', () => {
+      const activity = {
+        id: 123456,
+        name: 'Ski de fond',
+        distance: 15000,
+        moving_time: 7200,
+        elapsed_time: 7500,
+        total_elevation_gain: 200,
+        type: 'NordicSki',
+        start_date: '2024-02-10T09:00:00Z',
+        start_date_local: '2024-02-10T10:00:00',
+        average_speed: 2.08,
+        max_speed: 3.0,
+        external_id: null,
+        upload_id: null,
+      };
+      const result = stravaActivitySchema.safeParse(activity);
       expect(result.success).toBe(true);
     });
 
@@ -174,7 +194,7 @@ describe('Entity Schemas', () => {
         external_id: 'ext123',
         upload_id: 789,
       };
-      const result = stravaActivityStoredSchema.safeParse(activity);
+      const result = stravaActivitySchema.safeParse(activity);
       expect(result.success).toBe(true);
     });
   });

@@ -24,7 +24,7 @@ vi.mock('@/components/ui/search-input', () => ({
 describe('StravaToolbar', () => {
   const mockOnSearchChange = vi.fn();
   const mockOnLoadAll = vi.fn();
-  const mockOnCancelSearch = vi.fn();
+  const mockOnCancelLoadAll = vi.fn();
 
   const defaultProps = {
     searchQuery: '',
@@ -35,9 +35,10 @@ describe('StravaToolbar', () => {
     loading: false,
     hasMore: true,
     searchLoading: false,
+    isLoadingAll: false,
     searchProgress: { loaded: 20, total: 100 },
     onLoadAll: mockOnLoadAll,
-    onCancelSearch: mockOnCancelSearch,
+    onCancelLoadAll: mockOnCancelLoadAll,
   };
 
   beforeEach(() => {

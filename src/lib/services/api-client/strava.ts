@@ -23,10 +23,13 @@ export interface StravaActivitiesResponse {
   activities: FormattedStravaActivity[];
   hasMore: boolean;
   totalCount?: number;
+  nextCursor?: number | null;
 }
 
-export async function getStravaActivities(page: number = 1, perPage: number = 20): Promise<StravaActivitiesResponse> {
-  return apiRequest<StravaActivitiesResponse>(`/api/strava/activities?page=${page}&per_page=${perPage}`);
+export async function getStravaActivities(perPage: number = 30, before?: number): Promise<StravaActivitiesResponse> {
+  const params = new URLSearchParams({ per_page: String(perPage) });
+  if (before) params.set('before', String(before));
+  return apiRequest<StravaActivitiesResponse>(`/api/strava/activities?${params}`);
 }
 
 export async function getStravaActivityDetails(activityId: string): Promise<FormattedStravaActivity> {

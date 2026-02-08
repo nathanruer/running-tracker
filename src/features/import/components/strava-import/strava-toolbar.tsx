@@ -11,9 +11,10 @@ export function StravaToolbar({
   loading,
   hasMore,
   searchLoading,
+  isLoadingAll,
   searchProgress,
   onLoadAll,
-  onCancelSearch,
+  onCancelLoadAll,
 }: StravaToolbarProps) {
   return (
     <div className="px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 border-b border-border/10">
@@ -36,8 +37,8 @@ export function StravaToolbar({
             filteredCount={filteredCount}
             searchQuery={searchQuery}
             onLoadAll={onLoadAll}
-            isLoadingAll={searchLoading}
-            onCancelLoadAll={onCancelSearch}
+            isLoadingAll={isLoadingAll}
+            onCancelLoadAll={onCancelLoadAll}
           />
         )}
       </div>

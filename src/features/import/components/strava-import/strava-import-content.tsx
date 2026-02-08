@@ -49,10 +49,11 @@ export function StravaImportContent({
     loadMore,
     totalCount,
     searchLoading,
+    isLoadingAll,
     searchProgress,
     loadAllForSearch,
     loadAllActivities,
-    cancelSearchLoading,
+    cancelLoading,
   } = useStravaActivities(open);
 
   const { toast } = useToast();
@@ -253,9 +254,10 @@ export function StravaImportContent({
                 loading={loading}
                 hasMore={hasMore}
                 searchLoading={searchLoading}
+                isLoadingAll={isLoadingAll}
                 searchProgress={searchProgress}
                 onLoadAll={loadAllActivities}
-                onCancelSearch={cancelSearchLoading}
+                onCancelLoadAll={cancelLoading}
               />
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">

@@ -75,7 +75,7 @@ export const weatherDataSchema = z.object({
 // STRAVA ACTIVITY SCHEMA (for stored data)
 // ============================================================================
 
-export const stravaActivityStoredSchema = z.object({
+export const stravaActivitySchema = z.object({
   id: z.number(),
   name: z.string(),
   distance: z.number(),
@@ -98,8 +98,8 @@ export const stravaActivityStoredSchema = z.object({
     id: z.string(),
     summary_polyline: z.string(),
   }).optional(),
-  external_id: z.string().optional(),
-  upload_id: z.number().optional(),
+  external_id: z.string().nullish(),
+  upload_id: z.number().nullish(),
 });
 
 // ============================================================================
@@ -157,7 +157,7 @@ export const trainingSessionEntitySchema = z.object({
   recommendationId: z.string().nullable().optional(),
   externalId: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
-  stravaData: stravaActivityStoredSchema.nullable().optional(),
+  stravaData: stravaActivitySchema.nullable().optional(),
   stravaStreams: stravaStreamSetSchema.nullable().optional(),
   elevationGain: z.number().nullable().optional(),
   averageCadence: z.number().nullable().optional(),
@@ -174,7 +174,7 @@ export type StepType = z.infer<typeof stepTypeEnum>;
 export type IntervalStep = z.infer<typeof intervalStepEntitySchema>;
 export type IntervalDetails = z.infer<typeof intervalDetailsEntitySchema>;
 export type WeatherData = z.infer<typeof weatherDataSchema>;
-export type StravaActivity = z.infer<typeof stravaActivityStoredSchema>;
+export type StravaActivity = z.infer<typeof stravaActivitySchema>;
 export type StravaStream = z.infer<typeof stravaStreamSchema>;
 export type StravaStreamSet = z.infer<typeof stravaStreamSetSchema>;
 export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;

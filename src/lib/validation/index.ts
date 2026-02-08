@@ -19,7 +19,6 @@ export {
 } from './session-form';
 
 export {
-  stravaActivitySchema,
   stravaMapSchema,
   stravaStreamSchema as stravaApiStreamSchema,
   stravaStreamSetSchema as stravaApiStreamSetSchema,

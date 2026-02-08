@@ -39,7 +39,7 @@ export {
 } from './session';
 
 export {
-  stravaActivityStoredSchema,
+  stravaActivitySchema,
   stravaStreamSchema,
   stravaStreamSetSchema,
 } from './strava';
