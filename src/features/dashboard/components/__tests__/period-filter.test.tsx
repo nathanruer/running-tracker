@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PeriodFilter } from '../period-filter';
-import type { Period } from '../../hooks/use-period-filter';
+import type { Period } from '../../hooks/use-dashboard-filters';
 
 describe('PeriodFilter', () => {
   const mockOnPeriodChange = vi.fn();

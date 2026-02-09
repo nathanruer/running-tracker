@@ -6,7 +6,7 @@ import { LoadingBar } from '@/components/ui/loading-bar';
 import { InfiniteScrollTrigger, EndOfList } from '@/components/ui/data-table';
 import { type TrainingSession } from '@/lib/types';
 import type { SortConfig, SortColumn } from '@/lib/domain/sessions';
-import type { Period } from '../hooks/use-period-filter';
+import type { Period } from '../hooks/use-dashboard-filters';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useInfiniteScrollObserver } from '@/hooks/use-infinite-scroll-observer';
 import { useBulkDelete } from '../hooks/use-bulk-delete';
@@ -97,7 +97,6 @@ export function SessionsTable({
     <>
       <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
         <SessionsTableToolbar
-          initialLoading={initialLoading}
           totalCount={totalCount}
           loadedCount={sessions.length}
           hasMore={hasMore}

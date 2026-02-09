@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { SelectionBar } from './selection-bar';
 import { PeriodFilter } from './period-filter';
-import type { Period } from '../hooks/use-period-filter';
+import type { Period } from '../hooks/use-dashboard-filters';
 
 const PERIOD_LABELS: Record<Period, string> = {
   all: 'Tout',
@@ -45,7 +45,6 @@ function ActiveFilterChip({ id, label, onRemove }: ActiveFilterChipProps) {
 }
 
 interface SessionsTableToolbarProps {
-  initialLoading: boolean;
   totalCount: number;
   loadedCount: number;
   hasMore: boolean;
@@ -72,7 +71,6 @@ interface SessionsTableToolbarProps {
 }
 
 export function SessionsTableToolbar({
-  initialLoading,
   totalCount,
   loadedCount,
   hasMore,
@@ -137,74 +135,65 @@ export function SessionsTableToolbar({
             </h2>
             
             {/* Unified Indicator (Desktop & Mobile) */}
-            {!initialLoading ? (
-              <div className="min-w-0 flex-shrink">
-                <ScopeIndicator
-                  loadedCount={loadedCount}
-                  totalCount={totalCount}
-                  hasMore={hasMore}
-                  searchQuery={searchQuery}
-                  unit="séances"
-                  onLoadAll={onLoadAll}
-                  isLoadingAll={isLoadingAll}
-                  onCancelLoadAll={onCancelLoadAll}
-                  isFetching={isFetching}
-                  isFiltering={hasActiveFilters}
-                />
-              </div>
-            ) : (
-              <div className="h-7 w-[80px] md:w-[180px] bg-muted/10 border border-border/20 animate-pulse rounded-full" />
-            )}
+            <div className="min-w-0 flex-shrink">
+              <ScopeIndicator
+                loadedCount={loadedCount}
+                totalCount={totalCount}
+                hasMore={hasMore}
+                searchQuery={searchQuery}
+                unit="séances"
+                onLoadAll={onLoadAll}
+                isLoadingAll={isLoadingAll}
+                onCancelLoadAll={onCancelLoadAll}
+                isFetching={isFetching}
+                isFiltering={hasActiveFilters}
+              />
+            </div>
           </div>
 
-          {!initialLoading && (
-            <div className="flex items-center gap-1.5 md:gap-3 shrink-0 ml-1">
-              {actions.onNewSession && (
-                <Button
-                  data-testid="btn-new-session"
-                  onClick={actions.onNewSession}
-                  variant="action"
-                  size="sm"
-                  className="rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-8 transition-all active:scale-95 flex items-center justify-center border border-violet-400/20 shadow-none shrink-0"
-                  title="Nouvelle séance"
-                >
-                  <Plus className="h-4 w-4 md:h-4 md:w-4" />
-                  <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Nouvelle séance</span>
-                </Button>
-              )}
-
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 md:gap-3 shrink-0 ml-1">
+            {actions.onNewSession && (
+              <Button
+                data-testid="btn-new-session"
+                onClick={actions.onNewSession}
+                variant="action"
+                size="sm"
+                className="rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-8 transition-all active:scale-95 flex items-center justify-center border border-violet-400/20 shadow-none shrink-0"
+                title="Nouvelle séance"
+              >
+                <Plus className="h-4 w-4 md:h-4 md:w-4" />
+                <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Nouvelle séance</span>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters bar */}
-        {!initialLoading && (
-          <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 md:gap-4">
-            <SearchInput
-              value={searchQuery}
-              onChange={onSearchChange}
-              className="w-full xl:w-[320px]"
-            />
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 md:gap-4">
+          <SearchInput
+            value={searchQuery}
+            onChange={onSearchChange}
+            className="w-full xl:w-[320px]"
+          />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Select value={selectedType} onValueChange={onTypeChange}>
-                <SelectTrigger data-testid="filter-session-type" className="w-auto min-w-[120px] max-w-[150px] md:w-[160px] h-9 md:h-10 rounded-xl bg-muted/5 border-border/40 font-bold text-[9px] md:text-[11px] uppercase tracking-wider hover:bg-muted/10 transition-colors">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border/40 shadow-2xl">
-                  <SelectItem value="all">Tous les types</SelectItem>
-                  {availableTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={selectedType} onValueChange={onTypeChange}>
+              <SelectTrigger data-testid="filter-session-type" className="w-auto min-w-[120px] max-w-[150px] md:w-[160px] h-9 md:h-10 rounded-xl bg-muted/5 border-border/40 font-bold text-[9px] md:text-[11px] uppercase tracking-wider hover:bg-muted/10 transition-colors">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border/40 shadow-2xl">
+                <SelectItem value="all">Tous les types</SelectItem>
+                {availableTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <PeriodFilter period={period} onPeriodChange={onPeriodChange} />
-            </div>
+            <PeriodFilter period={period} onPeriodChange={onPeriodChange} />
           </div>
-        )}
+        </div>
       </div>
 
       {hasActiveFilters && activeFilters.length > 0 && (

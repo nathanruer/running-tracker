@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { Period } from '../hooks/use-period-filter';
+import type { Period } from '../hooks/use-dashboard-filters';
 
 interface PeriodFilterProps {
   period: Period;

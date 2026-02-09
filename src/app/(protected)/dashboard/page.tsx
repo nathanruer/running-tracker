@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
@@ -11,10 +11,7 @@ import { SessionsEmptyState } from '@/features/dashboard/components/sessions-emp
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
-import { useMultiSort } from '@/features/dashboard/hooks/use-multi-sort';
-import { useSearch } from '@/features/dashboard/hooks/use-search';
-import { usePeriodFilter } from '@/features/dashboard/hooks/use-period-filter';
-import { useTypeFilter } from '@/features/dashboard/hooks/use-type-filter';
+import { useDashboardFilters } from '@/features/dashboard/hooks/use-dashboard-filters';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +27,6 @@ const SESSION_DETAILS_STALE_TIME = 5 * 60 * 1000;
 
 function DashboardContent() {
   const queryClient = useQueryClient();
-  const { selectedType, handleTypeChange } = useTypeFilter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
@@ -41,9 +37,12 @@ function DashboardContent() {
 
   const { toast } = useToast();
   const router = useRouter();
-  const { sortConfig, sortParam, handleSort } = useMultiSort();
-  const { searchQuery, handleSearchChange } = useSearch();
-  const { period, dateFrom, handlePeriodChange } = usePeriodFilter();
+  const {
+    searchQuery, handleSearchChange,
+    selectedType, handleTypeChange,
+    period, dateFrom, handlePeriodChange,
+    sortConfig, sortParam, handleSort,
+  } = useDashboardFilters();
 
   const {
     user,
@@ -185,7 +184,7 @@ function DashboardContent() {
     onNewSession: openNewSession,
   };
 
-  if (initialLoading || !user) {
+  if (!user) {
     return <DashboardSkeleton />;
   }
 
@@ -265,9 +264,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent />
-    </Suspense>
-  );
+  return <DashboardContent />;
 }

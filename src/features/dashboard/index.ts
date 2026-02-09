@@ -19,10 +19,7 @@ export {
 } from './components/session-row';
 
 export { useBulkDelete } from './hooks/use-bulk-delete';
-export { useMultiSort } from './hooks/use-multi-sort';
+export { useDashboardFilters, type Period } from './hooks/use-dashboard-filters';
 export { useSessionRowData, type SessionRowDisplayData } from './hooks/use-session-row-data';
-export { usePeriodFilter, type Period } from './hooks/use-period-filter';
-export { useTypeFilter } from './hooks/use-type-filter';
-export { useSearch } from './hooks/use-search';
 
 export { useDashboardData } from './hooks/use-dashboard-data';
