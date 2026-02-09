@@ -50,10 +50,11 @@ describe('initializeFormForCreate', () => {
 });
 
 describe('initializeFormForEdit', () => {
-  it('initializes for editing a planned session', () => {
+  it('initializes for editing a planned session with plannedDate', () => {
     const session = {
       status: 'planned',
-      date: '2024-01-15',
+      date: null,
+      plannedDate: '2024-01-15T00:00:00.000Z',
       sessionType: 'Footing',
       targetDuration: 45,
       targetDistance: 10,
@@ -75,6 +76,21 @@ describe('initializeFormForEdit', () => {
     expect(result.avgHeartRate).toBe(150);
     expect(result.perceivedExertion).toBe(5);
     expect(result.comments).toBe('Session planifiée');
+  });
+
+  it('initializes with empty date when planned session has no date', () => {
+    const session = {
+      status: 'planned',
+      date: null,
+      plannedDate: null,
+      sessionType: 'Footing',
+      targetDuration: 45,
+      comments: '',
+    } as TrainingSession;
+
+    const result = initializeFormForEdit(session);
+
+    expect(result.date).toBe('');
   });
 
   it('initializes for editing a completed session', () => {

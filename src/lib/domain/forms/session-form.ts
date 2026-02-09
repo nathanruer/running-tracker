@@ -60,7 +60,9 @@ export function initializeFormForComplete(
  * Initialize the form to edit an existing session
  */
 export function initializeFormForEdit(session: TrainingSession): Partial<FormValues> {
-  const sessionDate = session.date ? extractDatePart(session.date) : '';
+  const sessionDate = session.date
+    ? extractDatePart(session.date)
+    : (session.plannedDate ? extractDatePart(session.plannedDate) : '');
   const displayData = getSessionDisplayData(session);
 
   return {

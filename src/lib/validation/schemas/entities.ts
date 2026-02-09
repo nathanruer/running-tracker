@@ -206,16 +206,12 @@ export type CompletedSessionUpdatePayload = {
   comments?: string;
 };
 
-/**
- * Payload for creating a planned session
- */
 export type PlannedSessionPayload = {
-  date: string | null;
+  plannedDate: string | null;
   sessionType: string | null;
   targetDuration: number | null;
   targetDistance: number | null;
   targetPace: string | null;
-
   targetHeartRateBpm: string | number | null;
   targetRPE: number | null;
   intervalDetails?: IntervalDetails | null;

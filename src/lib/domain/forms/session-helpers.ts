@@ -68,7 +68,7 @@ export function buildPlannedSessionPayload(
     : null;
 
   return {
-    date: values.date ?? null,
+    plannedDate: values.date ?? null,
     sessionType: values.sessionType,
     targetDuration: durationInMinutes,
     targetDistance: values.distance ?? null,

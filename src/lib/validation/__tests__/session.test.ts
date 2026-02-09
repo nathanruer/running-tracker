@@ -166,5 +166,38 @@ describe('Session Validation Schemas', () => {
       const result = partialSessionSchema.safeParse({});
       expect(result.success).toBe(true);
     });
+
+    it('accepts planned session fields', () => {
+      const result = partialSessionSchema.safeParse({
+        plannedDate: '2024-01-15',
+        sessionType: 'Footing',
+        targetDuration: 45,
+        targetDistance: 10,
+        targetPace: '05:30',
+        targetHeartRateBpm: 150,
+        targetRPE: 5,
+        recommendationId: 'rec-123',
+        intervalDetails: null,
+        comments: 'Planned run',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.plannedDate).toBe('2024-01-15');
+        expect(result.data.targetDuration).toBe(45);
+        expect(result.data.targetDistance).toBe(10);
+      }
+    });
+
+    it('preserves planned fields after parse', () => {
+      const result = partialSessionSchema.safeParse({
+        plannedDate: '2024-01-15',
+        targetDuration: 45,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.plannedDate).toBe('2024-01-15');
+        expect(result.data.targetDuration).toBe(45);
+      }
+    });
   });
 });

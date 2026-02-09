@@ -81,7 +81,7 @@ describe('buildPlannedSessionPayload', () => {
 
     const result = buildPlannedSessionPayload(values, normalizedValues, null, 'rec-123');
 
-    expect(result.date).toBe('2024-01-15');
+    expect(result.plannedDate).toBe('2024-01-15');
     expect(result.sessionType).toBe('Footing');
     expect(result.targetDuration).toBe(45);
     expect(result.targetDistance).toBe(10);

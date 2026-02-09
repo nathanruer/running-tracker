@@ -70,7 +70,19 @@ export const sessionSchema = z.object({
   weather: weatherDataSchema.optional().nullable(),
 });
 
-export const partialSessionSchema = sessionSchema.partial();
+const plannedSessionFields = z.object({
+  plannedDate: z.string().nullable(),
+  targetDuration: z.number().nullable(),
+  targetDistance: z.number().min(0).nullable(),
+  targetPace: nullablePaceSchema,
+  targetHeartRateBpm: z.union([z.string(), z.number()]).nullable(),
+  targetRPE: optionalRpeSchema,
+  recommendationId: z.string().optional().nullable(),
+});
+
+export const partialSessionSchema = sessionSchema
+  .merge(plannedSessionFields)
+  .partial();
 
 // ============================================================================
 // INFERRED TYPES

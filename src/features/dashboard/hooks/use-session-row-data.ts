@@ -100,8 +100,9 @@ export function useSessionRowData(session: TrainingSession): SessionRowDisplayDa
       : null;
     
     let dateDisplay: string | null = null;
-    if (session.date) {
-      dateDisplay = new Date(session.date)
+    const effectiveDate = session.date ?? (isPlanned ? session.plannedDate : null);
+    if (effectiveDate) {
+      dateDisplay = new Date(effectiveDate)
         .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         .replace(/\//g, '.');
     }

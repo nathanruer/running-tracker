@@ -24,7 +24,8 @@ const createPlannedSession = (overrides: Partial<TrainingSession> = {}): Trainin
   id: '2',
   sessionNumber: 2,
   week: 1,
-  date: '2024-01-16',
+  date: null,
+  plannedDate: '2024-01-16T00:00:00.000Z',
   sessionType: 'Footing',
   duration: null,
   distance: null,
@@ -136,8 +137,14 @@ describe('useSessionRowData', () => {
       expect(result.current.rpe).toBe(6);
     });
 
-    it('should return "À planifier" indicator for null date', () => {
-      const session = createPlannedSession({ date: null });
+    it('should format plannedDate for planned sessions', () => {
+      const session = createPlannedSession();
+      const { result } = renderHook(() => useSessionRowData(session));
+      expect(result.current.dateDisplay).toBe('16.01.2024');
+    });
+
+    it('should return null dateDisplay when no date and no plannedDate', () => {
+      const session = createPlannedSession({ date: null, plannedDate: null });
       const { result } = renderHook(() => useSessionRowData(session));
       expect(result.current.dateDisplay).toBeNull();
     });
