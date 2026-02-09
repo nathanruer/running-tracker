@@ -4,12 +4,13 @@ import { logger } from './logger';
 
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
+  DIRECT_DATABASE_URL: z.string().url().optional(),
   JWT_SECRET: z.string().min(32, "Le secret JWT doit faire au moins 32 caractères pour être sécurisé"),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  
+
   STRAVA_CLIENT_ID: z.string().optional(),
   STRAVA_CLIENT_SECRET: z.string().optional(),
-  
+
   GROQ_API_KEY: z.string().optional(),
 });
 

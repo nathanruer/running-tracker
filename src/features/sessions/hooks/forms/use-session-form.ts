@@ -93,7 +93,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     if (session && mode === 'complete' && initialData) {
       defaultValues = initializeFormForComplete(session, initialData);
       form.reset(defaultValues);
-      setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
+      setIsCustomSessionType(!!session.sessionType && !predefinedTypes.includes(session.sessionType));
 
       const hasDetailedSteps = (initialData.steps && initialData.steps.length > 0) ||
                                (session.intervalDetails?.steps && session.intervalDetails.steps.length > 0);
@@ -103,7 +103,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     } else if (session && (mode === 'edit' || mode === 'complete')) {
       defaultValues = initializeFormForEdit(session);
       form.reset(defaultValues);
-      setIsCustomSessionType(!predefinedTypes.includes(session.sessionType) && session.sessionType !== '');
+      setIsCustomSessionType(!!session.sessionType && !predefinedTypes.includes(session.sessionType));
 
       if (session.intervalDetails?.steps && session.intervalDetails.steps.length > 0) {
         setIntervalEntryMode('detailed');
@@ -262,17 +262,9 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
   };
 
   const resetForm = () => {
-    form.reset({
-      date: getTodayISO(),
-      sessionType: 'Footing',
-      duration: '',
-      distance: null,
-      avgPace: '',
-      avgHeartRate: null,
-      perceivedExertion: null,
-      comments: '',
-    });
-    setIsCustomSessionType(false);
+    form.reset();
+    const resetType = form.getValues('sessionType');
+    setIsCustomSessionType(!!resetType && !PREDEFINED_TYPES.includes(resetType));
   };
 
   return {

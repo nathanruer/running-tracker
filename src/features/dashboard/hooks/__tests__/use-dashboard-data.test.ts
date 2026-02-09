@@ -50,7 +50,7 @@ const mockMutations = {
   handleDelete: vi.fn(),
   handleBulkDelete: vi.fn(),
   handleEntitySuccess: vi.fn(),
-  isDeleting: false,
+  deletingIds: new Set<string>(),
 };
 
 describe('useDashboardData', () => {
@@ -366,7 +366,7 @@ describe('useDashboardData', () => {
       vi.mocked(useQuery)
         .mockReturnValueOnce({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>)
         .mockReturnValueOnce({ data: [] } as ReturnType<typeof useQuery>)
-        .mockReturnValueOnce({ data: 1 } as ReturnType<typeof useQuery>);
+        .mockReturnValueOnce({ data: 1, isLoading: false } as ReturnType<typeof useQuery>);
 
       vi.mocked(useInfiniteQuery).mockReturnValue({
         data: { pages: [[createSession('1')]], pageParams: [0] },

@@ -22,7 +22,7 @@ export function formatStravaActivity(activity: StravaActivity) {
 
   return {
     date: formatDateToISO(activityDate),
-    sessionType: '',
+    sessionType: null,
     duration,
     distance,
     avgPace,

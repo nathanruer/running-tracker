@@ -9,14 +9,17 @@ export const StravaActivityRow = React.memo(function StravaActivityRow({
   index,
   selected,
   onToggleSelect,
+  imported,
 }: StravaActivityRowProps) {
   return (
     <TableRow
       className={cn(
         "transition-colors group/row border-none cursor-pointer",
-        selected
-          ? "bg-violet-500/5 hover:bg-violet-500/10"
-          : "hover:bg-muted/30"
+        imported
+          ? "opacity-40 pointer-events-none"
+          : selected
+            ? "bg-violet-500/5 hover:bg-violet-500/10"
+            : "hover:bg-muted/30"
       )}
       onClick={() => onToggleSelect(index)}
     >

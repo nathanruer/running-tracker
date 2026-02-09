@@ -261,7 +261,7 @@ export async function createPlannedSession(payload: Record<string, unknown>, use
       sessionNumber: 0,
       week: null,
       plannedDate,
-      sessionType: String(payload.sessionType ?? ''),
+      sessionType: payload.sessionType ? String(payload.sessionType) : null,
       status: 'planned',
       targetDuration: (payload.targetDuration as number | null) ?? null,
       targetDistance: (payload.targetDistance as number | null) ?? null,
@@ -279,7 +279,11 @@ export async function createPlannedSession(payload: Record<string, unknown>, use
   return plan;
 }
 
-export async function createCompletedSession(payload: Record<string, unknown>, userId: string) {
+export async function createCompletedSession(
+  payload: Record<string, unknown>,
+  userId: string,
+  options?: { skipRecalculate?: boolean }
+) {
   const date = new Date(String(payload.date));
 
   const sanitizedWeather = parsePayload(weatherPayloadSchema, payload.weather, 'weather');
@@ -296,7 +300,7 @@ export async function createCompletedSession(payload: Record<string, unknown>, u
           sessionNumber: 0,
           week: null,
           plannedDate: null,
-          sessionType: String(payload.sessionType ?? ''),
+          sessionType: payload.sessionType ? String(payload.sessionType) : null,
           status: 'completed',
           intervalDetails: intervalDetails ?? Prisma.JsonNull,
           comments: String(payload.comments ?? ''),
@@ -312,7 +316,7 @@ export async function createCompletedSession(payload: Record<string, unknown>, u
       status: 'completed',
       sessionNumber: 0,
       week: null,
-      sessionType: String(payload.sessionType ?? ''),
+      sessionType: payload.sessionType ? String(payload.sessionType) : null,
       comments: String(payload.comments ?? ''),
       perceivedExertion: (payload.perceivedExertion as number | null) ?? null,
     },
@@ -347,7 +351,9 @@ export async function createCompletedSession(payload: Record<string, unknown>, u
 
   await replaceStreams(workout.id, (sanitizedStreams as Prisma.JsonValue | null) ?? null);
 
-  await recalculateSessionNumbers(userId);
+  if (!options?.skipRecalculate) {
+    await recalculateSessionNumbers(userId);
+  }
 
   return workout;
 }
@@ -378,7 +384,7 @@ export async function completePlannedSession(
       status: 'completed',
       sessionNumber: 0,
       week: null,
-      sessionType: String(payload.sessionType ?? plan.sessionType ?? ''),
+      sessionType: payload.sessionType ? String(payload.sessionType) : (plan.sessionType || null),
       comments: String(payload.comments ?? plan.comments ?? ''),
       perceivedExertion: (payload.perceivedExertion as number | null) ?? null,
     },
@@ -445,7 +451,7 @@ export async function updateSession(
     await prisma.workouts.update({
       where: { id: workout.id },
       data: {
-        sessionType: updates.sessionType ? String(updates.sessionType) : workout.sessionType,
+        sessionType: updates.sessionType !== undefined ? (updates.sessionType ? String(updates.sessionType) : null) : workout.sessionType,
         comments: updates.comments ? String(updates.comments) : workout.comments,
         perceivedExertion: updates.perceivedExertion != null ? Number(updates.perceivedExertion) : workout.perceivedExertion,
         ...(dateUpdate ? { date: dateUpdate } : {}),
@@ -534,7 +540,7 @@ export async function updateSession(
   await prisma.plan_sessions.update({
     where: { id: plan.id },
     data: {
-      sessionType: updates.sessionType ? String(updates.sessionType) : plan.sessionType,
+      sessionType: updates.sessionType !== undefined ? (updates.sessionType ? String(updates.sessionType) : null) : plan.sessionType,
       comments: updates.comments ? String(updates.comments) : plan.comments,
       plannedDate: updates.plannedDate ? new Date(String(updates.plannedDate)) : plan.plannedDate,
       targetDuration: updates.targetDuration != null ? Number(updates.targetDuration) : plan.targetDuration,
@@ -555,11 +561,14 @@ export async function updateSession(
 export async function deleteSession(id: string, userId: string) {
   const workout = await prisma.workouts.findFirst({
     where: { userId, id },
-    select: { id: true },
+    select: { id: true, planSessionId: true },
   });
 
   if (workout) {
     await prisma.workouts.delete({ where: { id: workout.id } });
+    if (workout.planSessionId) {
+      await prisma.plan_sessions.delete({ where: { id: workout.planSessionId } }).catch(() => {});
+    }
   }
 
   const plan = await prisma.plan_sessions.findFirst({
@@ -577,12 +586,18 @@ export async function deleteSession(id: string, userId: string) {
 export async function deleteSessions(ids: string[], userId: string) {
   if (!ids.length) return;
 
+  const linkedPlanIds = await prisma.workouts.findMany({
+    where: { userId, id: { in: ids }, planSessionId: { not: null } },
+    select: { planSessionId: true },
+  }).then((rows) => rows.map((r) => r.planSessionId!));
+
   await prisma.workouts.deleteMany({
     where: { userId, id: { in: ids } },
   });
 
+  const allPlanIds = [...new Set([...ids, ...linkedPlanIds])];
   await prisma.plan_sessions.deleteMany({
-    where: { userId, id: { in: ids } },
+    where: { userId, id: { in: allPlanIds } },
   });
 
   await recalculateSessionNumbers(userId);

@@ -103,7 +103,6 @@ export function useDashboardData(
       bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} supprimée${count > 1 ? 's' : ''}.`,
     },
     invalidateOnEntitySuccess: false,
-    skipRefetchOnDelete: false,
     pageSize: LIMIT,
     sortFn: buildSortFn(sortParam),
     shouldIncludeEntityInQuery: (queryKey: QueryKey, session: TrainingSession) => {
@@ -132,7 +131,7 @@ export function useDashboardData(
   const sortKey = sortParam || 'default';
   const search = searchQuery?.trim() || '';
 
-  const { data: totalCount = 0 } = useQuery({
+  const { data: totalCount = 0, isLoading: totalCountLoading } = useQuery({
     queryKey: queryKeys.sessionsCount({
       selectedType,
       search,
@@ -195,7 +194,7 @@ export function useDashboardData(
   }, [sessions]);
 
   const isInitialLoad = paginatedSessionsLoading && !uniqueSessions.length;
-  const initialLoading = userLoading || isInitialLoad;
+  const initialLoading = userLoading || isInitialLoad || (totalCountLoading && !uniqueSessions.length);
 
   const [isLoadingAll, setIsLoadingAll] = useState(false);
   const loadAllCancelledRef = useRef(false);

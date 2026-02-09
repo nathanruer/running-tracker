@@ -13,7 +13,8 @@ describe('messages', () => {
     expect(getBulkDeleteMessage(2)).toBe('2 séances ont été supprimées avec succès.');
   });
 
-  it('builds import success message', () => {
-    expect(getImportSuccessMessage(3)).toBe('3 séance(s) importée(s) avec succès.');
+  it('builds import success message for singular and plural', () => {
+    expect(getImportSuccessMessage(1)).toBe('1 séance importée avec succès.');
+    expect(getImportSuccessMessage(3)).toBe('3 séances importées avec succès.');
   });
 });

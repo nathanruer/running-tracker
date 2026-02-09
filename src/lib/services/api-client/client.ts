@@ -1,6 +1,7 @@
 import { fetchWithTimeout } from '@/lib/utils/api/fetch';
 import { AppError, ErrorCode } from '@/lib/errors';
 import { HTTP_STATUS } from '@/lib/constants/http';
+import { isAbortError } from '@/lib/utils/error';
 
 function getErrorCodeFromStatus(status: number): ErrorCode {
   switch (status) {
@@ -25,6 +26,7 @@ function getErrorCodeFromStatus(status: number): ErrorCode {
 export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {},
+  timeoutMs?: number,
 ): Promise<T> {
   let response: Response;
 
@@ -36,7 +38,7 @@ export async function apiRequest<T = unknown>(
         'Content-Type': 'application/json',
         ...(options.headers ?? {}),
       },
-    });
+    }, timeoutMs);
   } catch (error) {
     if (typeof window !== 'undefined' && !window.navigator.onLine) {
       throw new AppError({
@@ -45,7 +47,7 @@ export async function apiRequest<T = unknown>(
       });
     }
 
-    if (error instanceof Error && error.message.includes('timeout')) {
+    if (isAbortError(error)) {
       throw new AppError({
         code: ErrorCode.NETWORK_TIMEOUT,
         statusCode: 0,

@@ -24,26 +24,28 @@ export const SessionRow = React.memo(function SessionRow({
   onDelete,
   showCheckbox = false,
   isSelected = false,
+  isDeleting = false,
   onToggleSelect,
   onView,
   onPrefetchDetails,
 }: SessionRowProps) {
   const [isOpen, setIsOpen] = useState(false);
   const data = useSessionRowData(session);
-  
+
   const handleRowClick = () => {
-    if (data.hasIntervalDetails) {
+    if (data.hasIntervalDetails && !isDeleting) {
       setIsOpen(!isOpen);
     }
   };
 
   const rowClassName = cn(
-    "transition-colors group/row",
+    "transition-all duration-300 group/row",
+    isDeleting && "opacity-40 pointer-events-none select-none",
     data.isPlanned && "text-muted-foreground/70 italic bg-muted/[0.01]",
-    isSelected 
+    !isDeleting && isSelected
       ? 'bg-violet-500/5'
       : data.hasIntervalDetails && isOpen
-        ? data.isPlanned 
+        ? data.isPlanned
           ? 'bg-muted/30 border-b-0 cursor-pointer'
           : 'bg-muted/50 border-b-0 cursor-pointer'
         : data.hasIntervalDetails

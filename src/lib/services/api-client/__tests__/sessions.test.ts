@@ -177,7 +177,7 @@ describe('Sessions API', () => {
       expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/bulk', {
         method: 'POST',
         body: JSON.stringify({ sessions }),
-      });
+      }, 120_000);
       expect(result).toEqual({ count: 2, message: '2 séances importées' });
     });
   });

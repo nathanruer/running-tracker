@@ -26,6 +26,7 @@ export function StravaActivitiesTable({
   totalCount,
   totalLoadedCount,
   onSearchAll,
+  importedIndices,
 }: StravaActivitiesTableProps) {
   if (filteredActivities.length === 0 && searchQuery.trim()) {
     return (
@@ -65,6 +66,7 @@ export function StravaActivitiesTable({
                   index={index}
                   selected={isSelected(index)}
                   onToggleSelect={toggleSelect}
+                  imported={importedIndices?.has(index)}
                 />
               );
             })}

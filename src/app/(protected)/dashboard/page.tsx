@@ -62,7 +62,7 @@ function DashboardContent() {
     mutations,
   } = useDashboardData(selectedType, sortParam, searchQuery, dateFrom);
 
-  const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, isDeleting } = mutations;
+  const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, deletingIds } = mutations;
 
   useEffect(() => {
     if (!isDetailsSheetOpen) {
@@ -97,6 +97,7 @@ function DashboardContent() {
       date: importedData.date ?? undefined,
       duration: importedData.duration ?? undefined,
       avgPace: importedData.avgPace ?? undefined,
+      sessionType: importedData.sessionType ?? undefined,
     };
   }, [importedData]);
 
@@ -202,14 +203,14 @@ function DashboardContent() {
           hasMore={hasMore ?? false}
           isFetchingNextPage={isFetchingNextPage}
           onLoadMore={fetchNextPage}
-          isFetching={isFetchingData || isDeleting}
+          isFetching={isFetchingData}
+          deletingIds={deletingIds}
           sortConfig={sortConfig}
           onSort={handleSort}
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           period={period}
           onPeriodChange={handlePeriodChange}
-          dateFrom={dateFrom}
           loadAllPages={loadAllPages}
           cancelLoadAll={cancelLoadAll}
           isLoadingAll={isLoadingAll}

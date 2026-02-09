@@ -4,12 +4,11 @@ import { useBulkDelete } from '../use-bulk-delete';
 
 describe('useBulkDelete', () => {
   describe('initialization', () => {
-    it('should initialize with dialog closed and not deleting', () => {
+    it('should initialize with dialog closed', () => {
       const mockOnBulkDelete = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
+
       expect(result.current.showBulkDeleteDialog).toBe(false);
-      expect(result.current.isDeletingBulk).toBe(false);
     });
   });
 
@@ -17,17 +16,17 @@ describe('useBulkDelete', () => {
     it('should update showBulkDeleteDialog state', () => {
       const mockOnBulkDelete = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
+
       act(() => {
         result.current.setShowBulkDeleteDialog(true);
       });
-      
+
       expect(result.current.showBulkDeleteDialog).toBe(true);
-      
+
       act(() => {
         result.current.setShowBulkDeleteDialog(false);
       });
-      
+
       expect(result.current.showBulkDeleteDialog).toBe(false);
     });
   });
@@ -37,107 +36,62 @@ describe('useBulkDelete', () => {
       const mockOnBulkDelete = vi.fn().mockResolvedValue(undefined);
       const mockClearSelection = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
+
       const sessionIds = ['1', '2', '3'];
-      
-      await act(async () => {
-        await result.current.handleBulkDelete(sessionIds, mockClearSelection);
+
+      act(() => {
+        result.current.handleBulkDelete(sessionIds, mockClearSelection);
       });
-      
+
       expect(mockOnBulkDelete).toHaveBeenCalledWith(sessionIds);
       expect(mockOnBulkDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it('should close dialog immediately on confirm', () => {
+      const mockOnBulkDelete = vi.fn().mockReturnValue(new Promise(() => {}));
+      const mockClearSelection = vi.fn();
+      const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
+
+      act(() => {
+        result.current.setShowBulkDeleteDialog(true);
+      });
+
+      expect(result.current.showBulkDeleteDialog).toBe(true);
+
+      act(() => {
+        result.current.handleBulkDelete(['1'], mockClearSelection);
+      });
+
+      expect(result.current.showBulkDeleteDialog).toBe(false);
     });
 
     it('should clear selection after successful delete', async () => {
       const mockOnBulkDelete = vi.fn().mockResolvedValue(undefined);
       const mockClearSelection = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
-      const sessionIds = ['1', '2'];
-      
-      await act(async () => {
-        await result.current.handleBulkDelete(sessionIds, mockClearSelection);
-      });
-      
-      expect(mockClearSelection).toHaveBeenCalledTimes(1);
-    });
 
-    it('should close dialog after successful delete', async () => {
-      const mockOnBulkDelete = vi.fn().mockResolvedValue(undefined);
-      const mockClearSelection = vi.fn();
-      const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
       act(() => {
-        result.current.setShowBulkDeleteDialog(true);
+        result.current.handleBulkDelete(['1', '2'], mockClearSelection);
       });
-      
-      expect(result.current.showBulkDeleteDialog).toBe(true);
-      
-      const sessionIds = ['1'];
-      
-      await act(async () => {
-        await result.current.handleBulkDelete(sessionIds, mockClearSelection);
+
+      await vi.waitFor(() => {
+        expect(mockClearSelection).toHaveBeenCalledTimes(1);
       });
-      
-      // Dialog should be closed after successful delete
-      expect(result.current.showBulkDeleteDialog).toBe(false);
     });
 
-    it('should set isDeletingBulk to true during delete', async () => {
-      // Use a deferred promise to control timing
-      let resolveDelete: () => void;
-      const deletePromise = new Promise<void>(resolve => {
-        resolveDelete = resolve;
-      });
-      const mockOnBulkDelete = vi.fn().mockImplementation(() => deletePromise);
-      const mockClearSelection = vi.fn();
-      const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
-      const sessionIds = ['1'];
-      
-      // Start the delete (don't await)
-      act(() => {
-        result.current.handleBulkDelete(sessionIds, mockClearSelection);
-      });
-      
-      // Check isDeletingBulk is true during the operation
-      expect(result.current.isDeletingBulk).toBe(true);
-      
-      // Resolve and wait for completion
-      await act(async () => {
-        resolveDelete!();
-        await deletePromise;
-      });
-      
-      expect(result.current.isDeletingBulk).toBe(false);
-    });
-
-    it('should set isDeletingBulk to false after delete completes', async () => {
-      const mockOnBulkDelete = vi.fn().mockResolvedValue(undefined);
-      const mockClearSelection = vi.fn();
-      const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
-      
-      const sessionIds = ['1'];
-      
-      await act(async () => {
-        await result.current.handleBulkDelete(sessionIds, mockClearSelection);
-      });
-      
-      expect(result.current.isDeletingBulk).toBe(false);
-    });
-
-    it('should handle delete errors gracefully', async () => {
+    it('should not clear selection on delete error', async () => {
       const mockOnBulkDelete = vi.fn().mockRejectedValue(new Error('Delete failed'));
       const mockClearSelection = vi.fn();
       const { result } = renderHook(() => useBulkDelete(mockOnBulkDelete));
 
-      const sessionIds = ['1'];
-
-      await act(async () => {
-        await result.current.handleBulkDelete(sessionIds, mockClearSelection);
+      act(() => {
+        result.current.handleBulkDelete(['1'], mockClearSelection);
       });
 
-      expect(result.current.isDeletingBulk).toBe(false);
+      await vi.waitFor(() => {
+        expect(mockOnBulkDelete).toHaveBeenCalled();
+      });
+
       expect(mockClearSelection).not.toHaveBeenCalled();
     });
   });

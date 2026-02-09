@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ExportSessions } from './export-sessions';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table } from '@/components/ui/table';
@@ -37,13 +35,13 @@ interface SessionsTableProps {
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
   isFetching?: boolean;
+  deletingIds: Set<string>;
   sortConfig: SortConfig;
   onSort: (column: SortColumn, isMulti: boolean) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   period: Period;
   onPeriodChange: (period: Period) => void;
-  dateFrom?: string;
   loadAllPages: () => Promise<void>;
   cancelLoadAll: () => void;
   isLoadingAll: boolean;
@@ -61,19 +59,17 @@ export function SessionsTable({
   isFetchingNextPage,
   onLoadMore,
   isFetching,
+  deletingIds,
   sortConfig,
   onSort,
   searchQuery,
   onSearchChange,
   period,
   onPeriodChange,
-  dateFrom,
   loadAllPages,
   cancelLoadAll,
   isLoadingAll,
 }: SessionsTableProps) {
-  const [showExportDialog, setShowExportDialog] = useState(false);
-
   const {
     selectedKeys: selectedSessions,
     toggleSelectByKey,
@@ -81,8 +77,9 @@ export function SessionsTable({
     clearSelection,
     isAllSelected,
   } = useTableSelection(sessions, { mode: 'multiple', getKey: (session) => session.id });
-  const { showBulkDeleteDialog, setShowBulkDeleteDialog, isDeletingBulk, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
+  const { showBulkDeleteDialog, setShowBulkDeleteDialog, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
 
+  const isDeleting = deletingIds.size > 0;
   const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all';
 
   const handleClearFilters = () => {
@@ -110,7 +107,7 @@ export function SessionsTable({
           selectedCount={selectedSessions.size}
           onClearSelection={clearSelection}
           onOpenBulkDelete={() => setShowBulkDeleteDialog(true)}
-          onOpenExport={() => setShowExportDialog(true)}
+          isDeleting={isDeleting}
           actions={{ onNewSession: actions.onNewSession }}
           selectedType={selectedType}
           availableTypes={availableTypes}
@@ -124,10 +121,10 @@ export function SessionsTable({
           onClearFilters={handleClearFilters}
         />
         <CardContent className="p-0 relative">
-          <LoadingBar isLoading={!!isFetching && !initialLoading} />
+          <LoadingBar isLoading={(!!isFetching || isDeleting) && !initialLoading} />
           <div className={cn(
             "overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/10 transition-opacity duration-500",
-            isFetching && !initialLoading && sessions.length > 0 ? "opacity-60" : "opacity-100"
+            isFetching && !initialLoading && !isDeleting && sessions.length > 0 ? "opacity-60" : "opacity-100"
           )}>
             <Table data-testid="sessions-table" className="table-auto min-w-[800px] md:min-w-0">
               <SessionsTableHead
@@ -142,6 +139,7 @@ export function SessionsTable({
                 isFetching={isFetching}
                 hasActiveFilters={hasActiveFilters}
                 selectedSessions={selectedSessions}
+                deletingIds={deletingIds}
                 onToggleSelect={toggleSelectByKey}
                 actions={{
                   onEdit: actions.onEdit,
@@ -171,19 +169,8 @@ export function SessionsTable({
         description={`Êtes-vous sûr de vouloir supprimer ${selectedSessions.size} séance${selectedSessions.size > 1 ? 's' : ''} ? Cette action est irréversible.`}
         confirmLabel="Confirmer la suppression"
         onConfirm={() => handleBulkDelete(Array.from(selectedSessions), clearSelection)}
-        isLoading={isDeletingBulk}
         cancelTestId="bulk-delete-session-cancel"
         confirmTestId="bulk-delete-session-confirm"
-      />
-
-      <ExportSessions
-        selectedType={selectedType}
-        selectedSessions={selectedSessions}
-        allSessions={sessions}
-        open={showExportDialog}
-        onOpenChange={setShowExportDialog}
-        searchQuery={searchQuery}
-        dateFrom={dateFrom}
       />
     </>
   );

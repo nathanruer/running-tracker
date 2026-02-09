@@ -135,9 +135,9 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
                         ? 'bg-violet-500/10 text-violet-600 border-violet-500/20' 
                         : 'bg-muted text-muted-foreground border-border/50'
                     )}
-                    title={session.sessionType}
+                    title={session.sessionType ?? undefined}
                   >
-                    {session.sessionType}
+                    {session.sessionType || '-'}
                   </div>
                 ))}
                 {daySessions.length > 2 && (

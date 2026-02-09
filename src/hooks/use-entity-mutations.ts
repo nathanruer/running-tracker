@@ -1,10 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQueryClient, InfiniteData, type QueryKey } from '@tanstack/react-query';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 
-/**
- * Configuration options for useEntityMutations hook
- */
 interface UseEntityMutationsOptions<T> {
   baseQueryKey: string;
   deleteEntity: (id: string) => Promise<void>;
@@ -18,32 +15,8 @@ interface UseEntityMutationsOptions<T> {
   invalidateOnEntitySuccess?: boolean;
   shouldIncludeEntityInQuery?: (queryKey: QueryKey, entity: T) => boolean;
   pageSize?: number;
-  /**
-   * If true, skip immediate refetch after delete operations.
-   * The optimistic update handles the UI, and data is marked stale for next access.
-   * This significantly improves perceived performance for deletions.
-   * @default true
-   */
-  skipRefetchOnDelete?: boolean;
 }
 
-/**
- * Generic hook for managing entity mutations with optimistic updates
- * Handles delete, bulk delete, and entity success with React Query cache management
- *
- * @template T Entity type (e.g., TrainingSession, Conversation)
- * @param options Configuration options
- * @returns Object with mutation handlers and loading state
- *
- * @example
- * const { handleDelete, handleBulkDelete, handleEntitySuccess, isDeleting } =
- *   useEntityMutations<TrainingSession>({
- *     baseQueryKey: 'sessions',
- *     deleteEntity: deleteSession,
- *     bulkDeleteEntities: bulkDeleteSessions,
- *     relatedQueryKeys: [queryKeys.sessionTypesBase()],
- *   });
- */
 export function useEntityMutations<T extends { id: string; date?: string | Date | null }>(
   options: UseEntityMutationsOptions<T>
 ) {
@@ -57,12 +30,11 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     invalidateOnEntitySuccess = true,
     shouldIncludeEntityInQuery,
     pageSize,
-    skipRefetchOnDelete = true,
   } = options;
 
   const queryClient = useQueryClient();
   const { handleError, handleSuccess } = useErrorHandler({ scope: 'global' });
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   const defaultMessages = {
     bulkDeleteSuccessTitle: 'Éléments supprimés',
@@ -77,6 +49,62 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
   };
 
   const sortEntities = sortFn || defaultSortFn;
+
+  const addToDeletingIds = useCallback((ids: string[]) => {
+    setDeletingIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
+  }, []);
+
+  const removeFromDeletingIds = useCallback((ids: string[]) => {
+    setDeletingIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const invalidateAll = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: [baseQueryKey] });
+    for (const key of relatedQueryKeys) {
+      queryClient.invalidateQueries({ queryKey: key });
+    }
+  }, [queryClient, baseQueryKey, relatedQueryKeys]);
+
+  const handleDelete = async (id: string) => {
+    addToDeletingIds([id]);
+    try {
+      await deleteEntity(id);
+      await invalidateAll();
+    } catch (error) {
+      handleError(error);
+    } finally {
+      removeFromDeletingIds([id]);
+    }
+  };
+
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!bulkDeleteEntities) {
+      throw new Error('bulkDeleteEntities function not provided');
+    }
+
+    addToDeletingIds(ids);
+
+    try {
+      await bulkDeleteEntities(ids);
+      await invalidateAll();
+      handleSuccess(
+        defaultMessages.bulkDeleteSuccessTitle,
+        defaultMessages.bulkDeleteSuccess(ids.length)
+      );
+    } catch (error) {
+      handleError(error);
+    } finally {
+      removeFromDeletingIds(ids);
+    }
+  };
 
   const upsertEntityInCollection = (
     collection: T[],
@@ -165,137 +193,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     return old;
   };
 
-  /**
-   * Snapshots all queries matching baseQueryKey for rollback
-   */
-  const snapshotQueries = (): Array<[QueryKey, unknown]> =>
-    queryClient.getQueriesData({ queryKey: [baseQueryKey] });
-
-  /**
-   * Restores queries from snapshot
-   */
-  const restoreFromSnapshot = (snapshot: Array<[QueryKey, unknown]>) => {
-    for (const [key, data] of snapshot) {
-      queryClient.setQueryData(key, data);
-    }
-  };
-
-  /**
-   * Removes entities from ALL matching queries (handles any query key structure)
-   */
-  const removeFromCache = (predicate: (entity: T) => boolean) => {
-    queryClient.setQueriesData<T[] | InfiniteData<T[]>>(
-      { queryKey: [baseQueryKey] },
-      (old) => {
-        if (!old) return old;
-
-        // Handle array format (simple queries)
-        if (Array.isArray(old)) {
-          return old.filter((item) => !predicate(item));
-        }
-
-        // Handle infinite query format
-        if ('pages' in old && Array.isArray(old.pages)) {
-          return {
-            ...old,
-            pages: old.pages.map((page) =>
-              Array.isArray(page) ? page.filter((item) => !predicate(item)) : page
-            ),
-          };
-        }
-
-        return old;
-      }
-    );
-  };
-
-  /**
-   * Handles single entity deletion with optimistic updates.
-   * When skipRefetchOnDelete is true (default), data is marked stale without immediate refetch.
-   * This provides instant UI feedback while ensuring fresh data on next access.
-   * @param id Entity ID to delete
-   */
-  const handleDelete = async (id: string) => {
-    const snapshot = snapshotQueries();
-
-    await queryClient.cancelQueries({ queryKey: [baseQueryKey] });
-
-    removeFromCache((item) => item.id === id);
-
-    setIsDeleting(true);
-
-    try {
-      await deleteEntity(id);
-
-      // When skipRefetchOnDelete is true, mark as stale without immediate refetch.
-      // The optimistic update already reflects the deletion in the UI.
-      // Data will be refetched on next access (e.g., page navigation, window focus).
-      const refetchType = skipRefetchOnDelete ? 'none' : 'active';
-      await queryClient.invalidateQueries({ 
-        queryKey: [baseQueryKey],
-        refetchType,
-      });
-      relatedQueryKeys.forEach((key) => {
-        queryClient.invalidateQueries({ queryKey: key, refetchType });
-      });
-    } catch (error) {
-      // Rollback all queries from snapshot
-      restoreFromSnapshot(snapshot);
-      handleError(error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  /**
-   * Handles bulk deletion of entities with optimistic updates
-   * @param ids Array of entity IDs to delete
-   */
-  const handleBulkDelete = async (ids: string[]) => {
-    if (!bulkDeleteEntities) {
-      throw new Error('bulkDeleteEntities function not provided');
-    }
-
-    // Snapshot ALL matching queries for rollback
-    const snapshot = snapshotQueries();
-
-    await queryClient.cancelQueries({ queryKey: [baseQueryKey] });
-
-    // Optimistically remove from ALL matching caches
-    removeFromCache((item) => ids.includes(item.id));
-
-    try {
-      setIsDeleting(true);
-      await bulkDeleteEntities(ids);
-
-      // When skipRefetchOnDelete is true, mark as stale without immediate refetch.
-      // The optimistic update already reflects the deletions in the UI.
-      const refetchType = skipRefetchOnDelete ? 'none' : 'active';
-      await queryClient.invalidateQueries({ 
-        queryKey: [baseQueryKey],
-        refetchType,
-      });
-      relatedQueryKeys.forEach((key) => {
-        queryClient.invalidateQueries({ queryKey: key, refetchType });
-      });
-
-      handleSuccess(
-        defaultMessages.bulkDeleteSuccessTitle,
-        defaultMessages.bulkDeleteSuccess(ids.length)
-      );
-    } catch (error) {
-      // Rollback all queries from snapshot
-      restoreFromSnapshot(snapshot);
-      handleError(error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  /**
-   * Handles successful entity creation/update by updating the cache
-   * @param savedEntity Newly created or updated entity
-   */
   const handleEntitySuccess = (savedEntity: T) => {
     const queries = queryClient.getQueriesData<T[] | InfiniteData<T[]>>({
       queryKey: [baseQueryKey],
@@ -324,6 +221,6 @@ export function useEntityMutations<T extends { id: string; date?: string | Date 
     handleDelete,
     handleBulkDelete,
     handleEntitySuccess,
-    isDeleting,
+    deletingIds,
   };
 }

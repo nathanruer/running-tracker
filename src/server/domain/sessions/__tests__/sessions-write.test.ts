@@ -5,12 +5,14 @@ import { prisma } from '@/server/database';
 vi.mock('@/server/database', () => ({
   prisma: {
     workouts: {
+      delete: vi.fn(),
       deleteMany: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
     },
     plan_sessions: {
+      delete: vi.fn(),
       deleteMany: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
@@ -145,6 +147,7 @@ describe('sessions-write', () => {
 
   describe('deleteSessions', () => {
     it('deletes in batch and triggers synchronous recalculation', async () => {
+      vi.mocked(prisma.workouts.findMany).mockResolvedValueOnce([] as never);
       vi.mocked(prisma.workouts.deleteMany).mockResolvedValue({ count: 2 } as never);
       vi.mocked(prisma.plan_sessions.deleteMany).mockResolvedValue({ count: 1 } as never);
       mockRecalculateData();
@@ -157,8 +160,28 @@ describe('sessions-write', () => {
       expect(prisma.plan_sessions.deleteMany).toHaveBeenCalledWith({
         where: { userId: 'user-1', id: { in: ['a', 'b', 'c'] } },
       });
-      expect(prisma.workouts.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.workouts.findMany).toHaveBeenCalledTimes(2);
       expect(prisma.plan_sessions.findMany).toHaveBeenCalledTimes(2);
+    });
+
+    it('also deletes linked plan_sessions when workouts have planSessionId', async () => {
+      vi.mocked(prisma.workouts.findMany).mockResolvedValueOnce([
+        { planSessionId: 'plan-1' },
+        { planSessionId: 'plan-2' },
+      ] as never);
+      vi.mocked(prisma.workouts.deleteMany).mockResolvedValue({ count: 2 } as never);
+      vi.mocked(prisma.plan_sessions.deleteMany).mockResolvedValue({ count: 2 } as never);
+      mockRecalculateData();
+
+      await sessionsWrite.deleteSessions(['w1', 'w2'], 'user-1');
+
+      expect(prisma.workouts.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', id: { in: ['w1', 'w2'] }, planSessionId: { not: null } },
+        select: { planSessionId: true },
+      });
+      expect(prisma.plan_sessions.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', id: { in: expect.arrayContaining(['w1', 'w2', 'plan-1', 'plan-2']) } },
+      });
     });
   });
 

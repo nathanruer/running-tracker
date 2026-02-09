@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-          message: `${createdSessions.length} séance(s) ajoutée(s) avec succès`,
+          message: `${createdSessions.length} séance${createdSessions.length > 1 ? 's' : ''} ajoutée${createdSessions.length > 1 ? 's' : ''} avec succès`,
           sessions: createdSessions,
           count: createdSessions.length,
         });

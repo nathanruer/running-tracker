@@ -6,6 +6,7 @@ export interface SessionRowProps {
   onDelete: (id: string) => void;
   showCheckbox?: boolean;
   isSelected?: boolean;
+  isDeleting?: boolean;
   onToggleSelect?: () => void;
   onView?: (session: TrainingSession) => void;
   onPrefetchDetails?: (sessionId: string) => void;

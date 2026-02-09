@@ -94,7 +94,8 @@ export async function bulkImportSessions(
     {
       method: 'POST',
       body: JSON.stringify({ sessions }),
-    }
+    },
+    120_000,
   );
 
   return data;

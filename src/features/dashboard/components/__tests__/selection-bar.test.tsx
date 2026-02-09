@@ -8,7 +8,6 @@ describe('SelectionBar', () => {
     selectedCount: 1,
     onClear: vi.fn(),
     onDelete: vi.fn(),
-    onExport: vi.fn(),
   };
 
   it('should render with singular text for 1 selected session', () => {
@@ -48,19 +47,6 @@ describe('SelectionBar', () => {
     expect(mockOnDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onExport when export button is clicked', async () => {
-    const user = userEvent.setup();
-    const mockOnExport = vi.fn();
-
-    render(<SelectionBar {...defaultProps} onExport={mockOnExport} selectedCount={3} />);
-
-    const exportButton = screen.getByTestId('btn-export-selected');
-    expect(exportButton).toHaveTextContent('Exporter (3)');
-    await user.click(exportButton);
-
-    expect(mockOnExport).toHaveBeenCalledTimes(1);
-  });
-
   it('should render trash icon in delete button', () => {
     const { container } = render(<SelectionBar {...defaultProps} />);
     const trashIcon = container.querySelector('.lucide-trash-2');
@@ -77,10 +63,9 @@ describe('SelectionBar', () => {
     render(<SelectionBar {...defaultProps} />);
 
     const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(3);
+    expect(buttons).toHaveLength(2);
 
     expect(screen.getByRole('button', { name: /annuler/i })).toBeInTheDocument();
-    expect(screen.getByTestId('btn-export-selected')).toBeInTheDocument();
     expect(screen.getByTestId('bulk-delete-button')).toBeInTheDocument();
   });
 
@@ -94,5 +79,22 @@ describe('SelectionBar', () => {
     render(<SelectionBar {...defaultProps} selectedCount={99} />);
     expect(screen.getByTestId('selection-count')).toHaveTextContent('99');
     expect(screen.getByText('Sélectionnées')).toBeInTheDocument();
+  });
+
+  it('should show deleting state with spinner when isDeleting', () => {
+    render(<SelectionBar {...defaultProps} selectedCount={5} isDeleting={true} />);
+
+    expect(screen.getByText('Suppression en cours…')).toBeInTheDocument();
+    expect(screen.queryByText('Sélectionnées')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('bulk-delete-button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /annuler/i })).not.toBeInTheDocument();
+  });
+
+  it('should show normal state when isDeleting is false', () => {
+    render(<SelectionBar {...defaultProps} selectedCount={5} isDeleting={false} />);
+
+    expect(screen.queryByText('Suppression en cours…')).not.toBeInTheDocument();
+    expect(screen.getByText('Sélectionnées')).toBeInTheDocument();
+    expect(screen.getByTestId('bulk-delete-button')).toBeInTheDocument();
   });
 });

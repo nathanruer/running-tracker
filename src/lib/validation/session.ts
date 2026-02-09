@@ -50,7 +50,7 @@ export const intervalDetailsSchema = z.object({
 
 export const sessionSchema = z.object({
   date: z.string(),
-  sessionType: z.string().min(1, { message: VALIDATION_MESSAGES.SESSION_TYPE_REQUIRED }),
+  sessionType: z.string().min(1, { message: VALIDATION_MESSAGES.SESSION_TYPE_REQUIRED }).nullable().optional(),
   duration: requiredDurationSchema,
   distance: z.number()
     .min(0, { message: VALIDATION_MESSAGES.DISTANCE_POSITIVE })

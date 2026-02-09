@@ -17,7 +17,6 @@ export {
   StatsCards,
   WeeklyEvolutionChart,
   DateRangeSelector,
-  ExportWeeklyAnalytics,
 } from './components/analytics';
 
 export { useAnalyticsData } from './hooks/use-analytics-data';

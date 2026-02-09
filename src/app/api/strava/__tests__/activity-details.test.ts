@@ -58,7 +58,7 @@ describe('/api/strava/activities/[id]', () => {
 
   const mockFormattedActivity = {
     date: '2024-01-01',
-    sessionType: '',
+    sessionType: null,
     duration: '00:30:00',
     distance: 5,
     avgPace: '06:00',

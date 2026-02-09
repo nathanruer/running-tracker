@@ -151,7 +151,7 @@ export function getClientSortValue(
     sessionNumber?: number | null;
     week?: number | null;
     date?: string | null;
-    sessionType?: string;
+    sessionType?: string | null;
   },
   column: SortColumn
 ): number | string | null {

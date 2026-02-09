@@ -98,5 +98,6 @@ export const getBulkDeleteMessage = (count: number): string => {
 };
 
 export const getImportSuccessMessage = (count: number): string => {
-  return `${count} séance(s) importée(s) avec succès.`;
+  const s = count > 1 ? 's' : '';
+  return `${count} séance${s} importée${s} avec succès.`;
 };

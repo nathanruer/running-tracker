@@ -13,10 +13,6 @@ vi.mock('../analytics/date-range-selector', () => ({
   DateRangeSelector: () => <div data-testid="date-range" />,
 }));
 
-vi.mock('../analytics/export-weekly-analytics', () => ({
-  ExportWeeklyAnalytics: () => <div data-testid="export-weekly" />,
-}));
-
 vi.mock('../analytics/stats-cards', () => ({
   StatsCards: () => <div data-testid="stats-cards" />,
 }));
@@ -46,7 +42,6 @@ describe('AnalyticsView', () => {
     render(<AnalyticsView sessions={[] as TrainingSession[]} />);
 
     expect(screen.getByTestId('date-range')).toBeInTheDocument();
-    expect(screen.getByTestId('export-weekly')).toBeInTheDocument();
     expect(screen.getByTestId('stats-cards')).toBeInTheDocument();
     expect(await screen.findByTestId('weekly-chart')).toBeInTheDocument();
   });

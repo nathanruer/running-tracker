@@ -171,8 +171,10 @@ describe('apiRequest', () => {
     );
   });
 
-  it('throws NETWORK_TIMEOUT when request times out', async () => {
-    mockFetch.mockRejectedValue(new Error('timeout'));
+  it('throws NETWORK_TIMEOUT when request is aborted', async () => {
+    const abortError = new Error('The operation was aborted');
+    abortError.name = 'AbortError';
+    mockFetch.mockRejectedValue(abortError);
 
     try {
       await apiRequest('/api/test');

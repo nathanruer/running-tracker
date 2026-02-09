@@ -26,7 +26,7 @@ export interface WorkoutMetricsRaw {
 
 export interface PlanSessionData {
   plannedDate: Date | null;
-  sessionType: string;
+  sessionType: string | null;
   targetDuration: number | null;
   targetDistance: number | null;
   targetPace: string | null;
@@ -87,7 +87,7 @@ export interface PlanSessionFull {
   sessionNumber: number | null;
   week: number | null;
   plannedDate: Date | null;
-  sessionType: string;
+  sessionType: string | null;
   status: string;
   targetDuration: number | null;
   targetDistance: number | null;
@@ -198,7 +198,7 @@ function buildBaseSession(workout: WorkoutBase): Omit<
     sessionNumber: workout.sessionNumber ?? 0,
     week: workout.week ?? null,
     date: workout.date.toISOString(),
-    sessionType: workout.sessionType ?? plan?.sessionType ?? '',
+    sessionType: workout.sessionType || plan?.sessionType || null,
     duration: formatDurationFromSeconds(metrics?.durationSeconds ?? null),
     distance: metrics?.distanceMeters != null ? metrics.distanceMeters / 1000 : null,
     avgPace: metrics?.avgPace ?? null,
@@ -310,7 +310,7 @@ export function mapPlanToSession(
     sessionNumber: plan.sessionNumber ?? 0,
     week: plan.week ?? null,
     date: opts.includePlannedDateAsDate && plan.plannedDate ? plan.plannedDate.toISOString() : null,
-    sessionType: plan.sessionType,
+    sessionType: plan.sessionType || null,
     duration: null,
     distance: null,
     avgPace: null,

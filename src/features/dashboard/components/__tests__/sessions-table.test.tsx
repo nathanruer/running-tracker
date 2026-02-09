@@ -107,6 +107,7 @@ describe('SessionsTable', () => {
     hasMore: false,
     isFetchingNextPage: false,
     onLoadMore: vi.fn(),
+    deletingIds: new Set<string>(),
     sortConfig: defaultSortConfig,
     onSort: mockOnSort,
     searchQuery: '',
@@ -320,21 +321,6 @@ describe('SessionsTable', () => {
 
     const rows = screen.getAllByRole('row');
     expect(rows.length).toBe(4);
-  });
-
-  it('should render and handle options menu', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<SessionsTable {...defaultProps} />);
-
-    const optionsTrigger = container.querySelector('button[aria-haspopup="menu"]');
-    expect(optionsTrigger).toBeInTheDocument();
-
-    await user.click(optionsTrigger!);
-
-    expect(screen.getByText(/Exporter/)).toBeInTheDocument();
-
-    const importItem = screen.getByText(/Importer.*Bientôt/i);
-    expect(importItem).toBeInTheDocument();
   });
 
   it('should clear active filters', async () => {

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model users {
@@ -58,7 +59,7 @@ model plan_sessions {
   sessionNumber     Int?
   week              Int?
   plannedDate       DateTime?
-  sessionType       String
+  sessionType       String?
   status            String   @default("planned")
   targetDuration    Int?
   targetDistance    Float?

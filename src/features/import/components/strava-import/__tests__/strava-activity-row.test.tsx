@@ -38,7 +38,7 @@ describe('StravaActivityRow', () => {
 
   const mockToggleSelect = vi.fn();
 
-  const renderRow = (props?: Partial<{ activity: FormattedStravaActivity; index: number; selected: boolean }>) => {
+  const renderRow = (props?: Partial<{ activity: FormattedStravaActivity; index: number; selected: boolean; imported: boolean }>) => {
     return render(
       <table>
         <tbody>
@@ -47,6 +47,7 @@ describe('StravaActivityRow', () => {
             index={props?.index ?? 0}
             selected={props?.selected ?? false}
             onToggleSelect={mockToggleSelect}
+            imported={props?.imported}
           />
         </tbody>
       </table>
@@ -108,5 +109,12 @@ describe('StravaActivityRow', () => {
     renderRow({ selected: true });
     const checkbox = screen.getByTestId('checkbox');
     expect(checkbox).toBeChecked();
+  });
+
+  it('applies imported styles when imported', () => {
+    renderRow({ imported: true });
+    const row = screen.getByTestId('table-row');
+    expect(row).toHaveClass('opacity-40');
+    expect(row).toHaveClass('pointer-events-none');
   });
 });

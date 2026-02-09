@@ -10,8 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { bulkImportSessions, getStravaActivityDetails, type FormattedStravaActivity } from '@/lib/services/api-client';
+import { getStravaActivityDetails, type FormattedStravaActivity } from '@/lib/services/api-client';
 import { useStravaActivities } from '../../hooks/use-strava-activities';
+import { useChunkedImport } from '../../hooks/use-chunked-import';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useInfiniteScrollObserver } from '@/hooks/use-infinite-scroll-observer';
@@ -35,7 +36,6 @@ export function StravaImportContent({
   queryClient,
   onBulkImportSuccess,
 }: StravaImportContentProps) {
-  const [importing, setImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const topRef = useRef<HTMLTableSectionElement>(null);
 
@@ -55,6 +55,8 @@ export function StravaImportContent({
     loadAllActivities,
     cancelLoading,
   } = useStravaActivities(open);
+
+  const chunkedImport = useChunkedImport();
 
   const { toast } = useToast();
   const { error: importError, wrapAsync } = useErrorHandler({ scope: 'local' });
@@ -124,6 +126,24 @@ export function StravaImportContent({
     isAllSelected,
   } = useTableSelection(filteredActivities, mode === 'complete' ? 'single' : 'multiple');
 
+  const buildSessionPayload = (activity: FormattedStravaActivity) => ({
+    date: activity.date,
+    sessionType: null,
+    duration: activity.duration,
+    distance: activity.distance,
+    avgPace: activity.avgPace,
+    avgHeartRate: activity.avgHeartRate || null,
+    perceivedExertion: null,
+    comments: activity.comments || '',
+    externalId: activity.externalId,
+    source: activity.source,
+    stravaData: activity.stravaData,
+    elevationGain: activity.elevationGain,
+    averageCadence: activity.averageCadence,
+    averageTemp: activity.averageTemp,
+    calories: activity.calories,
+  });
+
   const handleImportSelected = wrapAsync(async () => {
     if (selectedIndices.size === 0) {
       toast({
@@ -133,68 +153,66 @@ export function StravaImportContent({
       return;
     }
 
-    setImporting(true);
-    try {
-      const selectedActivities = Array.from(selectedIndices).map((i) => filteredActivities[i]);
+    const selectedActivities = Array.from(selectedIndices).map((i) => filteredActivities[i]);
 
-      // Fetch detailed activities to get calories, temp and other data not in search results
-      const detailedActivities = await Promise.all(
-        selectedActivities.map(async (activity) => {
-          if (!activity.externalId) return activity;
-          try {
-            return await getStravaActivityDetails(activity.externalId);
-          } catch (e) {
-            console.error('Failed to fetch details for activity:', activity.externalId, e);
-            return activity;
-          }
-        })
-      );
+    if (mode === 'complete' || selectedIndices.size === 1) {
+      const activity = selectedActivities[0];
+      onImport(activity);
+      onOpenChange(false);
+      clearSelection();
 
-      if (mode === 'complete' || selectedIndices.size === 1) {
-        onImport(detailedActivities[0]);
-        onOpenChange(false);
-        clearSelection();
-      } else {
-        const sessionsToImport = detailedActivities.map((activity) => ({
-          date: activity.date,
-          sessionType: '-',
-          duration: activity.duration,
-          distance: activity.distance,
-          avgPace: activity.avgPace,
-          avgHeartRate: activity.avgHeartRate || null,
-          perceivedExertion: null,
-          comments: activity.comments || '',
-          externalId: activity.externalId,
-          source: activity.source,
-          stravaData: activity.stravaData,
-          elevationGain: activity.elevationGain,
-          averageCadence: activity.averageCadence,
-          averageTemp: activity.averageTemp,
-          calories: activity.calories,
-        }));
-
-        const result = await bulkImportSessions(sessionsToImport);
-        
-        toast({
-          title: 'Import réussi',
-          description: `${result.count} séance(s) Strava importée(s) avec succès`,
-        });
-
-        clearSelection();
-
-        if (queryClient) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
-        }
-
-        if (onBulkImportSuccess) {
-          onBulkImportSuccess();
-          onOpenChange(false);
-        }
+      if (activity.externalId) {
+        getStravaActivityDetails(activity.externalId)
+          .then((detailed) => onImport(detailed))
+          .catch(() => {});
       }
-    } finally {
-      setImporting(false);
+      return;
+    }
+
+    const indices = Array.from(selectedIndices);
+    const sessions = selectedActivities.map(buildSessionPayload);
+
+    const result = await chunkedImport.start(sessions, indices);
+
+    if (chunkedImport.status === 'error' || chunkedImport.status === 'cancelled') {
+      return;
+    }
+
+    toast({
+      title: 'Import réussi',
+      description: `${result.imported} séance${result.imported > 1 ? 's' : ''} Strava importée${result.imported > 1 ? 's' : ''} avec succès`,
+    });
+
+    clearSelection();
+
+    if (queryClient) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
+    }
+
+    if (onBulkImportSuccess) {
+      onBulkImportSuccess();
+      onOpenChange(false);
     }
   });
+
+  const handleCancelImport = () => {
+    chunkedImport.cancel();
+  };
+
+  const handleClose = () => {
+    if (chunkedImport.status !== 'idle') {
+      if (chunkedImport.progress.imported > 0 && queryClient) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
+      }
+      chunkedImport.reset();
+      clearSelection();
+    }
+    onOpenChange(false);
+  };
 
   return (
     <div className="flex flex-col h-full max-h-[90vh]">
@@ -207,7 +225,7 @@ export function StravaImportContent({
             type="button"
             variant="ghost"
             size="icon"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-foreground hover:bg-muted transition-all shrink-0 -mt-1 absolute right-4 md:right-8 top-6 md:top-8"
           >
             <X className="h-5 w-5" />
@@ -283,14 +301,17 @@ export function StravaImportContent({
                   totalCount={totalCount}
                   totalLoadedCount={activities.length}
                   onSearchAll={() => loadAllForSearch(deferredSearchQuery)}
+                  importedIndices={chunkedImport.importedIndices}
                 />
               </div>
 
               <StravaImportFooter
                 selectedCount={selectedIndices.size}
-                importing={importing}
-                onCancel={() => onOpenChange(false)}
+                status={chunkedImport.status}
+                progress={chunkedImport.progress}
+                onCancel={handleClose}
                 onImport={handleImportSelected}
+                onCancelImport={handleCancelImport}
               />
             </div>
           </div>

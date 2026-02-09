@@ -20,7 +20,7 @@ export function initializeFormForComplete(
   const sessionHasIntervals = session.intervalDetails?.steps &&
     session.intervalDetails.steps.length > 0;
 
-  const sessionTypeIsGeneric = !session.sessionType || session.sessionType === '-' || session.sessionType === 'Footing';
+  const sessionTypeIsGeneric = !session.sessionType || session.sessionType === 'Footing';
   const sessionType = sessionTypeIsGeneric && importedFields.sessionType
     ? importedFields.sessionType
     : session.sessionType || 'Footing';
@@ -65,7 +65,7 @@ export function initializeFormForEdit(session: TrainingSession): Partial<FormVal
 
   return {
     date: sessionDate,
-    sessionType: session.sessionType,
+    sessionType: session.sessionType || '',
     duration: displayData.duration || '00:00:00',
     distance: displayData.distance,
     avgPace: displayData.avgPace || '00:00',

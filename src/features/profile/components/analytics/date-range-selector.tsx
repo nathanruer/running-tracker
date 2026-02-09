@@ -1,3 +1,4 @@
+import { Calendar } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -27,23 +28,28 @@ export function DateRangeSelector({
   customDateError,
 }: DateRangeSelectorProps) {
   return (
-    <div className="flex items-center gap-1 w-fit">
+    <div className="flex flex-wrap items-center gap-0.5 p-1 rounded-2xl bg-muted/10 border border-border/40 backdrop-blur-xl shadow-xl w-full sm:w-fit">
       <Select value={dateRange} onValueChange={onDateRangeChange}>
-        <SelectTrigger data-testid="select-date-range" className="h-8 px-2 border-none bg-transparent hover:bg-white/5 data-[state=open]:bg-white/5 rounded-xl shadow-none focus:ring-0 w-[110px] sm:w-[140px] text-[10px] sm:text-[11px] font-bold transition-all">
+        <SelectTrigger 
+          data-testid="select-date-range" 
+          className="h-9 md:h-10 px-4 border-none bg-transparent hover:bg-muted/10 data-[state=open]:bg-muted/10 rounded-xl shadow-none focus:ring-0 w-fit min-w-[140px] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all gap-2"
+        >
+          <Calendar className="h-4 w-4 text-muted-foreground/60" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
+          <SelectItem value="2weeks" className="rounded-xl">2 dernières semaines</SelectItem>
           <SelectItem value="4weeks" className="rounded-xl">4 dernières semaines</SelectItem>
           <SelectItem value="12weeks" className="rounded-xl">12 dernières semaines</SelectItem>
           <SelectItem value="all" className="rounded-xl">Toute la période</SelectItem>
-          <SelectItem value="custom" className="rounded-xl">Personnalisé</SelectItem>
+          <SelectItem value="custom" className="rounded-xl">Période personnalisée</SelectItem>
         </SelectContent>
       </Select>
 
       {dateRange === 'custom' && (
-        <div className="flex items-center animate-in fade-in slide-in-from-left-2 duration-300">
-          <div className="hidden sm:block w-px h-3 bg-border/20 mx-1" />
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+          <div className="hidden sm:block w-px h-4 bg-border/20 mx-1" />
+          <div className="flex items-center gap-1.5 p-1">
             <DatePicker
               variant="ghost"
               date={customStartDate ? new Date(customStartDate + 'T00:00:00') : undefined}
@@ -58,9 +64,9 @@ export function DateRangeSelector({
                 }
               }}
               placeholder="Début"
-              className="h-7 rounded-lg text-[10px] font-bold w-[95px] sm:w-[110px] transition-all px-1.5"
+              className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-[85px] md:w-[100px] transition-all px-2 hover:bg-muted/10 border-none shadow-none"
             />
-            <span className="text-[10px] text-muted-foreground/20 font-black">→</span>
+            <span className="text-[10px] text-muted-foreground/30 font-black">→</span>
             <DatePicker
               variant="ghost"
               date={customEndDate ? new Date(customEndDate + 'T00:00:00') : undefined}
@@ -75,12 +81,12 @@ export function DateRangeSelector({
                 }
               }}
               placeholder="Fin"
-              className="h-7 rounded-lg text-[10px] font-bold w-[95px] sm:w-[110px] transition-all px-1.5"
+              className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-[85px] md:w-[100px] transition-all px-2 hover:bg-muted/10 border-none shadow-none"
             />
           </div>
 
           {customDateError && (
-            <div data-testid="custom-date-error" className="ml-1 text-[8px] font-black text-red-500 uppercase tracking-tighter bg-red-500/10 px-1 py-0.5 rounded-lg border border-red-500/20 whitespace-nowrap">
+            <div data-testid="custom-date-error" className="text-[8px] font-black text-red-400 uppercase tracking-tighter bg-red-400/10 px-2 py-1 rounded-lg border border-red-400/20 whitespace-nowrap">
               {customDateError}
             </div>
           )}

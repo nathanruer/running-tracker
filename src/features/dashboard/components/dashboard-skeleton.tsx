@@ -19,14 +19,12 @@ export function DashboardSkeleton() {
                 <div className="h-7 w-24 md:h-10 md:w-44 bg-muted/20 animate-pulse rounded-lg shrink-0" />
                 
                 {/* Unified Indicator Placeholder */}
-                <div className="h-7 w-[120px] md:w-[180px] bg-muted/5 animate-pulse rounded-full" />
+                <div className="h-7 w-[100px] md:w-[180px] bg-muted/10 border border-border/20 animate-pulse rounded-full" />
               </div>
 
               <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
                 {/* Action Button Placeholder (New Session) */}
                 <div className="h-9 w-9 md:h-12 md:w-48 bg-violet-600/20 animate-pulse rounded-xl border border-violet-600/10 shadow-lg shadow-violet-500/5" />
-                {/* Secondary Action Placeholder (Menu) */}
-                <div className="h-9 w-9 md:h-12 md:w-12 bg-muted/10 animate-pulse rounded-xl border border-border/40" />
               </div>
             </div>
 

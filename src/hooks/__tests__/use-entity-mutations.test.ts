@@ -52,21 +52,15 @@ describe('useEntityMutations', () => {
     mockBulkDeleteEntities = vi.fn<(ids: string[]) => Promise<void>>().mockResolvedValue(undefined);
     const mockUser = { id: 'test-user', email: 'test@example.com' };
     (getCurrentUser as MockedFunction<typeof getCurrentUser>).mockResolvedValue(mockUser);
-    
-    // Pre-populate user in cache for useQuery
+
     queryClient.setQueryData(['user'], mockUser);
-    
+
     vi.clearAllMocks();
   });
 
   describe('handleDelete', () => {
-    it('should delete entity silently (no success toast)', async () => {
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1', name: 'Entity 1' }),
-        createTestEntity({ id: 'entity-2', name: 'Entity 2' }),
-      ];
-
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+    it('should call deleteEntity and invalidate queries', async () => {
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const { result } = renderHook(
         () =>
@@ -82,16 +76,48 @@ describe('useEntityMutations', () => {
       });
 
       expect(mockDeleteEntity).toHaveBeenCalledWith('entity-1');
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['entities'] });
       expect(mockHandleSuccess).not.toHaveBeenCalled();
     });
 
-    it('should rollback on delete error', async () => {
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1', name: 'Entity 1' }),
-      ];
+    it('should track deletingIds during delete', async () => {
+      let resolveDelete: () => void;
+      const pendingDelete = new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      });
+      mockDeleteEntity.mockReturnValue(pendingDelete);
 
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+          }),
+        { wrapper }
+      );
 
+      expect(result.current.deletingIds.size).toBe(0);
+
+      let deletePromise: Promise<void>;
+      act(() => {
+        deletePromise = result.current.handleDelete('entity-1');
+      });
+
+      await waitFor(() => {
+        expect(result.current.deletingIds.has('entity-1')).toBe(true);
+      });
+
+      await act(async () => {
+        resolveDelete!();
+        await deletePromise;
+      });
+
+      await waitFor(() => {
+        expect(result.current.deletingIds.size).toBe(0);
+      });
+    });
+
+    it('should clear deletingIds and call error handler on delete error', async () => {
       const deleteError = new Error('Delete failed');
       mockDeleteEntity.mockRejectedValue(deleteError);
 
@@ -109,21 +135,23 @@ describe('useEntityMutations', () => {
       });
 
       expect(mockHandleError).toHaveBeenCalledWith(deleteError);
+      expect(result.current.deletingIds.size).toBe(0);
     });
 
-    it('should remove entity from infinite query cache', async () => {
-      const entitiesPage1: TestEntity[] = [
-        createTestEntity({ id: 'entity-1' }),
-        createTestEntity({ id: 'entity-2' }),
-      ];
-      const entitiesPage2: TestEntity[] = [
-        createTestEntity({ id: 'entity-3' }),
+    it('should not modify cache before API response', async () => {
+      const entities: TestEntity[] = [
+        createTestEntity({ id: 'entity-1', name: 'Entity 1' }),
+        createTestEntity({ id: 'entity-2', name: 'Entity 2' }),
       ];
 
-      queryClient.setQueryData(['entities', 'paginated'], {
-        pages: [entitiesPage1, entitiesPage2],
-        pageParams: [0, 2],
-      });
+      queryClient.setQueryData(['entities', 'all'], entities);
+
+      let resolveDelete: () => void;
+      mockDeleteEntity.mockReturnValue(
+        new Promise<void>((resolve) => {
+          resolveDelete = resolve;
+        })
+      );
 
       const { result } = renderHook(
         () =>
@@ -134,28 +162,28 @@ describe('useEntityMutations', () => {
         { wrapper }
       );
 
-      await act(async () => {
-        await result.current.handleDelete('entity-2');
+      let deletePromise: Promise<void>;
+      act(() => {
+        deletePromise = result.current.handleDelete('entity-1');
       });
 
-      const cachedData = queryClient.getQueryData(['entities', 'paginated']) as {
-        pages: TestEntity[][];
-      };
+      await waitFor(() => {
+        expect(result.current.deletingIds.has('entity-1')).toBe(true);
+      });
 
-      expect(cachedData.pages[0].some((e) => e.id === 'entity-2')).toBe(false);
+      const cachedData = queryClient.getQueryData(['entities', 'all']) as TestEntity[];
+      expect(cachedData).toHaveLength(2);
+      expect(cachedData.find((e) => e.id === 'entity-1')).toBeDefined();
+
+      await act(async () => {
+        resolveDelete!();
+        await deletePromise;
+      });
     });
   });
 
   describe('handleBulkDelete', () => {
-    it('should bulk delete entities', async () => {
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1' }),
-        createTestEntity({ id: 'entity-2' }),
-        createTestEntity({ id: 'entity-3' }),
-      ];
-
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
-
+    it('should bulk delete and show success toast', async () => {
       const { result } = renderHook(
         () =>
           useEntityMutations<TestEntity>({
@@ -192,14 +220,46 @@ describe('useEntityMutations', () => {
       }).rejects.toThrow('bulkDeleteEntities function not provided');
     });
 
-    it('should rollback on bulk delete error', async () => {
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1' }),
-        createTestEntity({ id: 'entity-2' }),
-      ];
+    it('should track deletingIds during bulk delete', async () => {
+      let resolveBulk: () => void;
+      const pendingBulk = new Promise<void>((resolve) => {
+        resolveBulk = resolve;
+      });
+      mockBulkDeleteEntities.mockReturnValue(pendingBulk);
 
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
+      const { result } = renderHook(
+        () =>
+          useEntityMutations<TestEntity>({
+            baseQueryKey: 'entities',
+            deleteEntity: mockDeleteEntity,
+            bulkDeleteEntities: mockBulkDeleteEntities,
+          }),
+        { wrapper }
+      );
 
+      expect(result.current.deletingIds.size).toBe(0);
+
+      let bulkPromise: Promise<void>;
+      act(() => {
+        bulkPromise = result.current.handleBulkDelete(['entity-1', 'entity-2']);
+      });
+
+      await waitFor(() => {
+        expect(result.current.deletingIds.has('entity-1')).toBe(true);
+        expect(result.current.deletingIds.has('entity-2')).toBe(true);
+      });
+
+      await act(async () => {
+        resolveBulk!();
+        await bulkPromise;
+      });
+
+      await waitFor(() => {
+        expect(result.current.deletingIds.size).toBe(0);
+      });
+    });
+
+    it('should clear deletingIds and call error handler on bulk delete error', async () => {
       const bulkDeleteError = new Error('Bulk delete failed');
       mockBulkDeleteEntities.mockRejectedValue(bulkDeleteError);
 
@@ -217,54 +277,8 @@ describe('useEntityMutations', () => {
         await result.current.handleBulkDelete(['entity-1']);
       });
 
-      expect(mockHandleError).toHaveBeenCalledWith(
-        bulkDeleteError
-      );
-    });
-
-    it('should set deleting state during bulk delete', async () => {
-      let resolveBulk: () => void;
-      const pendingBulk = new Promise<void>((resolve) => {
-        resolveBulk = resolve;
-      });
-      mockBulkDeleteEntities.mockReturnValue(pendingBulk);
-
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1' }),
-        createTestEntity({ id: 'entity-2' }),
-      ];
-
-      queryClient.setQueryData(['entities', 'all'], entities);
-
-      const { result } = renderHook(
-        () =>
-          useEntityMutations<TestEntity>({
-            baseQueryKey: 'entities',
-            deleteEntity: mockDeleteEntity,
-            bulkDeleteEntities: mockBulkDeleteEntities,
-          }),
-        { wrapper }
-      );
-
-      expect(result.current.isDeleting).toBe(false);
-
-      let bulkPromise: Promise<void>;
-      act(() => {
-        bulkPromise = result.current.handleBulkDelete(['entity-1']);
-      });
-
-      await waitFor(() => {
-        expect(result.current.isDeleting).toBe(true);
-      });
-
-      await act(async () => {
-        resolveBulk!();
-        await bulkPromise;
-      });
-
-      await waitFor(() => {
-        expect(result.current.isDeleting).toBe(false);
-      });
+      expect(mockHandleError).toHaveBeenCalledWith(bulkDeleteError);
+      expect(result.current.deletingIds.size).toBe(0);
     });
   });
 
@@ -410,54 +424,9 @@ describe('useEntityMutations', () => {
     });
   });
 
-  describe('isDeleting state', () => {
-    it('should track deleting state', async () => {
-      let resolveDelete: () => void;
-      const pendingDelete = new Promise<void>((resolve) => {
-        resolveDelete = resolve;
-      });
-      mockDeleteEntity.mockReturnValue(pendingDelete);
-
-      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
-
-      const { result } = renderHook(
-        () =>
-          useEntityMutations<TestEntity>({
-            baseQueryKey: 'entities',
-            deleteEntity: mockDeleteEntity,
-          }),
-        { wrapper }
-      );
-
-      expect(result.current.isDeleting).toBe(false);
-
-      let deletePromise: Promise<void>;
-      act(() => {
-        deletePromise = result.current.handleDelete('entity-1');
-      });
-
-      await waitFor(() => {
-        expect(result.current.isDeleting).toBe(true);
-      });
-
-      await act(async () => {
-        resolveDelete!();
-        await deletePromise;
-      });
-
-      await waitFor(() => {
-        expect(result.current.isDeleting).toBe(false);
-      });
-    });
-  });
-
   describe('related query keys', () => {
     it('should invalidate related query keys on delete', async () => {
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>
@@ -473,18 +442,13 @@ describe('useEntityMutations', () => {
         await result.current.handleDelete('entity-1');
       });
 
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'], refetchType: 'none' });
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'], refetchType: 'none' });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['entities'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
     });
 
     it('should invalidate related query keys on bulk delete', async () => {
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-      const entities: TestEntity[] = [
-        createTestEntity({ id: 'entity-1' }),
-        createTestEntity({ id: 'entity-2' }),
-      ];
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
 
       const { result } = renderHook(
         () =>
@@ -501,8 +465,9 @@ describe('useEntityMutations', () => {
         await result.current.handleBulkDelete(['entity-1', 'entity-2']);
       });
 
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'], refetchType: 'none' });
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'], refetchType: 'none' });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['entities'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
     });
 
     it('should invalidate related query keys on entity success', () => {
@@ -528,90 +493,10 @@ describe('useEntityMutations', () => {
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related1'] });
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['related2'] });
     });
-
-    it('should use refetchType active when skipRefetchOnDelete is false', async () => {
-      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
-
-      const { result } = renderHook(
-        () =>
-          useEntityMutations<TestEntity>({
-            baseQueryKey: 'entities',
-            deleteEntity: mockDeleteEntity,
-            relatedQueryKeys: [['related1']],
-            skipRefetchOnDelete: false,
-          }),
-        { wrapper }
-      );
-
-      await act(async () => {
-        await result.current.handleDelete('entity-1');
-      });
-
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ 
-        queryKey: ['entities'],
-        refetchType: 'active',
-      });
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ 
-        queryKey: ['related1'], 
-        refetchType: 'active' 
-      });
-    });
-
-    it('should use refetchType none by default for delete operations', async () => {
-      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-      const entities: TestEntity[] = [createTestEntity({ id: 'entity-1' })];
-      queryClient.setQueryData(['entities', 'all', 'all', 'test-user'], entities);
-
-      const { result } = renderHook(
-        () =>
-          useEntityMutations<TestEntity>({
-            baseQueryKey: 'entities',
-            deleteEntity: mockDeleteEntity,
-          }),
-        { wrapper }
-      );
-
-      await act(async () => {
-        await result.current.handleDelete('entity-1');
-      });
-
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ 
-        queryKey: ['entities'],
-        refetchType: 'none',
-      });
-    });
   });
 
   describe('edge cases with unrecognized data formats', () => {
-    it('should return old data unchanged in removeFromCache when format is unrecognized', async () => {
-      // Set up an object that is neither an array nor has pages property
-      const unknownFormat = { someKey: 'someValue' };
-      queryClient.setQueryData(['entities', 'unknown'], unknownFormat);
-
-      const { result } = renderHook(
-        () =>
-          useEntityMutations<TestEntity>({
-            baseQueryKey: 'entities',
-            deleteEntity: mockDeleteEntity,
-          }),
-        { wrapper }
-      );
-
-      await act(async () => {
-        await result.current.handleDelete('entity-1');
-      });
-
-      // The unknown format should remain unchanged
-      const cachedData = queryClient.getQueryData(['entities', 'unknown']);
-      expect(cachedData).toEqual(unknownFormat);
-    });
-
     it('should return old data unchanged in handleEntitySuccess when format is unrecognized', () => {
-      // Set up an object that is neither an array nor has pages property
       const unknownFormat = { someKey: 'someValue' };
       queryClient.setQueryData(['entities', 'unknown'], unknownFormat);
 
@@ -628,7 +513,6 @@ describe('useEntityMutations', () => {
         result.current.handleEntitySuccess(createTestEntity({ id: 'new-entity' }));
       });
 
-      // The unknown format should remain unchanged
       const cachedData = queryClient.getQueryData(['entities', 'unknown']);
       expect(cachedData).toEqual(unknownFormat);
     });

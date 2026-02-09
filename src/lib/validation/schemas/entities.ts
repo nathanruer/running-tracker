@@ -139,7 +139,7 @@ export const trainingSessionEntitySchema = z.object({
   sessionNumber: z.number(),
     week: z.number().nullable(),
   date: z.string().nullable(),
-  sessionType: z.string(),
+  sessionType: z.string().nullable(),
   duration: z.string().nullable(),
   distance: z.number().nullable(),
   avgPace: z.string().nullable(),
@@ -196,7 +196,7 @@ export type TrainingSessionPayload = Omit<
  * Includes all fields that can be edited on a completed session
  */
 export type CompletedSessionUpdatePayload = {
-  sessionType: string;
+  sessionType: string | null;
   duration?: string;
   distance?: number | null;
   avgPace?: string;
@@ -211,7 +211,7 @@ export type CompletedSessionUpdatePayload = {
  */
 export type PlannedSessionPayload = {
   date: string | null;
-  sessionType: string;
+  sessionType: string | null;
   targetDuration: number | null;
   targetDistance: number | null;
   targetPace: string | null;

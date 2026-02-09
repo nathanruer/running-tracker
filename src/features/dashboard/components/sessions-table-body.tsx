@@ -11,6 +11,7 @@ interface SessionsTableBodyProps {
   isFetching?: boolean;
   hasActiveFilters?: boolean;
   selectedSessions: Set<string>;
+  deletingIds: Set<string>;
   onToggleSelect: (id: string) => void;
   actions: {
     onEdit: (session: TrainingSession) => void;
@@ -131,6 +132,7 @@ export function SessionsTableBody({
   isFetching,
   hasActiveFilters,
   selectedSessions,
+  deletingIds,
   onToggleSelect,
   actions,
 }: SessionsTableBodyProps) {
@@ -179,6 +181,7 @@ export function SessionsTableBody({
           onDelete={actions.onDelete}
           showCheckbox={true}
           isSelected={selectedSessions.has(session.id)}
+          isDeleting={deletingIds.has(session.id)}
           onToggleSelect={() => onToggleSelect(session.id)}
           onView={actions.onView}
           onPrefetchDetails={actions.onPrefetchDetails}

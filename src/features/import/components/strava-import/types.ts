@@ -54,6 +54,7 @@ export interface StravaActivityRowProps {
   index: number;
   selected: boolean;
   onToggleSelect: (index: number) => void;
+  imported?: boolean;
 }
 
 export interface StravaActivitiesTableProps {
@@ -77,6 +78,7 @@ export interface StravaActivitiesTableProps {
   totalCount: number | undefined;
   totalLoadedCount: number;
   onSearchAll: () => void;
+  importedIndices?: Set<number>;
 }
 
 export interface SmartSearchEmptyStateProps {
@@ -88,11 +90,15 @@ export interface SmartSearchEmptyStateProps {
   onSearchAll: () => void;
 }
 
+import type { ChunkedImportStatus } from '../../hooks/use-chunked-import';
+
 export interface StravaImportFooterProps {
   selectedCount: number;
-  importing: boolean;
+  status: ChunkedImportStatus;
+  progress: { imported: number; total: number };
   onCancel: () => void;
   onImport: () => void;
+  onCancelImport: () => void;
 }
 
 export interface StravaLoadingSkeletonProps {

@@ -121,10 +121,10 @@ describe('strava formatters', () => {
       expect(result.comments).toBe('');
     });
 
-    it('should set sessionType to empty string', () => {
+    it('should set sessionType to null', () => {
       const result = formatStravaActivity(baseActivity);
 
-      expect(result.sessionType).toBe('');
+      expect(result.sessionType).toBeNull();
     });
 
     it('should format complete activity correctly', () => {
@@ -141,7 +141,7 @@ describe('strava formatters', () => {
 
       expect(result).toEqual({
         date: '2024-02-20',
-        sessionType: '',
+        sessionType: null,
         duration: '01:15:00',
         distance: 15,
         avgPace: '05:00', // 4500s / 15km = 300s/km = 5:00

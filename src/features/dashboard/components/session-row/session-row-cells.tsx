@@ -107,7 +107,7 @@ export function CheckboxCell({
 }
 
 interface SessionTypeCellProps extends CellProps {
-  sessionType: string;
+  sessionType: string | null;
   hasIntervalDetails: boolean;
   isOpen: boolean;
   isPlanned: boolean;
@@ -132,6 +132,14 @@ export function SessionTypeCell({
     ? 'text-muted-foreground/20 group-hover/title:text-muted-foreground/30' 
     : 'text-muted-foreground/40 group-hover/title:text-foreground/60';
   const labelColor = isPlanned ? 'text-muted-foreground/30' : 'text-primary/90';
+
+  if (!sessionType) {
+    return (
+      <TableCell className={cn("text-center whitespace-nowrap px-2 md:px-4", className)}>
+        <span className="text-muted-foreground/10">-</span>
+      </TableCell>
+    );
+  }
 
   return (
     <TableCell className={cn("text-center whitespace-nowrap px-2 md:px-4", className)}>

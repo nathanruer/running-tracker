@@ -1,15 +1,8 @@
-import { FilterX, Download, FileUp, Plus, X } from 'lucide-react';
+import { FilterX, Plus, X } from 'lucide-react';
 import { CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { ScopeIndicator } from '@/components/ui/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -62,7 +55,7 @@ interface SessionsTableToolbarProps {
   selectedCount: number;
   onClearSelection: () => void;
   onOpenBulkDelete: () => void;
-  onOpenExport: () => void;
+  isDeleting?: boolean;
   actions: {
     onNewSession?: () => void;
   };
@@ -89,7 +82,7 @@ export function SessionsTableToolbar({
   selectedCount,
   onClearSelection,
   onOpenBulkDelete,
-  onOpenExport,
+  isDeleting,
   actions,
   selectedType,
   availableTypes,
@@ -160,7 +153,7 @@ export function SessionsTableToolbar({
                 />
               </div>
             ) : (
-              <div className="h-7 w-[80px] md:w-[180px] bg-muted/5 animate-pulse rounded-full" />
+              <div className="h-7 w-[80px] md:w-[180px] bg-muted/10 border border-border/20 animate-pulse rounded-full" />
             )}
           </div>
 
@@ -180,30 +173,6 @@ export function SessionsTableToolbar({
                 </Button>
               )}
 
-              {selectedCount === 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 md:h-12 md:w-12 rounded-xl border border-border/40 bg-muted/5 hover:bg-muted/10 shrink-0"
-                    >
-                      <Download className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuLabel>Données</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={onOpenExport}>
-                      <Download className="h-4 w-4" />
-                      Exporter (.csv)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <FileUp className="h-4 w-4" />
-                      Importer Strava (Bientôt)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
             </div>
           )}
         </div>
@@ -265,7 +234,7 @@ export function SessionsTableToolbar({
           selectedCount={selectedCount}
           onClear={onClearSelection}
           onDelete={onOpenBulkDelete}
-          onExport={onOpenExport}
+          isDeleting={isDeleting}
         />
       )}
     </CardHeader>
