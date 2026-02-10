@@ -5,7 +5,7 @@ import { prisma } from '@/server/database';
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    chat_conversations: {
+    conversations: {
       findMany: vi.fn(),
       create: vi.fn(),
     },
@@ -31,24 +31,22 @@ describe('/api/conversations', () => {
 
   describe('GET', () => {
     it('should return all conversations for authenticated user', async () => {
-      const mockConversations = [
+      vi.mocked(prisma.conversations.findMany).mockResolvedValue([
         {
           id: 'conv-1',
           title: 'Première conversation',
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-02'),
-          _count: { chat_messages: 5 },
+          _count: { conversation_messages: 5 },
         },
         {
           id: 'conv-2',
           title: 'Deuxième conversation',
           createdAt: new Date('2024-01-03'),
           updatedAt: new Date('2024-01-04'),
-          _count: { chat_messages: 10 },
+          _count: { conversation_messages: 10 },
         },
-      ];
-
-      vi.mocked(prisma.chat_conversations.findMany).mockResolvedValue(mockConversations as never);
+      ] as never);
 
       const request = new NextRequest('http://localhost/api/conversations', {
         method: 'GET',
@@ -61,7 +59,9 @@ describe('/api/conversations', () => {
       expect(data).toHaveLength(2);
       expect(data[0].id).toBe('conv-1');
       expect(data[1].id).toBe('conv-2');
-      expect(prisma.chat_conversations.findMany).toHaveBeenCalledWith({
+      expect(data[0]._count.chat_messages).toBe(5);
+      expect(data[1]._count.chat_messages).toBe(10);
+      expect(prisma.conversations.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
         orderBy: { updatedAt: 'desc' },
         select: {
@@ -70,14 +70,14 @@ describe('/api/conversations', () => {
           createdAt: true,
           updatedAt: true,
           _count: {
-            select: { chat_messages: true },
+            select: { conversation_messages: true },
           },
         },
       });
     });
 
     it('should return empty array when user has no conversations', async () => {
-      vi.mocked(prisma.chat_conversations.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.conversations.findMany).mockResolvedValue([]);
 
       const request = new NextRequest('http://localhost/api/conversations', {
         method: 'GET',
@@ -91,7 +91,7 @@ describe('/api/conversations', () => {
     });
 
     it('should order conversations by updatedAt desc', async () => {
-      vi.mocked(prisma.chat_conversations.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.conversations.findMany).mockResolvedValue([]);
 
       const request = new NextRequest('http://localhost/api/conversations', {
         method: 'GET',
@@ -99,7 +99,7 @@ describe('/api/conversations', () => {
 
       await GET(request);
 
-      expect(prisma.chat_conversations.findMany).toHaveBeenCalledWith(
+      expect(prisma.conversations.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           orderBy: { updatedAt: 'desc' },
         })
@@ -107,7 +107,7 @@ describe('/api/conversations', () => {
     });
 
     it('should handle database errors', async () => {
-      vi.mocked(prisma.chat_conversations.findMany).mockRejectedValue(
+      vi.mocked(prisma.conversations.findMany).mockRejectedValue(
         new Error('Database error')
       );
 
@@ -133,7 +133,7 @@ describe('/api/conversations', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(prisma.chat_conversations.create).mockResolvedValue(mockConversation as never);
+      vi.mocked(prisma.conversations.create).mockResolvedValue(mockConversation as never);
 
       const request = new NextRequest('http://localhost/api/conversations', {
         method: 'POST',
@@ -149,7 +149,7 @@ describe('/api/conversations', () => {
         title: mockConversation.title,
         userId: mockConversation.userId,
       });
-      expect(prisma.chat_conversations.create).toHaveBeenCalledWith({
+      expect(prisma.conversations.create).toHaveBeenCalledWith({
         data: {
           title: 'Nouvelle conversation',
           userId: 'user-123',
@@ -197,7 +197,7 @@ describe('/api/conversations', () => {
     });
 
     it('should handle database errors during creation', async () => {
-      vi.mocked(prisma.chat_conversations.create).mockRejectedValue(
+      vi.mocked(prisma.conversations.create).mockRejectedValue(
         new Error('Database error')
       );
 
@@ -222,7 +222,7 @@ describe('/api/conversations', () => {
         updatedAt: new Date(),
       };
 
-      vi.mocked(prisma.chat_conversations.create).mockResolvedValue(mockConversation as never);
+      vi.mocked(prisma.conversations.create).mockResolvedValue(mockConversation as never);
 
       const request = new NextRequest('http://localhost/api/conversations', {
         method: 'POST',
@@ -232,7 +232,7 @@ describe('/api/conversations', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(201);
-      expect(prisma.chat_conversations.create).toHaveBeenCalled();
+      expect(prisma.conversations.create).toHaveBeenCalled();
     });
   });
 });

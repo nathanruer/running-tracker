@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/server/database';
 import { handleGetRequest, handleApiRequest, handleDeleteRequest } from '@/server/services/api-handlers';
-
 export async function GET(
   request: NextRequest,
   props: { params: Promise<{ id: string }> }
@@ -11,14 +10,17 @@ export async function GET(
   return handleGetRequest(
     request,
     async (userId) => {
-      const conversation = await prisma.chat_conversations.findFirst({
+      const conversation = await prisma.conversations.findFirst({
         where: {
           id: params.id,
           userId,
         },
         include: {
-          chat_messages: {
+          conversation_messages: {
             orderBy: { createdAt: 'asc' },
+            include: {
+              conversation_message_payloads: true,
+            },
           },
         },
       });
@@ -27,7 +29,29 @@ export async function GET(
         return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
       }
 
-      return NextResponse.json(conversation);
+      const chatMessages = conversation.conversation_messages.map((message) => {
+        const payload = message.conversation_message_payloads.find(
+          (item) => item.payloadType === 'recommendations'
+        );
+
+        return {
+          id: message.id,
+          conversationId: message.conversationId,
+          role: message.role,
+          content: message.content,
+          model: message.model ?? null,
+          recommendations: payload?.payload ?? null,
+          createdAt: message.createdAt,
+        };
+      });
+
+      const { conversation_messages: _conversation_messages, ...rest } = conversation;
+      void _conversation_messages;
+
+      return NextResponse.json({
+        ...rest,
+        chat_messages: chatMessages,
+      });
     },
     { logContext: 'get-conversation' }
   );
@@ -49,7 +73,7 @@ export async function PATCH(
         return NextResponse.json({ error: 'Titre invalide' }, { status: 400 });
       }
 
-      const conversation = await prisma.chat_conversations.updateMany({
+      const conversation = await prisma.conversations.updateMany({
         where: {
           id: params.id,
           userId,
@@ -76,7 +100,7 @@ export async function DELETE(
   return handleDeleteRequest(
     request,
     async (userId) => {
-      const conversation = await prisma.chat_conversations.deleteMany({
+      const conversation = await prisma.conversations.deleteMany({
         where: {
           id: params.id,
           userId,

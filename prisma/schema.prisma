@@ -13,7 +13,7 @@ model users {
   email                String                @unique
   password             String
   createdAt            DateTime              @default(now())
-  chat_conversations   chat_conversations[]
+  conversations        conversations[]
   plan_sessions        plan_sessions[]
   workouts             workouts[]
   profile              user_profiles?
@@ -71,30 +71,48 @@ model external_accounts {
   @@unique([provider, externalId])
 }
 
-model chat_conversations {
-  id            String          @id @default(cuid())
-  title         String
-  userId        String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  users         users           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chat_messages chat_messages[]
+model conversations {
+  id                 String                   @id @default(cuid())
+  title              String
+  userId             String
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  users              users                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation_messages conversation_messages[]
 
   @@index([userId])
   @@index([updatedAt])
+  @@index([userId, updatedAt])
 }
 
-model chat_messages {
-  id               String              @id @default(cuid())
-  conversationId   String
-  role             String
-  content          String              @db.Text
-  recommendations  Json?
-  model            String?
-  createdAt        DateTime            @default(now())
-  chat_conversations chat_conversations @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+model conversation_messages {
+  id                 String                          @id @default(cuid())
+  conversationId     String
+  role               String
+  content            String                          @db.Text
+  model              String?
+  createdAt          DateTime                        @default(now())
+
+  conversations      conversations                   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation_message_payloads conversation_message_payloads[]
 
   @@index([conversationId])
+  @@index([conversationId, createdAt])
+}
+
+model conversation_message_payloads {
+  id             String   @id @default(cuid())
+  messageId      String
+  payloadType    String
+  payloadVersion String?
+  payload        Json
+  createdAt      DateTime @default(now())
+
+  conversation_messages conversation_messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@unique([messageId, payloadType])
 }
 
 model plan_sessions {

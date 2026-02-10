@@ -3,12 +3,14 @@ import { processStreamingMessage, prepareStreamContext } from '../stream-service
 import { AIParseError } from '../parser';
 
 const prismaCreate = vi.hoisted(() => vi.fn());
-const prismaUpdate = vi.hoisted(() => vi.fn());
+const prismaUpdateMany = vi.hoisted(() => vi.fn());
+const payloadCreate = vi.hoisted(() => vi.fn());
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    chat_messages: { create: prismaCreate },
-    chat_conversations: { update: prismaUpdate },
+    conversation_messages: { create: prismaCreate },
+    conversation_message_payloads: { create: payloadCreate },
+    conversations: { updateMany: prismaUpdateMany },
   },
 }));
 
@@ -67,7 +69,8 @@ describe('stream-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prismaCreate.mockResolvedValue({ id: 'msg-1' });
-    prismaUpdate.mockResolvedValue({});
+    prismaUpdateMany.mockResolvedValue({ count: 1 });
+    payloadCreate.mockResolvedValue({});
     getHttpStatusMock.mockReturnValue(undefined);
     validateAIResponseMock.mockReturnValue({ success: true });
   });
@@ -94,7 +97,7 @@ describe('stream-service', () => {
     expect(chunks.some((c) => c.type === 'json')).toBe(true);
     expect(chunks.some((c) => c.type === 'done')).toBe(true);
     expect(prismaCreate).toHaveBeenCalled();
-    expect(prismaUpdate).toHaveBeenCalled();
+    expect(prismaUpdateMany).toHaveBeenCalled();
   });
 
   it('processes text responses and streams chunks', async () => {

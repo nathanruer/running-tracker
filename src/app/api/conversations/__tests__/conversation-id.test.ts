@@ -5,7 +5,7 @@ import { prisma } from '@/server/database';
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    chat_conversations: {
+    conversations: {
       findFirst: vi.fn(),
       updateMany: vi.fn(),
       deleteMany: vi.fn(),
@@ -38,23 +38,31 @@ describe('/api/conversations/[id]', () => {
         userId: 'user-123',
         createdAt: new Date(),
         updatedAt: new Date(),
-        chat_messages: [
+        conversation_messages: [
           {
             id: 'msg-1',
+            conversationId: 'conv-123',
             role: 'user',
             content: 'Bonjour',
+            model: null,
             createdAt: new Date(),
+            conversation_message_payloads: [],
           },
           {
             id: 'msg-2',
+            conversationId: 'conv-123',
             role: 'assistant',
             content: 'Bonjour! Comment puis-je vous aider?',
+            model: 'gpt',
             createdAt: new Date(),
+            conversation_message_payloads: [
+              { payloadType: 'recommendations', payload: { responseType: 'recommendations' } },
+            ],
           },
         ],
       };
 
-      vi.mocked(prisma.chat_conversations.findFirst).mockResolvedValue(mockConversation as never);
+      vi.mocked(prisma.conversations.findFirst).mockResolvedValue(mockConversation as never);
 
       const request = new NextRequest('http://localhost/api/conversations/conv-123', {
         method: 'GET',
@@ -71,21 +79,24 @@ describe('/api/conversations/[id]', () => {
         userId: mockConversation.userId,
       });
       expect(data.chat_messages).toHaveLength(2);
-      expect(prisma.chat_conversations.findFirst).toHaveBeenCalledWith({
+      expect(prisma.conversations.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'conv-123',
           userId: 'user-123',
         },
         include: {
-          chat_messages: {
+          conversation_messages: {
             orderBy: { createdAt: 'asc' },
+            include: {
+              conversation_message_payloads: true,
+            },
           },
         },
       });
     });
 
     it('should return 404 when conversation not found', async () => {
-      vi.mocked(prisma.chat_conversations.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.conversations.findFirst).mockResolvedValue(null);
 
       const request = new NextRequest('http://localhost/api/conversations/nonexistent', {
         method: 'GET',
@@ -100,7 +111,7 @@ describe('/api/conversations/[id]', () => {
     });
 
     it('should return 404 when conversation belongs to another user', async () => {
-      vi.mocked(prisma.chat_conversations.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.conversations.findFirst).mockResolvedValue(null);
 
       const request = new NextRequest('http://localhost/api/conversations/other-user-conv', {
         method: 'GET',
@@ -119,10 +130,10 @@ describe('/api/conversations/[id]', () => {
         id: 'conv-123',
         title: 'Test',
         userId: 'user-123',
-        chat_messages: [],
+        conversation_messages: [],
       };
 
-      vi.mocked(prisma.chat_conversations.findFirst).mockResolvedValue(mockConversation as never);
+      vi.mocked(prisma.conversations.findFirst).mockResolvedValue(mockConversation as never);
 
       const request = new NextRequest('http://localhost/api/conversations/conv-123', {
         method: 'GET',
@@ -131,11 +142,14 @@ describe('/api/conversations/[id]', () => {
       const params = Promise.resolve({ id: 'conv-123' });
       await GET(request, { params });
 
-      expect(prisma.chat_conversations.findFirst).toHaveBeenCalledWith(
+      expect(prisma.conversations.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           include: {
-            chat_messages: {
+            conversation_messages: {
               orderBy: { createdAt: 'asc' },
+              include: {
+                conversation_message_payloads: true,
+              },
             },
           },
         })
@@ -143,7 +157,7 @@ describe('/api/conversations/[id]', () => {
     });
 
     it('should handle database errors', async () => {
-      vi.mocked(prisma.chat_conversations.findFirst).mockRejectedValue(
+      vi.mocked(prisma.conversations.findFirst).mockRejectedValue(
         new Error('Database error')
       );
 
@@ -162,7 +176,7 @@ describe('/api/conversations/[id]', () => {
 
   describe('PATCH', () => {
     it('should update conversation title', async () => {
-      vi.mocked(prisma.chat_conversations.updateMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(prisma.conversations.updateMany).mockResolvedValue({ count: 1 } as never);
 
       const request = new NextRequest('http://localhost/api/conversations/conv-123', {
         method: 'PATCH',
@@ -175,7 +189,7 @@ describe('/api/conversations/[id]', () => {
 
       expect(response.status).toBe(200);
       expect(data).toEqual({ success: true });
-      expect(prisma.chat_conversations.updateMany).toHaveBeenCalledWith({
+      expect(prisma.conversations.updateMany).toHaveBeenCalledWith({
         where: {
           id: 'conv-123',
           userId: 'user-123',
@@ -185,7 +199,7 @@ describe('/api/conversations/[id]', () => {
     });
 
     it('should return 404 when conversation not found', async () => {
-      vi.mocked(prisma.chat_conversations.updateMany).mockResolvedValue({ count: 0 } as never);
+      vi.mocked(prisma.conversations.updateMany).mockResolvedValue({ count: 0 } as never);
 
       const request = new NextRequest('http://localhost/api/conversations/nonexistent', {
         method: 'PATCH',
@@ -245,7 +259,7 @@ describe('/api/conversations/[id]', () => {
 
   describe('DELETE', () => {
     it('should delete conversation', async () => {
-      vi.mocked(prisma.chat_conversations.deleteMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(prisma.conversations.deleteMany).mockResolvedValue({ count: 1 } as never);
 
       const request = new NextRequest('http://localhost/api/conversations/conv-123', {
         method: 'DELETE',
@@ -257,7 +271,7 @@ describe('/api/conversations/[id]', () => {
 
       expect(response.status).toBe(200);
       expect(data).toEqual({ success: true });
-      expect(prisma.chat_conversations.deleteMany).toHaveBeenCalledWith({
+      expect(prisma.conversations.deleteMany).toHaveBeenCalledWith({
         where: {
           id: 'conv-123',
           userId: 'user-123',
@@ -266,7 +280,7 @@ describe('/api/conversations/[id]', () => {
     });
 
     it('should return 404 when conversation not found', async () => {
-      vi.mocked(prisma.chat_conversations.deleteMany).mockResolvedValue({ count: 0 } as never);
+      vi.mocked(prisma.conversations.deleteMany).mockResolvedValue({ count: 0 } as never);
 
       const request = new NextRequest('http://localhost/api/conversations/nonexistent', {
         method: 'DELETE',
@@ -281,7 +295,7 @@ describe('/api/conversations/[id]', () => {
     });
 
     it('should not delete conversation belonging to another user', async () => {
-      vi.mocked(prisma.chat_conversations.deleteMany).mockResolvedValue({ count: 0 } as never);
+      vi.mocked(prisma.conversations.deleteMany).mockResolvedValue({ count: 0 } as never);
 
       const request = new NextRequest('http://localhost/api/conversations/other-user-conv', {
         method: 'DELETE',
@@ -296,7 +310,7 @@ describe('/api/conversations/[id]', () => {
     });
 
     it('should handle database errors', async () => {
-      vi.mocked(prisma.chat_conversations.deleteMany).mockRejectedValue(
+      vi.mocked(prisma.conversations.deleteMany).mockRejectedValue(
         new Error('Database error')
       );
 

@@ -13,7 +13,7 @@ import { validateAndFixRecommendations, validateAIResponse } from './validator';
 import { callGroq, streamGroq, GROQ_MODEL } from './groq-client';
 import type { Intent } from './intent/types';
 import type { AIResponseValidated } from '@/lib/validation/schemas/ai-response';
-import type { chat_messages } from '@prisma/client';
+import type { Prisma, conversation_messages } from '@prisma/client';
 
 export interface StreamContext {
   userId: string;
@@ -28,15 +28,49 @@ export interface StreamResult {
   requiresJson: boolean;
 }
 
+async function createConversationMessage({
+  conversationId,
+  role,
+  content,
+  model,
+  payload,
+}: {
+  conversationId: string;
+  role: string;
+  content: string;
+  model?: string | null;
+  payload?: { payload: Prisma.InputJsonValue; payloadType: string; payloadVersion?: string | null };
+}): Promise<conversation_messages> {
+  const message = await prisma.conversation_messages.create({
+    data: {
+      conversationId,
+      role,
+      content,
+      model: model ?? undefined,
+    },
+  });
+
+  if (payload) {
+    await prisma.conversation_message_payloads.create({
+      data: {
+        messageId: message.id,
+        payloadType: payload.payloadType,
+        payloadVersion: payload.payloadVersion ?? undefined,
+        payload: payload.payload,
+      },
+    });
+  }
+
+  return message;
+}
+
 export async function prepareStreamContext(ctx: StreamContext): Promise<StreamResult> {
   const intentResult = await classifyIntent(ctx.userMessage);
 
-  const userMessage = await prisma.chat_messages.create({
-    data: {
-      conversationId: ctx.conversationId,
-      role: 'user',
-      content: ctx.userMessage,
-    },
+  const userMessage = await createConversationMessage({
+    conversationId: ctx.conversationId,
+    role: 'user',
+    content: ctx.userMessage,
   });
 
   return {
@@ -77,12 +111,10 @@ export async function* processStreamingMessage(
   const requiresJson = intent === 'recommendation_request';
 
   if (!ctx.skipSaveUserMessage) {
-    await prisma.chat_messages.create({
-      data: {
-        conversationId: ctx.conversationId,
-        role: 'user',
-        content: ctx.userMessage,
-      },
+    await createConversationMessage({
+      conversationId: ctx.conversationId,
+      role: 'user',
+      content: ctx.userMessage,
     });
   }
 
@@ -129,15 +161,17 @@ async function* processJsonResponse(
     const response = validateAndFixRecommendations(parsedResponse);
     const assistantContent = extractAssistantContent(response);
 
-    await prisma.chat_messages.create({
-      data: {
-        conversationId: ctx.conversationId,
-        role: 'assistant',
-        content: assistantContent,
-        recommendations:
-          response.responseType === 'recommendations' ? toPrismaJson(response) : undefined,
-        model: GROQ_MODEL,
-      },
+    const payload =
+      response.responseType === 'recommendations' ? toPrismaJson(response) : undefined;
+
+    await createConversationMessage({
+      conversationId: ctx.conversationId,
+      role: 'assistant',
+      content: assistantContent,
+      model: GROQ_MODEL,
+      payload: payload
+        ? { payload, payloadType: 'recommendations', payloadVersion: 'v1' }
+        : undefined,
     });
 
     await updateConversationTimestamp(ctx.conversationId);
@@ -167,13 +201,11 @@ async function* processTextResponse(
       yield { type: 'chunk', data: chunk };
     }
 
-    await prisma.chat_messages.create({
-      data: {
-        conversationId: ctx.conversationId,
-        role: 'assistant',
-        content: chunks.join(''),
-        model: GROQ_MODEL,
-      },
+    await createConversationMessage({
+      conversationId: ctx.conversationId,
+      role: 'assistant',
+      content: chunks.join(''),
+      model: GROQ_MODEL,
     });
 
     await updateConversationTimestamp(ctx.conversationId);
@@ -198,19 +230,18 @@ function extractAssistantContent(response: AIResponseValidated): string {
 }
 
 async function updateConversationTimestamp(conversationId: string): Promise<void> {
-  await prisma.chat_conversations.update({
+  const timestamp = new Date();
+  await prisma.conversations.updateMany({
     where: { id: conversationId },
-    data: { updatedAt: new Date() },
+    data: { updatedAt: timestamp },
   });
 }
 
-async function createRateLimitMessage(conversationId: string): Promise<chat_messages> {
-  return prisma.chat_messages.create({
-    data: {
-      conversationId,
-      role: 'assistant',
-      content: 'Quota de tokens atteint. Veuillez reessayer plus tard.',
-      model: GROQ_MODEL,
-    },
+async function createRateLimitMessage(conversationId: string): Promise<conversation_messages> {
+  return createConversationMessage({
+    conversationId,
+    role: 'assistant',
+    content: 'Quota de tokens atteint. Veuillez reessayer plus tard.',
+    model: GROQ_MODEL,
   });
 }

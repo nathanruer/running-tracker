@@ -34,7 +34,7 @@ export async function POST(
   const userMessage = body.content;
   const skipSaveUserMessage = body.skipSaveUserMessage === true;
 
-  const conversation = await prisma.chat_conversations.findFirst({
+  const conversation = await prisma.conversations.findFirst({
     where: { id: params.id, userId },
     select: { id: true },
   });

@@ -72,17 +72,30 @@ export interface OptimizedHistory {
 export async function getOptimizedConversationHistory(
   conversationId: string
 ): Promise<OptimizedHistory> {
-  const allMessages = await prisma.chat_messages.findMany({
+  const allMessages = await prisma.conversation_messages.findMany({
     where: { conversationId },
     orderBy: { createdAt: 'asc' },
+    include: { conversation_message_payloads: true },
   });
 
-  const totalMessages = allMessages.length;
+  const normalizedMessages: ChatMessageRecord[] = allMessages.map((message) => {
+    const payload = message.conversation_message_payloads.find(
+      (item: { payloadType: string }) => item.payloadType === 'recommendations'
+    );
+    return {
+      role: message.role as ChatRole,
+      content: message.content,
+      recommendations: payload?.payload ?? null,
+      createdAt: message.createdAt,
+    };
+  });
+
+  const totalMessages = normalizedMessages.length;
 
   if (totalMessages <= OPTIMIZATION_CONFIG.RECENT_MESSAGES_COUNT) {
-    const messages = allMessages.map(msg => ({
+    const messages = normalizedMessages.map(msg => ({
       role: msg.role as ChatRole,
-      content: mapMessageContent(msg as ChatMessageRecord),
+      content: mapMessageContent(msg),
     }));
 
     const tokenCount = messages.reduce((sum, msg) => sum + estimateTokenCount(msg.content), 0);
@@ -96,10 +109,10 @@ export async function getOptimizedConversationHistory(
   }
 
   const recentCount = OPTIMIZATION_CONFIG.RECENT_MESSAGES_COUNT;
-  const recentMessages = allMessages.slice(-recentCount);
-  const olderMessages = allMessages.slice(0, -recentCount);
+  const recentMessages = normalizedMessages.slice(-recentCount);
+  const olderMessages = normalizedMessages.slice(0, -recentCount);
 
-  const summary = summarizeMessages(olderMessages as ChatMessageRecord[]);
+  const summary = summarizeMessages(olderMessages);
 
   const optimizedMessages: Array<{ role: ChatRole; content: string }> = [];
 
@@ -113,12 +126,12 @@ export async function getOptimizedConversationHistory(
   for (const msg of recentMessages) {
     optimizedMessages.push({
       role: msg.role as ChatRole,
-      content: mapMessageContent(msg as ChatMessageRecord),
+      content: mapMessageContent(msg),
     });
   }
 
-  const originalTokenCount = allMessages.reduce(
-    (sum, msg) => sum + estimateTokenCount(mapMessageContent(msg as ChatMessageRecord)),
+  const originalTokenCount = normalizedMessages.reduce(
+    (sum, msg) => sum + estimateTokenCount(mapMessageContent(msg)),
     0
   );
 

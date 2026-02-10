@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/server/database';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
-
 export async function GET(request: NextRequest) {
   return handleGetRequest(
     request,
     async (userId) => {
-      const conversations = await prisma.chat_conversations.findMany({
+      const conversations = await prisma.conversations.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
         select: {
@@ -15,12 +14,17 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           _count: {
-            select: { chat_messages: true },
+            select: { conversation_messages: true },
           },
         },
       });
 
-      return NextResponse.json(conversations);
+      const normalized = conversations.map(({ _count, ...rest }) => ({
+        ...rest,
+        _count: { chat_messages: _count.conversation_messages },
+      }));
+
+      return NextResponse.json(normalized);
     },
     { logContext: 'get-conversations' }
   );
@@ -37,7 +41,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Titre invalide' }, { status: 400 });
       }
 
-      const conversation = await prisma.chat_conversations.create({
+      const conversation = await prisma.conversations.create({
         data: {
           title,
           userId,

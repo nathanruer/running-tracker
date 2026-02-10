@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
 
       const title = content.length > 50 ? content.substring(0, 50) + '...' : content;
 
-      const conversation = await prisma.chat_conversations.create({
+      const conversation = await prisma.conversations.create({
         data: {
           userId,
           title,
         },
       });
 
-      const message = await prisma.chat_messages.create({
+      const message = await prisma.conversation_messages.create({
         data: {
           conversationId: conversation.id,
           role: 'user',

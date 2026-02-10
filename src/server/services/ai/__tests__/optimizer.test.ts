@@ -3,7 +3,7 @@ import { getOptimizedConversationHistory, OPTIMIZATION_CONFIG } from '../optimiz
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    chat_messages: {
+    conversation_messages: {
       findMany: vi.fn(),
     },
   },
@@ -17,7 +17,7 @@ vi.mock('@/server/infrastructure/logger', () => ({
 
 import { prisma } from '@/server/database';
 
-const mockFindMany = prisma.chat_messages.findMany as ReturnType<typeof vi.fn>;
+const mockFindMany = prisma.conversation_messages.findMany as ReturnType<typeof vi.fn>;
 
 describe('getOptimizedConversationHistory', () => {
   beforeEach(() => {
@@ -26,8 +26,8 @@ describe('getOptimizedConversationHistory', () => {
 
   it('should return all messages without optimization when count is within limit', async () => {
     const messages = [
-      { role: 'user', content: 'Hello', recommendations: null, createdAt: new Date() },
-      { role: 'assistant', content: 'Hi there', recommendations: null, createdAt: new Date() },
+      { role: 'user', content: 'Hello', createdAt: new Date(), conversation_message_payloads: [] },
+      { role: 'assistant', content: 'Hi there', createdAt: new Date(), conversation_message_payloads: [] },
     ];
     mockFindMany.mockResolvedValue(messages);
 
@@ -41,7 +41,14 @@ describe('getOptimizedConversationHistory', () => {
   it('should use JSON stringified recommendations for assistant messages', async () => {
     const recommendations = { responseType: 'analysis', message: 'Analysis result' };
     const messages = [
-      { role: 'assistant', content: '', recommendations, createdAt: new Date() },
+      {
+        role: 'assistant',
+        content: '',
+        createdAt: new Date(),
+        conversation_message_payloads: [
+          { payloadType: 'recommendations', payload: recommendations },
+        ],
+      },
     ];
     mockFindMany.mockResolvedValue(messages);
 
@@ -55,8 +62,8 @@ describe('getOptimizedConversationHistory', () => {
     const messages = Array.from({ length: 8 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
       content: `${longContent} Message ${i}`,
-      recommendations: null,
       createdAt: new Date(Date.now() + i * 1000),
+      conversation_message_payloads: [],
     }));
     mockFindMany.mockResolvedValue(messages);
 
@@ -70,15 +77,29 @@ describe('getOptimizedConversationHistory', () => {
 
   it('should include recommendation summaries in older messages', async () => {
     const messages = [
-      { role: 'user', content: 'Question about training', recommendations: null, createdAt: new Date(1) },
-      { role: 'assistant', content: '', recommendations: { responseType: 'recommendations', week_summary: 'Week plan' }, createdAt: new Date(2) },
-      { role: 'user', content: 'Another question', recommendations: null, createdAt: new Date(3) },
-      { role: 'assistant', content: '', recommendations: { responseType: 'analysis', message: 'Performance analysis' }, createdAt: new Date(4) },
+      { role: 'user', content: 'Question about training', createdAt: new Date(1), conversation_message_payloads: [] },
+      {
+        role: 'assistant',
+        content: '',
+        createdAt: new Date(2),
+        conversation_message_payloads: [
+          { payloadType: 'recommendations', payload: { responseType: 'recommendations', week_summary: 'Week plan' } },
+        ],
+      },
+      { role: 'user', content: 'Another question', createdAt: new Date(3), conversation_message_payloads: [] },
+      {
+        role: 'assistant',
+        content: '',
+        createdAt: new Date(4),
+        conversation_message_payloads: [
+          { payloadType: 'recommendations', payload: { responseType: 'analysis', message: 'Performance analysis' } },
+        ],
+      },
       ...Array.from({ length: 5 }, (_, i) => ({
         role: i % 2 === 0 ? 'user' : 'assistant',
         content: `Recent ${i}`,
-        recommendations: null,
         createdAt: new Date(5 + i),
+        conversation_message_payloads: [],
       })),
     ];
     mockFindMany.mockResolvedValue(messages);
@@ -96,8 +117,8 @@ describe('getOptimizedConversationHistory', () => {
     const messages = Array.from({ length: 10 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
       content: longContent,
-      recommendations: null,
       createdAt: new Date(i),
+      conversation_message_payloads: [],
     }));
     mockFindMany.mockResolvedValue(messages);
 
@@ -118,12 +139,12 @@ describe('getOptimizedConversationHistory', () => {
 
   it('should handle assistant message with plain content fallback', async () => {
     const messages = [
-      { role: 'assistant', content: 'Plain assistant response', recommendations: null, createdAt: new Date(0) },
+      { role: 'assistant', content: 'Plain assistant response', createdAt: new Date(0), conversation_message_payloads: [] },
       ...Array.from({ length: 6 }, (_, i) => ({
         role: i % 2 === 0 ? 'user' : 'assistant',
         content: `Message ${i} with some text`,
-        recommendations: null,
         createdAt: new Date(i + 1),
+        conversation_message_payloads: [],
       })),
     ];
     mockFindMany.mockResolvedValue(messages);
