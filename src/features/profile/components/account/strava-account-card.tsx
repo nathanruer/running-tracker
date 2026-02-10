@@ -37,8 +37,6 @@ export function StravaAccountCard({ stravaId }: StravaAccountCardProps) {
           return {
             ...oldUser,
             stravaId: null,
-            stravaAccessToken: null,
-            stravaRefreshToken: null,
             stravaTokenExpiresAt: null
           }
         }

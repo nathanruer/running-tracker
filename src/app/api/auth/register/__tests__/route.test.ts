@@ -11,6 +11,12 @@ vi.mock('@/server/database', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
     },
+    user_profiles: {
+      create: vi.fn(),
+    },
+    user_preferences: {
+      create: vi.fn(),
+    },
   },
 }));
 

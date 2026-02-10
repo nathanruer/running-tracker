@@ -89,17 +89,19 @@ export async function GET(request: NextRequest) {
     let user;
 
     if (currentUser) {
-      const stravaAlreadyLinked = await prisma.users.findFirst({
-        where: { 
-          stravaId: athlete.id.toString(),
-          id: { not: currentUser.id }
+      const existingAccount = await prisma.external_accounts.findUnique({
+        where: {
+          provider_externalId: {
+            provider: 'strava',
+            externalId: athlete.id.toString(),
+          },
         },
       });
 
-      if (stravaAlreadyLinked) {
+      if (existingAccount && existingAccount.userId !== currentUser.id) {
         logger.error({
           currentUserId: currentUser.id,
-          stravaLinkedToUserId: stravaAlreadyLinked.id,
+          stravaLinkedToUserId: existingAccount.userId,
           stravaId: athlete.id.toString(),
         }, 'Strava account already linked to a different user');
 
@@ -108,10 +110,19 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      if (currentUser.stravaId) {
+      const currentAccount = await prisma.external_accounts.findUnique({
+        where: {
+          userId_provider: {
+            userId: currentUser.id,
+            provider: 'strava',
+          },
+        },
+      });
+
+      if (currentAccount) {
         logger.error({
           userId: currentUser.id,
-          currentStravaId: currentUser.stravaId,
+          currentStravaId: currentAccount.externalId,
           newStravaId: athlete.id.toString(),
         }, 'User already has a Strava account linked');
 
@@ -120,42 +131,106 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      user = await prisma.users.update({
-        where: { id: currentUser.id },
-        data: {
-          stravaId: athlete.id.toString(),
-          stravaAccessToken: access_token,
-          stravaRefreshToken: refresh_token,
-          stravaTokenExpiresAt: new Date(expires_at * 1000),
-        },
-      });
-      logger.info({ userId: user.id, stravaId: athlete.id }, 'Successfully linked Strava to existing logged-in user');
-    } else {
-      user = await prisma.users.findUnique({
-        where: { stravaId: athlete.id.toString() },
-      });
-
-      if (user) {
-        user = await prisma.users.update({
-          where: { id: user.id },
-          data: {
-            stravaAccessToken: access_token,
-            stravaRefreshToken: refresh_token,
-            stravaTokenExpiresAt: new Date(expires_at * 1000),
+      user = currentUser;
+      try {
+        await prisma.external_accounts.upsert({
+          where: {
+            userId_provider: {
+              userId: currentUser.id,
+              provider: 'strava',
+            },
+          },
+          create: {
+            userId: currentUser.id,
+            provider: 'strava',
+            externalId: athlete.id.toString(),
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            tokenExpiresAt: new Date(expires_at * 1000),
+          },
+          update: {
+            externalId: athlete.id.toString(),
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            tokenExpiresAt: new Date(expires_at * 1000),
           },
         });
+      } catch (error) {
+        logger.warn({ error, userId: currentUser.id }, 'Failed to sync Strava external account');
+      }
+      logger.info({ userId: user.id, stravaId: athlete.id }, 'Successfully linked Strava to existing logged-in user');
+    } else {
+      const linkedAccount = await prisma.external_accounts.findUnique({
+        where: {
+          provider_externalId: {
+            provider: 'strava',
+            externalId: athlete.id.toString(),
+          },
+        },
+      });
+
+      if (linkedAccount) {
+        const linkedUser = await prisma.users.findUnique({
+          where: { id: linkedAccount.userId },
+        });
+
+        if (!linkedUser) {
+          logger.error({ userId: linkedAccount.userId }, 'Strava external account without user');
+          return NextResponse.redirect(
+            new URL(`/error?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
+          );
+        }
+
+        user = linkedUser;
+        try {
+          await prisma.external_accounts.update({
+            where: {
+              userId_provider: {
+                userId: linkedUser.id,
+                provider: 'strava',
+              },
+            },
+            data: {
+              accessToken: access_token,
+              refreshToken: refresh_token,
+              tokenExpiresAt: new Date(expires_at * 1000),
+            },
+          });
+        } catch (error) {
+          logger.warn({ error, userId: linkedUser.id }, 'Failed to sync Strava external account');
+        }
         logger.info({ userId: user.id }, 'Updated tokens for existing Strava user');
       } else {
         user = await prisma.users.create({
           data: {
             email: `strava_${athlete.id}@strava.local`,
             password: '',
-            stravaId: athlete.id.toString(),
-            stravaAccessToken: access_token,
-            stravaRefreshToken: refresh_token,
-            stravaTokenExpiresAt: new Date(expires_at * 1000),
           },
         });
+        try {
+          await prisma.user_profiles.create({
+            data: { userId: user.id },
+          });
+          await prisma.user_preferences.create({
+            data: { userId: user.id },
+          });
+        } catch (error) {
+          logger.warn({ error, userId: user.id }, 'Failed to create shadow user records');
+        }
+        try {
+          await prisma.external_accounts.create({
+            data: {
+              userId: user.id,
+              provider: 'strava',
+              externalId: athlete.id.toString(),
+              accessToken: access_token,
+              refreshToken: refresh_token,
+              tokenExpiresAt: new Date(expires_at * 1000),
+            },
+          });
+        } catch (error) {
+          logger.warn({ error, userId: user.id }, 'Failed to create Strava external account');
+        }
         logger.info({ userId: user.id }, 'Created new user via Strava login');
       }
     }

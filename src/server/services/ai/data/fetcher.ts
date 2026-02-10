@@ -17,14 +17,18 @@ export interface FetchedContext {
 async function fetchProfile(userId: string): Promise<UserProfile> {
   const user = await prisma.users.findUnique({
     where: { id: userId },
-    select: { maxHeartRate: true, vma: true, age: true, goal: true },
+    select: {
+      profile: {
+        select: { maxHeartRate: true, vma: true, age: true, goal: true },
+      },
+    },
   });
 
   return {
-    maxHeartRate: user?.maxHeartRate ?? undefined,
-    vma: user?.vma ?? undefined,
-    age: user?.age ?? undefined,
-    goal: user?.goal ?? undefined,
+    maxHeartRate: user?.profile?.maxHeartRate ?? undefined,
+    vma: user?.profile?.vma ?? undefined,
+    age: user?.profile?.age ?? undefined,
+    goal: user?.profile?.goal ?? undefined,
   };
 }
 

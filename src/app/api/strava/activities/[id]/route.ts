@@ -15,6 +15,19 @@ export async function GET(
     async (userId) => {
       const user = await prisma.users.findUnique({
         where: { id: userId },
+        select: {
+          id: true,
+          externalAccounts: {
+            where: { provider: 'strava' },
+            select: {
+              externalId: true,
+              accessToken: true,
+              refreshToken: true,
+              tokenExpiresAt: true,
+            },
+            take: 1,
+          },
+        },
       });
 
       if (!user) {
@@ -24,14 +37,20 @@ export async function GET(
         );
       }
 
-      if (!user.stravaId) {
+      const stravaAccount = user.externalAccounts[0] ?? null;
+      if (!stravaAccount?.externalId) {
         return NextResponse.json(
           { error: 'Compte Strava non connecté' },
           { status: 400 }
         );
       }
 
-      const accessToken = await getValidAccessToken(user);
+      const accessToken = await getValidAccessToken({
+        userId: user.id,
+        accessToken: stravaAccount.accessToken ?? null,
+        refreshToken: stravaAccount.refreshToken ?? null,
+        tokenExpiresAt: stravaAccount.tokenExpiresAt ?? null,
+      });
 
       const activityId = parseInt(params.id, 10);
       logger.info({ activityId, userId: user.id }, 'Fetching Strava activity');

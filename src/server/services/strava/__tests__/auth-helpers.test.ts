@@ -9,7 +9,7 @@ vi.mock('../client', () => ({
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    users: {
+    external_accounts: {
       update: vi.fn(),
     },
   },
@@ -17,7 +17,7 @@ vi.mock('@/server/database', () => ({
 
 describe('auth-helpers', () => {
   const mockRefreshAccessToken = vi.mocked(stravaClient.refreshAccessToken);
-  const mockPrismaUpdate = vi.mocked(prisma.users.update);
+  const mockPrismaUpdate = vi.mocked(prisma.external_accounts.update);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,10 +25,10 @@ describe('auth-helpers', () => {
 
   describe('getValidAccessToken', () => {
     const baseUser = {
-      id: 'user-123',
-      stravaAccessToken: 'valid-access-token',
-      stravaRefreshToken: 'valid-refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 3600000), // 1 hour from now
+      userId: 'user-123',
+      accessToken: 'valid-access-token',
+      refreshToken: 'valid-refresh-token',
+      tokenExpiresAt: new Date(Date.now() + 3600000), // 1 hour from now
     };
 
     it('should return existing token when not expired', async () => {
@@ -41,7 +41,7 @@ describe('auth-helpers', () => {
     it('should throw error when no access token exists', async () => {
       const userWithoutToken = {
         ...baseUser,
-        stravaAccessToken: null,
+        accessToken: null,
       };
 
       await expect(getValidAccessToken(userWithoutToken)).rejects.toThrow(
@@ -52,7 +52,7 @@ describe('auth-helpers', () => {
     it('should throw error when no refresh token exists', async () => {
       const userWithoutRefresh = {
         ...baseUser,
-        stravaRefreshToken: null,
+        refreshToken: null,
       };
 
       await expect(getValidAccessToken(userWithoutRefresh)).rejects.toThrow(
@@ -63,7 +63,7 @@ describe('auth-helpers', () => {
     it('should refresh token when it expires in less than 5 minutes', async () => {
       const userWithExpiringToken = {
         ...baseUser,
-        stravaTokenExpiresAt: new Date(Date.now() + 60000), // 1 minute from now
+        tokenExpiresAt: new Date(Date.now() + 60000), // 1 minute from now
       };
 
       const newTokenData = {
@@ -79,10 +79,15 @@ describe('auth-helpers', () => {
 
       expect(mockRefreshAccessToken).toHaveBeenCalledWith('valid-refresh-token');
       expect(mockPrismaUpdate).toHaveBeenCalledWith({
-        where: { id: 'user-123' },
+        where: {
+          userId_provider: {
+            userId: 'user-123',
+            provider: 'strava',
+          },
+        },
         data: expect.objectContaining({
-          stravaAccessToken: 'new-access-token',
-          stravaRefreshToken: 'new-refresh-token',
+          accessToken: 'new-access-token',
+          refreshToken: 'new-refresh-token',
         }),
       });
       expect(result).toBe('new-access-token');
@@ -91,7 +96,7 @@ describe('auth-helpers', () => {
     it('should refresh token when expiry date is null', async () => {
       const userWithNullExpiry = {
         ...baseUser,
-        stravaTokenExpiresAt: null,
+        tokenExpiresAt: null,
       };
 
       const newTokenData = {
@@ -112,7 +117,7 @@ describe('auth-helpers', () => {
     it('should refresh token when already expired', async () => {
       const userWithExpiredToken = {
         ...baseUser,
-        stravaTokenExpiresAt: new Date(Date.now() - 3600000), // 1 hour ago
+        tokenExpiresAt: new Date(Date.now() - 3600000), // 1 hour ago
       };
 
       const newTokenData = {

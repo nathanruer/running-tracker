@@ -8,25 +8,35 @@ export async function POST(request: NextRequest) {
     request,
     null,
     async (_data, userId) => {
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
+      const account = await prisma.external_accounts.findUnique({
+        where: {
+          userId_provider: {
+            userId,
+            provider: 'strava',
+          },
+        },
       });
 
-      if (!user || !user.stravaRefreshToken) {
+      if (!account?.refreshToken) {
         return NextResponse.json(
           { error: 'Utilisateur non trouvé ou non connecté à Strava' },
           { status: 404 }
         );
       }
 
-      const tokenData = await refreshAccessToken(user.stravaRefreshToken);
+      const tokenData = await refreshAccessToken(account.refreshToken);
 
-      await prisma.users.update({
-        where: { id: user.id },
+      await prisma.external_accounts.update({
+        where: {
+          userId_provider: {
+            userId,
+            provider: 'strava',
+          },
+        },
         data: {
-          stravaAccessToken: tokenData.access_token,
-          stravaRefreshToken: tokenData.refresh_token,
-          stravaTokenExpiresAt: new Date(tokenData.expires_at * 1000),
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          tokenExpiresAt: new Date(tokenData.expires_at * 1000),
         },
       });
 

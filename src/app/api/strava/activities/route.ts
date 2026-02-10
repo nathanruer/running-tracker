@@ -13,13 +13,27 @@ export async function GET(request: NextRequest) {
     async (userId) => {
       const user = await prisma.users.findUnique({
         where: { id: userId },
+        select: {
+          id: true,
+          externalAccounts: {
+            where: { provider: 'strava' },
+            select: {
+              externalId: true,
+              accessToken: true,
+              refreshToken: true,
+              tokenExpiresAt: true,
+            },
+            take: 1,
+          },
+        },
       });
 
       if (!user) {
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }
 
-      if (!user.stravaId) {
+      const stravaAccount = user.externalAccounts[0] ?? null;
+      if (!stravaAccount?.externalId) {
         return NextResponse.json({ error: 'Compte Strava non connecté' }, { status: 400 });
       }
 
@@ -27,9 +41,14 @@ export async function GET(request: NextRequest) {
       const perPage = parseInt(searchParams.get('per_page') || '30');
       const before = searchParams.get('before') ? parseInt(searchParams.get('before')!) : undefined;
 
-      const accessToken = await getValidAccessToken(user);
+      const accessToken = await getValidAccessToken({
+        userId: user.id,
+        accessToken: stravaAccount.accessToken ?? null,
+        refreshToken: stravaAccount.refreshToken ?? null,
+        tokenExpiresAt: stravaAccount.tokenExpiresAt ?? null,
+      });
 
-      const statsPromise = getAthleteStats(accessToken, user.stravaId);
+      const statsPromise = getAthleteStats(accessToken, stravaAccount.externalId);
 
       const runs: StravaActivity[] = [];
       let currentBefore = before;

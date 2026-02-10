@@ -7,32 +7,27 @@ export async function POST(request: NextRequest) {
     request,
     null,
     async (_data, userId) => {
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
+      const account = await prisma.external_accounts.findUnique({
+        where: {
+          userId_provider: {
+            userId,
+            provider: 'strava',
+          },
+        },
       });
 
-      if (!user) {
-        return NextResponse.json(
-          { error: 'Utilisateur non trouvé' },
-          { status: 404 }
-        );
-      }
-
-      if (!user.stravaId) {
+      if (!account) {
         return NextResponse.json(
           { error: 'Aucun compte Strava n\'est actuellement lié' },
           { status: 400 }
         );
       }
 
-      await prisma.users.update({
-        where: { id: userId },
-        data: {
-          stravaId: null,
-          stravaAccessToken: null,
-          stravaRefreshToken: null,
-          stravaTokenExpiresAt: null,
-        }
+      await prisma.external_accounts.deleteMany({
+        where: {
+          userId,
+          provider: 'strava',
+        },
       });
 
       return NextResponse.json({

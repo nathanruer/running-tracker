@@ -140,8 +140,6 @@ describe('/api/auth/delete-account', () => {
     vi.mocked(clearSessionCookie).mockResolvedValue(undefined);
     vi.mocked(prisma.users.delete).mockResolvedValue({
       id: 'user-strava-123',
-      stravaId: '12345',
-      stravaAccessToken: 'token',
     } as never);
 
     const request = new NextRequest('http://localhost/api/auth/delete-account', {

@@ -13,18 +13,62 @@ model users {
   email                String                @unique
   password             String
   createdAt            DateTime              @default(now())
-  stravaAccessToken    String?
-  stravaId             String?               @unique
-  stravaRefreshToken   String?
-  stravaTokenExpiresAt DateTime?
-  age                  Int?
-  maxHeartRate         Int?
-  weight               Float?
-  vma                  Float?
-  goal                 String?               @db.Text
   chat_conversations   chat_conversations[]
   plan_sessions        plan_sessions[]
   workouts             workouts[]
+  profile              user_profiles?
+  preferences          user_preferences?
+  externalAccounts     external_accounts[]
+}
+
+model user_profiles {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  age          Int?
+  maxHeartRate Int?
+  weight       Float?
+  vma          Float?
+  goal         String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model user_preferences {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  locale        String?
+  units         String?
+  timezone      String?
+  notifications Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model external_accounts {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String
+  externalId     String
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  scopes         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([userId, provider])
+  @@unique([provider, externalId])
 }
 
 model chat_conversations {

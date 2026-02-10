@@ -81,10 +81,14 @@ describe('/api/strava/activities/[id]', () => {
     const mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
+      externalAccounts: [
+        {
+          externalId: '12345',
+          accessToken: 'valid-token',
+          refreshToken: 'refresh-token',
+          tokenExpiresAt: new Date(Date.now() + 7200000),
+        },
+      ],
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
@@ -102,7 +106,12 @@ describe('/api/strava/activities/[id]', () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual(mockFormattedActivity);
-    expect(getValidAccessToken).toHaveBeenCalledWith(mockUser);
+    expect(getValidAccessToken).toHaveBeenCalledWith({
+      userId: 'user-123',
+      accessToken: 'valid-token',
+      refreshToken: 'refresh-token',
+      tokenExpiresAt: expect.any(Date),
+    });
     expect(getActivityDetails).toHaveBeenCalledWith('valid-token', 123456);
     expect(formatStravaActivity).toHaveBeenCalledWith(mockActivityDetails);
   });
@@ -126,7 +135,7 @@ describe('/api/strava/activities/[id]', () => {
     const userWithoutStrava = {
       id: 'user-123',
       email: 'test@example.com',
-      stravaId: null,
+      externalAccounts: [],
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(userWithoutStrava as never);
@@ -147,10 +156,14 @@ describe('/api/strava/activities/[id]', () => {
     const mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
+      externalAccounts: [
+        {
+          externalId: '12345',
+          accessToken: 'valid-token',
+          refreshToken: 'refresh-token',
+          tokenExpiresAt: new Date(Date.now() + 7200000),
+        },
+      ],
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
@@ -173,10 +186,14 @@ describe('/api/strava/activities/[id]', () => {
     const mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'valid-token',
-      stravaRefreshToken: 'refresh-token',
-      stravaTokenExpiresAt: new Date(Date.now() + 7200000),
+      externalAccounts: [
+        {
+          externalId: '12345',
+          accessToken: 'valid-token',
+          refreshToken: 'refresh-token',
+          tokenExpiresAt: new Date(Date.now() + 7200000),
+        },
+      ],
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);

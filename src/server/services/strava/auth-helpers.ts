@@ -1,12 +1,13 @@
 import 'server-only';
 import { prisma } from '@/server/database';
 import { refreshAccessToken } from './client';
+import { logger } from '@/server/infrastructure/logger';
 
-interface UserWithTokens {
-  id: string;
-  stravaAccessToken: string | null;
-  stravaRefreshToken: string | null;
-  stravaTokenExpiresAt: Date | null;
+interface StravaAccountTokens {
+  userId: string;
+  accessToken: string | null;
+  refreshToken: string | null;
+  tokenExpiresAt: Date | null;
 }
 
 /**
@@ -15,30 +16,38 @@ interface UserWithTokens {
  * @returns Valid access token
  * @throws If no token is found
  */
-export async function getValidAccessToken(user: UserWithTokens): Promise<string> {
-  if (!user.stravaAccessToken || !user.stravaRefreshToken) {
+export async function getValidAccessToken(account: StravaAccountTokens): Promise<string> {
+  if (!account.accessToken || !account.refreshToken) {
     throw new Error('No Strava tokens found');
   }
 
   const now = new Date();
-  const expiresAt = user.stravaTokenExpiresAt;
+  const expiresAt = account.tokenExpiresAt;
   const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
 
   // Refresh if token expires in less than 5 minutes
   if (!expiresAt || expiresAt < fiveMinutesFromNow) {
-    const tokenData = await refreshAccessToken(user.stravaRefreshToken);
-
-    await prisma.users.update({
-      where: { id: user.id },
-      data: {
-        stravaAccessToken: tokenData.access_token,
-        stravaRefreshToken: tokenData.refresh_token,
-        stravaTokenExpiresAt: new Date(tokenData.expires_at * 1000),
-      },
-    });
+    const tokenData = await refreshAccessToken(account.refreshToken);
+    try {
+      await prisma.external_accounts.update({
+        where: {
+          userId_provider: {
+            userId: account.userId,
+            provider: 'strava',
+          },
+        },
+        data: {
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          tokenExpiresAt: new Date(tokenData.expires_at * 1000),
+        },
+      });
+    } catch (error) {
+      logger.warn({ error, userId: account.userId }, 'Failed to update Strava tokens');
+    }
 
     return tokenData.access_token;
   }
 
-  return user.stravaAccessToken;
+  return account.accessToken;
 }

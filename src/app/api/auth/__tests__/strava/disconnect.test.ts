@@ -5,9 +5,9 @@ import { prisma } from '@/server/database';
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    users: {
+    external_accounts: {
       findUnique: vi.fn(),
-      update: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }));
@@ -16,36 +16,20 @@ vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(() => 'user-123'),
 }));
 
-vi.mock('@/server/infrastructure/logger', () => ({
-  logger: {
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
-}));
-
 describe('/api/auth/strava/disconnect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should successfully disconnect Strava account', async () => {
-    const mockUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
-      stravaAccessToken: 'access-token',
-      stravaRefreshToken: 'refresh-token',
+    const mockAccount = {
+      userId: 'user-123',
+      provider: 'strava',
+      externalId: '12345',
     };
 
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(prisma.users.update).mockResolvedValue({
-      ...mockUser,
-      stravaId: null,
-      stravaAccessToken: null,
-      stravaRefreshToken: null,
-      stravaTokenExpiresAt: null,
-    } as never);
+    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.external_accounts.deleteMany).mockResolvedValue({ count: 1 } as never);
 
     const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
       method: 'POST',
@@ -60,39 +44,13 @@ describe('/api/auth/strava/disconnect', () => {
       message: 'Compte Strava déconnecté avec succès',
     });
 
-    expect(prisma.users.update).toHaveBeenCalledWith({
-      where: { id: 'user-123' },
-      data: {
-        stravaId: null,
-        stravaAccessToken: null,
-        stravaRefreshToken: null,
-        stravaTokenExpiresAt: null,
-      },
+    expect(prisma.external_accounts.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 'user-123', provider: 'strava' },
     });
-  });
-
-  it('should return 404 when user is not found', async () => {
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
-
-    const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
-      method: 'POST',
-    });
-
-    const response = await POST(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(data).toEqual({ error: 'Utilisateur non trouvé' });
   });
 
   it('should return 400 when user has no Strava account linked', async () => {
-    const mockUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: null,
-    };
-
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
       method: 'POST',
@@ -106,14 +64,14 @@ describe('/api/auth/strava/disconnect', () => {
   });
 
   it('should handle database errors', async () => {
-    const mockUser = {
-      id: 'user-123',
-      email: 'test@example.com',
-      stravaId: '12345',
+    const mockAccount = {
+      userId: 'user-123',
+      provider: 'strava',
+      externalId: '12345',
     };
 
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(prisma.users.update).mockRejectedValue(new Error('Database error'));
+    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.external_accounts.deleteMany).mockRejectedValue(new Error('Database error'));
 
     const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
       method: 'POST',

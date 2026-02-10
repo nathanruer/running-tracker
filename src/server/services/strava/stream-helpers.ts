@@ -16,15 +16,25 @@ export async function fetchStreamsForSession(
   }
 
   try {
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
+    const account = await prisma.external_accounts.findUnique({
+      where: {
+        userId_provider: {
+          userId,
+          provider: 'strava',
+        },
+      },
     });
 
-    if (!user?.stravaAccessToken || !user?.stravaRefreshToken) {
+    if (!account?.accessToken || !account?.refreshToken) {
       return null;
     }
 
-    const accessToken = await getValidAccessToken(user);
+    const accessToken = await getValidAccessToken({
+      userId,
+      accessToken: account.accessToken ?? null,
+      refreshToken: account.refreshToken ?? null,
+      tokenExpiresAt: account.tokenExpiresAt ?? null,
+    });
     const activityId = parseInt(externalId, 10);
     const streams = await getActivityStreams(accessToken, activityId);
 
