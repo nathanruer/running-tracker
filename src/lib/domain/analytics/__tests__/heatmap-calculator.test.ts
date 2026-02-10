@@ -112,7 +112,7 @@ describe('heatmap-calculator', () => {
 
     it('should use targetDistance when distance is not available', () => {
       const sessions = [
-        { id: 'session-1', date: '2026-04-01', targetDistance: 15, status: 'planned' },
+        { id: 'session-1', date: null, plannedDate: '2026-04-01', targetDistance: 15, status: 'planned' },
       ] as TrainingSession[];
 
       const result = calculateHeatmapData(sessions, 2026);
@@ -122,7 +122,7 @@ describe('heatmap-calculator', () => {
 
     it('should handle sessions with null date', () => {
       const sessions = [
-        { id: 'session-1', date: null, distance: 10, status: 'completed' },
+        { id: 'session-1', date: null, plannedDate: null, targetDistance: 10, status: 'planned' },
         createSession('2026-05-01', 5),
       ] as TrainingSession[];
 

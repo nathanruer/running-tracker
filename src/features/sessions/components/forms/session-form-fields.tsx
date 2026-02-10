@@ -13,9 +13,12 @@ import { parseNullableNumberInput } from '@/lib/utils/numbers';
 
 interface SessionFormFieldsProps {
   control: Control<FormValues>;
+  mode?: 'planned' | 'completed';
 }
 
-export function SessionFormFields({ control }: SessionFormFieldsProps) {
+export function SessionFormFields({ control, mode = 'completed' }: SessionFormFieldsProps) {
+  const isPlanned = mode === 'planned';
+
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -24,9 +27,17 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="duration"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Durée</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {isPlanned ? 'Durée cible' : 'Durée'}
+              </FormLabel>
               <FormControl>
-                <Input data-testid="input-duration" placeholder="00:00:00" variant="form" {...field} />
+                <Input
+                  data-testid="input-duration"
+                  placeholder="00:00:00"
+                  variant="form"
+                  {...field}
+                  value={field.value ?? ''}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -37,7 +48,9 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="distance"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Distance (km)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {isPlanned ? 'Distance cible (km)' : 'Distance (km)'}
+              </FormLabel>
               <FormControl>
                 <Input
                   data-testid="input-distance"
@@ -70,9 +83,17 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="avgPace"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Allure moy (mn/km)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {isPlanned ? 'Allure cible (mn/km)' : 'Allure moy (mn/km)'}
+              </FormLabel>
               <FormControl>
-                <Input data-testid="input-avgpace" placeholder="00:00" variant="form" {...field} />
+                <Input
+                  data-testid="input-avgpace"
+                  placeholder="00:00"
+                  variant="form"
+                  {...field}
+                  value={field.value ?? ''}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -83,7 +104,9 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
           name="avgHeartRate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">FC moy (bpm)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {isPlanned ? 'FC cible (bpm)' : 'FC moy (bpm)'}
+              </FormLabel>
               <FormControl>
                 <Input
                   data-testid="input-avgheartrate"
@@ -114,7 +137,7 @@ export function SessionFormFields({ control }: SessionFormFieldsProps) {
             <FormControl>
               <Textarea
                 data-testid="input-comments"
-                placeholder="Comment s'est passée votre séance ?"
+                placeholder={isPlanned ? "Notes ou objectifs pour cette séance ?" : "Comment s'est passée votre séance ?"}
                 variant="form"
                 className="resize-none"
                 {...field}

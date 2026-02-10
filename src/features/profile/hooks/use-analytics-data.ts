@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { type TrainingSession } from '@/lib/types';
 import { useDateRangeFilter } from '@/features/sessions/hooks/use-date-range-filter';
 import { calculateWeeklyStats } from '@/lib/domain/analytics/weekly-calculator';
+import { getSessionEffectiveDate, isCompleted, isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 /**
  * Hook for managing analytics data filtering and calculations
@@ -9,7 +10,7 @@ import { calculateWeeklyStats } from '@/lib/domain/analytics/weekly-calculator';
  */
 export function useAnalyticsData(sessions: TrainingSession[]) {
   const completedSessions = useMemo(
-    () => sessions.filter((s) => s.status === 'completed' && s.date),
+    () => sessions.filter((s) => isCompleted(s) && getSessionEffectiveDate(s)),
     [sessions]
   );
 
@@ -25,13 +26,14 @@ export function useAnalyticsData(sessions: TrainingSession[]) {
   } = useDateRangeFilter(completedSessions, 'all');
 
   const filteredPlannedSessions = useMemo(() => {
-    const plannedSessions = sessions.filter((s) => s.status === 'planned' && s.date);
+    const plannedSessions = sessions.filter((s) => isPlanned(s) && getSessionEffectiveDate(s));
 
     if (dateRange === 'all') return plannedSessions;
 
     const now = new Date();
     return plannedSessions.filter((session) => {
-      const sessionDate = session.date ? new Date(session.date) : null;
+      const effectiveDate = getSessionEffectiveDate(session);
+      const sessionDate = effectiveDate ? new Date(effectiveDate) : null;
       if (!sessionDate) return true;
 
       if (dateRange === '2weeks') {

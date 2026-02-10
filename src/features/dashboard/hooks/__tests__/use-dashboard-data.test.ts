@@ -42,7 +42,7 @@ const createSession = (id: string, overrides?: Partial<TrainingSession>): Traini
   userId: 'user1',
   status: 'completed',
   ...overrides,
-});
+} as TrainingSession);
 
 const mockUser = { id: 'user1', email: 'test@test.com' };
 

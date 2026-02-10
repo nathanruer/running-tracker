@@ -22,6 +22,7 @@ import { formatMinutesToHHMMSS, formatDisplayDuration } from '@/lib/utils/durati
 import { formatDisplayPace } from '@/lib/utils/pace';
 import { capitalize } from '@/lib/utils/text';
 import { isFractionneType } from '@/lib/utils/session-type';
+import { isCompleted } from '@/lib/domain/sessions/session-selectors';
 
 interface ActivityHistoryProps {
   sessions: TrainingSession[];
@@ -29,9 +30,7 @@ interface ActivityHistoryProps {
 
 type HistoryViewMode = 'heatmap' | 'calendar';
 
-interface SessionWithType extends TrainingSession {
-  type: 'completed' | 'planned';
-}
+type SessionWithType = TrainingSession & { type: 'completed' | 'planned' };
 
 export function ActivityHistory({ sessions }: ActivityHistoryProps) {
   const [historyViewMode, setHistoryViewMode] = useState<HistoryViewMode>('heatmap');
@@ -51,7 +50,7 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
     setSelectedSessions(
       daySessions.map(s => ({
         ...s,
-        type: s.status === 'completed' ? 'completed' : 'planned',
+        type: isCompleted(s) ? 'completed' : 'planned',
       }))
     );
     setIsDialogOpen(true);

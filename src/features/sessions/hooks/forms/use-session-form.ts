@@ -1,7 +1,7 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addSession, updateSession, completeSession } from '@/lib/services/api-client';
+import { addSession, updateSession, completeSession, addPlannedSession } from '@/lib/services/api-client';
 import type {
   TrainingSessionPayload,
   TrainingSession,
@@ -24,6 +24,7 @@ import {
   initializeFormForEdit,
   initializeFormForComplete,
 } from '@/lib/domain/forms/session-form';
+import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 interface UseSessionFormProps {
   mode: 'create' | 'edit' | 'complete';
@@ -39,10 +40,13 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
   const [isCustomSessionType, setIsCustomSessionType] = useState(false);
   const [intervalEntryMode, setIntervalEntryMode] = useState<'quick' | 'detailed'>('quick');
 
+  const defaultIsCompletion =
+    mode === 'complete' || mode === 'create' || (mode === 'edit' && session?.status === 'completed');
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      isCompletion: mode === 'complete',
+      isCompletion: defaultIsCompletion,
       date: getTodayISO(),
       sessionType: 'Footing',
       duration: '',
@@ -166,9 +170,9 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     try {
       const normalizedValues = normalizeFormValues(values);
       const intervalDetails = transformIntervalData(normalizedValues, intervalEntryMode);
-      const isPlanned = session.status === 'planned';
+      const isPlannedSession = isPlanned(session);
 
-      const sessionData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlanned
+      const sessionData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlannedSession
         ? buildPlannedSessionPayload(values, normalizedValues, intervalDetails, session.recommendationId)
         : buildCompletedSessionPayload(values, normalizedValues, intervalDetails);
 
@@ -196,10 +200,11 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       const type = values.sessionType.toLowerCase();
       const dist = values.distance ? ` de ${values.distance}km` : '';
       let resultSession: TrainingSession;
+      const isCompletion = values.isCompletion ?? form.getValues('isCompletion') ?? true;
 
       if (mode === 'complete' && session) {
         const sessionData: TrainingSessionPayload = {
-          date: values.date ?? null,
+          date: values.date as string,
           sessionType: values.sessionType,
           duration: normalizedValues.duration,
           distance: values.distance ?? null,
@@ -220,20 +225,20 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
         resultSession = await completeSession(session.id, sessionData);
         handleSuccess('Séance enregistrée', `Votre sortie ${type}${dist} a été enregistrée !`);
       } else if (mode === 'edit' && session) {
-        const isPlanned = session.status === 'planned';
-        const editData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlanned
+        const isPlannedSession = isPlanned(session);
+        const editData: CompletedSessionUpdatePayload | PlannedSessionPayload = isPlannedSession
           ? buildPlannedSessionPayload(values, normalizedValues, intervalDetails, session.recommendationId)
           : buildCompletedSessionPayload(values, normalizedValues, intervalDetails);
 
         resultSession = await updateSession(session.id, editData);
         handleSuccess('Séance modifiée', `Votre séance ${type}${dist} a été mise à jour avec succès.`);
-      } else {
+      } else if (isCompletion) {
         const sessionData: TrainingSessionPayload = {
-          date: values.date ?? null,
+          date: values.date as string,
           sessionType: values.sessionType,
           duration: normalizedValues.duration,
           distance: values.distance ?? null,
-          avgPace: values.avgPace,
+          avgPace: values.avgPace ?? '',
           avgHeartRate: values.avgHeartRate ?? null,
           intervalDetails,
           perceivedExertion: values.perceivedExertion,
@@ -249,6 +254,15 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
 
         resultSession = await addSession(sessionData);
         handleSuccess('Séance ajoutée', `Votre sortie ${type}${dist} a été enregistrée !`);
+      } else {
+        const sessionData: PlannedSessionPayload = buildPlannedSessionPayload(
+          values,
+          normalizedValues,
+          intervalDetails,
+          null
+        );
+        resultSession = await addPlannedSession(sessionData);
+        handleSuccess('Séance planifiée', `Votre séance ${type}${dist} a été planifiée.`);
       }
 
       if (onSuccess) onSuccess(resultSession);

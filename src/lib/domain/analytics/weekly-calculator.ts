@@ -1,4 +1,5 @@
 import type { TrainingSession } from '@/lib/types';
+import { getSessionDistanceKm, getSessionDurationSeconds, getSessionEffectiveDate } from '@/lib/domain/sessions/session-selectors';
 
 export interface WeeklyChartDataPoint {
   label: string;
@@ -94,13 +95,14 @@ function generateWeekRange(startWeekKey: string, endWeekKey: string): string[] {
   return weeks;
 }
 
-import { parseDuration } from '@/lib/utils/duration/parse';
-
 export function calculateWeeklyStats(
   completedSessions: TrainingSession[],
   plannedSessions: TrainingSession[]
 ): WeeklyStats {
-  if (!completedSessions || completedSessions.length === 0) {
+  const completedList = completedSessions ?? [];
+  const plannedList = plannedSessions ?? [];
+
+  if (completedList.length === 0 && plannedList.length === 0) {
     return {
       totalKm: 0,
       totalSessions: 0,
@@ -119,11 +121,12 @@ export function calculateWeeklyStats(
   const weeklyCompletedCount: Record<string, number> = {};
   let totalKm = 0;
 
-  completedSessions.forEach((session) => {
-    if (!session.date) return;
-    const sessionDate = new Date(session.date);
+  completedList.forEach((session) => {
+    const effectiveDate = getSessionEffectiveDate(session);
+    if (!effectiveDate) return;
+    const sessionDate = new Date(effectiveDate);
     const weekKey = getISOWeekKey(sessionDate);
-    const distance = session.distance || 0;
+    const distance = getSessionDistanceKm(session);
     
     if (!weeklyKm[weekKey]) {
       weeklyKm[weekKey] = 0;
@@ -137,7 +140,7 @@ export function calculateWeeklyStats(
     weeklyCompletedCount[weekKey]++;
     totalKm += distance;
 
-    const durationSec = parseDuration(session.duration) || 0;
+    const durationSec = getSessionDurationSeconds(session);
     weeklyDuration[weekKey] += durationSec;
 
     if (session.avgHeartRate) {
@@ -149,11 +152,12 @@ export function calculateWeeklyStats(
   const weeklyPlannedKm: Record<string, number> = {};
   const weeklyPlannedCount: Record<string, number> = {};
 
-  (plannedSessions || []).forEach((session) => {
-    if (!session.date) return;
-    const sessionDate = new Date(session.date);
+  plannedList.forEach((session) => {
+    const effectiveDate = getSessionEffectiveDate(session);
+    if (!effectiveDate) return;
+    const sessionDate = new Date(effectiveDate);
     const weekKey = getISOWeekKey(sessionDate);
-    const distance = session.distance || 0;
+    const distance = session.distance ?? session.targetDistance ?? 0;
     if (!weeklyPlannedKm[weekKey]) {
       weeklyPlannedKm[weekKey] = 0;
       weeklyPlannedCount[weekKey] = 0;
@@ -241,7 +245,7 @@ export function calculateWeeklyStats(
   const activeWeeksCount = sortedActiveWeeks.filter(wk => weeklyKm[wk] > 0).length;
   return {
     totalKm,
-    totalSessions: completedSessions.length,
+    totalSessions: completedList.length,
     averageKmPerWeek: allWeekKeys.length > 0 ? totalKm / allWeekKeys.length : 0,
     averageKmPerActiveWeek: activeWeeksCount > 0 ? totalKm / activeWeeksCount : 0,
     activeWeeksCount,

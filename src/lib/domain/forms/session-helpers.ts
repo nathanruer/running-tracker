@@ -10,6 +10,7 @@ import {
   convertDurationToMinutes,
   formatMinutesToHHMMSS,
 } from '@/lib/utils/duration';
+import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 /**
  * Get display data for a session, using target values for planned sessions
@@ -17,22 +18,22 @@ import {
  * This function centralizes the logic for getting the appropriate values to display.
  */
 export function getSessionDisplayData(session: TrainingSession) {
-  const isPlanned = session.status === 'planned';
+  const isPlannedSession = isPlanned(session);
   
   return {
-    duration: isPlanned 
+    duration: isPlannedSession 
       ? (session.targetDuration ? formatMinutesToHHMMSS(session.targetDuration) : '') 
       : (session.duration || ''),
-    distance: isPlanned 
+    distance: isPlannedSession 
       ? (session.targetDistance || 0) 
       : (session.distance || 0),
-    avgPace: isPlanned 
+    avgPace: isPlannedSession 
       ? (session.targetPace || '') 
       : (session.avgPace || ''),
-    avgHeartRate: isPlanned 
+    avgHeartRate: isPlannedSession 
       ? (session.targetHeartRateBpm ? (typeof session.targetHeartRateBpm === 'string' ? parseInt(session.targetHeartRateBpm, 10) : session.targetHeartRateBpm) : 0) 
       : (session.avgHeartRate || 0),
-    rpe: isPlanned 
+    rpe: isPlannedSession 
       ? (session.targetRPE || null) 
       : (session.perceivedExertion || null),
   };
@@ -93,9 +94,9 @@ export function buildCompletedSessionPayload(
 ): CompletedSessionUpdatePayload {
   return {
     sessionType: values.sessionType,
-    duration: normalizedValues.duration,
+    duration: normalizedValues.duration || undefined,
     distance: values.distance ?? null,
-    avgPace: values.avgPace,
+    avgPace: values.avgPace || undefined,
     avgHeartRate: values.avgHeartRate ?? null,
     perceivedExertion: values.perceivedExertion ?? null,
     intervalDetails,

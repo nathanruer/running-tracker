@@ -129,31 +129,15 @@ export const stravaTokensSchema = z.object({
 // TRAINING SESSION ENTITY SCHEMA
 // ============================================================================
 
-/**
- * Complete schema for a training session entity
- * This represents the full session as stored in the database
- */
-export const trainingSessionEntitySchema = z.object({
+const trainingSessionBaseSchema = z.object({
   id: z.string(),
   userId: z.string(),
   sessionNumber: z.number(),
-    week: z.number().nullable(),
-  date: z.string().nullable(),
+  week: z.number().nullable(),
   sessionType: z.string().nullable(),
-  duration: z.string().nullable(),
-  distance: z.number().nullable(),
-  avgPace: z.string().nullable(),
-  avgHeartRate: z.number().nullable(),
   intervalDetails: intervalDetailsEntitySchema.nullable().optional(),
   perceivedExertion: z.number().nullable().optional(),
   comments: z.string(),
-  status: z.string(),
-  plannedDate: z.string().nullable().optional(),
-  targetPace: z.string().nullable().optional(),
-  targetDuration: z.number().nullable().optional(),
-  targetDistance: z.number().nullable().optional(),
-  targetHeartRateBpm: z.union([z.string(), z.number()]).nullable().optional(),
-  targetRPE: z.number().nullable().optional(),
   recommendationId: z.string().nullable().optional(),
   externalId: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
@@ -166,6 +150,45 @@ export const trainingSessionEntitySchema = z.object({
   weather: weatherDataSchema.nullable().optional(),
 });
 
+export const plannedSessionEntitySchema = trainingSessionBaseSchema.extend({
+  status: z.literal('planned'),
+  date: z.string().nullable(),
+  plannedDate: z.string().nullable(),
+  duration: z.string().nullable().optional(),
+  distance: z.number().nullable().optional(),
+  avgPace: z.string().nullable().optional(),
+  avgHeartRate: z.number().nullable().optional(),
+  targetPace: z.string().nullable().optional(),
+  targetDuration: z.number().nullable().optional(),
+  targetDistance: z.number().nullable().optional(),
+  targetHeartRateBpm: z.union([z.string(), z.number()]).nullable().optional(),
+  targetRPE: z.number().nullable().optional(),
+});
+
+export const completedSessionEntitySchema = trainingSessionBaseSchema.extend({
+  status: z.literal('completed'),
+  date: z.string(),
+  plannedDate: z.string().nullable().optional(),
+  duration: z.string().nullable(),
+  distance: z.number().nullable(),
+  avgPace: z.string().nullable(),
+  avgHeartRate: z.number().nullable(),
+  targetPace: z.string().nullable().optional(),
+  targetDuration: z.number().nullable().optional(),
+  targetDistance: z.number().nullable().optional(),
+  targetHeartRateBpm: z.union([z.string(), z.number()]).nullable().optional(),
+  targetRPE: z.number().nullable().optional(),
+});
+
+/**
+ * Complete schema for a training session entity
+ * This represents the full session as stored in the database
+ */
+export const trainingSessionEntitySchema = z.discriminatedUnion('status', [
+  completedSessionEntitySchema,
+  plannedSessionEntitySchema,
+]);
+
 // ============================================================================
 // INFERRED TYPES
 // ============================================================================
@@ -177,6 +200,8 @@ export type WeatherData = z.infer<typeof weatherDataSchema>;
 export type StravaActivity = z.infer<typeof stravaActivitySchema>;
 export type StravaStream = z.infer<typeof stravaStreamSchema>;
 export type StravaStreamSet = z.infer<typeof stravaStreamSetSchema>;
+export type PlannedSession = z.infer<typeof plannedSessionEntitySchema>;
+export type CompletedSession = z.infer<typeof completedSessionEntitySchema>;
 export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
 
 // ============================================================================
@@ -187,7 +212,7 @@ export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
  * Payload for creating/updating a completed session
  */
 export type TrainingSessionPayload = Omit<
-  TrainingSession,
+  CompletedSession,
   'id' | 'userId' | 'sessionNumber' | 'week' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE'
 >;
 

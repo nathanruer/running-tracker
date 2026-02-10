@@ -61,6 +61,7 @@ describe('SessionRow', () => {
     sessionNumber: 3,
     week: 2,
     date: null,
+    plannedDate: null,
     sessionType: 'Sortie longue',
     duration: null,
     distance: null,
@@ -217,8 +218,8 @@ describe('SessionRow', () => {
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);
     });
 
-    it('handles missing date gracefully for completed session', () => {
-      renderRow({ ...mockCompletedSession, date: null });
+    it('handles missing date gracefully for planned session', () => {
+      renderRow({ ...mockPlannedSession, plannedDate: null });
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);
     });
 

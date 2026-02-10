@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import type { Message } from '@/lib/services/api-client';
 import { RecommendationCard } from './recommendation-card';
+import { isCompleted } from '@/lib/domain/sessions/session-selectors';
 
 function useDebouncedCallback(callback: () => void, delay: number): () => void {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -158,7 +159,7 @@ export const MessageList = memo(function MessageList({
                       ? recommendationSessionMap.get(session.recommendation_id)
                       : undefined;
                     const isAdded = !!matchedSession;
-                    const isCompleted_ = matchedSession?.status === 'completed';
+                    const isCompleted_ = !!matchedSession && isCompleted(matchedSession);
                     const completedSession = isCompleted_ ? matchedSession : null;
 
                     return (

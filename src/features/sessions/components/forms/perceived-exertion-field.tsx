@@ -15,6 +15,7 @@ import {
 interface PerceivedExertionFieldProps {
   value?: number | null;
   onChange: (value: number | null) => void;
+  label?: string;
 }
 
 const RPE_SCALE = [
@@ -33,10 +34,11 @@ const RPE_SCALE = [
 export function PerceivedExertionField({
   value,
   onChange,
+  label = 'RPE (Effort)',
 }: PerceivedExertionFieldProps) {
   return (
     <FormItem className="flex-1">
-      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">RPE (Effort)</FormLabel>
+      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{label}</FormLabel>
       <Select
         onValueChange={(val) => {
           const numVal = parseInt(val);

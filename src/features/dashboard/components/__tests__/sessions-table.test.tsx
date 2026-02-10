@@ -58,6 +58,7 @@ const mockSessions: TrainingSession[] = [
     sessionNumber: 3,
     week: 2,
     date: '2024-01-05',
+    plannedDate: '2024-01-05',
     sessionType: 'Récupération',
     duration: null,
     distance: null,

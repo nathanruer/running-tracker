@@ -130,6 +130,7 @@ describe('SessionDetailsSheet', () => {
       duration: null,
       targetDuration: 63, // 63 minutes = 01:03:00
       date: null,
+      plannedDate: null,
       status: 'planned',
       intervalDetails: null,
     };
@@ -147,6 +148,7 @@ describe('SessionDetailsSheet', () => {
       duration: null,
       targetDuration: 45, // 45 minutes = 45:00
       date: null,
+      plannedDate: null,
       status: 'planned',
       intervalDetails: null,
     };

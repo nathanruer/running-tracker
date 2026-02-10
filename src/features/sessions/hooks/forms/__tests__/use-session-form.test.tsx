@@ -5,6 +5,7 @@ import { type TrainingSession } from '@/lib/types';
 
 vi.mock('@/lib/services/api-client', () => ({
   addSession: vi.fn(),
+  addPlannedSession: vi.fn(),
   updateSession: vi.fn(),
   completeSession: vi.fn(),
 }));
@@ -233,7 +234,7 @@ describe('useSessionForm', () => {
     expect(result.current.form.formState.errors.date?.message).toBe('Date requise');
   });
 
-  it('should not require date in create mode (date is optional for planning)', async () => {
+  it('should not require date in create mode when planning', async () => {
     const { result } = renderHook(() =>
       useSessionForm({
         mode: 'create',
@@ -242,10 +243,8 @@ describe('useSessionForm', () => {
     );
 
     act(() => {
+      result.current.form.setValue('isCompletion', false);
       result.current.form.setValue('date', '', { shouldValidate: true });
-      result.current.form.setValue('duration', '01:00:00', { shouldValidate: true });
-      result.current.form.setValue('distance', 10, { shouldValidate: true });
-      result.current.form.setValue('avgPace', '06:00', { shouldValidate: true });
     });
 
     await act(async () => {
@@ -253,6 +252,35 @@ describe('useSessionForm', () => {
     });
 
     expect(result.current.form.formState.errors.date).toBeUndefined();
+  });
+
+  it('should call addPlannedSession and onSuccess in create mode when planning', async () => {
+    const { addPlannedSession } = await import('@/lib/services/api-client');
+    const onSuccess = vi.fn();
+    vi.mocked(addPlannedSession).mockResolvedValue({ id: 'planned-session' } as TrainingSession);
+
+    const { result } = renderHook(() =>
+      useSessionForm({
+        mode: 'create',
+        onClose,
+        onSuccess,
+      })
+    );
+
+    act(() => {
+      result.current.form.setValue('isCompletion', false);
+      result.current.form.setValue('sessionType', 'Footing');
+      result.current.form.setValue('date', '', { shouldValidate: true });
+    });
+
+    await act(async () => {
+      await result.current.onSubmit(result.current.form.getValues());
+    });
+
+    expect(addPlannedSession).toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+    expect(handleSuccess).toHaveBeenCalled();
   });
 
   it('should auto-calculate pace when duration and distance change', async () => {

@@ -5,6 +5,7 @@ import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { normalizePaceOrRange } from '@/lib/utils/pace';
 import { formatHRDisplay } from '@/lib/utils/heart-rate';
 import { isFractionneType } from '@/lib/utils/session-type';
+import { getSessionEffectiveDate, isPlanned as isPlannedSession } from '@/lib/domain/sessions/session-selectors';
 
 export interface SessionRowDisplayData {
   isPlanned: boolean;
@@ -28,7 +29,7 @@ hasApprox: boolean;
  */
 export function useSessionRowData(session: TrainingSession): SessionRowDisplayData {
   return useMemo(() => {
-    const isPlanned = session.status === 'planned';
+    const isPlanned = isPlannedSession(session);
     const hasIntervalDetails = isFractionneType(session.sessionType) && !!session.intervalDetails;
     
     const totals = hasIntervalDetails 
@@ -100,7 +101,7 @@ export function useSessionRowData(session: TrainingSession): SessionRowDisplayDa
       : null;
     
     let dateDisplay: string | null = null;
-    const effectiveDate = session.date ?? (isPlanned ? session.plannedDate : null);
+    const effectiveDate = getSessionEffectiveDate(session);
     if (effectiveDate) {
       dateDisplay = new Date(effectiveDate)
         .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })

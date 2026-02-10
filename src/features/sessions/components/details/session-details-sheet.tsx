@@ -38,6 +38,7 @@ import { formatCadence } from '@/lib/utils/strava/cadence';
 import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { calculateIntervalTotals } from '@/lib/utils/intervals';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
+import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 interface SessionDetailsSheetProps {
   session: TrainingSession | null;
@@ -61,7 +62,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
       ).path
     : null;
 
-  const isPlanned = session.status === 'planned';
+  const isPlannedSession = isPlanned(session);
   const hasStravaData = session.source === 'strava' && stravaData !== null;
   const hasRoute = decodedCoordinates.length > 0 && mapPath;
 
@@ -116,7 +117,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       <div className="p-2 rounded-lg bg-primary/10 backdrop-blur-sm border border-primary/20">
                         <Calendar className="w-5 h-5 text-primary" />
                       </div>
-                     <span className="text-xs font-black uppercase tracking-[0.2em]">{isPlanned ? 'Séance recommandée' : 'Séance complétée'}</span>
+                     <span className="text-xs font-black uppercase tracking-[0.2em]">{isPlannedSession ? 'Séance recommandée' : 'Séance complétée'}</span>
                    </div>
                 </div>
               )}
@@ -130,10 +131,10 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                 <SheetHeader className="text-left space-y-4">
                   <div className="flex items-center gap-3">
                     <Badge 
-                      variant={isPlanned ? "outline" : "secondary"} 
+                      variant={isPlannedSession ? "outline" : "secondary"} 
                       className={cn(
                         "h-6 px-3 text-[10px] uppercase font-bold tracking-widest bg-background/60 backdrop-blur-md border border-border/40 pointer-events-none rounded-full",
-                        isPlanned && "border-primary/40 text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]"
+                        isPlannedSession && "border-primary/40 text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]"
                       )}
                     >
                       {session.sessionType}
@@ -190,7 +191,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                     : '-'
                   }
                   unit="km"
-                  highlight={!isPlanned}
+                  highlight={!isPlannedSession}
                 />
                 <StatCard
                   label="Durée"
@@ -200,7 +201,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       : `~${displayDuration}`
                     : '-'
                   }
-                  highlight={!isPlanned}
+                  highlight={!isPlannedSession}
                 />
                 <StatCard
                   label="Allure"
@@ -222,10 +223,10 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                   }
                   unit={displayHR && typeof displayHR === 'number' ? "bpm" : undefined}
                 />
-                {(isPlanned ? session.targetRPE : session.perceivedExertion) && (
+                {(isPlannedSession ? session.targetRPE : session.perceivedExertion) && (
                   <StatCard
-                    label={isPlanned ? "RPE cible" : "Effort (RPE)"}
-                    value={isPlanned ? (session.targetRPE ?? '-') : (session.perceivedExertion ?? '-')}
+                    label={isPlannedSession ? "RPE cible" : "Effort (RPE)"}
+                    value={isPlannedSession ? (session.targetRPE ?? '-') : (session.perceivedExertion ?? '-')}
                     unit="/10"
                   />
                 )}
@@ -238,7 +239,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                       <MessageSquare className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/80">
-                      {isPlanned ? 'Conseils du Coach' : 'Notes de séance'}
+                      {isPlannedSession ? 'Conseils du Coach' : 'Notes de séance'}
                     </h3>
                   </div>
                   <div className={cn(
@@ -306,7 +307,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                   </div>
                   <IntervalDetailsView 
                     intervalDetails={session.intervalDetails}
-                    isPlanned={isPlanned}
+                    isPlanned={isPlannedSession}
                     compact={true}
                     className="px-0 py-2"
                   />

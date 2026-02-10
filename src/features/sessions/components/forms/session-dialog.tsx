@@ -31,6 +31,7 @@ import { useScrollToError } from '@/hooks/use-scroll-to-error';
 import { useToast } from '@/hooks/use-toast';
 import { parseGarminCSV } from '@/features/import/utils/garmin-csv';
 import { formatDate } from '@/lib/utils/date';
+import { isCompleted } from '@/lib/domain/sessions/session-selectors';
 
 // Helper functions to adapt the main form to interval fields
 const createIntervalControl = (control: Control<FormValues>): Control<IntervalFormValues> => {
@@ -66,7 +67,7 @@ const SessionDialog = ({
   onSuccess,
 }: SessionDialogProps) => {
   const { toast } = useToast();
-  const [completeStep, setCompleteStep] = useState<'done' | 'planned'>('done');
+  const [sessionStep, setSessionStep] = useState<'done' | 'planned'>('done');
 
   const {
     form,
@@ -93,11 +94,11 @@ const SessionDialog = ({
   }, [initialData]);
 
   useEffect(() => {
-    if (mode === 'complete') {
-      form.setValue('isCompletion', completeStep === 'done', { shouldValidate: form.formState.submitCount > 0 });
+    if (mode === 'complete' || mode === 'create') {
+      form.setValue('isCompletion', sessionStep === 'done', { shouldValidate: form.formState.submitCount > 0 });
       form.clearErrors();
     }
-  }, [completeStep, mode, form]);
+  }, [sessionStep, mode, form]);
 
   useScrollToError(form.formState.errors, form.formState.submitCount);
 
@@ -151,7 +152,7 @@ const SessionDialog = ({
 
   const handleModeAndSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'complete' && completeStep === 'planned') {
+    if (mode === 'complete' && sessionStep === 'planned') {
       form.handleSubmit(onUpdate)(e);
     } else {
       form.handleSubmit(onSubmit)(e);
@@ -166,14 +167,14 @@ const SessionDialog = ({
         className="sm:max-w-[640px] p-0 overflow-hidden w-[95vw] md:w-full"
       >
         <div className="max-h-[90vh] md:max-h-[85vh] overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
-          <SessionDialogHeader mode={mode} onReset={resetForm} />
+          <SessionDialogHeader mode={mode} onReset={resetForm} entryMode={sessionStep} />
           <ErrorMessage error={error} className="mb-2" />
 
-          {mode === 'complete' && (
+          {(mode === 'complete' || mode === 'create') && (
             <Tabs 
               defaultValue="done" 
-              value={completeStep} 
-              onValueChange={(v) => setCompleteStep(v as 'done' | 'planned')}
+              value={sessionStep} 
+              onValueChange={(v) => setSessionStep(v as 'done' | 'planned')}
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-2 rounded-2xl h-12 bg-muted/30 p-1.5 border border-border/40 font-bold text-xs">
@@ -189,13 +190,13 @@ const SessionDialog = ({
                   className="rounded-xl data-[state=active]:bg-muted/50 data-[state=active]:text-foreground transition-all gap-2"
                 >
                   <Calendar className="h-4 w-4" />
-                  Modifier le plan
+                  {mode === 'complete' ? 'Modifier le plan' : 'Séance à planifier'}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           )}
 
-          {((mode === 'complete' && completeStep === 'done') || mode === 'create') && !isStravaImport && (
+          {((mode === 'complete' && sessionStep === 'done') || (mode === 'create' && sessionStep === 'done')) && !isStravaImport && (
             <FileImportButtons
               mode={mode}
               onStravaClick={onRequestStravaImport}
@@ -286,10 +287,12 @@ const SessionDialog = ({
           <form onSubmit={handleModeAndSubmit} className="space-y-4" noValidate>
             <FormField
               control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Date de la séance</FormLabel>
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                    {sessionStep === 'planned' ? 'Date prévue' : 'Date de la séance'}
+                  </FormLabel>
                   <FormControl>
                     <DatePicker
                       date={field.value ? new Date(field.value + 'T00:00:00') : undefined}
@@ -303,7 +306,7 @@ const SessionDialog = ({
                           field.onChange(null);
                         }
                       }}
-                      placeholder={mode === 'complete' ? "À planifier" : "Sélectionner une date"}
+                      placeholder={sessionStep === 'planned' ? "À planifier" : "Sélectionner une date"}
                       allowClear={true}
                     />
                   </FormControl>
@@ -332,6 +335,7 @@ const SessionDialog = ({
                     <PerceivedExertionField
                       value={field.value}
                       onChange={field.onChange}
+                      label={sessionStep === 'planned' ? 'RPE cible' : 'RPE (Effort)'}
                     />
                   )}
                 />
@@ -343,12 +347,12 @@ const SessionDialog = ({
                 onEntryModeChange={setIntervalEntryMode}
                 setValue={createIntervalSetValue(form.setValue)}
                 watch={createIntervalWatch(form.watch)}
-                disableAutoRegeneration={mode === 'edit' && session?.status === 'completed'}
+                disableAutoRegeneration={mode === 'edit' && !!session && isCompleted(session)}
                 onCsvImport={handleCsvImport}
               />
             )}
             
-            <SessionFormFields control={form.control} />
+            <SessionFormFields control={form.control} mode={sessionStep === 'planned' ? 'planned' : 'completed'} />
 
             <SessionDialogActions
               mode={mode}
@@ -358,7 +362,13 @@ const SessionDialog = ({
                 onOpenChange(false);
                 resetForm();
               }}
-              primaryLabel={mode === 'complete' && completeStep === 'planned' ? (loading ? 'Mise à jour...' : 'Mettre à jour le plan') : undefined}
+              primaryLabel={
+                mode === 'complete' && sessionStep === 'planned'
+                  ? (loading ? 'Mise à jour...' : 'Mettre à jour le plan')
+                  : mode === 'create' && sessionStep === 'planned'
+                    ? (loading ? 'Planification...' : 'Planifier la séance')
+                    : undefined
+              }
             />
           </form>
         </Form>

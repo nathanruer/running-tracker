@@ -53,6 +53,22 @@ describe('weekly-calculator', () => {
       expect(result.chartData).toEqual([]);
     });
 
+    it('should include planned sessions even when no completed sessions exist', () => {
+      const plannedSessions: Partial<TrainingSession>[] = [
+        { plannedDate: '2026-01-06', targetDistance: 8, status: 'planned', date: null },
+        { plannedDate: '2026-01-08', targetDistance: 5, status: 'planned', date: null },
+      ];
+
+      const result = calculateWeeklyStats([], plannedSessions as TrainingSession[]);
+
+      expect(result.totalKm).toBe(0);
+      expect(result.totalSessions).toBe(0);
+      expect(result.chartData).toHaveLength(1);
+      expect(result.chartData[0].km).toBe(0);
+      expect(result.chartData[0].plannedKm).toBe(13);
+      expect(result.chartData[0].plannedCount).toBe(2);
+    });
+
     it('should calculate stats based on session dates', () => {
       const completedSessions: Partial<TrainingSession>[] = [
         createSession('2026-01-06', 10),
@@ -174,7 +190,7 @@ describe('weekly-calculator', () => {
 
     it('should skip sessions without date', () => {
       const completedSessions: Partial<TrainingSession>[] = [
-        { date: null, distance: 10, status: 'completed' },
+        { date: null, plannedDate: null, targetDistance: 10, status: 'planned' },
         createSession('2026-01-06', 5),
       ];
 

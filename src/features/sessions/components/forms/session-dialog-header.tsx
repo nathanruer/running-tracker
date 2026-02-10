@@ -10,20 +10,23 @@ import { Button } from '@/components/ui/button';
 interface SessionDialogHeaderProps {
   mode: 'create' | 'edit' | 'complete';
   onReset: () => void;
+  entryMode?: 'done' | 'planned';
 }
 
-export function SessionDialogHeader({ mode, onReset }: SessionDialogHeaderProps) {
+export function SessionDialogHeader({ mode, onReset, entryMode = 'done' }: SessionDialogHeaderProps) {
+  const isPlanned = entryMode === 'planned';
+
   const title = mode === 'complete'
-    ? 'Enregistrer la séance'
+    ? (isPlanned ? 'Modifier le plan' : 'Enregistrer la séance')
     : mode === 'edit'
     ? 'Modifier la séance'
-    : 'Ajouter une séance';
+    : (isPlanned ? 'Planifier une séance' : 'Ajouter une séance');
 
   const description = mode === 'complete'
-    ? 'Remplissez les détails de votre séance réalisée'
+    ? (isPlanned ? 'Mettez à jour les objectifs de la séance planifiée' : 'Remplissez les détails de votre séance réalisée')
     : mode === 'edit'
     ? 'Modifiez les informations de votre séance'
-    : 'Enregistrez votre séance d\'entraînement';
+    : (isPlanned ? 'Créez une séance à planifier' : 'Enregistrez votre séance d\'entraînement');
 
   return (
     <DialogHeader className="relative w-full items-start text-left">

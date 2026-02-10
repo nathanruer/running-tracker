@@ -1,15 +1,14 @@
 import * as z from 'zod';
 import { VALIDATION_MESSAGES } from '@/lib/constants/messages';
 import {
-  requiredDurationSchema,
-  optionalDurationSchema,
   nullableDurationSchema,
-  requiredPaceSchema,
-  optionalPaceSchema,
+  optionalDurationSchema,
   nullablePaceSchema,
+  optionalPaceSchema,
   nullableHeartRateSchema,
   optionalNullableNumberSchema,
   isValidNullableNumber,
+  nullablePositiveNumberSchema,
 } from './schemas/primitives';
 import { stravaActivitySchema } from './schemas/entities';
 import { RPE } from '@/lib/constants/validation';
@@ -35,21 +34,9 @@ const formSchema = z.object({
   isCompletion: z.boolean().optional(),
   date: z.string().optional().nullable(),
   sessionType: z.string().min(1, VALIDATION_MESSAGES.SESSION_TYPE_REQUIRED),
-  duration: requiredDurationSchema,
-  distance: z.number().nullable().superRefine((val, ctx) => {
-    if (val === null) {
-      ctx.addIssue({
-        code: 'custom',
-        message: VALIDATION_MESSAGES.DISTANCE_REQUIRED,
-      });
-    } else if (val < 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message: VALIDATION_MESSAGES.DISTANCE_POSITIVE,
-      });
-    }
-  }),
-  avgPace: requiredPaceSchema,
+  duration: nullableDurationSchema,
+  distance: nullablePositiveNumberSchema,
+  avgPace: nullablePaceSchema,
   avgHeartRate: z.number().nullable().optional().refine(isValidNullableNumber, {
     message: VALIDATION_MESSAGES.NUMBER_REQUIRED,
   }),
@@ -79,14 +66,40 @@ const formSchema = z.object({
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
   calories: z.number().optional().nullable(),
-}).refine((data) => {
-  if (data.isCompletion && (!data.date || data.date.trim() === '')) {
-    return false;
+}).superRefine((data, ctx) => {
+  if (!data.isCompletion) return;
+
+  if (!data.date || data.date.trim() === '') {
+    ctx.addIssue({
+      code: 'custom',
+      message: VALIDATION_MESSAGES.DATE_REQUIRED,
+      path: ['date'],
+    });
   }
-  return true;
-}, {
-  message: VALIDATION_MESSAGES.DATE_REQUIRED,
-  path: ['date'],
+
+  if (!data.duration || data.duration.trim() === '') {
+    ctx.addIssue({
+      code: 'custom',
+      message: VALIDATION_MESSAGES.DURATION_REQUIRED,
+      path: ['duration'],
+    });
+  }
+
+  if (data.distance === null) {
+    ctx.addIssue({
+      code: 'custom',
+      message: VALIDATION_MESSAGES.DISTANCE_REQUIRED,
+      path: ['distance'],
+    });
+  }
+
+  if (!data.avgPace || data.avgPace.trim() === '') {
+    ctx.addIssue({
+      code: 'custom',
+      message: VALIDATION_MESSAGES.PACE_REQUIRED,
+      path: ['avgPace'],
+    });
+  }
 });
 
 // ============================================================================

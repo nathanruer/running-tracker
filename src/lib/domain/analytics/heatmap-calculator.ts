@@ -1,5 +1,6 @@
 import { format, eachDayOfInterval, startOfYear, endOfYear, getDay, getYear } from 'date-fns';
 import { type TrainingSession } from '@/lib/types';
+import { getSessionDistanceKm, getSessionEffectiveDate } from '@/lib/domain/sessions/session-selectors';
 
 export interface DayData {
   date: Date;
@@ -27,8 +28,9 @@ export function calculateHeatmapData(sessions: TrainingSession[], selectedYear: 
   const yearEnd = endOfYear(new Date(selectedYear, 0, 1));
   
   const sessionsByDate = sessions.reduce((acc, session) => {
-    if (session.date) {
-      const sessionDate = new Date(session.date);
+    const effectiveDate = getSessionEffectiveDate(session);
+    if (effectiveDate) {
+      const sessionDate = new Date(effectiveDate);
       if (getYear(sessionDate) === selectedYear) {
         const dateKey = format(sessionDate, 'yyyy-MM-dd');
         if (!acc[dateKey]) acc[dateKey] = [];
@@ -43,7 +45,7 @@ export function calculateHeatmapData(sessions: TrainingSession[], selectedYear: 
   const dayDataMap: DayData[] = allDays.map(date => {
     const dateKey = format(date, 'yyyy-MM-dd');
     const daySessions = sessionsByDate[dateKey] || [];
-    const totalKm = daySessions.reduce((sum, s) => sum + (s.distance || s.targetDistance || 0), 0);
+    const totalKm = daySessions.reduce((sum, s) => sum + getSessionDistanceKm(s), 0);
     return { date, sessions: daySessions, totalKm, count: daySessions.length };
   });
 

@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { useMemo } from 'react';
 
 interface WeeklyData {
@@ -41,7 +41,7 @@ export function WeeklyEvolutionChart({ chartData }: WeeklyEvolutionChartProps) {
         <div className="flex flex-col gap-1">
           <CardTitle>Évolution hebdomadaire</CardTitle>
           <CardDescription>
-            Distance parcourue par semaine
+            Volume d&apos;entraînement par semaine
             {stats.activeWeeksCount > 0 && (
               <span className="text-muted-foreground/60">
                 {' '}• {stats.activeWeeksCount} semaines actives
@@ -53,9 +53,10 @@ export function WeeklyEvolutionChart({ chartData }: WeeklyEvolutionChartProps) {
       <CardContent className="pt-0">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={380}>
-            <LineChart 
+            <ComposedChart 
               data={chartData} 
               margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+              barGap={0}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} vertical={false} />
               
@@ -67,9 +68,7 @@ export function WeeklyEvolutionChart({ chartData }: WeeklyEvolutionChartProps) {
                 tickLine={false}
                 axisLine={false}
                 interval={chartData.length > 12 ? Math.floor(chartData.length / 8) : 0}
-                angle={chartData.length > 8 ? -45 : 0}
-                textAnchor={chartData.length > 8 ? 'end' : 'middle'}
-                height={chartData.length > 8 ? 60 : 30}
+                padding={{ left: 10, right: 10 }}
               />
               
               <YAxis
@@ -79,62 +78,69 @@ export function WeeklyEvolutionChart({ chartData }: WeeklyEvolutionChartProps) {
                 tickLine={false}
                 axisLine={false}
                 width={40}
-                tickFormatter={(value) => `${value}`}
+                tickFormatter={(value) => `${value}km`}
               />
               
               <Tooltip
-                cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                  padding: '12px',
-                }}
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload || payload.length === 0) return null;
                   
                   const data = payload[0].payload as WeeklyData;
-                  const { changePercent, completedCount, plannedKm } = data;
+                  const { changePercent, changePercentWithPlanned, completedCount, plannedCount, km, plannedKm } = data;
+
+                  const currentChange = data.km > 0 ? changePercent : changePercentWithPlanned;
 
                   return (
-                    <div className="bg-background border border-border rounded-xl p-3 shadow-lg min-w-[180px]">
-                      <div className="flex items-center justify-between gap-4 mb-2 pb-2 border-b border-border/50">
+                    <div className="bg-background/95 backdrop-blur-md border border-border rounded-xl p-4 shadow-2xl min-w-[220px] animate-in fade-in zoom-in duration-200">
+                      <div className="flex items-center justify-between gap-4 mb-3 pb-2 border-b border-border/50">
                         <p className="font-bold text-sm text-foreground">{label}</p>
                         {data.trainingWeek && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-500">
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20">
                             Sem {data.trainingWeek}
                           </span>
                         )}
                       </div>
                       
-                      <div className="space-y-2">
-                        {data.km > 0 ? (
-                          <>
+                      <div className="space-y-3">
+                        {km > 0 && (
+                          <div className="space-y-1">
                             <div className="flex items-baseline justify-between gap-4">
-                              <span className="text-muted-foreground text-xs">Distance</span>
-                              <span className="font-bold text-base">{data.km} km</span>
+                              <span className="text-muted-foreground text-xs">Distance réalisée</span>
+                              <span className="font-bold text-base text-violet-500">{km} km</span>
                             </div>
                             <p className="text-muted-foreground text-[10px]">
-                              {completedCount} séance{completedCount > 1 ? 's' : ''}
+                              {completedCount} séance{completedCount > 1 ? 's' : ''} complétée{completedCount > 1 ? 's' : ''}
                             </p>
-                          </>
-                        ) : plannedKm > 0 ? (
-                          <div className="flex items-baseline justify-between gap-4">
-                            <span className="text-muted-foreground text-xs">Prévu</span>
-                            <span className="font-bold text-base text-muted-foreground">{plannedKm} km</span>
                           </div>
-                        ) : (
+                        )}
+
+                        {plannedKm > 0 && (
+                          <div className="space-y-1">
+                            <div className="flex items-baseline justify-between gap-4">
+                              <span className="text-muted-foreground text-xs italic">
+                                {km > 0 ? 'Reste à faire' : 'Prévu'}
+                              </span>
+                              <span className="font-bold text-sm text-muted-foreground/80">{plannedKm} km</span>
+                            </div>
+                            <p className="text-muted-foreground text-[10px] italic">
+                              {plannedCount} séance{plannedCount > 1 ? 's' : ''} programmée{plannedCount > 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        )}
+
+                        {km === 0 && plannedKm === 0 && (
                           <p className="text-muted-foreground text-xs italic py-1">Aucune activité</p>
                         )}
 
-                        {(changePercent !== null && data.km > 0) && (
-                          <div className="pt-2 border-t border-border/50">
+                        {currentChange !== null && (
+                          <div className="pt-2 mt-1 border-t border-border/50 flex items-center justify-between">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Évolution</span>
                             <p className={`flex items-center gap-1 font-bold text-xs ${
-                              changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'
+                              currentChange >= 0 ? 'text-emerald-500' : 'text-red-500'
                             }`}>
-                              {changePercent >= 0 ? '↑' : '↓'} {Math.abs(changePercent)}%
-                              <span className="font-normal text-[10px] text-muted-foreground ml-auto">vs préc.</span>
+                              {currentChange >= 0 ? '↑' : '↓'} {Math.abs(currentChange)}%
+                              <span className="font-normal text-[10px] text-muted-foreground opacity-70"> vs préc.</span>
                             </p>
                           </div>
                         )}
@@ -148,36 +154,47 @@ export function WeeklyEvolutionChart({ chartData }: WeeklyEvolutionChartProps) {
                 verticalAlign="top"
                 align="right"
                 iconType="circle"
-                height={36}
+                height={44}
                 formatter={(value) => (
-                  <span className="text-[11px] font-medium text-muted-foreground/80">{value}</span>
+                  <span className="text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-tight">{value}</span>
                 )}
               />
               
-              <Line
-                type="monotone"
+              <Bar
                 dataKey="km"
-                stroke="#8b5cf6"
-                strokeWidth={3}
-                dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 3 }}
-                activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
                 name="Distance réalisée"
-                isAnimationActive={true}
-              />
-              
-              <Line
-                type="monotone"
-                dataKey="totalWithPlanned"
-                stroke="#9ca3af"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                opacity={0.3}
-                dot={false}
-                activeDot={{ r: 4, fill: '#9ca3af' }}
-                name="Prévisionnel"
-                isAnimationActive={true}
-              />
-            </LineChart>
+                stackId="a"
+                fill="#8b5cf6"
+                barSize={32}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-realized-${index}`} 
+                    fill="#8b5cf6"
+                  />
+                ))}
+              </Bar>
+
+              <Bar
+                dataKey="plannedKm"
+                name="Programmé"
+                stackId="a"
+                fill="#9ca3af"
+                fillOpacity={0.3}
+                barSize={32}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-planned-${index}`} 
+                    fillOpacity={entry.km === 0 ? 0.4 : 0.2}
+                    fill={entry.km === 0 ? "hsl(var(--muted-foreground))" : "#9ca3af"}
+                    strokeDasharray={entry.km === 0 ? "4 4" : "0"}
+                    stroke={entry.km === 0 ? "hsl(var(--muted-foreground))" : "none"}
+                    strokeWidth={entry.km === 0 ? 1 : 0}
+                  />
+                ))}
+              </Bar>
+            </ComposedChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex h-[380px] items-center justify-center text-center">

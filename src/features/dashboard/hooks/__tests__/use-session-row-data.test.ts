@@ -18,7 +18,7 @@ const createCompletedSession = (overrides: Partial<TrainingSession> = {}): Train
   userId: 'user1',
   status: 'completed',
   ...overrides,
-});
+} as TrainingSession);
 
 const createPlannedSession = (overrides: Partial<TrainingSession> = {}): TrainingSession => ({
   id: '2',
@@ -41,7 +41,7 @@ const createPlannedSession = (overrides: Partial<TrainingSession> = {}): Trainin
   targetHeartRateBpm: 140,
   targetRPE: 5,
   ...overrides,
-});
+} as TrainingSession);
 
 describe('useSessionRowData', () => {
   describe('completed sessions', () => {

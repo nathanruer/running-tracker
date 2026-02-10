@@ -1,4 +1,5 @@
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
+import { isCompleted, isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 /**
  * Checks if a recommended session has already been added (planned or completed)
@@ -8,7 +9,7 @@ export function isSessionAlreadyAdded(
   allSessions: TrainingSession[]
 ): boolean {
   return allSessions.some(
-    (s) => (s.status === 'planned' || s.status === 'completed') &&
+    (s) => (isPlanned(s) || isCompleted(s)) &&
            s.recommendationId === recommendedSession.recommendation_id
   );
 }
@@ -21,7 +22,7 @@ export function isSessionCompleted(
   allSessions: TrainingSession[]
 ): boolean {
   return allSessions.some(
-    (s) => s.status === 'completed' &&
+    (s) => isCompleted(s) &&
            s.recommendationId === recommendedSession.recommendation_id
   );
 }
@@ -34,7 +35,7 @@ export function getAddedSessionId(
   allSessions: TrainingSession[]
 ): string | undefined {
   const session = allSessions.find(
-    (s) => s.status === 'planned' &&
+    (s) => isPlanned(s) &&
            s.recommendationId === recommendedSession.recommendation_id
   );
   return session?.id;
@@ -48,7 +49,7 @@ export function getCompletedSession(
   allSessions: TrainingSession[]
 ): TrainingSession | undefined {
   return allSessions.find(
-    (s) => s.status === 'completed' &&
+    (s) => isCompleted(s) &&
            s.recommendationId === recommendedSession.recommendation_id
   );
 }
@@ -58,7 +59,7 @@ export function getAddedSession(
   allSessions: TrainingSession[]
 ): TrainingSession | undefined {
   return allSessions.find(
-    (s) => (s.status === 'planned' || s.status === 'completed') &&
+    (s) => (isPlanned(s) || isCompleted(s)) &&
            s.recommendationId === recommendedSession.recommendation_id
   );
 }

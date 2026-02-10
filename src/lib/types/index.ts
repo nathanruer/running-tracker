@@ -3,6 +3,8 @@ export type {
   IntervalStep,
   IntervalDetails,
   TrainingSession,
+  PlannedSession,
+  CompletedSession,
   TrainingSessionPayload,
   CompletedSessionUpdatePayload,
   PlannedSessionPayload,

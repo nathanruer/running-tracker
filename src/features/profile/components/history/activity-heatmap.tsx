@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { calculateHeatmapData, type DayData } from '@/lib/domain/analytics/heatmap-calculator';
+import { getSessionDistanceKm, getSessionEffectiveDate, isCompleted, isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 interface ActivityHeatmapProps {
   sessions: TrainingSession[];
@@ -31,8 +32,9 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
     const years = new Set<number>();
     years.add(currentYear);
     sessions.forEach(session => {
-      if (session.date) {
-        years.add(getYear(new Date(session.date)));
+      const effectiveDate = getSessionEffectiveDate(session);
+      if (effectiveDate) {
+        years.add(getYear(new Date(effectiveDate)));
       }
     });
     return Array.from(years).sort((a, b) => b - a);
@@ -46,11 +48,21 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
   const getIntensityClass = (day: DayData): string => {
     if (day.date.getTime() === 0) return 'bg-transparent';
     if (day.count === 0) return 'bg-muted/40 dark:bg-muted/20';
+    
+    const hasCompleted = day.sessions.some(isCompleted);
     const intensity = Math.min(day.totalKm / maxKm, 1);
-    if (intensity < 0.25) return 'bg-violet-900/40 dark:bg-violet-900/60';
-    if (intensity < 0.5) return 'bg-violet-700/60 dark:bg-violet-700/80';
-    if (intensity < 0.75) return 'bg-violet-500/80 dark:bg-violet-500';
-    return 'bg-violet-400 dark:bg-violet-400';
+    
+    let colorClass = '';
+    if (intensity < 0.25) colorClass = 'bg-violet-900/40 dark:bg-violet-900/60';
+    else if (intensity < 0.5) colorClass = 'bg-violet-700/60 dark:bg-violet-700/80';
+    else if (intensity < 0.75) colorClass = 'bg-violet-500/80 dark:bg-violet-500';
+    else colorClass = 'bg-violet-400 dark:bg-violet-400';
+
+    if (!hasCompleted) {
+      return cn(colorClass, "opacity-30 border border-violet-500/30 border-dashed");
+    }
+
+    return colorClass;
   };
 
   const formatTooltipContent = (day: DayData): React.ReactNode => {
@@ -62,17 +74,49 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
         </div>
       );
     }
+
+    const completedKm = day.sessions
+      .filter(isCompleted)
+      .reduce((sum, s) => sum + getSessionDistanceKm(s), 0);
+    const plannedKm = day.sessions
+      .filter(isPlanned)
+      .reduce((sum, s) => sum + getSessionDistanceKm(s), 0);
+    
+    const completedCount = day.sessions.filter(isCompleted).length;
+    const plannedCount = day.sessions.filter(isPlanned).length;
+
     return (
-      <div className="text-xs space-y-2 p-1">
-        <div className="font-medium">{format(day.date, 'EEEE d MMMM yyyy', { locale: fr })}</div>
-        <div className="flex items-center gap-2 text-violet-500 font-bold">
-          {day.totalKm.toFixed(1)} km <span className="text-muted-foreground font-normal">• {day.count} séance{day.count > 1 ? 's' : ''}</span>
+      <div className="text-xs space-y-3 p-1">
+        <div className="font-medium border-b border-border/50 pb-1.5">{format(day.date, 'EEEE d MMMM yyyy', { locale: fr })}</div>
+        
+        <div className="space-y-2">
+          {completedCount > 0 && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-muted-foreground">Réalisé</span>
+              <span className="text-violet-500 font-bold">{completedKm.toFixed(1)} km <span className="text-muted-foreground font-normal ml-1">• {completedCount}</span></span>
+            </div>
+          )}
+          {plannedCount > 0 && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-muted-foreground italic">Programmé</span>
+              <span className="text-muted-foreground font-semibold">{plannedKm.toFixed(1)} km <span className="text-muted-foreground font-normal ml-1">• {plannedCount}</span></span>
+            </div>
+          )}
         </div>
+
         <div className="space-y-1">
           {day.sessions.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 bg-muted/30 p-1 rounded">
-              <span className={`w-2 h-2 rounded-full ${s.status === 'completed' ? 'bg-violet-500' : 'bg-gray-400'}`} />
-              <span className="truncate max-w-[150px]">{s.sessionType}</span>
+            <div key={i} className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-sm">
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isCompleted(s) ? 'bg-violet-500' : 'bg-muted-foreground/40'
+              )} />
+              <span className={cn(
+                "truncate max-w-[150px]",
+                isPlanned(s) && "text-muted-foreground italic"
+              )}>
+                {s.sessionType}
+              </span>
             </div>
           ))}
         </div>
@@ -97,24 +141,30 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground whitespace-nowrap bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
-                <span>Moins</span>
-                <div className="flex gap-[2px]">
-                  {[0, 1, 2, 3, 4].map(level => (
-                    <div 
-                      key={level} 
-                      className={cn(
-                        "w-3 h-3 rounded-[2px]",
-                        level === 0 ? "bg-muted/40 dark:bg-muted/20" : 
-                        level === 1 ? "bg-violet-900/40 dark:bg-violet-900/60" :
-                        level === 2 ? "bg-violet-700/60 dark:bg-violet-700/80" :
-                        level === 3 ? "bg-violet-500/80 dark:bg-violet-500" :
-                        "bg-violet-400 dark:bg-violet-400"
-                      )} 
-                    />
-                  ))}
+              <div className="flex flex-col gap-2 items-end">
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground whitespace-nowrap bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
+                  <div className="flex items-center gap-1.5 mr-2 pr-2 border-r border-border/50">
+                    <div className="w-3 h-3 rounded-[2px] bg-violet-500/30 border border-violet-500/30 border-dashed" />
+                    <span>Programmé</span>
+                  </div>
+                  <span>Réalisé</span>
+                  <div className="flex gap-[2px]">
+                    {[0, 1, 2, 3, 4].map(level => (
+                      <div 
+                        key={level} 
+                        className={cn(
+                          "w-3 h-3 rounded-[2px]",
+                          level === 0 ? "bg-muted/40 dark:bg-muted/20" : 
+                          level === 1 ? "bg-violet-900/40 dark:bg-violet-900/60" :
+                          level === 2 ? "bg-violet-700/60 dark:bg-violet-700/80" :
+                          level === 3 ? "bg-violet-500/80 dark:bg-violet-500" :
+                          "bg-violet-400 dark:bg-violet-400"
+                        )} 
+                      />
+                    ))}
+                  </div>
+                  <span>Plus</span>
                 </div>
-                <span>Plus</span>
               </div>
             </div>
 

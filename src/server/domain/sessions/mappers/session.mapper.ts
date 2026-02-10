@@ -206,7 +206,7 @@ function buildBaseSession(workout: WorkoutBase): Omit<
     intervalDetails: plan?.intervalDetails as TrainingSession['intervalDetails'] | null,
     perceivedExertion: workout.perceivedExertion ?? null,
     comments: workout.comments ?? plan?.comments ?? '',
-    status: workout.status,
+    status: workout.status as 'planned' | 'completed',
     plannedDate: plan?.plannedDate ? plan.plannedDate.toISOString() : null,
     targetPace: plan?.targetPace ?? null,
     targetDuration: plan?.targetDuration ?? null,
@@ -256,7 +256,7 @@ export function mapWorkoutToSession(
       stravaStreams: null,
       averageTemp: weather?.temperature ?? null,
       weather,
-    };
+    } as TrainingSession;
   }
 
   // Type guard to check if workout has full data
@@ -273,7 +273,7 @@ export function mapWorkoutToSession(
       stravaStreams: null,
       averageTemp: null,
       weather: null,
-    };
+    } as TrainingSession;
   }
 
   const external = selectExternalActivity(workout.external_activities);
@@ -288,7 +288,7 @@ export function mapWorkoutToSession(
     stravaStreams: streams as TrainingSession['stravaStreams'] ?? null,
     averageTemp: weather?.temperature ?? null,
     weather,
-  };
+  } as TrainingSession;
 }
 
 /**
@@ -318,7 +318,7 @@ export function mapPlanToSession(
     intervalDetails: plan.intervalDetails as TrainingSession['intervalDetails'] | null,
     perceivedExertion: null,
     comments: plan.comments ?? '',
-    status: plan.status,
+    status: plan.status as 'planned' | 'completed',
     plannedDate: plan.plannedDate ? plan.plannedDate.toISOString() : null,
     targetPace: plan.targetPace ?? null,
     targetDuration: plan.targetDuration ?? null,
@@ -335,5 +335,5 @@ export function mapPlanToSession(
     averageTemp: null,
     calories: null,
     weather: null,
-  };
+  } as TrainingSession;
 }

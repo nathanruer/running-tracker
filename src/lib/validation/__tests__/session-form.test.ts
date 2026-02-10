@@ -5,6 +5,7 @@ describe('session-form validation', () => {
   describe('formSchema - Required fields validation', () => {
     it('should reject empty duration with "Durée requise"', () => {
       const invalidData = {
+        isCompletion: true,
         date: '2024-01-15',
         sessionType: 'Footing',
         duration: '',
@@ -44,6 +45,7 @@ describe('session-form validation', () => {
 
     it('should reject empty avgPace with "Allure requise"', () => {
       const invalidData = {
+        isCompletion: true,
         date: '2024-01-15',
         sessionType: 'Footing',
         duration: '01:00:00',

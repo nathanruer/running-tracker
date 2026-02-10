@@ -18,6 +18,7 @@ import { type TrainingSession } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getSessionEffectiveDate, isCompleted } from '@/lib/domain/sessions/session-selectors';
 
 interface CalendarViewInlineProps {
   sessions: TrainingSession[];
@@ -33,8 +34,9 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
 
   const sessionsByDate = sessions.reduce((acc: Record<string, TrainingSession[]>, session: TrainingSession) => {
     try {
-      if (session.date) {
-        const sessionDate = parseISO(session.date);
+      const effectiveDate = getSessionEffectiveDate(session);
+      if (effectiveDate) {
+        const sessionDate = parseISO(effectiveDate);
         const dateKey = format(sessionDate, 'yyyy-MM-dd');
         if (!acc[dateKey]) {
           acc[dateKey] = [];
@@ -131,7 +133,7 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
                     key={idx}
                     className={cn(
                       "text-[9px] px-2 py-1 rounded-md truncate w-full font-bold uppercase tracking-tight border",
-                      session.status === 'completed' 
+                      isCompleted(session) 
                         ? 'bg-violet-500/10 text-violet-600 border-violet-500/20' 
                         : 'bg-muted text-muted-foreground border-border/50'
                     )}

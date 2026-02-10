@@ -22,6 +22,7 @@ import {
 } from '@/lib/types';
 import { getSessionById } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
+import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
 const SESSION_DETAILS_STALE_TIME = 5 * 60 * 1000;
 
@@ -119,7 +120,7 @@ function DashboardContent() {
 
   const getDialogMode = () => {
     if (!editingSession) return 'create';
-    return editingSession.status === 'planned' ? 'complete' : 'edit';
+    return isPlanned(editingSession) ? 'complete' : 'edit';
   };
 
   const handleDialogClose = () => {

@@ -51,7 +51,7 @@ const createSession = (overrides: Partial<TrainingSession> = {}): TrainingSessio
   recommendationId: null,
   status: 'completed',
   ...overrides,
-});
+} as TrainingSession);
 
 describe('useAnalyticsData', () => {
   beforeEach(() => {
@@ -69,7 +69,7 @@ describe('useAnalyticsData', () => {
       const sessions: TrainingSession[] = [
         createSession({ id: '1', status: 'completed', date: '2024-01-15' }),
         createSession({ id: '2', status: 'planned', date: '2024-01-16' }),
-        createSession({ id: '3', status: 'completed', date: null }),
+        createSession({ id: '3', status: 'planned', date: null, plannedDate: null }),
       ];
 
       const { result } = renderHook(() => useAnalyticsData(sessions));
@@ -79,8 +79,8 @@ describe('useAnalyticsData', () => {
 
     it('should filter planned sessions with dates', () => {
       const sessions: TrainingSession[] = [
-        createSession({ id: '1', status: 'planned', date: '2024-01-15' }),
-        createSession({ id: '2', status: 'planned', date: null }),
+        createSession({ id: '1', status: 'planned', date: null, plannedDate: '2024-01-15' }),
+        createSession({ id: '2', status: 'planned', date: null, plannedDate: null }),
         createSession({ id: '3', status: 'completed', date: '2024-01-15' }),
       ];
 

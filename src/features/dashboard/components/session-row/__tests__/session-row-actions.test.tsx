@@ -87,7 +87,7 @@ describe('SessionRowActions', () => {
   });
 
   it('should show "Compléter / Modifier" button for planned session', () => {
-    const plannedSession = { ...mockSession, status: 'planned' as const };
+    const plannedSession = { ...mockSession, status: 'planned' as const, date: null, plannedDate: null };
 
     render(
       <SessionRowActions
@@ -106,7 +106,7 @@ describe('SessionRowActions', () => {
   });
 
   it('should call onEdit when "Compléter / Modifier" is clicked for planned session', () => {
-    const plannedSession = { ...mockSession, status: 'planned' as const };
+    const plannedSession = { ...mockSession, status: 'planned' as const, date: null, plannedDate: null };
 
     render(
       <SessionRowActions

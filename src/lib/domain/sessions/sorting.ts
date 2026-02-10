@@ -151,11 +151,12 @@ export function getClientSortValue(
     sessionNumber?: number | null;
     week?: number | null;
     date?: string | null;
+    plannedDate?: string | null;
     sessionType?: string | null;
   },
   column: SortColumn
 ): number | string | null {
-  const isPlanned = session.status === 'planned';
+  const isPlannedSession = session.status === 'planned';
 
   switch (column) {
     case 'sessionNumber':
@@ -163,27 +164,30 @@ export function getClientSortValue(
     case 'week':
       return session.week ?? null;
     case 'date':
-      return session.date ? new Date(session.date).getTime() : null;
+      const effectiveDate = isPlannedSession
+        ? (session.plannedDate ?? session.date ?? null)
+        : (session.date ?? null);
+      return effectiveDate ? new Date(effectiveDate).getTime() : null;
     case 'sessionType':
       return session.sessionType?.toLowerCase() ?? null;
     case 'duration':
-      if (isPlanned) {
+      if (isPlannedSession) {
         return session.targetDuration ? session.targetDuration * 60 : null;
       }
       return parseDuration(session.duration);
     case 'distance':
-      return isPlanned ? (session.targetDistance ?? null) : (session.distance ?? null);
+      return isPlannedSession ? (session.targetDistance ?? null) : (session.distance ?? null);
     case 'avgPace':
-      return isPlanned
+      return isPlannedSession
         ? parseDuration(session.targetPace)
         : parseDuration(session.avgPace);
     case 'avgHeartRate':
-      if (isPlanned) {
+      if (isPlannedSession) {
         return extractHeartRateValue(session.targetHeartRateBpm);
       }
       return session.avgHeartRate ?? null;
     case 'perceivedExertion':
-      return isPlanned ? (session.targetRPE ?? null) : (session.perceivedExertion ?? null);
+      return isPlannedSession ? (session.targetRPE ?? null) : (session.perceivedExertion ?? null);
     default:
       return null;
   }
