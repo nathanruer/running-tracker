@@ -102,7 +102,7 @@ export function useDashboardData(
       bulkDeleteSuccessTitle: 'Séances supprimées',
       bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} supprimée${count > 1 ? 's' : ''}.`,
     },
-    invalidateOnEntitySuccess: false,
+    invalidateOnEntitySuccess: true,
     pageSize: LIMIT,
     sortFn: buildSortFn(sortParam),
     shouldIncludeEntityInQuery: (queryKey: QueryKey, session: TrainingSession) => {

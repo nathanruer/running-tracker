@@ -64,6 +64,12 @@ function DashboardContent() {
 
   const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, deletingIds } = mutations;
 
+  const handleSessionSuccess = (session: TrainingSession) => {
+    handleEntitySuccess(session);
+    queryClient.setQueryData(queryKeys.sessionById(session.id), session);
+    queryClient.invalidateQueries({ queryKey: queryKeys.sessionById(session.id) });
+  };
+
   useEffect(() => {
     if (!isDetailsSheetOpen) {
       const timer = setTimeout(() => setViewingSession(null), 300);
@@ -223,7 +229,7 @@ function DashboardContent() {
         open={isDialogOpen}
         onOpenChange={handleDialogOpenChange}
         onClose={handleDialogClose}
-        onSuccess={handleEntitySuccess}
+        onSuccess={handleSessionSuccess}
         session={editingSession}
         initialData={sessionDialogInitialData}
         mode={getDialogMode()}

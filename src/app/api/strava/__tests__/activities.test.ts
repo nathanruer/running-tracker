@@ -122,6 +122,19 @@ describe('/api/strava/activities', () => {
     expect(data.totalCount).toBe(139);
   });
 
+  it('should still return activities when athlete stats fail', async () => {
+    vi.mocked(getAthleteStats).mockRejectedValue(new Error('stats failed'));
+    vi.mocked(getActivities).mockResolvedValue([makeRun(1, '2024-01-02T08:00:00Z')]);
+
+    const request = new NextRequest('http://localhost/api/strava/activities');
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.activities).toHaveLength(1);
+    expect(data.totalCount).toBeUndefined();
+  });
+
   it('should pass before cursor to getActivities', async () => {
     vi.mocked(getActivities).mockResolvedValue([]);
 

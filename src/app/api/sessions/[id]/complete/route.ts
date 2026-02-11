@@ -3,6 +3,7 @@ import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { fetchStreamsForSession } from '@/server/services/strava';
+import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { completePlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
 export async function PATCH(
@@ -24,7 +25,10 @@ export async function PATCH(
       }
 
       try {
-        const weather = body.weather ?? null;
+        let weather = body.weather ?? null;
+        if (!weather && body.stravaData) {
+          weather = await enrichSessionWithWeather(body.stravaData, new Date(body.date));
+        }
         const stravaStreams = await fetchStreamsForSession(
           body.source ?? null,
           body.externalId ?? null,

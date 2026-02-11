@@ -3,6 +3,7 @@ import { prisma } from '@/server/database';
 import { getActivities, formatStravaActivity, getValidAccessToken, getAthleteStats } from '@/server/services/strava';
 import { handleGetRequest } from '@/server/services/api-handlers';
 import type { StravaActivity } from '@/lib/types/strava';
+import { logger } from '@/server/infrastructure/logger';
 
 const STRAVA_FETCH_SIZE = 50;
 const MAX_STRAVA_CALLS = 5;
@@ -48,7 +49,11 @@ export async function GET(request: NextRequest) {
         tokenExpiresAt: stravaAccount.tokenExpiresAt ?? null,
       });
 
-      const statsPromise = getAthleteStats(accessToken, stravaAccount.externalId);
+      const statsPromise = getAthleteStats(accessToken, stravaAccount.externalId)
+        .catch((error) => {
+          logger.warn({ error, userId: user.id }, 'Failed to fetch Strava athlete stats');
+          return null;
+        });
 
       const runs: StravaActivity[] = [];
       let currentBefore = before;
@@ -80,7 +85,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         activities: formatted,
         hasMore,
-        totalCount: stats.all_run_totals.count,
+        totalCount: stats?.all_run_totals?.count,
         nextCursor,
       });
     },
