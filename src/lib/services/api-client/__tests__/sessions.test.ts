@@ -7,6 +7,8 @@ import {
   deleteSession,
   bulkImportSessions,
   bulkDeleteSessions,
+  enrichSessionWeather,
+  bulkEnrichSessionWeather,
   getSessionTypes,
   addPlannedSession,
   completeSession,
@@ -193,6 +195,33 @@ describe('Sessions API', () => {
         body: JSON.stringify({ ids: ['a', 'b'] }),
       });
       expect(result).toEqual({ count: 2, message: '2 séances supprimées' });
+    });
+  });
+
+  describe('enrichSessionWeather', () => {
+    it('calls enrich weather endpoint for a session', async () => {
+      mockApiRequest.mockResolvedValue({ status: 'enriched' });
+
+      const result = await enrichSessionWeather('session-1');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/session-1/weather', {
+        method: 'PATCH',
+      });
+      expect(result).toEqual({ status: 'enriched' });
+    });
+  });
+
+  describe('bulkEnrichSessionWeather', () => {
+    it('calls bulk enrich endpoint with ids', async () => {
+      mockApiRequest.mockResolvedValue({ summary: { enriched: 2 } });
+
+      const result = await bulkEnrichSessionWeather(['a', 'b']);
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/weather/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ ids: ['a', 'b'] }),
+      });
+      expect(result).toEqual({ summary: { enriched: 2 } });
     });
   });
 

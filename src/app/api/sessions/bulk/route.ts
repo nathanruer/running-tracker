@@ -4,6 +4,7 @@ import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { createCompletedSession, deleteSessions, logSessionWriteError, recalculateSessionNumbers } from '@/server/domain/sessions/sessions-write';
+import { logger } from '@/server/infrastructure/logger';
 
 export const runtime = 'nodejs';
 
@@ -60,7 +61,11 @@ export async function POST(request: NextRequest) {
         );
 
         if (weatherQueue.length > 0) {
-          enrichBulkWeather(weatherQueue, userId).catch(() => {});
+          try {
+            await enrichBulkWeather(weatherQueue, userId, { concurrency: 3 });
+          } catch (error) {
+            logger.warn({ error, userId }, 'Failed to enrich bulk weather');
+          }
         }
 
         return response;

@@ -15,12 +15,13 @@ import { useDashboardFilters } from '@/features/dashboard/hooks/use-dashboard-fi
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 import { type FormattedStravaActivity } from '@/features/import';
 import {
   type TrainingSession,
   type TrainingSessionPayload,
 } from '@/lib/types';
-import { getSessionById } from '@/lib/services/api-client';
+import { bulkEnrichSessionWeather, getSessionById } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
@@ -35,8 +36,10 @@ function DashboardContent() {
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isEnrichingWeather, setIsEnrichingWeather] = useState(false);
 
   const { toast } = useToast();
+  const { handleError } = useErrorHandler({ scope: 'global' });
   const router = useRouter();
   const {
     searchQuery, handleSearchChange,
@@ -110,6 +113,71 @@ function DashboardContent() {
   const handleDelete = async (id: string) => {
     setDeletingId(null);
     await deleteMutation(id);
+  };
+
+  const handleBulkEnrichWeather = async (ids: string[]) => {
+    if (ids.length === 0 || isEnrichingWeather) {
+      if (ids.length === 0) {
+        toast({
+          title: 'Enrichissement météo',
+          description: 'Aucune séance éligible (séances planifiées ignorées).',
+        });
+      }
+      return;
+    }
+
+    setIsEnrichingWeather(true);
+    try {
+      const result = await bulkEnrichSessionWeather(ids);
+      
+      const hasAnyResult = Object.values(result.summary).some(count => count > 0);
+      
+      if (!hasAnyResult) {
+        toast({
+          title: 'Enrichissement météo',
+          description: 'Aucune séance éligible.',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Mise à jour météo terminée',
+        description: (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+            {result.summary.enriched > 0 && (
+              <span className="flex items-center gap-1.5 text-sky-600 font-bold">
+                <span className="text-[10px]">✅</span> {result.summary.enriched}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Enrichie{result.summary.enriched > 1 ? 's' : ''}</span>
+              </span>
+            )}
+            {result.summary.alreadyHasWeather > 0 && (
+              <span className="flex items-center gap-1.5 text-muted-foreground font-bold">
+                <span className="text-[10px]">ℹ️</span> {result.summary.alreadyHasWeather}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Déjà à jour</span>
+              </span>
+            )}
+            {result.summary.missingStrava > 0 && (
+              <span className="flex items-center gap-1.5 text-amber-600 font-bold">
+                <span className="text-[10px]">📍</span> {result.summary.missingStrava}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Sans GPS</span>
+              </span>
+            )}
+            {(result.summary.failed > 0 || result.summary.notFound > 0) && (
+              <span className="flex items-center gap-1.5 text-red-500 font-bold">
+                <span className="text-[10px]">❌</span> {result.summary.failed + result.summary.notFound}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Échec{result.summary.failed + result.summary.notFound > 1 ? 's' : ''}</span>
+              </span>
+            )}
+          </div>
+        ),
+      });
+
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
+    } catch (error) {
+      handleError(error, 'Erreur lors de la mise en file météo.');
+    } finally {
+      setIsEnrichingWeather(false);
+    }
   };
 
   const openNewSession = () => {
@@ -189,6 +257,7 @@ function DashboardContent() {
     onView: handleViewSession,
     onPrefetchDetails: prefetchSessionDetails,
     onNewSession: openNewSession,
+    onBulkEnrichWeather: handleBulkEnrichWeather,
   };
 
   if (!user) {
@@ -211,6 +280,7 @@ function DashboardContent() {
           onLoadMore={fetchNextPage}
           isFetching={isFetchingData}
           deletingIds={deletingIds}
+          isEnrichingWeather={isEnrichingWeather}
           sortConfig={sortConfig}
           onSort={handleSort}
           searchQuery={searchQuery}
@@ -240,6 +310,7 @@ function DashboardContent() {
         open={isDetailsSheetOpen}
         onOpenChange={setIsDetailsSheetOpen}
         session={viewingSession}
+        onSessionUpdated={(updated) => setViewingSession(updated)}
       />
 
       <StravaImportDialog

@@ -296,6 +296,14 @@ export async function fetchSessions(
     },
   };
 
+  if (isTableView) {
+    workoutSelect.weather_observations = {
+      select: {
+        id: true,
+      },
+    };
+  }
+
   if (isExportView) {
     workoutSelect.weather_observations = {
       select: {

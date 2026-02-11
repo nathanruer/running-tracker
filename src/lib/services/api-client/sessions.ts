@@ -1,5 +1,41 @@
-import type { TrainingSession, TrainingSessionPayload } from '@/lib/types';
+import type { TrainingSession, TrainingSessionPayload, WeatherData } from '@/lib/types';
 import { apiRequest } from './client';
+
+export type WeatherEnrichmentStatus =
+  | 'updated'
+  | 'enriched'
+  | 'already_has_weather'
+  | 'missing_strava'
+  | 'missing_date'
+  | 'failed'
+  | 'not_found';
+
+export interface WeatherEnrichmentResponse {
+  status: WeatherEnrichmentStatus;
+  session?: TrainingSession | { id: string; weather?: WeatherData | null };
+  weather?: WeatherData | null;
+  message?: string;
+}
+
+export interface BulkWeatherEnrichmentSummary {
+  requested: number;
+  enriched: number;
+  alreadyHasWeather: number;
+  missingStrava: number;
+  failed: number;
+  notFound: number;
+}
+
+export interface BulkWeatherEnrichmentResponse {
+  summary: BulkWeatherEnrichmentSummary;
+  ids: {
+    enriched: string[];
+    alreadyHasWeather: string[];
+    missingStrava: string[];
+    failed: string[];
+    notFound: string[];
+  };
+}
 
 export async function getSessions(
   limit?: number,
@@ -113,6 +149,23 @@ export async function bulkDeleteSessions(
   );
 
   return data;
+}
+
+export async function enrichSessionWeather(
+  id: string
+): Promise<WeatherEnrichmentResponse> {
+  return apiRequest<WeatherEnrichmentResponse>(`/api/sessions/${id}/weather`, {
+    method: 'PATCH',
+  });
+}
+
+export async function bulkEnrichSessionWeather(
+  ids: string[]
+): Promise<BulkWeatherEnrichmentResponse> {
+  return apiRequest<BulkWeatherEnrichmentResponse>('/api/sessions/weather/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
 }
 
 export async function getSessionTypes(): Promise<string[]> {

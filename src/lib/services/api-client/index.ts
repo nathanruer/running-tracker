@@ -15,6 +15,8 @@ export {
   deleteSession,
   bulkImportSessions,
   bulkDeleteSessions,
+  enrichSessionWeather,
+  bulkEnrichSessionWeather,
   getSessionTypes,
   addPlannedSession,
   completeSession,

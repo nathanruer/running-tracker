@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionDetailsSheet } from '../session-details-sheet';
 import { type TrainingSession } from '@/lib/types';
+import { ErrorProvider } from '@/contexts/error-context';
+import type { ReactElement } from 'react';
 
 vi.mock('@/components/ui/sheet', () => ({
   Sheet: ({ children, open }: { children: React.ReactNode; open: boolean }) => (open ? <div data-testid="sheet">{children}</div> : null),
@@ -17,6 +20,17 @@ vi.mock('@/components/ui/scroll-area', () => ({
 
 describe('SessionDetailsSheet', () => {
   const mockOnOpenChange = vi.fn();
+  const queryClient = new QueryClient();
+
+  const renderWithProviders = (ui: ReactElement) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <ErrorProvider>
+          {ui}
+        </ErrorProvider>
+      </QueryClientProvider>
+    );
+  };
 
   const mockSession: TrainingSession = {
     id: '1',
@@ -77,12 +91,12 @@ describe('SessionDetailsSheet', () => {
   };
 
   it('should not render when not open', () => {
-    render(<SessionDetailsSheet open={false} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    renderWithProviders(<SessionDetailsSheet open={false} onOpenChange={mockOnOpenChange} session={mockSession} />);
     expect(screen.queryByTestId('sheet')).not.toBeInTheDocument();
   });
 
   it('should render session details when open', () => {
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     
     expect(screen.getByTestId('sheet')).toBeInTheDocument();
     expect(screen.getByText(/Séance sans date|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/i)).toBeInTheDocument();
@@ -92,7 +106,7 @@ describe('SessionDetailsSheet', () => {
   });
 
   it('should render Strava metrics section when available', () => {
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
 
     expect(screen.getByText('Données Capteurs')).toBeInTheDocument();
     expect(screen.getAllByText('150').length).toBeGreaterThanOrEqual(1);
@@ -101,7 +115,7 @@ describe('SessionDetailsSheet', () => {
   });
 
   it('should render Intervals section for interval sessions', () => {
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     
     expect(screen.getByText(/Structure de la séance/i)).toBeInTheDocument();
     expect(screen.getByText(/2 segments/i)).toBeInTheDocument();
@@ -112,13 +126,13 @@ describe('SessionDetailsSheet', () => {
 
   it('should not render Intervals section if no details', () => {
     const simpleSession = { ...mockSession, intervalDetails: null };
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={simpleSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={simpleSession} />);
     
     expect(screen.queryByText(/Structure de la séance/i)).not.toBeInTheDocument();
   });
 
   it('should render comments when present', () => {
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
 
     expect(screen.getByText('Notes de séance')).toBeInTheDocument();
     expect(screen.getByText('Test session')).toBeInTheDocument();
@@ -135,7 +149,7 @@ describe('SessionDetailsSheet', () => {
       intervalDetails: null,
     };
 
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={plannedSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={plannedSession} />);
 
     // Should display as ~01:03:00 (HH:MM:SS) not ~63 min
     expect(screen.getByText(/~01:03:00/i)).toBeInTheDocument();
@@ -153,10 +167,14 @@ describe('SessionDetailsSheet', () => {
       intervalDetails: null,
     };
 
-    render(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={plannedSession} />);
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={plannedSession} />);
 
     // Should display as ~45:00 (MM:SS) not ~45 min
     expect(screen.getByText(/~45:00/i)).toBeInTheDocument();
     expect(screen.queryByText(/45 min/i)).not.toBeInTheDocument();
+  });
+  it('should show enrich weather button when weather is missing and route exists', () => {
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    expect(screen.getByTestId('enrich-weather-button')).toBeInTheDocument();
   });
 });

@@ -17,7 +17,7 @@ export function EnvironmentCard({ weather }: EnvironmentCardProps) {
   const showFeelsLike = feelsLike !== null && feelsLike !== Math.round(weather.temperature);
 
   return (
-    <div className="rounded-3xl bg-muted/30 dark:bg-white/[0.02] border border-border/40 p-6 overflow-hidden relative group">
+    <div className="rounded-3xl bg-muted/30 dark:bg-white/[0.02] border border-border/40 p-6 overflow-hidden relative group animate-in fade-in zoom-in-95 duration-700">
       <div className="relative z-10 flex items-center justify-between gap-6 mb-8">
         <div className="flex flex-col">
           <div className="flex items-baseline gap-2">

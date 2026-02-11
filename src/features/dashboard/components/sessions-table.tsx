@@ -21,6 +21,7 @@ export interface SessionActions {
   onView?: (session: TrainingSession) => void;
   onPrefetchDetails?: (sessionId: string) => void;
   onNewSession?: () => void;
+  onBulkEnrichWeather?: (ids: string[]) => Promise<void> | void;
 }
 
 interface SessionsTableProps {
@@ -36,6 +37,7 @@ interface SessionsTableProps {
   onLoadMore: () => void;
   isFetching?: boolean;
   deletingIds: Set<string>;
+  isEnrichingWeather?: boolean;
   sortConfig: SortConfig;
   onSort: (column: SortColumn, isMulti: boolean) => void;
   searchQuery: string;
@@ -60,6 +62,7 @@ export function SessionsTable({
   onLoadMore,
   isFetching,
   deletingIds,
+  isEnrichingWeather,
   sortConfig,
   onSort,
   searchQuery,
@@ -78,6 +81,14 @@ export function SessionsTable({
     isAllSelected,
   } = useTableSelection(sessions, { mode: 'multiple', getKey: (session) => session.id });
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
+  const enrichableIds = sessions
+    .filter((session) =>
+      selectedSessions.has(session.id)
+      && session.status === 'completed'
+      && session.source === 'strava'
+      && session.hasWeather !== true
+    )
+    .map((session) => session.id);
 
   const isDeleting = deletingIds.size > 0;
   const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all';
@@ -106,7 +117,14 @@ export function SessionsTable({
           selectedCount={selectedSessions.size}
           onClearSelection={clearSelection}
           onOpenBulkDelete={() => setShowBulkDeleteDialog(true)}
+          onBulkEnrichWeather={
+            actions.onBulkEnrichWeather
+              ? () => actions.onBulkEnrichWeather?.(enrichableIds)
+              : undefined
+          }
           isDeleting={isDeleting}
+          isEnrichingWeather={isEnrichingWeather}
+          enrichableCount={enrichableIds.length}
           actions={{ onNewSession: actions.onNewSession }}
           selectedType={selectedType}
           availableTypes={availableTypes}

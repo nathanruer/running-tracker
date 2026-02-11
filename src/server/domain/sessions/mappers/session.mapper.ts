@@ -247,6 +247,9 @@ export function mapWorkoutToSession(
 
   if (!opts.includeFullData) {
     const weather = opts.includeWeather ? mapWeather(workout.weather_observations ?? null) : null;
+    const hasWeather = workout.weather_observations !== undefined
+      ? Boolean(workout.weather_observations)
+      : undefined;
 
     return {
       ...base,
@@ -256,6 +259,7 @@ export function mapWorkoutToSession(
       stravaStreams: null,
       averageTemp: weather?.temperature ?? null,
       weather,
+      hasWeather,
     } as TrainingSession;
   }
 
@@ -279,6 +283,7 @@ export function mapWorkoutToSession(
   const external = selectExternalActivity(workout.external_activities);
   const streams = mapStreams(workout.workout_streams);
   const weather = mapWeather(workout.weather_observations);
+  const hasWeather = Boolean(workout.weather_observations);
 
   return {
     ...base,
@@ -288,6 +293,7 @@ export function mapWorkoutToSession(
     stravaStreams: streams as TrainingSession['stravaStreams'] ?? null,
     averageTemp: weather?.temperature ?? null,
     weather,
+    hasWeather,
   } as TrainingSession;
 }
 

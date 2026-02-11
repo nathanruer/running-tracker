@@ -148,6 +148,7 @@ const trainingSessionBaseSchema = z.object({
   averageTemp: z.number().nullable().optional(),
   calories: z.number().nullable().optional(),
   weather: weatherDataSchema.nullable().optional(),
+  hasWeather: z.boolean().optional(),
 });
 
 export const plannedSessionEntitySchema = trainingSessionBaseSchema.extend({
@@ -213,7 +214,7 @@ export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
  */
 export type TrainingSessionPayload = Omit<
   CompletedSession,
-  'id' | 'userId' | 'sessionNumber' | 'week' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE'
+  'id' | 'userId' | 'sessionNumber' | 'week' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE' | 'hasWeather'
 >;
 
 /**

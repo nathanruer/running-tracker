@@ -54,7 +54,10 @@ interface SessionsTableToolbarProps {
   selectedCount: number;
   onClearSelection: () => void;
   onOpenBulkDelete: () => void;
+  onBulkEnrichWeather?: () => void;
+  enrichableCount?: number;
   isDeleting?: boolean;
+  isEnrichingWeather?: boolean;
   actions: {
     onNewSession?: () => void;
   };
@@ -80,7 +83,10 @@ export function SessionsTableToolbar({
   selectedCount,
   onClearSelection,
   onOpenBulkDelete,
+  onBulkEnrichWeather,
+  enrichableCount,
   isDeleting,
+  isEnrichingWeather,
   actions,
   selectedType,
   availableTypes,
@@ -224,6 +230,9 @@ export function SessionsTableToolbar({
           onClear={onClearSelection}
           onDelete={onOpenBulkDelete}
           isDeleting={isDeleting}
+          onEnrichWeather={onBulkEnrichWeather}
+          isEnriching={isEnrichingWeather}
+          enrichCount={enrichableCount}
         />
       )}
     </CardHeader>

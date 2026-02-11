@@ -19,7 +19,15 @@ export async function PATCH(
     request,
     null,
     async (_data, userId) => {
-      const body = await request.json();
+      let body: Record<string, unknown> = {};
+      const contentLength = request.headers.get('content-length');
+      if (contentLength && contentLength !== '0') {
+        try {
+          body = await request.json();
+        } catch {
+          body = {};
+        }
+      }
       const providedWeather = body?.weather ?? null;
       const session = await fetchSessionById(userId, id);
 
@@ -30,21 +38,24 @@ export async function PATCH(
         );
       }
 
-      if (providedWeather) {
+      if (providedWeather && typeof providedWeather === 'object') {
         try {
-          const workoutId = await updateSessionWeather(id, userId, providedWeather);
+          const workoutId = await updateSessionWeather(id, userId, providedWeather as Record<string, unknown>);
           if (!workoutId) {
             return NextResponse.json(
-              { error: 'Séance non trouvée' },
+              { error: 'Séance non trouvée', status: 'not_found' },
               { status: HTTP_STATUS.NOT_FOUND }
             );
           }
           const updated = await fetchSessionById(userId, id);
-          return NextResponse.json(updated ?? { id: workoutId, weather: providedWeather });
+          return NextResponse.json({
+            status: 'updated',
+            session: updated ?? { id: workoutId, weather: providedWeather },
+          });
         } catch (error) {
           await logSessionWriteError(error, { userId, action: 'weather', id });
           return NextResponse.json(
-            { error: 'Erreur lors de la mise à jour météo.' },
+            { error: 'Erreur lors de la mise à jour météo.', status: 'failed' },
             { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
           );
         }
@@ -52,21 +63,26 @@ export async function PATCH(
 
       if (session.weather) {
         return NextResponse.json(
-          { message: 'Cette séance a déjà des données météo', weather: session.weather },
+          {
+            status: 'already_has_weather',
+            message: 'Cette séance a déjà des données météo',
+            weather: session.weather,
+            session,
+          },
           { status: HTTP_STATUS.OK }
         );
       }
 
       if (!session.stravaData) {
         return NextResponse.json(
-          { error: 'Cette séance n\'a pas de données Strava pour l\'enrichissement' },
+          { error: 'Cette séance n\'a pas de données Strava pour l\'enrichissement', status: 'missing_strava' },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
 
       if (!session.date) {
         return NextResponse.json(
-          { error: 'Cette séance n\'a pas de date' },
+          { error: 'Cette séance n\'a pas de date', status: 'missing_date' },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
@@ -78,7 +94,7 @@ export async function PATCH(
 
       if (!weather) {
         return NextResponse.json(
-          { error: 'Impossible de récupérer les données météo pour cette séance' },
+          { error: 'Impossible de récupérer les données météo pour cette séance', status: 'failed' },
           { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
         );
       }
@@ -87,16 +103,19 @@ export async function PATCH(
         const workoutId = await updateSessionWeather(id, userId, weather);
         if (!workoutId) {
           return NextResponse.json(
-            { error: 'Séance non trouvée' },
+            { error: 'Séance non trouvée', status: 'not_found' },
             { status: HTTP_STATUS.NOT_FOUND }
           );
         }
         const updated = await fetchSessionById(userId, id);
-        return NextResponse.json(updated ?? { id: workoutId, weather });
+        return NextResponse.json({
+          status: 'enriched',
+          session: updated ?? { id: workoutId, weather },
+        });
       } catch (error) {
         await logSessionWriteError(error, { userId, action: 'weather', id });
         return NextResponse.json(
-          { error: 'Erreur lors de la mise à jour météo.' },
+          { error: 'Erreur lors de la mise à jour météo.', status: 'failed' },
           { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
         );
       }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Sheet,
   SheetContent,
@@ -16,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
-import { ExternalLink, Map, Calendar, MessageSquare } from 'lucide-react';
+import { ExternalLink, Map, Calendar, MessageSquare, CloudSun, Loader2 } from 'lucide-react';
 import type { TrainingSession } from '@/lib/types';
 import { decodePolyline, coordinatesToSVG } from '@/lib/utils/geo/polyline';
 import { cn } from '@/lib/utils/cn';
@@ -39,15 +40,28 @@ import { normalizeDurationFormat, formatDuration } from '@/lib/utils/duration';
 import { calculateIntervalTotals } from '@/lib/utils/intervals';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
+import { Button } from '@/components/ui/button';
+import { enrichSessionWeather, getSessionById } from '@/lib/services/api-client';
+import { queryKeys } from '@/lib/constants/query-keys';
+import { useErrorHandler } from '@/hooks/use-error-handler';
 
 interface SessionDetailsSheetProps {
   session: TrainingSession | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSessionUpdated?: (session: TrainingSession) => void;
 }
 
-export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDetailsSheetProps) {
+export function SessionDetailsSheet({
+  session,
+  open,
+  onOpenChange,
+  onSessionUpdated,
+}: SessionDetailsSheetProps) {
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const [isEnrichingWeather, setIsEnrichingWeather] = useState(false);
+  const queryClient = useQueryClient();
+  const { handleError, handleInfo, handleSuccess } = useErrorHandler({ scope: 'local' });
 
   if (!session) return null;
 
@@ -65,6 +79,7 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
   const isPlannedSession = isPlanned(session);
   const hasStravaData = session.source === 'strava' && stravaData !== null;
   const hasRoute = decodedCoordinates.length > 0 && mapPath;
+  const canEnrichWeather = !isPlannedSession && hasStravaData && hasRoute && !session.weather;
 
   const totals = calculateIntervalTotals(session.intervalDetails?.steps);
 
@@ -93,6 +108,38 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
     : totals.avgBpm
     ? totals.avgBpm
     : session.targetHeartRateBpm || null;
+
+  const handleEnrichWeather = async () => {
+    if (!canEnrichWeather || isEnrichingWeather) return;
+    setIsEnrichingWeather(true);
+    try {
+      const result = await enrichSessionWeather(session.id);
+      if (result.status === 'already_has_weather') {
+        handleInfo('Météo déjà à jour', 'Cette séance dispose déjà des données météo les plus récentes.');
+        return;
+      }
+      if (result.status === 'enriched' || result.status === 'updated') {
+        let updatedSession = result.session ?? null;
+        if (!updatedSession || !('userId' in updatedSession)) {
+          updatedSession = await queryClient.fetchQuery({
+            queryKey: queryKeys.sessionById(session.id),
+            queryFn: () => getSessionById(session.id),
+          });
+        }
+        if (updatedSession && 'id' in updatedSession) {
+          queryClient.setQueryData(queryKeys.sessionById(updatedSession.id), updatedSession);
+          onSessionUpdated?.(updatedSession as TrainingSession);
+        }
+        handleSuccess('Météo récupérée !', 'Les conditions météo ont été ajoutées à votre séance.');
+        return;
+      }
+      handleInfo('Météo non disponible', 'Nous n’avons pas pu récupérer les données météo pour cette séance.');
+    } catch (error) {
+      handleError(error, 'Impossible de récupérer la météo.');
+    } finally {
+      setIsEnrichingWeather(false);
+    }
+  };
 
   return (
     <>
@@ -129,17 +176,19 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                   : "pt-6"
               )}>
                 <SheetHeader className="text-left space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Badge 
-                      variant={isPlannedSession ? "outline" : "secondary"} 
-                      className={cn(
-                        "h-6 px-3 text-[10px] uppercase font-bold tracking-widest bg-background/60 backdrop-blur-md border border-border/40 pointer-events-none rounded-full",
-                        isPlannedSession && "border-primary/40 text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]"
-                      )}
-                    >
-                      {session.sessionType}
-                    </Badge>
-                  </div>
+                  {session.sessionType && (
+                    <div className="flex items-center gap-3">
+                      <Badge 
+                        variant={isPlannedSession ? "outline" : "secondary"} 
+                        className={cn(
+                          "h-6 px-3 text-[10px] uppercase font-bold tracking-widest bg-background/60 backdrop-blur-md border border-border/40 pointer-events-none rounded-full",
+                          isPlannedSession && "border-primary/40 text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]"
+                        )}
+                      >
+                        {session.sessionType}
+                      </Badge>
+                    </div>
+                  )}
                   <SheetTitle className="text-4xl font-black tracking-tighter leading-[0.9] text-foreground drop-shadow-sm">
                     {session.date 
                       ? new Date(session.date).toLocaleDateString('fr-FR', { 
@@ -182,47 +231,47 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
 
             <div className="px-8 py-8 space-y-10 pb-20">
               <div className="grid grid-cols-2 gap-4">
-                <StatCard
-                  label="Distance"
-                  value={displayDistance !== null
-                    ? session.distance
+                {displayDistance !== null && (
+                  <StatCard
+                    label="Distance"
+                    value={session.distance
                       ? displayDistance.toFixed(2)
                       : `~${displayDistance.toFixed(2)}`
-                    : '-'
-                  }
-                  unit="km"
-                  highlight={!isPlannedSession}
-                />
-                <StatCard
-                  label="Durée"
-                  value={displayDuration !== null
-                    ? session.duration
+                    }
+                    unit="km"
+                    highlight={!isPlannedSession}
+                  />
+                )}
+                {displayDuration !== null && (
+                  <StatCard
+                    label="Durée"
+                    value={session.duration
                       ? (normalizeDurationFormat(displayDuration) || displayDuration)
                       : `~${displayDuration}`
-                    : '-'
-                  }
-                  highlight={!isPlannedSession}
-                />
-                <StatCard
-                  label="Allure"
-                  value={displayPace !== null
-                    ? session.avgPace
+                    }
+                    highlight={!isPlannedSession}
+                  />
+                )}
+                {displayPace !== null && (
+                  <StatCard
+                    label="Allure"
+                    value={session.avgPace
                       ? displayPace
                       : `~${displayPace}`
-                    : '-'
-                  }
-                  unit="min/km"
-                />
-                <StatCard
-                  label="FC moyenne"
-                  value={displayHR !== null
-                    ? session.avgHeartRate
+                    }
+                    unit="min/km"
+                  />
+                )}
+                {displayHR !== null && (
+                  <StatCard
+                    label="FC moyenne"
+                    value={session.avgHeartRate
                       ? displayHR
                       : `~${displayHR}`
-                    : '-'
-                  }
-                  unit={displayHR && typeof displayHR === 'number' ? "bpm" : undefined}
-                />
+                    }
+                    unit={displayHR && typeof displayHR === 'number' ? "bpm" : undefined}
+                  />
+                )}
                 {(isPlannedSession ? session.targetRPE : session.perceivedExertion) && (
                   <StatCard
                     label={isPlannedSession ? "RPE cible" : "Effort (RPE)"}
@@ -281,6 +330,41 @@ export function SessionDetailsSheet({ session, open, onOpenChange }: SessionDeta
                         Conditions
                       </h3>
                       <EnvironmentCard weather={session.weather} />
+                    </div>
+                  )}
+                  {canEnrichWeather && (
+                    <div className="space-y-4">
+                      <h3 className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.25em] flex items-center gap-2">
+                        Conditions
+                      </h3>
+                      <div className="rounded-[2rem] border border-sky-500/20 bg-gradient-to-br from-sky-500/10 to-transparent backdrop-blur-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all hover:bg-sky-500/15">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="h-12 w-12 rounded-2xl bg-sky-100 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 flex items-center justify-center shrink-0">
+                            <CloudSun className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="text-foreground font-black uppercase tracking-widest text-[10px]">Météo manquante</div>
+                            <div className="text-xs text-muted-foreground/70 leading-relaxed font-medium">Ajoutez les conditions climatiques réelles pour une analyse plus précise.</div>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isEnrichingWeather}
+                          onClick={handleEnrichWeather}
+                          className="w-full sm:w-auto rounded-xl px-6 h-10 border-sky-500/30 bg-background text-sky-600 font-bold text-[10px] uppercase tracking-[0.2em] shadow-sm hover:bg-sky-50 hover:border-sky-500/50 transition-all active:scale-95"
+                          data-testid="enrich-weather-button"
+                        >
+                          {isEnrichingWeather ? (
+                            <>
+                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                              Enrichissement…
+                            </>
+                          ) : (
+                            'Récupérer'
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

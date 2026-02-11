@@ -1,14 +1,27 @@
-import { Loader2, Trash2 } from 'lucide-react';
+import { CloudSun, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SelectionBarProps {
   selectedCount: number;
   onClear: () => void;
   onDelete: () => void;
+  onEnrichWeather?: () => void;
+  enrichCount?: number;
   isDeleting?: boolean;
+  isEnriching?: boolean;
 }
 
-export function SelectionBar({ selectedCount, onClear, onDelete, isDeleting }: SelectionBarProps) {
+export function SelectionBar({
+  selectedCount,
+  onClear,
+  onDelete,
+  onEnrichWeather,
+  enrichCount,
+  isDeleting,
+  isEnriching,
+}: SelectionBarProps) {
+  const safeEnrichCount = enrichCount ?? selectedCount;
   return (
     <div className="mt-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 rounded-xl bg-violet-600/5 border border-violet-600/20 p-3 md:pl-6 animate-in fade-in slide-in-from-top-2 duration-300">
       <div className="flex items-center justify-between md:justify-start gap-4">
@@ -49,6 +62,28 @@ export function SelectionBar({ selectedCount, onClear, onDelete, isDeleting }: S
 
       {!isDeleting && (
         <div className="flex items-center gap-2 md:gap-3">
+          {onEnrichWeather && safeEnrichCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEnrichWeather}
+              disabled={isEnriching}
+              className={cn(
+                "flex-1 md:flex-initial h-9 md:h-11 px-4 md:px-6 rounded-xl transition-all duration-300 shadow-none border font-bold text-[10px] md:text-[11px] uppercase tracking-wider active:scale-95",
+                isEnriching 
+                  ? "bg-sky-500/10 border-sky-500/30 text-sky-600 cursor-default" 
+                  : "bg-sky-500/5 border-sky-500/20 text-sky-600 hover:bg-sky-500/10 hover:border-sky-500/30"
+              )}
+              data-testid="bulk-enrich-weather-button"
+            >
+              {isEnriching ? (
+                <Loader2 className="mr-1.5 md:mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CloudSun className="mr-1.5 md:mr-2 h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+              )}
+              {isEnriching ? 'Enrichissement…' : `Enrichir (${safeEnrichCount})`}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

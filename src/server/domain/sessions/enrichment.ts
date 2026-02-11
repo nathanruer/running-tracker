@@ -5,6 +5,7 @@ import type { WeatherData } from '@/lib/types/weather';
 import { logger } from '@/server/infrastructure/logger';
 import { updateSessionWeather } from './sessions-write';
 import { validateStravaMap } from '@/lib/validation/strava';
+import { pMap } from '@/lib/utils/async';
 
 export async function enrichSessionWithWeather(
   stravaData: unknown,
@@ -36,18 +37,58 @@ export async function enrichSessionWithWeather(
   }
 }
 
+export interface WeatherEnrichmentTask {
+  id: string;
+  stravaData: unknown;
+  date: string;
+}
+
+export interface BulkWeatherEnrichmentResult {
+  enrichedIds: string[];
+  failedIds: string[];
+  missingStravaIds: string[];
+}
+
 export async function enrichBulkWeather(
-  workouts: Array<{ id: string; stravaData: unknown; date: string }>,
+  workouts: WeatherEnrichmentTask[],
   userId: string,
-): Promise<void> {
-  for (const workout of workouts) {
-    try {
-      const weather = await enrichSessionWithWeather(workout.stravaData, new Date(workout.date));
-      if (weather) {
-        await updateSessionWeather(workout.id, userId, weather as Record<string, unknown>);
+  options?: { concurrency?: number }
+): Promise<BulkWeatherEnrichmentResult> {
+  const enrichedIds: string[] = [];
+  const failedIds: string[] = [];
+  const missingStravaIds: string[] = [];
+  const concurrency = options?.concurrency ?? 3;
+
+  await pMap(
+    workouts,
+    async (workout) => {
+      try {
+        const validated = validateStravaMap(workout.stravaData);
+        if (!validated?.map?.summary_polyline) {
+          missingStravaIds.push(workout.id);
+          return;
+        }
+
+        const weather = await enrichSessionWithWeather(workout.stravaData, new Date(workout.date));
+        if (!weather) {
+          failedIds.push(workout.id);
+          return;
+        }
+
+        const updated = await updateSessionWeather(workout.id, userId, weather as Record<string, unknown>);
+        if (!updated) {
+          failedIds.push(workout.id);
+          return;
+        }
+
+        enrichedIds.push(workout.id);
+      } catch (error) {
+        logger.warn({ error, workoutId: workout.id }, 'Failed to enrich bulk weather');
+        failedIds.push(workout.id);
       }
-    } catch (error) {
-      logger.warn({ error, workoutId: workout.id }, 'Failed to enrich bulk weather');
-    }
-  }
+    },
+    concurrency
+  );
+
+  return { enrichedIds, failedIds, missingStravaIds };
 }
