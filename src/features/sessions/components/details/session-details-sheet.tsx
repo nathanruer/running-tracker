@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
-import { ExternalLink, Map, Calendar, MessageSquare, CloudSun, Loader2 } from 'lucide-react';
+import { ExternalLink, Map, Calendar, MessageSquare, Loader2, Sparkles } from 'lucide-react';
 import type { TrainingSession } from '@/lib/types';
 import { decodePolyline, coordinatesToSVG } from '@/lib/utils/geo/polyline';
 import { cn } from '@/lib/utils/cn';
@@ -41,7 +41,7 @@ import { calculateIntervalTotals } from '@/lib/utils/intervals';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 import { Button } from '@/components/ui/button';
-import { enrichSessionWeather, getSessionById } from '@/lib/services/api-client';
+import { enrichSessionStreams, enrichSessionWeather, getSessionById } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 
@@ -52,6 +52,30 @@ interface SessionDetailsSheetProps {
   onSessionUpdated?: (session: TrainingSession) => void;
 }
 
+function formatStreamSuccessMessage(streams: TrainingSession['stravaStreams'] | null | undefined): string {
+  if (!streams || typeof streams !== 'object') {
+    return 'Les streams disponibles ont été ajoutés à votre séance.';
+  }
+
+  const labels: string[] = [];
+  if ('velocity_smooth' in streams) labels.push('allure');
+  if ('altitude' in streams) labels.push('altitude');
+  if ('heartrate' in streams) labels.push('fréquence cardiaque');
+  if ('cadence' in streams) labels.push('cadence');
+
+  if (labels.length === 0) {
+    return 'Les streams disponibles ont été ajoutés à votre séance.';
+  }
+
+  if (labels.length === 1) {
+    return `Stream ajouté: ${labels[0]}.`;
+  }
+
+  const last = labels[labels.length - 1];
+  const first = labels.slice(0, -1).join(', ');
+  return `Streams ajoutés: ${first} et ${last}.`;
+}
+
 export function SessionDetailsSheet({
   session,
   open,
@@ -60,6 +84,7 @@ export function SessionDetailsSheet({
 }: SessionDetailsSheetProps) {
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [isEnrichingWeather, setIsEnrichingWeather] = useState(false);
+  const [isEnrichingStreams, setIsEnrichingStreams] = useState(false);
   const queryClient = useQueryClient();
   const { handleError, handleInfo, handleSuccess } = useErrorHandler({ scope: 'local' });
 
@@ -80,6 +105,10 @@ export function SessionDetailsSheet({
   const hasStravaData = session.source === 'strava' && stravaData !== null;
   const hasRoute = decodedCoordinates.length > 0 && mapPath;
   const canEnrichWeather = !isPlannedSession && hasStravaData && hasRoute && !session.weather;
+  const canEnrichStreams = !isPlannedSession
+    && hasStravaData
+    && !!session.externalId
+    && session.hasStreams !== true;
 
   const totals = calculateIntervalTotals(session.intervalDetails?.steps);
 
@@ -138,6 +167,56 @@ export function SessionDetailsSheet({
       handleError(error, 'Impossible de récupérer la météo.');
     } finally {
       setIsEnrichingWeather(false);
+    }
+  };
+
+  const handleEnrichStreams = async () => {
+    if (!canEnrichStreams || isEnrichingStreams) return;
+    setIsEnrichingStreams(true);
+    try {
+      const result = await enrichSessionStreams(session.id);
+      if (result.status === 'already_has_streams') {
+        handleInfo('Streams déjà à jour', 'Cette séance dispose déjà de ses streams Strava.');
+        return;
+      }
+      if (result.status === 'no_streams') {
+        let updatedSession = result.session ?? null;
+        if (!updatedSession || !('userId' in updatedSession)) {
+          updatedSession = await queryClient.fetchQuery({
+            queryKey: queryKeys.sessionById(session.id),
+            queryFn: () => getSessionById(session.id),
+          });
+        }
+        if (updatedSession && 'id' in updatedSession) {
+          queryClient.setQueryData(queryKeys.sessionById(updatedSession.id), updatedSession);
+          onSessionUpdated?.(updatedSession as TrainingSession);
+        }
+        handleInfo('Aucun stream disponible', 'Strava ne fournit pas de streams exploitables pour cette activité.');
+        return;
+      }
+      if (result.status === 'enriched') {
+        let updatedSession = result.session ?? null;
+        if (!updatedSession || !('userId' in updatedSession)) {
+          updatedSession = await queryClient.fetchQuery({
+            queryKey: queryKeys.sessionById(session.id),
+            queryFn: () => getSessionById(session.id),
+          });
+        }
+        if (updatedSession && 'id' in updatedSession) {
+          queryClient.setQueryData(queryKeys.sessionById(updatedSession.id), updatedSession);
+          onSessionUpdated?.(updatedSession as TrainingSession);
+        }
+        const streamMessage = formatStreamSuccessMessage(
+          (updatedSession as TrainingSession | null)?.stravaStreams ?? null
+        );
+        handleSuccess('Streams récupérés !', streamMessage);
+        return;
+      }
+      handleInfo('Streams non disponibles', 'Nous n’avons pas pu récupérer les streams Strava pour cette séance.');
+    } catch (error) {
+      handleError(error, 'Impossible de récupérer les streams Strava.');
+    } finally {
+      setIsEnrichingStreams(false);
     }
   };
 
@@ -283,10 +362,7 @@ export function SessionDetailsSheet({
 
               {session.comments && (
                 <div id="session-notes" className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-muted dark:bg-white/[0.05] border border-border/40">
-                      <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                    </div>
+                  <div className="flex items-center">
                     <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/80">
                       {isPlannedSession ? 'Conseils du Coach' : 'Notes de séance'}
                     </h3>
@@ -337,28 +413,63 @@ export function SessionDetailsSheet({
                       <h3 className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.25em] flex items-center gap-2">
                         Conditions
                       </h3>
-                      <div className="rounded-[2rem] border border-sky-500/20 bg-gradient-to-br from-sky-500/10 to-transparent backdrop-blur-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all hover:bg-sky-500/15">
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="h-12 w-12 rounded-2xl bg-sky-100 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 flex items-center justify-center shrink-0">
-                            <CloudSun className="h-6 w-6 text-sky-600 dark:text-sky-400" />
+                      <div className="rounded-2xl border border-border/40 bg-muted/40 dark:bg-white/[0.03] p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all">
+                        <div className="flex items-center gap-5 text-sm">
+                          <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                            <Sparkles className="h-7 w-7 text-primary" />
                           </div>
-                          <div className="space-y-0.5">
-                            <div className="text-foreground font-black uppercase tracking-widest text-[10px]">Météo manquante</div>
-                            <div className="text-xs text-muted-foreground/70 leading-relaxed font-medium">Ajoutez les conditions climatiques réelles pour une analyse plus précise.</div>
+                          <div className="space-y-1">
+                            <div className="text-foreground font-black uppercase tracking-[0.15em] text-[11px]">Météo manquante</div>
+                            <div className="text-xs text-muted-foreground/70 leading-relaxed font-medium max-w-[280px]">Ajoutez les conditions climatiques réelles pour une analyse plus précise.</div>
                           </div>
                         </div>
                         <Button
+                          variant="action"
                           size="sm"
-                          variant="outline"
                           disabled={isEnrichingWeather}
                           onClick={handleEnrichWeather}
-                          className="w-full sm:w-auto rounded-xl px-6 h-10 border-sky-500/30 bg-background text-sky-600 font-bold text-[10px] uppercase tracking-[0.2em] shadow-sm hover:bg-sky-50 hover:border-sky-500/50 transition-all active:scale-95"
+                          className="w-full sm:w-auto h-10 px-8"
                           data-testid="enrich-weather-button"
                         >
                           {isEnrichingWeather ? (
                             <>
                               <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                              Enrichissement…
+                              Récupération…
+                            </>
+                          ) : (
+                            'Récupérer'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {canEnrichStreams && (
+                    <div className="space-y-4">
+                      <h3 className="text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.25em] flex items-center gap-2">
+                        Analyse de la séance
+                      </h3>
+                      <div className="rounded-2xl border border-border/40 bg-muted/40 dark:bg-white/[0.03] p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all">
+                        <div className="flex items-center gap-5 text-sm">
+                          <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                            <Sparkles className="h-7 w-7 text-primary" />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-foreground font-black uppercase tracking-[0.15em] text-[11px]">Streams manquants</div>
+                            <div className="text-xs text-muted-foreground/70 leading-relaxed font-medium max-w-[280px]">Ajoutez les streams Strava disponibles (allure, altitude, FC, cadence) pour afficher les graphiques détaillés.</div>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="action"
+                          disabled={isEnrichingStreams}
+                          onClick={handleEnrichStreams}
+                          className="w-full sm:w-auto h-10 px-8"
+                          data-testid="enrich-streams-button"
+                        >
+                          {isEnrichingStreams ? (
+                            <>
+                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                              Analyse…
                             </>
                           ) : (
                             'Récupérer'

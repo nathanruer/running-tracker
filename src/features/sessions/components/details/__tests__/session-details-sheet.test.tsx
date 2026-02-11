@@ -177,4 +177,9 @@ describe('SessionDetailsSheet', () => {
     renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     expect(screen.getByTestId('enrich-weather-button')).toBeInTheDocument();
   });
+
+  it('should show enrich streams button when streams are missing on strava session', () => {
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
+    expect(screen.getByTestId('enrich-streams-button')).toBeInTheDocument();
+  });
 });

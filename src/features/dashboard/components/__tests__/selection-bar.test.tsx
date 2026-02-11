@@ -69,20 +69,20 @@ describe('SelectionBar', () => {
     expect(screen.getByTestId('bulk-delete-button')).toBeInTheDocument();
   });
 
-  it('should render enrich weather button when provided', async () => {
+  it('should render enrich button when provided', async () => {
     const user = userEvent.setup();
     const mockOnEnrich = vi.fn();
 
     render(
       <SelectionBar
         {...defaultProps}
-        onEnrichWeather={mockOnEnrich}
+        onEnrich={mockOnEnrich}
         selectedCount={3}
         enrichCount={3}
       />
     );
 
-    const enrichButton = screen.getByTestId('bulk-enrich-weather-button');
+    const enrichButton = screen.getByTestId('bulk-enrich-button');
     expect(enrichButton).toHaveTextContent('Enrichir (3)');
 
     await user.click(enrichButton);

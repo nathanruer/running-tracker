@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sessionSchema } from '@/lib/validation';
 import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
+import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { createCompletedSession, deleteSessions, logSessionWriteError, recalculateSessionNumbers } from '@/server/domain/sessions/sessions-write';
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
       try {
         let count = 0;
         const weatherQueue: Array<{ id: string; stravaData: unknown; date: string }> = [];
+        const streamQueueIds: string[] = [];
 
         for (const session of validatedSessions) {
           const { intervalDetails, stravaData, weather: importedWeather, averageTemp, ...sessionData } = session;
@@ -48,6 +50,10 @@ export async function POST(request: NextRequest) {
           if (!importedWeather && stravaData) {
             weatherQueue.push({ id: workout.id, stravaData, date: session.date });
           }
+
+          if (session.source === 'strava' && session.externalId) {
+            streamQueueIds.push(workout.id);
+          }
         }
 
         await recalculateSessionNumbers(userId);
@@ -59,6 +65,14 @@ export async function POST(request: NextRequest) {
           },
           { status: HTTP_STATUS.CREATED }
         );
+
+        if (streamQueueIds.length > 0) {
+          try {
+            await bulkEnrichStreamsForIds(userId, streamQueueIds, { concurrency: 2 });
+          } catch (error) {
+            logger.warn({ error, userId }, 'Failed to enrich bulk streams');
+          }
+        }
 
         if (weatherQueue.length > 0) {
           try {

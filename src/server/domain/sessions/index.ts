@@ -10,6 +10,8 @@ export {
 export {
   recalculateSessionNumbers,
   updateSessionWeather,
+  updateSessionStreams,
+  markSessionNoStreams,
   createPlannedSession,
   createCompletedSession,
   completePlannedSession,
@@ -27,6 +29,7 @@ export {
   buildSessionTypeFilter,
   combineFilters,
 } from './filters';
+export { bulkEnrichStreamsForIds } from './streams-bulk';
 
 export { mapWorkoutToSession, mapPlanToSession } from './mappers';
 export type {

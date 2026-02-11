@@ -23,7 +23,6 @@ vi.mock('@/components/ui/date-picker', () => ({
 
 describe('DateRangeSelector', () => {
   const mockOnDateRangeChange = vi.fn();
-  const mockOnGranularityChange = vi.fn();
   const mockOnCustomStartDateChange = vi.fn();
   const mockOnCustomEndDateChange = vi.fn();
 
@@ -36,9 +35,7 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="all" 
         onDateRangeChange={mockOnDateRangeChange}
-        granularity="week"
-        onGranularityChange={mockOnGranularityChange}
-        customStartDate=""
+customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
@@ -47,7 +44,7 @@ describe('DateRangeSelector', () => {
       />
     );
 
-    expect(screen.getAllByTestId('mock-select').length).toBe(2);
+    expect(screen.getByTestId('mock-select')).toBeInTheDocument();
     expect(screen.getByTestId('range-label')).toHaveTextContent('26 jan → 8 fév 2026');
   });
 
@@ -56,9 +53,7 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="custom" 
         onDateRangeChange={mockOnDateRangeChange}
-        granularity="week"
-        onGranularityChange={mockOnGranularityChange}
-        customStartDate=""
+customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
@@ -76,9 +71,7 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="all" 
         onDateRangeChange={mockOnDateRangeChange}
-        granularity="week"
-        onGranularityChange={mockOnGranularityChange}
-        customStartDate=""
+customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
@@ -87,9 +80,8 @@ describe('DateRangeSelector', () => {
       />
     );
 
-    const selects = screen.getAllByTestId('mock-select');
-    const rangeSelect = selects.find((select) => select.getAttribute('data-value') === 'all');
-    fireEvent.click(rangeSelect?.querySelector('button') as HTMLButtonElement);
+    const rangeSelect = screen.getByTestId('mock-select');
+    fireEvent.click(rangeSelect.querySelector('button') as HTMLButtonElement);
 
     expect(mockOnDateRangeChange).toHaveBeenCalledWith('custom');
   });
@@ -99,9 +91,7 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="custom" 
         onDateRangeChange={mockOnDateRangeChange}
-        granularity="week"
-        onGranularityChange={mockOnGranularityChange}
-        customStartDate=""
+customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
@@ -122,9 +112,7 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="custom" 
         onDateRangeChange={mockOnDateRangeChange}
-        granularity="week"
-        onGranularityChange={mockOnGranularityChange}
-        customStartDate=""
+customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}

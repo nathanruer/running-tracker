@@ -54,10 +54,10 @@ interface SessionsTableToolbarProps {
   selectedCount: number;
   onClearSelection: () => void;
   onOpenBulkDelete: () => void;
-  onBulkEnrichWeather?: () => void;
+  onBulkEnrich?: () => void;
   enrichableCount?: number;
   isDeleting?: boolean;
-  isEnrichingWeather?: boolean;
+  isEnriching?: boolean;
   actions: {
     onNewSession?: () => void;
   };
@@ -83,10 +83,10 @@ export function SessionsTableToolbar({
   selectedCount,
   onClearSelection,
   onOpenBulkDelete,
-  onBulkEnrichWeather,
+  onBulkEnrich,
   enrichableCount,
   isDeleting,
-  isEnrichingWeather,
+  isEnriching,
   actions,
   selectedType,
   availableTypes,
@@ -133,14 +133,12 @@ export function SessionsTableToolbar({
   return (
     <CardHeader className="flex flex-col gap-4 px-3 py-4 md:px-8 md:py-8 border-b border-border/40">
       <div className="flex flex-col gap-4 md:gap-6">
-        {/* Top bar: Title + Indicators + Primary Actions */}
         <div className="flex items-center justify-between gap-1 md:gap-4">
           <div className="flex items-center gap-1.5 md:gap-4 min-w-0 flex-1">
             <h2 className="text-base md:text-2xl font-black tracking-tight truncate shrink-0">
               Historique
             </h2>
-            
-            {/* Unified Indicator (Desktop & Mobile) */}
+
             <div className="min-w-0 flex-shrink">
               <ScopeIndicator
                 loadedCount={loadedCount}
@@ -174,7 +172,6 @@ export function SessionsTableToolbar({
           </div>
         </div>
 
-        {/* Filters bar */}
         <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 md:gap-4">
           <SearchInput
             value={searchQuery}
@@ -230,8 +227,8 @@ export function SessionsTableToolbar({
           onClear={onClearSelection}
           onDelete={onOpenBulkDelete}
           isDeleting={isDeleting}
-          onEnrichWeather={onBulkEnrichWeather}
-          isEnriching={isEnrichingWeather}
+          onEnrich={onBulkEnrich}
+          isEnriching={isEnriching}
           enrichCount={enrichableCount}
         />
       )}

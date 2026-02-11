@@ -9,6 +9,8 @@ import {
   bulkDeleteSessions,
   enrichSessionWeather,
   bulkEnrichSessionWeather,
+  enrichSessionStreams,
+  bulkEnrichSessionStreams,
   getSessionTypes,
   addPlannedSession,
   completeSession,
@@ -220,7 +222,34 @@ describe('Sessions API', () => {
       expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/weather/bulk', {
         method: 'POST',
         body: JSON.stringify({ ids: ['a', 'b'] }),
+      }, 600000);
+      expect(result).toEqual({ summary: { enriched: 2 } });
+    });
+  });
+
+  describe('enrichSessionStreams', () => {
+    it('calls enrich streams endpoint for a session', async () => {
+      mockApiRequest.mockResolvedValue({ status: 'enriched' });
+
+      const result = await enrichSessionStreams('session-1');
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/session-1/streams', {
+        method: 'PATCH',
       });
+      expect(result).toEqual({ status: 'enriched' });
+    });
+  });
+
+  describe('bulkEnrichSessionStreams', () => {
+    it('calls bulk streams enrich endpoint with ids', async () => {
+      mockApiRequest.mockResolvedValue({ summary: { enriched: 2 } });
+
+      const result = await bulkEnrichSessionStreams(['a', 'b']);
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/api/sessions/streams/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ ids: ['a', 'b'] }),
+      }, 600000);
       expect(result).toEqual({ summary: { enriched: 2 } });
     });
   });

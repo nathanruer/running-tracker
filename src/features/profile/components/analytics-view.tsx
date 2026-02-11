@@ -54,8 +54,6 @@ export function AnalyticsView({
         <DateRangeSelector
           dateRange={dateRange}
           onDateRangeChange={onDateRangeChange}
-          granularity={granularity}
-          onGranularityChange={onGranularityChange}
           customStartDate={customStartDate}
           customEndDate={customEndDate}
           onCustomStartDateChange={onCustomStartDateChange}
@@ -78,6 +76,7 @@ export function AnalyticsView({
       <EvolutionChart
         chartData={stats.chartData}
         granularity={granularity}
+        onGranularityChange={onGranularityChange}
       />
     </div>
   );

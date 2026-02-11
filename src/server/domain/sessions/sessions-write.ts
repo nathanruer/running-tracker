@@ -9,6 +9,7 @@ import {
   stravaStreamPayloadSchema,
   weatherPayloadSchema,
 } from '@/lib/validation/payloads';
+import { isStravaActivityLikelyStreamless } from './stream-eligibility';
 
 const logger = createLogger({ context: 'session-write' });
 
@@ -174,6 +175,8 @@ async function upsertWeatherObservation(workoutId: string, weather: Record<strin
 
 async function upsertExternalActivity(workoutId: string, source: string | null, externalId: string | null, stravaData: Prisma.JsonValue | null, date: Date | null) {
   if (!source || !externalId) return null;
+  const shouldMarkNoStreams =
+    source === 'strava' && isStravaActivityLikelyStreamless(stravaData);
 
   const existing = await prisma.external_activities.findFirst({
     where: { workoutId, source, externalId },
@@ -182,10 +185,19 @@ async function upsertExternalActivity(workoutId: string, source: string | null, 
   const activity = existing
     ? await prisma.external_activities.update({
         where: { id: existing.id },
-        data: { startedAt: date },
+        data: {
+          startedAt: date,
+          ...(shouldMarkNoStreams ? { sourceStatus: 'no_streams' } : {}),
+        },
       })
     : await prisma.external_activities.create({
-        data: { workoutId, source, externalId, startedAt: date },
+        data: {
+          workoutId,
+          source,
+          externalId,
+          startedAt: date,
+          sourceStatus: shouldMarkNoStreams ? 'no_streams' : 'imported',
+        },
       });
 
   if (stravaData) {
@@ -250,6 +262,51 @@ export async function updateSessionWeather(
 
   await upsertWeatherObservation(workout.id, sanitizedWeather, workout.date);
   return workout.id;
+}
+
+export async function updateSessionStreams(
+  id: string,
+  userId: string,
+  streams: Record<string, unknown>
+) {
+  const sanitizedStreams = parsePayload(stravaStreamPayloadSchema, streams, 'streams');
+  if (!sanitizedStreams) return null;
+
+  const workout = await prisma.workouts.findFirst({
+    where: { userId, id },
+    select: { id: true },
+  });
+
+  if (!workout) return null;
+
+  await replaceStreams(workout.id, sanitizedStreams as Prisma.JsonValue);
+  return workout.id;
+}
+
+export async function markSessionNoStreams(
+  id: string,
+  userId: string
+) {
+  const workout = await prisma.workouts.findFirst({
+    where: { userId, id },
+    select: { id: true },
+  });
+
+  if (!workout) return null;
+
+  const external = await prisma.external_activities.findFirst({
+    where: { workoutId: workout.id, source: 'strava' },
+    select: { id: true },
+  });
+
+  if (!external) return null;
+
+  await prisma.external_activities.update({
+    where: { id: external.id },
+    data: { sourceStatus: 'no_streams' },
+  });
+
+  return external.id;
 }
 
 export async function createPlannedSession(payload: Record<string, unknown>, userId: string) {

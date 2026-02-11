@@ -1,6 +1,8 @@
 import type { TrainingSession, TrainingSessionPayload, WeatherData } from '@/lib/types';
 import { apiRequest } from './client';
 
+const BULK_ENRICH_TIMEOUT_MS = 10 * 60 * 1000;
+
 export type WeatherEnrichmentStatus =
   | 'updated'
   | 'enriched'
@@ -31,6 +33,40 @@ export interface BulkWeatherEnrichmentResponse {
   ids: {
     enriched: string[];
     alreadyHasWeather: string[];
+    missingStrava: string[];
+    failed: string[];
+    notFound: string[];
+  };
+}
+
+export type StreamEnrichmentStatus =
+  | 'enriched'
+  | 'already_has_streams'
+  | 'no_streams'
+  | 'missing_strava'
+  | 'failed'
+  | 'not_found';
+
+export interface StreamEnrichmentResponse {
+  status: StreamEnrichmentStatus;
+  session?: TrainingSession | { id: string };
+  message?: string;
+}
+
+export interface BulkStreamsEnrichmentSummary {
+  requested: number;
+  enriched: number;
+  alreadyHasStreams: number;
+  missingStrava: number;
+  failed: number;
+  notFound: number;
+}
+
+export interface BulkStreamsEnrichmentResponse {
+  summary: BulkStreamsEnrichmentSummary;
+  ids: {
+    enriched: string[];
+    alreadyHasStreams: string[];
     missingStrava: string[];
     failed: string[];
     notFound: string[];
@@ -160,12 +196,31 @@ export async function enrichSessionWeather(
 }
 
 export async function bulkEnrichSessionWeather(
-  ids: string[]
+  ids: string[],
+  timeoutMs: number = BULK_ENRICH_TIMEOUT_MS
 ): Promise<BulkWeatherEnrichmentResponse> {
   return apiRequest<BulkWeatherEnrichmentResponse>('/api/sessions/weather/bulk', {
     method: 'POST',
     body: JSON.stringify({ ids }),
+  }, timeoutMs);
+}
+
+export async function enrichSessionStreams(
+  id: string
+): Promise<StreamEnrichmentResponse> {
+  return apiRequest<StreamEnrichmentResponse>(`/api/sessions/${id}/streams`, {
+    method: 'PATCH',
   });
+}
+
+export async function bulkEnrichSessionStreams(
+  ids: string[],
+  timeoutMs: number = BULK_ENRICH_TIMEOUT_MS
+): Promise<BulkStreamsEnrichmentResponse> {
+  return apiRequest<BulkStreamsEnrichmentResponse>('/api/sessions/streams/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  }, timeoutMs);
 }
 
 export async function getSessionTypes(): Promise<string[]> {

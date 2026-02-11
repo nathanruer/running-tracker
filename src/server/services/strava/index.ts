@@ -12,4 +12,4 @@ export { formatStravaActivity } from '@/lib/utils/strava/activity-formatter';
 
 export { getValidAccessToken } from './auth-helpers';
 
-export { fetchStreamsForSession } from './stream-helpers';
+export { fetchStreamsForSession, fetchStreamsForSessionWithStatus } from './stream-helpers';

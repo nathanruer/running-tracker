@@ -145,7 +145,8 @@ export async function getActivityStreams(
   keys: StravaStreamType[] = ['velocity_smooth', 'distance', 'time', 'heartrate', 'cadence', 'altitude']
 ): Promise<StravaStreamSet> {
   const keysParam = keys.join(',');
-  const url = `${STRAVA_URLS.API_BASE}/activities/${activityId}/streams?keys=${keysParam}&key_by_type=true`;
+  // Request high resolution to preserve interval transitions in charts.
+  const url = `${STRAVA_URLS.API_BASE}/activities/${activityId}/streams?keys=${keysParam}&key_by_type=true&resolution=high&series_type=distance`;
 
   const response = await fetch(url, {
     headers: {
@@ -155,17 +156,19 @@ export async function getActivityStreams(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    if (response.status === 404) {
+      logger.info(
+        { activityId, status: response.status, error: errorData },
+        'Activity has no streams available'
+      );
+      return {};
+    }
+
     logger.error({
       status: response.status,
       activityId,
       error: errorData,
     }, 'Strava API call failed: getActivityStreams');
-
-    // If activity has no streams (e.g., treadmill run), return empty object
-    if (response.status === 404) {
-      logger.info({ activityId }, 'Activity has no streams available');
-      return {};
-    }
 
     throw new Error(`Failed to fetch activity streams: ${response.status}`);
   }
@@ -209,4 +212,3 @@ export async function getAthleteStats(
 
   return response.json();
 }
-

@@ -128,7 +128,7 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
               </div>
               
               <div className="flex flex-col gap-1 w-full mt-1">
-                {daySessions.slice(0, 2).map((session: TrainingSession, idx: number) => (
+                {daySessions.slice(0, 2).map((session: TrainingSession, idx: number) => session.sessionType && (
                   <div 
                     key={idx}
                     className={cn(
@@ -137,9 +137,9 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
                         ? 'bg-violet-500/10 text-violet-600 border-violet-500/20' 
                         : 'bg-muted text-muted-foreground border-border/50'
                     )}
-                    title={session.sessionType ?? undefined}
+                    title={session.sessionType}
                   >
-                    {session.sessionType || '-'}
+                    {session.sessionType}
                   </div>
                 ))}
                 {daySessions.length > 2 && (

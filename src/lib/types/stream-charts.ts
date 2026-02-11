@@ -25,6 +25,7 @@ export interface StreamChartConfig {
   gradientId: string;
   formatValue: (value: number) => string;
   formatTooltip: (value: number) => string;
+  curveType?: 'linear' | 'monotone';
   reversed?: boolean;
   domain?: [number | 'auto' | 'dataMin' | 'dataMax', number | 'auto' | 'dataMin' | 'dataMax'];
 }

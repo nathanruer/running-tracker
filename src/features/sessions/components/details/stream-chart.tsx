@@ -12,6 +12,7 @@ import {
 import type { StreamDataPoint, StreamChartConfig } from '@/lib/types/stream-charts';
 import { formatDuration } from '@/lib/utils/duration';
 import { STREAM_CHART_CONSTANTS } from '@/lib/constants/stream-charts';
+import { calculatePaceDomain } from '@/lib/utils/geo/stream-charts';
 
 interface StreamChartProps {
   data: StreamDataPoint[];
@@ -105,11 +106,30 @@ export function StreamChart({
   let domainMin = dataMin - padding;
   let domainMax = dataMax + padding;
 
+  // Defensive fallback: if upstream pace domain was not provided, still keep a robust range.
+  if (config.key === 'pace') {
+    const robustPaceDomain = calculatePaceDomain(data);
+    if (robustPaceDomain) {
+      domainMin = robustPaceDomain[0];
+      domainMax = robustPaceDomain[1];
+    }
+  }
+
   if (config.domain) {
     if (typeof config.domain[0] === 'number') domainMin = config.domain[0];
     if (typeof config.domain[1] === 'number') domainMax = config.domain[1];
   } else {
     if (dataMin >= 0 && domainMin < 0) domainMin = 0;
+  }
+
+  if (config.key === 'pace') {
+    domainMin = Math.max(120, domainMin);
+    domainMax = Math.min(900, domainMax);
+    if (domainMax - domainMin < 120) {
+      const center = (domainMin + domainMax) / 2;
+      domainMin = Math.max(120, center - 60);
+      domainMax = Math.min(900, center + 60);
+    }
   }
 
   const chartDomain = [domainMin, domainMax];
@@ -206,7 +226,7 @@ export function StreamChart({
               interval="preserveStartEnd"
             />
             <Area
-              type="monotone"
+              type={config.curveType ?? 'monotone'}
               dataKey="value"
               stroke={config.color}
               strokeWidth={2}

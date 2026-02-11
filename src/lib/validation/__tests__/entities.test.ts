@@ -239,6 +239,7 @@ describe('Entity Schemas', () => {
         perceivedExertion: 5,
         comments: 'Good session',
         status: 'completed',
+        hasStreams: true,
       };
       const result = trainingSessionEntitySchema.safeParse(session);
       expect(result.success).toBe(true);

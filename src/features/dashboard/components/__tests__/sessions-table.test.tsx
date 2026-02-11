@@ -38,6 +38,10 @@ const mockSessions: TrainingSession[] = [
     perceivedExertion: 5,
     comments: 'Good run',
     status: 'completed',
+    source: 'strava',
+    externalId: 'strava-1',
+    hasWeather: false,
+    hasStreams: false,
   } as TrainingSession,
   {
     id: '2',
@@ -52,6 +56,10 @@ const mockSessions: TrainingSession[] = [
     perceivedExertion: 8,
     comments: 'Hard session',
     status: 'completed',
+    source: 'strava',
+    externalId: 'strava-2',
+    hasWeather: true,
+    hasStreams: true,
   } as TrainingSession,
   {
     id: '3',
@@ -80,6 +88,7 @@ describe('SessionsTable', () => {
   const mockOnEdit = vi.fn();
   const mockOnDelete = vi.fn();
   const mockOnBulkDelete = vi.fn();
+  const mockOnBulkEnrich = vi.fn();
   const mockOnNewSession = vi.fn();
   const mockOnView = vi.fn();
   const mockOnSort = vi.fn();
@@ -88,6 +97,7 @@ describe('SessionsTable', () => {
     onEdit: mockOnEdit,
     onDelete: mockOnDelete,
     onBulkDelete: mockOnBulkDelete,
+    onBulkEnrich: mockOnBulkEnrich,
     onNewSession: mockOnNewSession,
     onView: mockOnView,
   };
@@ -237,6 +247,24 @@ describe('SessionsTable', () => {
     await user.click(confirmButton);
 
     expect(mockOnBulkDelete).toHaveBeenCalledWith(['1', '2', '3']);
+  });
+
+  it('should call onBulkEnrich with smart payload for eligible selected sessions', async () => {
+    const user = userEvent.setup();
+    render(<SessionsTable {...defaultProps} />);
+
+    const selectAllCheckbox = screen.getByRole('checkbox', { name: /sélectionner toutes les séances/i });
+    await user.click(selectAllCheckbox);
+
+    const enrichButton = screen.getByTestId('bulk-enrich-button');
+    expect(enrichButton).toHaveTextContent('Enrichir (1)');
+    await user.click(enrichButton);
+
+    expect(mockOnBulkEnrich).toHaveBeenCalledWith({
+      ids: ['1'],
+      weatherIds: ['1'],
+      streamIds: ['1'],
+    });
   });
 
   it('should call onSort when clicking duration header', async () => {

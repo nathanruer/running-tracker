@@ -244,6 +244,14 @@ describe('Strava client', () => {
         expect.stringContaining('keys=velocity_smooth,distance,time'),
         expect.anything()
       );
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('resolution=high'),
+        expect.anything()
+      );
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('series_type=distance'),
+        expect.anything()
+      );
     });
 
     it('should use custom stream keys', async () => {

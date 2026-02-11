@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Grid3X3, Calendar as CalendarIcon } from 'lucide-react';
+import { Grid3X3, Calendar as CalendarIcon, MessageSquare } from 'lucide-react';
 import { type TrainingSession } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { ActivityHeatmap } from './activity-heatmap';
 import { CalendarViewInline } from './calendar-view-inline';
+import { StatCard } from '@/components/ui/stat-card';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
 import { formatMinutesToHHMMSS, formatDisplayDuration } from '@/lib/utils/duration';
 import { formatDisplayPace } from '@/lib/utils/pace';
@@ -147,7 +148,7 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
                   <span className={cn(
                     "text-xs px-4 py-2 rounded-full font-semibold uppercase tracking-widest border",
                     session.type === 'completed'
-                      ? 'bg-violet-500/10 text-violet-600 border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
+                      ? 'bg-violet-500/10 text-violet-600 border-violet-500/20'
                       : 'bg-muted text-muted-foreground border-border'
                   )}>
                     {session.type === 'completed' ? 'Effectuée' : 'Programmée'}
@@ -156,24 +157,41 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
-                    { label: session.type === 'completed' ? 'Distance' : 'Distance prévue', value: session.type === 'completed' ? `${session.distance ?? '--'} km` : (session.targetDistance ? `~${session.targetDistance} km` : '--') },
-                    { label: session.type === 'completed' ? 'Durée' : 'Durée prévue', value: session.type === 'completed' ? formatDisplayDuration(session.duration) : (session.targetDuration ? `~${formatMinutesToHHMMSS(session.targetDuration)}` : '--') },
-                    { label: 'Allure', value: session.type === 'completed' ? `${formatDisplayPace(session.avgPace)}` : (session.targetPace ? `~${session.targetPace}` : '--'), suffix: '/km' },
-                    { label: 'FC', value: session.type === 'completed' ? `${session.avgHeartRate ?? '--'}` : (session.targetHeartRateBpm ? `${session.targetHeartRateBpm}` : '--'), suffix: 'bpm' },
+                    { 
+                      label: session.type === 'completed' ? 'Distance' : 'Distance prévue', 
+                      value: session.type === 'completed' ? (session.distance ?? '--') : (session.targetDistance ? `~${session.targetDistance}` : '--'),
+                      unit: 'km',
+                      highlight: session.type === 'completed'
+                    },
+                    { 
+                      label: session.type === 'completed' ? 'Durée' : 'Durée prévue', 
+                      value: session.type === 'completed' ? formatDisplayDuration(session.duration) : (session.targetDuration ? `~${formatMinutesToHHMMSS(session.targetDuration)}` : '--'),
+                      highlight: session.type === 'completed'
+                    },
+                    { 
+                      label: 'Allure', 
+                      value: session.type === 'completed' ? formatDisplayPace(session.avgPace) : (session.targetPace ? `~${session.targetPace}` : '--'), 
+                      unit: '/km' 
+                    },
+                    { 
+                      label: 'FC', 
+                      value: session.type === 'completed' ? (session.avgHeartRate ?? '--') : (session.targetHeartRateBpm ? `${session.targetHeartRateBpm}` : '--'), 
+                      unit: 'bpm' 
+                    },
                   ].map((stat, i) => (
-                    <div key={i} className="p-5 rounded-2xl bg-transparent border border-border/50">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 opacity-70">{stat.label}</p>
-                      <div className="flex items-baseline gap-1">
-                        <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
-                        {stat.suffix && <span className="text-xs font-medium text-muted-foreground">{stat.suffix}</span>}
-                      </div>
-                    </div>
+                    <StatCard
+                      key={i}
+                      label={stat.label}
+                      value={stat.value}
+                      unit={stat.unit}
+                      highlight={stat.highlight}
+                    />
                   ))}
                 </div>
 
                 {(session.type === 'completed' ? session.perceivedExertion : session.targetRPE) && (
-                  <div className="p-6 rounded-2xl bg-transparent border border-border/30">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4 opacity-70">
+                  <div className="p-6 rounded-2xl bg-muted/40 dark:bg-white/[0.03] border border-border/40">
+                    <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.15em] mb-4 opacity-70">
                       {session.type === 'completed' ? 'Effort perçu (RPE)' : 'RPE cible'}
                     </p>
                     <div className="flex items-center gap-4">
@@ -201,14 +219,23 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
                 )}
 
                 {session.comments && (
-                  <div className="p-6 rounded-2xl bg-transparent border border-border/30 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/80">
+                        Notes & Commentaires
+                      </h3>
                     </div>
-                    <p className="text-xs font-semibold text-violet-600/70 uppercase tracking-widest mb-3">Notes & Commentaires</p>
-                    <p className="text-base leading-relaxed text-foreground italic font-normal">
-                      &ldquo;{session.comments}&rdquo;
-                    </p>
+                    <div className={cn(
+                      "p-6 rounded-[2rem] text-sm leading-relaxed whitespace-pre-wrap relative overflow-hidden transition-all duration-300",
+                      "bg-gradient-to-br from-muted/20 to-muted/5 dark:from-white/[0.02] dark:to-transparent border border-border/40 text-foreground/80 font-medium"
+                    )}>
+                      <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                        <MessageSquare className="w-24 h-24 rotate-12" />
+                      </div>
+                      <p className="italic relative z-10">
+                        &ldquo;{session.comments}&rdquo;
+                      </p>
+                    </div>
                   </div>
                 )}
 

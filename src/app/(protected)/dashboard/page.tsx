@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import SessionDialog from '@/features/sessions/components/forms/session-dialog';
 import { StravaImportDialog } from '@/features/import';
-import { SessionsTable, type SessionActions } from '@/features/dashboard/components/sessions-table';
+import { SessionsTable, type BulkEnrichmentSelection, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
@@ -21,7 +21,7 @@ import {
   type TrainingSession,
   type TrainingSessionPayload,
 } from '@/lib/types';
-import { bulkEnrichSessionWeather, getSessionById } from '@/lib/services/api-client';
+import { bulkEnrichSessionStreams, bulkEnrichSessionWeather, getSessionById } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
@@ -36,7 +36,7 @@ function DashboardContent() {
   const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isEnrichingWeather, setIsEnrichingWeather] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
 
   const { toast } = useToast();
   const { handleError } = useErrorHandler({ scope: 'global' });
@@ -115,68 +115,97 @@ function DashboardContent() {
     await deleteMutation(id);
   };
 
-  const handleBulkEnrichWeather = async (ids: string[]) => {
-    if (ids.length === 0 || isEnrichingWeather) {
+  const handleBulkEnrich = async ({ ids, weatherIds, streamIds }: BulkEnrichmentSelection) => {
+    if (ids.length === 0 || isEnriching) {
       if (ids.length === 0) {
         toast({
-          title: 'Enrichissement météo',
+          title: 'Enrichissement',
           description: 'Aucune séance éligible (séances planifiées ignorées).',
         });
       }
       return;
     }
 
-    setIsEnrichingWeather(true);
+    setIsEnriching(true);
     try {
-      const result = await bulkEnrichSessionWeather(ids);
-      
-      const hasAnyResult = Object.values(result.summary).some(count => count > 0);
-      
-      if (!hasAnyResult) {
+      const weatherRequested = weatherIds.length > 0;
+      const streamsRequested = streamIds.length > 0;
+      const [weatherResult, streamsResult] = await Promise.allSettled([
+        weatherRequested ? bulkEnrichSessionWeather(weatherIds) : Promise.resolve(null),
+        streamsRequested ? bulkEnrichSessionStreams(streamIds) : Promise.resolve(null),
+      ]);
+
+      const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+      const streams = streamsResult.status === 'fulfilled' ? streamsResult.value : null;
+      const weatherFailed = weatherResult.status === 'rejected' && weatherRequested;
+      const streamsFailed = streamsResult.status === 'rejected' && streamsRequested;
+      const allRequestedCompleted = (!weatherRequested || !!weather) && (!streamsRequested || !!streams);
+      const updatedSessionIds = new Set<string>([
+        ...(weather?.ids.enriched ?? []),
+        ...(streams?.ids.enriched ?? []),
+      ]);
+      const alreadyUpToDateIds = new Set<string>([
+        ...(weather?.ids.alreadyHasWeather ?? []),
+        ...(streams?.ids.alreadyHasStreams ?? []),
+      ]);
+
+      if (weatherFailed && streamsFailed) {
+        handleError(new Error('bulk-enrich-failed'), "Erreur lors de l'enrichissement.");
+        return;
+      }
+
+      if (weather || streams) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
+      }
+
+      if (!allRequestedCompleted) {
         toast({
-          title: 'Enrichissement météo',
-          description: 'Aucune séance éligible.',
+          title: 'Résultat partiel',
+          description: 'Une partie du traitement n’a pas confirmé sa fin (timeout ou erreur). Réessayez ou actualisez pour voir les compteurs finaux.',
         });
         return;
       }
 
       toast({
-        title: 'Mise à jour météo terminée',
+        title: 'Mise à jour des séances terminée',
         description: (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-            {result.summary.enriched > 0 && (
+            <span className="flex items-center gap-1.5 text-foreground font-bold">
+              {ids.length}
+              <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Séance{ids.length > 1 ? 's' : ''} analysée{ids.length > 1 ? 's' : ''}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
+              {updatedSessionIds.size}
+              <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Séance{updatedSessionIds.size > 1 ? 's' : ''} mise{updatedSessionIds.size > 1 ? 's' : ''} à jour</span>
+            </span>
+            {weather && weatherIds.length > 0 && (
               <span className="flex items-center gap-1.5 text-sky-600 font-bold">
-                <span className="text-[10px]">✅</span> {result.summary.enriched}
-                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Enrichie{result.summary.enriched > 1 ? 's' : ''}</span>
+                {weather.summary.enriched}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Météo ajoutée</span>
               </span>
             )}
-            {result.summary.alreadyHasWeather > 0 && (
+            {streams && streamIds.length > 0 && (
+              <span className="flex items-center gap-1.5 text-blue-600 font-bold">
+                {streams.summary.enriched}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Séance{streams.summary.enriched > 1 ? 's' : ''} avec streams ajoutés</span>
+              </span>
+            )}
+            {alreadyUpToDateIds.size > 0 && (
               <span className="flex items-center gap-1.5 text-muted-foreground font-bold">
-                <span className="text-[10px]">ℹ️</span> {result.summary.alreadyHasWeather}
-                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Déjà à jour</span>
+                {alreadyUpToDateIds.size}
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Déjà complètes</span>
               </span>
             )}
-            {result.summary.missingStrava > 0 && (
+            {(weatherFailed || streamsFailed) && (
               <span className="flex items-center gap-1.5 text-amber-600 font-bold">
-                <span className="text-[10px]">📍</span> {result.summary.missingStrava}
-                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Sans GPS</span>
-              </span>
-            )}
-            {(result.summary.failed > 0 || result.summary.notFound > 0) && (
-              <span className="flex items-center gap-1.5 text-red-500 font-bold">
-                <span className="text-[10px]">❌</span> {result.summary.failed + result.summary.notFound}
-                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Échec{result.summary.failed + result.summary.notFound > 1 ? 's' : ''}</span>
+                <span className="text-[10px] uppercase tracking-[0.1em] opacity-80">Partiel</span>
               </span>
             )}
           </div>
         ),
       });
-
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
-    } catch (error) {
-      handleError(error, 'Erreur lors de la mise en file météo.');
     } finally {
-      setIsEnrichingWeather(false);
+      setIsEnriching(false);
     }
   };
 
@@ -257,7 +286,7 @@ function DashboardContent() {
     onView: handleViewSession,
     onPrefetchDetails: prefetchSessionDetails,
     onNewSession: openNewSession,
-    onBulkEnrichWeather: handleBulkEnrichWeather,
+    onBulkEnrich: handleBulkEnrich,
   };
 
   if (!user) {
@@ -280,7 +309,7 @@ function DashboardContent() {
           onLoadMore={fetchNextPage}
           isFetching={isFetchingData}
           deletingIds={deletingIds}
-          isEnrichingWeather={isEnrichingWeather}
+          isEnriching={isEnriching}
           sortConfig={sortConfig}
           onSort={handleSort}
           searchQuery={searchQuery}

@@ -128,7 +128,7 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
                 </div>
               </div>
               <div className="space-y-1.5 pl-3">
-                {day.sessions.filter(isCompleted).map((s, i) => (
+                {day.sessions.filter(isCompleted).map((s, i) => s.sessionType && (
                   <div key={i} className="flex items-center gap-2">
                     <div className="w-0.5 h-3 bg-violet-500 rounded-full" />
                     <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-tight">
@@ -155,7 +155,7 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
                 </div>
               </div>
               <div className="space-y-1.5 pl-3">
-                {day.sessions.filter(isPlanned).map((s, i) => (
+                {day.sessions.filter(isPlanned).map((s, i) => s.sessionType && (
                   <div key={i} className="flex items-center gap-2">
                     <div className="w-0.5 h-3 bg-white/10 rounded-full" />
                     <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tight italic">

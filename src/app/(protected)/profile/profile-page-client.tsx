@@ -53,7 +53,7 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { params, setParam } = useUrlParams(
+  const { params, setParam, setParams } = useUrlParams(
     {
       tab: {
         key: 'tab',
@@ -77,7 +77,32 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
   );
 
   const activeView = params.tab;
-  const setActiveView = useCallback((v: ProfileTab) => setParam('tab', v), [setParam]);
+  const setActiveView = useCallback((v: ProfileTab) => {
+    if (v === 'analytics') {
+      setParam('tab', v);
+      return;
+    }
+
+    setParams({
+      tab: v,
+      range: DEFAULT_DATE_RANGE,
+      granularity: DEFAULT_GRANULARITY,
+      from: '',
+      to: '',
+    });
+  }, [setParam, setParams]);
+  const handleDateRangeChange = useCallback((v: DateRangeType) => {
+    if (v === 'custom') {
+      setParam('range', v);
+      return;
+    }
+
+    setParams({
+      range: v,
+      from: '',
+      to: '',
+    });
+  }, [setParam, setParams]);
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -189,7 +214,7 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
           <AnalyticsView
             sessions={sessions}
             dateRange={params.range}
-            onDateRangeChange={(v) => setParam('range', v)}
+            onDateRangeChange={handleDateRangeChange}
             granularity={params.granularity}
             onGranularityChange={(v) => setParam('granularity', v)}
             customStartDate={params.from}

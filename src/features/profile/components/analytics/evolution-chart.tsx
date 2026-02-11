@@ -8,15 +8,23 @@ import {
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { useMemo, type ReactNode, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity } from 'lucide-react';
+import { BarChart3, Activity } from 'lucide-react';
 import type { BucketChartDataPoint } from '@/lib/domain/analytics/weekly-calculator';
 import type { ChartGranularity } from '@/lib/domain/analytics/date-range';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatDuration } from '@/lib/utils/duration/format';
 
 interface EvolutionChartProps {
   chartData: BucketChartDataPoint[];
   granularity: ChartGranularity;
+  onGranularityChange: (value: ChartGranularity) => void;
 }
 
 type YAxisConfig = {
@@ -228,7 +236,7 @@ function EvolutionTooltipContent({ active, payload, label, granularity, coordina
 
   const totalSessionsGoal = completedCount + plannedCount;
   const hasPlanned = plannedKm > 0 || plannedCount > 0;
-  const showProjection = hasPlanned || (isCurrent && totalSessionsGoal > 0);
+  const showProjection = hasPlanned;
 
   // Position calculation
   const rect = containerEl.getBoundingClientRect();
@@ -350,7 +358,7 @@ function EvolutionTooltipContent({ active, payload, label, granularity, coordina
   );
 }
 
-export function EvolutionChart({ chartData, granularity }: EvolutionChartProps) {
+export function EvolutionChart({ chartData, granularity, onGranularityChange }: EvolutionChartProps) {
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const containerRefCb = useCallback((node: HTMLDivElement | null) => { setContainerEl(node); }, []);
 
@@ -375,27 +383,43 @@ export function EvolutionChart({ chartData, granularity }: EvolutionChartProps) 
 
   const yAxisConfig = useMemo(() => computeYAxisConfig(chartData), [chartData]);
 
-  // Adaptive width: fits 100% on large screens (Big Picture)
-  // but ensures a minimum width per point on small screens for precision.
   const chartWidth = useMemo(() => {
     const pointCount = chartData.length;
-    // 10px per point is a good balance: it's dense but stays interactable on touch
     return `max(100%, ${pointCount * 10}px)`;
   }, [chartData.length]);
 
   return (
     <Card className="border-border/50 shadow-xl relative overflow-visible">
       <CardHeader className="pb-4">
-        <div className="flex flex-col gap-1">
-          <CardTitle className="text-xl font-bold tracking-tight">Évolution</CardTitle>
-          <CardDescription className="text-sm">
-            {subtitle}
-            {stats.activeWeeksCount > 0 && (
-              <span className="text-muted-foreground/50">
-                {' '}• {stats.activeWeeksCount} {activeLabel}
-              </span>
-            )}
-          </CardDescription>
+        <div className="flex flex-row items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-xl font-bold tracking-tight">Évolution</CardTitle>
+            <CardDescription className="text-sm">
+              {subtitle}
+              {stats.activeWeeksCount > 0 && (
+                <span className="text-muted-foreground/50">
+                  {' '}• {stats.activeWeeksCount} {activeLabel}
+                </span>
+              )}
+            </CardDescription>
+          </div>
+
+          <div className="p-1 rounded-xl bg-muted/10 border border-border/40 backdrop-blur-xl shrink-0">
+            <Select value={granularity} onValueChange={(value) => onGranularityChange(value as ChartGranularity)}>
+              <SelectTrigger 
+                data-testid="select-granularity" 
+                className="h-8 md:h-9 px-3 border-none bg-transparent hover:bg-muted/10 data-[state=open]:bg-muted/10 rounded-lg shadow-none focus:ring-0 w-fit min-w-[100px] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all gap-2"
+              >
+                <BarChart3 className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
+                <SelectItem value="day" className="rounded-xl">Jour</SelectItem>
+                <SelectItem value="week" className="rounded-xl">Semaine</SelectItem>
+                <SelectItem value="month" className="rounded-xl">Mois</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0 relative px-0 sm:px-6">

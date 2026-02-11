@@ -12,11 +12,11 @@ import {
 import type { StravaStreamSet } from '@/lib/types';
 
 describe('streams utilities', () => {
-  const createMockStream = (data: number[]) => ({
+  const createMockStream = (data: number[], resolution: 'low' | 'medium' | 'high' = 'high') => ({
     data,
     series_type: 'distance' as const,
     original_size: data.length,
-    resolution: 'high' as const,
+    resolution,
   });
 
   describe('prepareAltitudeData', () => {
@@ -65,6 +65,64 @@ describe('streams utilities', () => {
       };
 
       expect(preparePaceData(streams)).toEqual([]);
+    });
+
+    it('should avoid flattening sparse low-resolution pace streams', () => {
+      const streams: StravaStreamSet = {
+        velocity_smooth: createMockStream([3.5, 2.0, 3.5], 'low'),
+        distance: createMockStream([0, 500, 1000], 'low'),
+        time: createMockStream([0, 30, 60], 'low'),
+      };
+
+      const result = preparePaceData(streams);
+
+      expect(result).toHaveLength(3);
+      // middle point should stay close to raw 2.0 m/s => 500 s/km (8:20)
+      expect(result[1].value).toBeGreaterThan(450);
+    });
+
+    it('should smooth isolated pause spike at start', () => {
+      const streams: StravaStreamSet = {
+        velocity_smooth: createMockStream([0.2, 2.8, 2.9, 2.8], 'high'),
+        distance: createMockStream([0, 100, 200, 300], 'high'),
+        time: createMockStream([0, 5, 10, 15], 'high'),
+      };
+
+      const result = preparePaceData(streams);
+
+      expect(result).toHaveLength(4);
+      // first point should not keep a huge pause artifact pace
+      expect(result[0].value).toBeLessThan(900);
+    });
+
+    it('should normalize leading zero velocities instead of displaying start artifact', () => {
+      const streams: StravaStreamSet = {
+        velocity_smooth: createMockStream([0, 0, 2.5, 2.6, 2.7], 'high'),
+        distance: createMockStream([0, 5, 10, 15, 20], 'high'),
+        time: createMockStream([0, 1, 2, 3, 4], 'high'),
+      };
+
+      const result = preparePaceData(streams);
+
+      expect(result).toHaveLength(5);
+      // first points should be close to running pace, not an artificial very slow spike.
+      expect(result[0].value).toBeLessThan(500);
+      expect(result[1].value).toBeLessThan(500);
+    });
+
+    it('should repair short pause segments in the middle of activity', () => {
+      const streams: StravaStreamSet = {
+        velocity_smooth: createMockStream([2.9, 2.8, 0, 0, 2.8, 2.9], 'high'),
+        distance: createMockStream([0, 10, 20, 30, 40, 50], 'high'),
+        time: createMockStream([0, 5, 10, 15, 20, 25], 'high'),
+      };
+
+      const result = preparePaceData(streams);
+
+      expect(result).toHaveLength(6);
+      // pause points should be brought back near running pace to avoid spikes.
+      expect(result[2].value).toBeLessThan(500);
+      expect(result[3].value).toBeLessThan(500);
     });
   });
 
@@ -251,9 +309,8 @@ describe('streams utilities', () => {
       const result = calculatePaceDomain(data);
 
       expect(result).toBeDefined();
-      // With zero range, padding is 0, so domain equals the single value
-      expect(result![0]).toBe(300);
-      expect(result![1]).toBe(300);
+      expect(result![0]).toBeLessThan(300);
+      expect(result![1]).toBeGreaterThan(300);
     });
 
     it('should not return negative minimum', () => {
@@ -266,6 +323,40 @@ describe('streams utilities', () => {
 
       expect(result).toBeDefined();
       expect(result![0]).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should ignore isolated very slow outlier for domain scaling', () => {
+      const data = [
+        { distance: 0, time: 0, value: 300, formattedValue: '5:00' },
+        { distance: 1, time: 60, value: 320, formattedValue: '5:20' },
+        { distance: 2, time: 120, value: 330, formattedValue: '5:30' },
+        { distance: 3, time: 180, value: 340, formattedValue: '5:40' },
+        { distance: 4, time: 240, value: 360, formattedValue: '6:00' },
+        { distance: 5, time: 300, value: 2200, formattedValue: '36:40' },
+      ];
+
+      const result = calculatePaceDomain(data);
+
+      expect(result).toBeDefined();
+      // domain upper bound should remain in a coherent range
+      expect(result![1]).toBeLessThan(700);
+    });
+
+    it('should trim start/end edges when computing pace domain', () => {
+      const data = [
+        { distance: 0.0, time: 0, value: 800, formattedValue: '13:20' }, // start artifact
+        { distance: 0.2, time: 10, value: 360, formattedValue: '6:00' },
+        { distance: 0.5, time: 20, value: 350, formattedValue: '5:50' },
+        { distance: 1.0, time: 30, value: 340, formattedValue: '5:40' },
+        { distance: 2.0, time: 40, value: 330, formattedValue: '5:30' },
+        { distance: 3.0, time: 50, value: 335, formattedValue: '5:35' },
+        { distance: 3.9, time: 60, value: 820, formattedValue: '13:40' }, // end artifact
+      ];
+
+      const result = calculatePaceDomain(data);
+
+      expect(result).toBeDefined();
+      expect(result![1]).toBeLessThan(700);
     });
   });
 });

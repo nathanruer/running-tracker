@@ -61,4 +61,16 @@ describe('CalendarViewInline', () => {
     fireEvent.click(nextButton!);
     expect(screen.getByText(/FÉVRIER 2024/i)).toBeInTheDocument();
   });
+  it('does not render "-" when sessionType is null', () => {
+    render(
+      <CalendarViewInline
+        sessions={[
+          { id: '1', date: '2024-01-10', sessionType: null, status: 'completed' } as never,
+        ]}
+        onDayClick={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText('-')).not.toBeInTheDocument();
+  });
 });

@@ -292,7 +292,8 @@ export function calculateBucketedStats(params: {
 
     const avgHeartRate = hrCount > 0 ? Math.round(hrSum / hrCount) : null;
     const avgPaceSeconds = completedKm > 0 ? Math.round(durationSeconds / completedKm) : null;
-    const isCurrent = rangeEnd >= start && rangeEnd < end;
+    const now = new Date();
+    const isCurrent = now >= start && now < end;
 
     return {
       label: formatBucketLabel(start, end, granularity, includeYear),

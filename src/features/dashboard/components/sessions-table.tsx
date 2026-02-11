@@ -14,6 +14,12 @@ import { SessionsTableToolbar } from './sessions-table-toolbar';
 import { SessionsTableHead } from './sessions-table-head';
 import { SessionsTableBody } from './sessions-table-body';
 
+export interface BulkEnrichmentSelection {
+  ids: string[];
+  weatherIds: string[];
+  streamIds: string[];
+}
+
 export interface SessionActions {
   onEdit: (session: TrainingSession) => void;
   onDelete: (id: string) => void;
@@ -21,7 +27,7 @@ export interface SessionActions {
   onView?: (session: TrainingSession) => void;
   onPrefetchDetails?: (sessionId: string) => void;
   onNewSession?: () => void;
-  onBulkEnrichWeather?: (ids: string[]) => Promise<void> | void;
+  onBulkEnrich?: (selection: BulkEnrichmentSelection) => Promise<void> | void;
 }
 
 interface SessionsTableProps {
@@ -37,7 +43,7 @@ interface SessionsTableProps {
   onLoadMore: () => void;
   isFetching?: boolean;
   deletingIds: Set<string>;
-  isEnrichingWeather?: boolean;
+  isEnriching?: boolean;
   sortConfig: SortConfig;
   onSort: (column: SortColumn, isMulti: boolean) => void;
   searchQuery: string;
@@ -62,7 +68,7 @@ export function SessionsTable({
   onLoadMore,
   isFetching,
   deletingIds,
-  isEnrichingWeather,
+  isEnriching,
   sortConfig,
   onSort,
   searchQuery,
@@ -80,15 +86,28 @@ export function SessionsTable({
     clearSelection,
     isAllSelected,
   } = useTableSelection(sessions, { mode: 'multiple', getKey: (session) => session.id });
+
   const { showBulkDeleteDialog, setShowBulkDeleteDialog, handleBulkDelete } = useBulkDelete(actions.onBulkDelete);
-  const enrichableIds = sessions
+
+  const enrichableWeatherIds = sessions
     .filter((session) =>
       selectedSessions.has(session.id)
       && session.status === 'completed'
-      && session.source === 'strava'
+      && (session.source === 'strava' || Boolean(session.externalId))
       && session.hasWeather !== true
     )
     .map((session) => session.id);
+
+  const enrichableStreamIds = sessions
+    .filter((session) =>
+      selectedSessions.has(session.id)
+      && session.status === 'completed'
+      && (session.source === 'strava' || Boolean(session.externalId))
+      && session.hasStreams !== true
+    )
+    .map((session) => session.id);
+
+  const enrichableIds = Array.from(new Set([...enrichableWeatherIds, ...enrichableStreamIds]));
 
   const isDeleting = deletingIds.size > 0;
   const hasActiveFilters = selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all';
@@ -117,13 +136,17 @@ export function SessionsTable({
           selectedCount={selectedSessions.size}
           onClearSelection={clearSelection}
           onOpenBulkDelete={() => setShowBulkDeleteDialog(true)}
-          onBulkEnrichWeather={
-            actions.onBulkEnrichWeather
-              ? () => actions.onBulkEnrichWeather?.(enrichableIds)
+          onBulkEnrich={
+            actions.onBulkEnrich
+              ? () => actions.onBulkEnrich?.({
+                ids: enrichableIds,
+                weatherIds: enrichableWeatherIds,
+                streamIds: enrichableStreamIds,
+              })
               : undefined
           }
           isDeleting={isDeleting}
-          isEnrichingWeather={isEnrichingWeather}
+          isEnriching={isEnriching}
           enrichableCount={enrichableIds.length}
           actions={{ onNewSession: actions.onNewSession }}
           selectedType={selectedType}
@@ -137,12 +160,15 @@ export function SessionsTable({
           hasActiveFilters={hasActiveFilters}
           onClearFilters={handleClearFilters}
         />
+
         <CardContent className="p-0 relative">
           <LoadingBar isLoading={(!!isFetching || isDeleting) && !initialLoading} />
-          <div className={cn(
-            "overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/10 transition-opacity duration-500",
-            isFetching && !initialLoading && !isDeleting && sessions.length > 0 ? "opacity-60" : "opacity-100"
-          )}>
+          <div
+            className={cn(
+              'overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/10 transition-opacity duration-500',
+              isFetching && !initialLoading && !isDeleting && sessions.length > 0 ? 'opacity-60' : 'opacity-100'
+            )}
+          >
             <Table data-testid="sessions-table" className="table-auto min-w-[800px] md:min-w-0">
               <SessionsTableHead
                 sortConfig={sortConfig}

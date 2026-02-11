@@ -297,9 +297,30 @@ export async function fetchSessions(
   };
 
   if (isTableView) {
+    workoutSelect.external_activities = {
+      where: {
+        source: 'strava',
+      },
+      select: {
+        source: true,
+        externalId: true,
+        sourceStatus: true,
+        external_payloads: {
+          select: {
+            payload: true,
+          },
+        },
+      },
+      take: 1,
+    };
     workoutSelect.weather_observations = {
       select: {
         id: true,
+      },
+    };
+    workoutSelect._count = {
+      select: {
+        workout_streams: true,
       },
     };
   }

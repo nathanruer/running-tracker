@@ -1,4 +1,4 @@
-import { BarChart3, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -7,14 +7,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import type { ChartGranularity, DateRangeType } from '@/lib/domain/analytics/date-range';
+import type { DateRangeType } from '@/lib/domain/analytics/date-range';
 import { formatDateToISO } from '@/lib/utils/date';
 
 interface DateRangeSelectorProps {
   dateRange: DateRangeType;
   onDateRangeChange: (value: DateRangeType) => void;
-  granularity: ChartGranularity;
-  onGranularityChange: (value: ChartGranularity) => void;
   customStartDate: string;
   customEndDate: string;
   onCustomStartDateChange: (date: string) => void;
@@ -26,8 +24,6 @@ interface DateRangeSelectorProps {
 export function DateRangeSelector({
   dateRange,
   onDateRangeChange,
-  granularity,
-  onGranularityChange,
   customStartDate,
   customEndDate,
   onCustomStartDateChange,
@@ -55,23 +51,6 @@ export function DateRangeSelector({
           </SelectContent>
         </Select>
 
-        <div className="hidden sm:block w-px h-4 bg-border/20 mx-1" />
-
-        <Select value={granularity} onValueChange={(value) => onGranularityChange(value as ChartGranularity)}>
-          <SelectTrigger 
-            data-testid="select-granularity" 
-            className="h-9 md:h-10 px-4 border-none bg-transparent hover:bg-muted/10 data-[state=open]:bg-muted/10 rounded-xl shadow-none focus:ring-0 w-fit min-w-[110px] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all gap-2"
-          >
-            <BarChart3 className="h-4 w-4 text-muted-foreground/60" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-background/95 backdrop-blur-xl border-border/40 rounded-2xl shadow-2xl">
-            <SelectItem value="day" className="rounded-xl">Jour</SelectItem>
-            <SelectItem value="week" className="rounded-xl">Semaine</SelectItem>
-            <SelectItem value="month" className="rounded-xl">Mois</SelectItem>
-          </SelectContent>
-        </Select>
-
         {dateRange === 'custom' && (
           <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
             <div className="hidden sm:block w-px h-4 bg-border/20 mx-1" />
@@ -81,7 +60,7 @@ export function DateRangeSelector({
                 date={customStartDate ? new Date(customStartDate + 'T00:00:00') : undefined}
                 onSelect={(date: Date | undefined) => onCustomStartDateChange(date ? formatDateToISO(date) : '')}
                 placeholder="Début"
-                className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-[85px] md:w-[100px] transition-all px-2 hover:bg-muted/10 border-none shadow-none"
+                className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-fit min-w-[110px] md:min-w-[150px] transition-all px-2.5 hover:bg-muted/10 border-none shadow-none"
               />
               <span className="text-[10px] text-muted-foreground/30 font-black">→</span>
                 <DatePicker
@@ -89,7 +68,7 @@ export function DateRangeSelector({
                 date={customEndDate ? new Date(customEndDate + 'T00:00:00') : undefined}
                 onSelect={(date: Date | undefined) => onCustomEndDateChange(date ? formatDateToISO(date) : '')}
                 placeholder="Fin"
-                className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-[85px] md:w-[100px] transition-all px-2 hover:bg-muted/10 border-none shadow-none"
+                className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-fit min-w-[110px] md:min-w-[150px] transition-all px-2.5 hover:bg-muted/10 border-none shadow-none"
               />
             </div>
 

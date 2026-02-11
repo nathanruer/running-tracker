@@ -9,6 +9,10 @@ import 'server-only';
 import { Prisma } from '@prisma/client';
 import type { TrainingSession } from '@/lib/types';
 import { formatDuration } from '@/lib/utils/duration/format';
+import {
+  hasStravaRouteInPayload,
+  isStravaActivityLikelyStreamless,
+} from '@/server/domain/sessions/stream-eligibility';
 
 // ============================================================================
 // Types for mapper inputs (database entity shapes)
@@ -40,7 +44,8 @@ export interface PlanSessionData {
 export interface ExternalActivityData {
   source: string;
   externalId: string;
-  external_payloads: { payload: Prisma.JsonValue | null } | null;
+  sourceStatus?: string | null;
+  external_payloads?: { payload: Prisma.JsonValue | null } | null;
 }
 
 export interface WeatherObservationData {
@@ -59,6 +64,10 @@ export interface WorkoutStreamData {
   workout_stream_chunks: { data: Prisma.JsonValue }[];
 }
 
+export interface WorkoutCounts {
+  workout_streams: number;
+}
+
 export interface WorkoutBase {
   id: string;
   userId: string;
@@ -70,9 +79,11 @@ export interface WorkoutBase {
   sessionType: string | null;
   comments: string;
   perceivedExertion: number | null;
+  external_activities?: ExternalActivityData[];
   plan_sessions: PlanSessionData | null;
   workout_metrics_raw: WorkoutMetricsRaw | null;
   weather_observations?: WeatherObservationData | null;
+  _count?: WorkoutCounts;
 }
 
 export interface WorkoutFull extends WorkoutBase {
@@ -246,20 +257,39 @@ export function mapWorkoutToSession(
   const base = buildBaseSession(workout);
 
   if (!opts.includeFullData) {
+    const external = workout.external_activities
+      ? selectExternalActivity(workout.external_activities)
+      : null;
     const weather = opts.includeWeather ? mapWeather(workout.weather_observations ?? null) : null;
+    const hasStravaRoute = external?.source === 'strava'
+      && hasStravaRouteInPayload(external.external_payloads?.payload);
+    const weatherNotEnrichable = external?.source === 'strava' && !hasStravaRoute;
     const hasWeather = workout.weather_observations !== undefined
-      ? Boolean(workout.weather_observations)
+      ? Boolean(workout.weather_observations) || weatherNotEnrichable
+      : undefined;
+    const hasStreamsByCount = workout._count?.workout_streams !== undefined
+      ? workout._count.workout_streams > 0
+      : undefined;
+    const hasNoStreamsMarker = external?.source === 'strava'
+      && (
+        external.sourceStatus === 'no_streams'
+        || !external.external_payloads?.payload
+        || isStravaActivityLikelyStreamless(external.external_payloads?.payload)
+      );
+    const hasStreams = hasStreamsByCount !== undefined
+      ? hasStreamsByCount || hasNoStreamsMarker
       : undefined;
 
     return {
       ...base,
-      externalId: null,
-      source: null,
+      externalId: external?.externalId ?? null,
+      source: external?.source ?? null,
       stravaData: null,
       stravaStreams: null,
       averageTemp: weather?.temperature ?? null,
       weather,
       hasWeather,
+      hasStreams,
     } as TrainingSession;
   }
 
@@ -277,6 +307,7 @@ export function mapWorkoutToSession(
       stravaStreams: null,
       averageTemp: null,
       weather: null,
+      hasStreams: undefined,
     } as TrainingSession;
   }
 
@@ -284,6 +315,13 @@ export function mapWorkoutToSession(
   const streams = mapStreams(workout.workout_streams);
   const weather = mapWeather(workout.weather_observations);
   const hasWeather = Boolean(workout.weather_observations);
+  const hasNoStreamsMarker = external?.source === 'strava'
+    && (
+      external.sourceStatus === 'no_streams'
+      || !external.external_payloads?.payload
+      || isStravaActivityLikelyStreamless(external.external_payloads?.payload)
+    );
+  const hasStreams = streams !== null || hasNoStreamsMarker;
 
   return {
     ...base,
@@ -294,6 +332,7 @@ export function mapWorkoutToSession(
     averageTemp: weather?.temperature ?? null,
     weather,
     hasWeather,
+    hasStreams,
   } as TrainingSession;
 }
 
@@ -341,5 +380,6 @@ export function mapPlanToSession(
     averageTemp: null,
     calories: null,
     weather: null,
+    hasStreams: undefined,
   } as TrainingSession;
 }
