@@ -1,81 +1,81 @@
+'use client';
+
 import { useMemo } from 'react';
 import { type TrainingSession } from '@/lib/types';
-import { useDateRangeFilter } from '@/features/sessions/hooks/use-date-range-filter';
-import { calculateWeeklyStats } from '@/lib/domain/analytics/weekly-calculator';
+import { calculateBucketedStats } from '@/lib/domain/analytics/weekly-calculator';
 import { getSessionEffectiveDate, isCompleted, isPlanned } from '@/lib/domain/sessions/session-selectors';
+import { isCustomRangeTooShort, resolveDateRange } from '@/lib/domain/analytics/date-range';
+import type { ChartGranularity, DateRangeType } from '@/lib/domain/analytics/date-range';
 
-/**
- * Hook for managing analytics data filtering and calculations
- * Handles completed and planned sessions with date range filtering
- */
-export function useAnalyticsData(sessions: TrainingSession[]) {
-  const completedSessions = useMemo(
-    () => sessions.filter((s) => isCompleted(s) && getSessionEffectiveDate(s)),
+export interface AnalyticsFilters {
+  dateRange: DateRangeType;
+  granularity: ChartGranularity;
+  customStartDate: string;
+  customEndDate: string;
+}
+
+export function useAnalyticsData(sessions: TrainingSession[], filters: AnalyticsFilters) {
+  const { dateRange, granularity, customStartDate, customEndDate } = filters;
+
+  const customDateError = useMemo(() => {
+    if (dateRange === 'custom' && customStartDate && customEndDate && isCustomRangeTooShort(customStartDate, customEndDate)) {
+      return 'La plage doit être d\'au moins 2 semaines (14 jours)';
+    }
+    return '';
+  }, [dateRange, customStartDate, customEndDate]);
+
+  const sessionDates = useMemo(
+    () => sessions.map((s) => getSessionEffectiveDate(s)).filter((d): d is string => Boolean(d)),
     [sessions]
   );
 
-  const {
-    dateRange,
-    setDateRange,
-    customStartDate,
-    setCustomStartDate,
-    customEndDate,
-    setCustomEndDate,
-    filteredItems: filteredCompletedSessions,
-    dateError: customDateError,
-  } = useDateRangeFilter(completedSessions, 'all');
+  const { start: rangeStart, end: rangeEnd, label: rangeLabel } = useMemo(
+    () => resolveDateRange({ dateRange, customStartDate, customEndDate, sessionDates }),
+    [dateRange, customStartDate, customEndDate, sessionDates]
+  );
 
-  const filteredPlannedSessions = useMemo(() => {
-    const plannedSessions = sessions.filter((s) => isPlanned(s) && getSessionEffectiveDate(s));
+  const completedSessions = useMemo(
+    () => sessions.filter((session) => isCompleted(session)),
+    [sessions]
+  );
 
-    if (dateRange === 'all') return plannedSessions;
-
-    const now = new Date();
-    return plannedSessions.filter((session) => {
-      const effectiveDate = getSessionEffectiveDate(session);
-      const sessionDate = effectiveDate ? new Date(effectiveDate) : null;
-      if (!sessionDate) return true;
-
-      if (dateRange === '2weeks') {
-        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        return sessionDate >= twoWeeksAgo;
-      } else if (dateRange === '4weeks') {
-        const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
-        return sessionDate >= fourWeeksAgo;
-      } else if (dateRange === '12weeks') {
-        const twelveWeeksAgo = new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000);
-        return sessionDate >= twelveWeeksAgo;
-      } else if (dateRange === 'custom') {
-        if (!customStartDate && !customEndDate) return true;
-
-        const startDate = customStartDate ? new Date(customStartDate + 'T00:00:00') : null;
-        const endDate = customEndDate ? new Date(customEndDate + 'T23:59:59') : null;
-
-        if (startDate && endDate) {
-          return sessionDate >= startDate && sessionDate <= endDate;
-        } else if (startDate) {
-          return sessionDate >= startDate;
-        } else if (endDate) {
-          return sessionDate <= endDate;
-        }
-      }
-      return true;
-    });
-  }, [sessions, dateRange, customStartDate, customEndDate]);
+  const plannedSessions = useMemo(
+    () => sessions.filter((session) => isPlanned(session)),
+    [sessions]
+  );
 
   const stats = useMemo(
-    () => calculateWeeklyStats(filteredCompletedSessions, filteredPlannedSessions),
-    [filteredCompletedSessions, filteredPlannedSessions]
+    () => {
+      if (customDateError) {
+        return {
+          totalKm: 0,
+          totalSessions: 0,
+          totalDurationSeconds: 0,
+          averageKmPerBucket: 0,
+          averageDurationPerBucket: 0,
+          averageSessionsPerBucket: 0,
+          averageKmPerActiveBucket: 0,
+          activeBucketsCount: 0,
+          totalBuckets: 0,
+          chartData: [],
+        };
+      }
+
+      return calculateBucketedStats({
+        completedSessions,
+        plannedSessions,
+        rangeStart,
+        rangeEnd,
+        granularity,
+        includePlannedInOpenBucket: dateRange === 'all' || (dateRange === 'custom' && !customEndDate),
+      });
+    },
+    [completedSessions, plannedSessions, rangeStart, rangeEnd, granularity, dateRange, customEndDate, customDateError]
   );
 
   return {
-    dateRange,
-    setDateRange,
-    customStartDate,
-    setCustomStartDate,
-    customEndDate,
-    setCustomEndDate,
     customDateError,
+    rangeLabel,
     stats,
   };
 }

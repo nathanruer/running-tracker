@@ -1,5 +1,5 @@
 export { AnalyticsView } from './components/analytics-view';
-export { ProfileSkeleton } from './components/profile-skeleton';
+export { ProfileSkeleton, ProfileContentSkeleton } from './components/profile-skeleton';
 
 export {
   ProfileForm,
@@ -15,7 +15,7 @@ export {
 
 export {
   StatsCards,
-  WeeklyEvolutionChart,
+  EvolutionChart,
   DateRangeSelector,
 } from './components/analytics';
 

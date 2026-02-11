@@ -29,6 +29,5 @@ export {
 } from './components/intervals';
 
 export { useSessionForm } from './hooks/forms/use-session-form';
-export { useDateRangeFilter } from './hooks/use-date-range-filter';
 export { useStreamData } from './hooks/details/use-stream-data';
 export { useIntervalSync } from './hooks/intervals/use-interval-sync';

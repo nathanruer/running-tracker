@@ -2,6 +2,8 @@
  * Date formatting utilities
  */
 
+export const MONTHS_SHORT_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+
 // Week utilities
 export {
   getISOWeekKey,

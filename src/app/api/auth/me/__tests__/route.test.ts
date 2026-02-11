@@ -185,5 +185,22 @@ describe('/api/auth/me', () => {
         }),
       });
     });
+
+    it('should return 500 when profile update fails', async () => {
+      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
+      vi.mocked(prisma.user_profiles.upsert).mockRejectedValue(new Error('Database error'));
+
+      const request = new NextRequest('http://localhost/api/auth/me', {
+        method: 'PUT',
+        body: JSON.stringify({ weight: '75' }),
+      });
+
+      const response = await PUT(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data).toEqual({ error: 'Database error' });
+      expect(prisma.users.findUnique).not.toHaveBeenCalled();
+    });
   });
 });

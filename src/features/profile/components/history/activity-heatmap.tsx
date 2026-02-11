@@ -15,14 +15,23 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { calculateHeatmapData, type DayData } from '@/lib/domain/analytics/heatmap-calculator';
 import { getSessionDistanceKm, getSessionEffectiveDate, isCompleted, isPlanned } from '@/lib/domain/sessions/session-selectors';
+import { MONTHS_SHORT_FR } from '@/lib/utils/date';
+import { Calendar, Circle } from 'lucide-react';
 
 interface ActivityHeatmapProps {
   sessions: TrainingSession[];
   onDayClick?: (date: Date, sessions: TrainingSession[]) => void;
 }
 
-const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+const MONTH_LABELS = MONTHS_SHORT_FR.map((label) => label.charAt(0).toUpperCase() + label.slice(1));
 const DAYS = ['Lun', '', 'Mer', '', 'Ven', '', 'Dim'];
+const INTENSITY_CLASSES = [
+  'bg-muted/40 dark:bg-muted/20',
+  'bg-violet-900/40 dark:bg-violet-900/60',
+  'bg-violet-700/60 dark:bg-violet-700/80',
+  'bg-violet-500/80 dark:bg-violet-500',
+  'bg-violet-400 dark:bg-violet-400',
+] as const;
 
 export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) {
   const currentYear = getYear(new Date());
@@ -47,16 +56,13 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
 
   const getIntensityClass = (day: DayData): string => {
     if (day.date.getTime() === 0) return 'bg-transparent';
-    if (day.count === 0) return 'bg-muted/40 dark:bg-muted/20';
+    if (day.count === 0) return INTENSITY_CLASSES[0];
     
     const hasCompleted = day.sessions.some(isCompleted);
     const intensity = Math.min(day.totalKm / maxKm, 1);
     
-    let colorClass = '';
-    if (intensity < 0.25) colorClass = 'bg-violet-900/40 dark:bg-violet-900/60';
-    else if (intensity < 0.5) colorClass = 'bg-violet-700/60 dark:bg-violet-700/80';
-    else if (intensity < 0.75) colorClass = 'bg-violet-500/80 dark:bg-violet-500';
-    else colorClass = 'bg-violet-400 dark:bg-violet-400';
+    const intensityIndex = intensity < 0.25 ? 1 : intensity < 0.5 ? 2 : intensity < 0.75 ? 3 : 4;
+    const colorClass = INTENSITY_CLASSES[intensityIndex];
 
     if (!hasCompleted) {
       return cn(colorClass, "opacity-30 border border-violet-500/30 border-dashed");
@@ -68,9 +74,16 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
   const formatTooltipContent = (day: DayData): React.ReactNode => {
     if (day.count === 0) {
       return (
-        <div className="text-xs p-1">
-          <div className="font-medium mb-1">{format(day.date, 'EEEE d MMMM yyyy', { locale: fr })}</div>
-          <div className="text-muted-foreground">Aucune séance</div>
+        <div className="space-y-2 py-1">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-2 mb-2">
+            <Calendar className="w-3 h-3 text-muted-foreground/40" />
+            <span className="font-black text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 leading-none">
+              {format(day.date, 'EEEE d MMM', { locale: fr })}
+            </span>
+          </div>
+          <p className="text-[10px] font-bold text-muted-foreground/30 italic uppercase tracking-wider pl-1">
+            Aucune séance
+          </p>
         </div>
       );
     }
@@ -86,39 +99,73 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
     const plannedCount = day.sessions.filter(isPlanned).length;
 
     return (
-      <div className="text-xs space-y-3 p-1">
-        <div className="font-medium border-b border-border/50 pb-1.5">{format(day.date, 'EEEE d MMMM yyyy', { locale: fr })}</div>
-        
-        <div className="space-y-2">
-          {completedCount > 0 && (
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground">Réalisé</span>
-              <span className="text-violet-500 font-bold">{completedKm.toFixed(1)} km <span className="text-muted-foreground font-normal ml-1">• {completedCount}</span></span>
-            </div>
-          )}
-          {plannedCount > 0 && (
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-muted-foreground italic">Programmé</span>
-              <span className="text-muted-foreground font-semibold">{plannedKm.toFixed(1)} km <span className="text-muted-foreground font-normal ml-1">• {plannedCount}</span></span>
-            </div>
-          )}
+      <div className="space-y-4 py-1">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/5 pb-2.5 mb-1">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3 h-3 text-muted-foreground/40" />
+            <span className="font-black text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 leading-none">
+              {format(day.date, 'EEEE d MMM', { locale: fr })}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-muted/30 px-2 py-0.5 rounded-full border border-border/20">
+            <Circle className="w-1.5 h-1.5 fill-violet-500 text-violet-500" />
+            <span className="text-[9px] font-black text-foreground/80 leading-none">{day.sessions.length}</span>
+          </div>
         </div>
-
-        <div className="space-y-1">
-          {day.sessions.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-sm">
-              <span className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                isCompleted(s) ? 'bg-violet-500' : 'bg-muted-foreground/40'
-              )} />
-              <span className={cn(
-                "truncate max-w-[150px]",
-                isPlanned(s) && "text-muted-foreground italic"
-              )}>
-                {s.sessionType}
-              </span>
+        
+        <div className="space-y-4">
+          {completedCount > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">Réalisé</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm font-black text-foreground tabular-nums">{completedKm.toFixed(1)}</span>
+                  <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">KM</span>
+                </div>
+              </div>
+              <div className="space-y-1.5 pl-3">
+                {day.sessions.filter(isCompleted).map((s, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-0.5 h-3 bg-violet-500 rounded-full" />
+                    <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-tight">
+                      {s.sessionType}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+
+          {plannedCount > 0 && (completedCount > 0 ? <div className="h-px bg-white/5 mx-2" /> : null)}
+
+          {plannedCount > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Programmé</span>
+                </div>
+                <div className="flex items-baseline gap-1 opacity-60">
+                  <span className="text-sm font-black text-foreground tabular-nums">{plannedKm.toFixed(1)}</span>
+                  <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">KM</span>
+                </div>
+              </div>
+              <div className="space-y-1.5 pl-3">
+                {day.sessions.filter(isPlanned).map((s, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-0.5 h-3 bg-white/10 rounded-full" />
+                    <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tight italic">
+                      {s.sessionType}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -149,17 +196,10 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
                   </div>
                   <span>Réalisé</span>
                   <div className="flex gap-[2px]">
-                    {[0, 1, 2, 3, 4].map(level => (
+                    {INTENSITY_CLASSES.map((className, level) => (
                       <div 
                         key={level} 
-                        className={cn(
-                          "w-3 h-3 rounded-[2px]",
-                          level === 0 ? "bg-muted/40 dark:bg-muted/20" : 
-                          level === 1 ? "bg-violet-900/40 dark:bg-violet-900/60" :
-                          level === 2 ? "bg-violet-700/60 dark:bg-violet-700/80" :
-                          level === 3 ? "bg-violet-500/80 dark:bg-violet-500" :
-                          "bg-violet-400 dark:bg-violet-400"
-                        )} 
+                        className={cn("w-3 h-3 rounded-[2px]", className)} 
                       />
                     ))}
                   </div>
@@ -182,7 +222,7 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
                         className="text-[10px] text-muted-foreground font-medium whitespace-nowrap"
                         style={{ gridColumnStart: typeof window !== 'undefined' && window.innerWidth < 1024 ? weekIndex + 1 : weekIndex + 2 }}
                       >
-                        {MONTHS[month]}
+                        {MONTH_LABELS[month]}
                       </div>
                     ))}
                   </div>
@@ -199,39 +239,43 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
                       ))}
                     </div>
 
-                    <TooltipProvider delayDuration={100}>
+                    <TooltipProvider delayDuration={0} skipDelayDuration={0} disableHoverableContent>
                       <div className="contents">
                         {weeks.map((week, weekIndex) => (
-                          <div key={weekIndex} className="grid grid-rows-7 gap-[2px]">
-                            {week.map((day, dayIndex) => (
-                              <Tooltip key={dayIndex}>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    className={cn(
-                                      "w-full aspect-square rounded-[2px] transition-all hover:scale-110",
-                                      getIntensityClass(day),
-                                      day.date.getTime() > 0 && day.count > 0 
-                                        ? "hover:ring-2 hover:ring-foreground/50 cursor-pointer z-10" 
-                                        : "cursor-default"
-                                    )}
-                                    onClick={() => {
-                                      if (day.date.getTime() > 0 && day.count > 0 && onDayClick) {
-                                        onDayClick(day.date, day.sessions);
-                                      }
-                                    }}
-                                    disabled={day.date.getTime() === 0}
-                                  />
-                                </TooltipTrigger>
-                                {day.date.getTime() > 0 && (
-                                  <TooltipContent 
-                                    side="top" 
-                                    className="p-2 bg-popover/95 backdrop-blur-sm border shadow-2xl min-w-[200px]"
-                                  >
-                                    {formatTooltipContent(day)}
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            ))}
+                          <div key={`week-${weekIndex}`} className="grid grid-rows-7 gap-[2px]">
+                            {week.map((day, dayIndex) => {
+                              const uniqueKey = `day-${weekIndex}-${dayIndex}`;
+                              return (
+                                <Tooltip key={uniqueKey}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      className={cn(
+                                        "w-full aspect-square rounded-[1px] transition-colors duration-150",
+                                        getIntensityClass(day),
+                                        day.date.getTime() > 0 && day.count > 0 
+                                          ? "hover:brightness-125 hover:ring-1 hover:ring-foreground/30 cursor-pointer z-10" 
+                                          : "cursor-default"
+                                      )}
+                                      onClick={() => {
+                                        if (day.date.getTime() > 0 && day.count > 0 && onDayClick) {
+                                          onDayClick(day.date, day.sessions);
+                                        }
+                                      }}
+                                      disabled={day.date.getTime() === 0}
+                                    />
+                                  </TooltipTrigger>
+                                  {day.date.getTime() > 0 && (
+                                    <TooltipContent 
+                                      side="top" 
+                                      sideOffset={8}
+                                      className="bg-background/40 backdrop-blur-2xl border border-white/10 rounded-xl p-4 shadow-2xl min-w-[240px] animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/5 pointer-events-none"
+                                    >
+                                      {formatTooltipContent(day)}
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              );
+                            })}
                           </div>
                         ))}
                       </div>

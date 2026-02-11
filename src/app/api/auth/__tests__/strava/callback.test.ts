@@ -315,6 +315,17 @@ describe('/api/auth/strava/callback', () => {
       data: {
         email: 'strava_12345@strava.local',
         password: '',
+        profile: { create: {} },
+        preferences: { create: {} },
+        externalAccounts: {
+          create: {
+            provider: 'strava',
+            externalId: '12345',
+            accessToken: mockStravaTokenResponse.access_token,
+            refreshToken: mockStravaTokenResponse.refresh_token,
+            tokenExpiresAt: expect.any(Date),
+          },
+        },
       },
     });
   });

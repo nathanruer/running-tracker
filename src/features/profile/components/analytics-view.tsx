@@ -2,13 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { type TrainingSession } from '@/lib/types';
+import type { ChartGranularity, DateRangeType } from '@/lib/domain/analytics/date-range';
 import { useAnalyticsData } from '../hooks/use-analytics-data';
 import { StatsCards } from './analytics/stats-cards';
 import { DateRangeSelector } from './analytics/date-range-selector';
 
 
-const WeeklyEvolutionChart = dynamic(
-  () => import('./analytics/weekly-evolution-chart').then((mod) => mod.WeeklyEvolutionChart),
+const EvolutionChart = dynamic(
+  () => import('./analytics/evolution-chart').then((mod) => mod.EvolutionChart),
   {
     ssr: false,
     loading: () => (
@@ -17,44 +18,66 @@ const WeeklyEvolutionChart = dynamic(
   }
 );
 
-interface AnalyticsViewProps {
+export interface AnalyticsViewProps {
   sessions: TrainingSession[];
+  dateRange: DateRangeType;
+  onDateRangeChange: (value: DateRangeType) => void;
+  granularity: ChartGranularity;
+  onGranularityChange: (value: ChartGranularity) => void;
+  customStartDate: string;
+  onCustomStartDateChange: (value: string) => void;
+  customEndDate: string;
+  onCustomEndDateChange: (value: string) => void;
 }
 
-export function AnalyticsView({ sessions }: AnalyticsViewProps) {
-  const {
+export function AnalyticsView({
+  sessions,
+  dateRange,
+  onDateRangeChange,
+  granularity,
+  onGranularityChange,
+  customStartDate,
+  onCustomStartDateChange,
+  customEndDate,
+  onCustomEndDateChange,
+}: AnalyticsViewProps) {
+  const { customDateError, rangeLabel, stats } = useAnalyticsData(sessions, {
     dateRange,
-    setDateRange,
+    granularity,
     customStartDate,
-    setCustomStartDate,
     customEndDate,
-    setCustomEndDate,
-    customDateError,
-    stats,
-  } = useAnalyticsData(sessions);
+  });
 
   return (
     <div className="space-y-8">
       <div className="flex flex-row items-center justify-start px-1">
         <DateRangeSelector
           dateRange={dateRange}
-          onDateRangeChange={setDateRange}
+          onDateRangeChange={onDateRangeChange}
+          granularity={granularity}
+          onGranularityChange={onGranularityChange}
           customStartDate={customStartDate}
           customEndDate={customEndDate}
-          onCustomStartDateChange={setCustomStartDate}
-          onCustomEndDateChange={setCustomEndDate}
+          onCustomStartDateChange={onCustomStartDateChange}
+          onCustomEndDateChange={onCustomEndDateChange}
           customDateError={customDateError}
+          rangeLabel={rangeLabel}
         />
       </div>
 
       <StatsCards
         totalKm={stats.totalKm}
         totalSessions={stats.totalSessions}
-        averageKmPerWeek={stats.averageKmPerWeek}
+        totalDurationSeconds={stats.totalDurationSeconds}
+        averageKm={stats.averageKmPerBucket}
+        averageDurationSeconds={stats.averageDurationPerBucket}
+        averageSessions={stats.averageSessionsPerBucket}
+        granularity={granularity}
       />
 
-      <WeeklyEvolutionChart
+      <EvolutionChart
         chartData={stats.chartData}
+        granularity={granularity}
       />
     </div>
   );

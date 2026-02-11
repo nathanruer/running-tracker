@@ -1,21 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useAnalyticsData } from '../use-analytics-data';
+import { renderHook } from '@testing-library/react';
+import { useAnalyticsData, type AnalyticsFilters } from '../use-analytics-data';
 import type { TrainingSession } from '@/lib/types';
 
-const calculateWeeklyStatsMock = vi.fn();
+const calculateBucketedStatsMock = vi.fn();
 
 vi.mock('@/lib/domain/analytics/weekly-calculator', () => ({
-  calculateWeeklyStats: (completed: TrainingSession[], planned: TrainingSession[]) =>
-    calculateWeeklyStatsMock(completed, planned),
+  calculateBucketedStats: (params: { completedSessions: TrainingSession[]; plannedSessions: TrainingSession[] }) =>
+    calculateBucketedStatsMock(params),
 }));
 
 beforeAll(() => {
-  calculateWeeklyStatsMock.mockReturnValue({
+  calculateBucketedStatsMock.mockReturnValue({
+    totalKm: 0,
     totalSessions: 0,
-    totalDistance: 0,
-    totalDuration: 0,
-    weeklyData: [],
+    averageKmPerBucket: 0,
+    averageKmPerActiveBucket: 0,
+    activeBucketsCount: 0,
+    totalBuckets: 0,
+    chartData: [],
   });
 });
 
@@ -53,6 +56,13 @@ const createSession = (overrides: Partial<TrainingSession> = {}): TrainingSessio
   ...overrides,
 } as TrainingSession);
 
+const defaultFilters: AnalyticsFilters = {
+  dateRange: 'all',
+  granularity: 'week',
+  customStartDate: '',
+  customEndDate: '',
+};
+
 describe('useAnalyticsData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,7 +82,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: '3', status: 'planned', date: null, plannedDate: null }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
 
       expect(result.current.stats).toBeDefined();
     });
@@ -84,35 +94,22 @@ describe('useAnalyticsData', () => {
         createSession({ id: '3', status: 'completed', date: '2024-01-15' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
 
       expect(result.current.stats).toBeDefined();
     });
   });
 
   describe('date range handling', () => {
-    it('should default to "all" date range', () => {
+    it('should compute stats with given date range', () => {
       const sessions: TrainingSession[] = [
         createSession({ id: '1', status: 'completed', date: '2024-01-15' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
 
-      expect(result.current.dateRange).toBe('all');
-    });
-
-    it('should allow changing date range', () => {
-      const sessions: TrainingSession[] = [
-        createSession({ id: '1', status: 'completed', date: '2024-01-15' }),
-      ];
-
-      const { result } = renderHook(() => useAnalyticsData(sessions));
-
-      act(() => {
-        result.current.setDateRange('2weeks');
-      });
-
-      expect(result.current.dateRange).toBe('2weeks');
+      expect(result.current.stats).toBeDefined();
+      expect(result.current.rangeLabel).toBeDefined();
     });
 
     it('should handle custom date range', () => {
@@ -120,61 +117,67 @@ describe('useAnalyticsData', () => {
         createSession({ id: '1', status: 'completed', date: '2024-01-15' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      const filters: AnalyticsFilters = {
+        dateRange: 'custom',
+        granularity: 'week',
+        customStartDate: '2024-01-01',
+        customEndDate: '2024-01-31',
+      };
 
-      act(() => {
-        result.current.setDateRange('custom');
-        result.current.setCustomStartDate('2024-01-01');
-        result.current.setCustomEndDate('2024-01-31');
-      });
+      const { result } = renderHook(() => useAnalyticsData(sessions, filters));
 
-      expect(result.current.dateRange).toBe('custom');
-      expect(result.current.customStartDate).toBe('2024-01-01');
-      expect(result.current.customEndDate).toBe('2024-01-31');
+      expect(result.current.stats).toBeDefined();
+      expect(result.current.customDateError).toBe('');
     });
 
-    it('filters planned sessions for 2 weeks range', () => {
+    it('does not include open bucket planned for preset ranges', () => {
       const sessions: TrainingSession[] = [
         createSession({ id: 'p1', status: 'planned', date: '2024-01-25' }),
-        createSession({ id: 'p2', status: 'planned', date: '2024-01-10' }),
         createSession({ id: 'c1', status: 'completed', date: '2024-01-20' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      renderHook(() => useAnalyticsData(sessions, { ...defaultFilters, dateRange: '4weeks' }));
 
-      act(() => {
-        result.current.setDateRange('2weeks');
-      });
-
-      const lastCall = calculateWeeklyStatsMock.mock.lastCall;
-      expect(lastCall?.[1]).toHaveLength(1);
+      const lastCall = calculateBucketedStatsMock.mock.lastCall;
+      expect(lastCall?.[0].includePlannedInOpenBucket).toBe(false);
     });
 
-    it('filters planned sessions for custom range', () => {
+    it('includes open bucket planned for open-ended custom range', () => {
       const sessions: TrainingSession[] = [
         createSession({ id: 'p1', status: 'planned', date: '2024-01-05' }),
         createSession({ id: 'p2', status: 'planned', date: '2024-01-20' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      const filters: AnalyticsFilters = {
+        dateRange: 'custom',
+        granularity: 'week',
+        customStartDate: '2024-01-15',
+        customEndDate: '',
+      };
 
-      act(() => {
-        result.current.setDateRange('custom');
-        result.current.setCustomStartDate('2024-01-15');
-        result.current.setCustomEndDate('2024-01-31');
-      });
+      renderHook(() => useAnalyticsData(sessions, filters));
 
-      const lastCall = calculateWeeklyStatsMock.mock.lastCall;
-      expect(lastCall?.[1]).toHaveLength(1);
+      const lastCall = calculateBucketedStatsMock.mock.lastCall;
+      expect(lastCall?.[0].includePlannedInOpenBucket).toBe(true);
+    });
+
+    it('includes open bucket planned for "all" range', () => {
+      const sessions: TrainingSession[] = [
+        createSession({ id: 'c1', status: 'completed', date: '2024-01-15' }),
+      ];
+
+      renderHook(() => useAnalyticsData(sessions, defaultFilters));
+
+      const lastCall = calculateBucketedStatsMock.mock.lastCall;
+      expect(lastCall?.[0].includePlannedInOpenBucket).toBe(true);
     });
   });
 
   describe('empty data handling', () => {
     it('should handle empty sessions array', () => {
-      const { result } = renderHook(() => useAnalyticsData([]));
+      const { result } = renderHook(() => useAnalyticsData([], defaultFilters));
 
       expect(result.current.stats).toBeDefined();
-      expect(result.current.dateRange).toBe('all');
     });
 
     it('should handle sessions with only planned status', () => {
@@ -183,7 +186,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: '2', status: 'planned', week: 2, date: '2024-01-22' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions));
+      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
 
       expect(result.current.stats).toBeDefined();
     });

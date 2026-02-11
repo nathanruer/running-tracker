@@ -132,32 +132,28 @@ export async function GET(request: NextRequest) {
       }
 
       user = currentUser;
-      try {
-        await prisma.external_accounts.upsert({
-          where: {
-            userId_provider: {
-              userId: currentUser.id,
-              provider: 'strava',
-            },
-          },
-          create: {
+      await prisma.external_accounts.upsert({
+        where: {
+          userId_provider: {
             userId: currentUser.id,
             provider: 'strava',
-            externalId: athlete.id.toString(),
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            tokenExpiresAt: new Date(expires_at * 1000),
           },
-          update: {
-            externalId: athlete.id.toString(),
-            accessToken: access_token,
-            refreshToken: refresh_token,
-            tokenExpiresAt: new Date(expires_at * 1000),
-          },
-        });
-      } catch (error) {
-        logger.warn({ error, userId: currentUser.id }, 'Failed to sync Strava external account');
-      }
+        },
+        create: {
+          userId: currentUser.id,
+          provider: 'strava',
+          externalId: athlete.id.toString(),
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          tokenExpiresAt: new Date(expires_at * 1000),
+        },
+        update: {
+          externalId: athlete.id.toString(),
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          tokenExpiresAt: new Date(expires_at * 1000),
+        },
+      });
       logger.info({ userId: user.id, stravaId: athlete.id }, 'Successfully linked Strava to existing logged-in user');
     } else {
       const linkedAccount = await prisma.external_accounts.findUnique({
@@ -182,55 +178,38 @@ export async function GET(request: NextRequest) {
         }
 
         user = linkedUser;
-        try {
-          await prisma.external_accounts.update({
-            where: {
-              userId_provider: {
-                userId: linkedUser.id,
-                provider: 'strava',
-              },
+        await prisma.external_accounts.update({
+          where: {
+            userId_provider: {
+              userId: linkedUser.id,
+              provider: 'strava',
             },
-            data: {
-              accessToken: access_token,
-              refreshToken: refresh_token,
-              tokenExpiresAt: new Date(expires_at * 1000),
-            },
-          });
-        } catch (error) {
-          logger.warn({ error, userId: linkedUser.id }, 'Failed to sync Strava external account');
-        }
+          },
+          data: {
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            tokenExpiresAt: new Date(expires_at * 1000),
+          },
+        });
         logger.info({ userId: user.id }, 'Updated tokens for existing Strava user');
       } else {
         user = await prisma.users.create({
           data: {
             email: `strava_${athlete.id}@strava.local`,
             password: '',
+            profile: { create: {} },
+            preferences: { create: {} },
+            externalAccounts: {
+              create: {
+                provider: 'strava',
+                externalId: athlete.id.toString(),
+                accessToken: access_token,
+                refreshToken: refresh_token,
+                tokenExpiresAt: new Date(expires_at * 1000),
+              },
+            },
           },
         });
-        try {
-          await prisma.user_profiles.create({
-            data: { userId: user.id },
-          });
-          await prisma.user_preferences.create({
-            data: { userId: user.id },
-          });
-        } catch (error) {
-          logger.warn({ error, userId: user.id }, 'Failed to create shadow user records');
-        }
-        try {
-          await prisma.external_accounts.create({
-            data: {
-              userId: user.id,
-              provider: 'strava',
-              externalId: athlete.id.toString(),
-              accessToken: access_token,
-              refreshToken: refresh_token,
-              tokenExpiresAt: new Date(expires_at * 1000),
-            },
-          });
-        } catch (error) {
-          logger.warn({ error, userId: user.id }, 'Failed to create Strava external account');
-        }
         logger.info({ userId: user.id }, 'Created new user via Strava login');
       }
     }

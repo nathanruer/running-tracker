@@ -2,23 +2,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageContainer } from '@/components/layout/page-container';
 
-export function ProfileSkeleton() {
+export function ProfileContentSkeleton() {
   return (
-    <PageContainer>
-      {/* Header with Logout Button */}
-      <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex gap-1 p-1 bg-muted/10 backdrop-blur-md rounded-2xl w-fit border border-border/40">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-9 w-24 sm:w-32 bg-muted/10 animate-pulse rounded-xl" />
-          ))}
-        </div>
-        <div className="h-10 w-40 bg-red-500/10 animate-pulse rounded-xl border border-red-500/10 hidden md:block" />
-      </div>
-
+    <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-2 items-start">
-        {/* Left Column: Personal Info + Security */}
-        <div className="space-y-8">
-          {/* Personal Info Card */}
+        <div className="space-y-6 order-1">
           <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
             <CardHeader className="space-y-4 px-6 py-6 md:px-8 md:py-8 border-b border-border/40">
               <div className="h-7 w-56 bg-muted/20 animate-pulse rounded-lg" />
@@ -46,7 +34,6 @@ export function ProfileSkeleton() {
             </CardContent>
           </Card>
 
-          {/* Security Card */}
           <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
             <CardHeader className="space-y-4 px-6 py-6 md:px-8 md:py-8 border-b border-border/40">
               <div className="h-7 w-32 bg-muted/20 animate-pulse rounded-lg" />
@@ -72,9 +59,7 @@ export function ProfileSkeleton() {
           </Card>
         </div>
 
-        {/* Right Column: Training Zones + Strava */}
-        <div className="space-y-8">
-          {/* Training Zones Card */}
+        <div className="space-y-8 order-2">
           <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
             <CardHeader className="space-y-3 px-6 py-6 border-b border-border/40 pb-4">
               <div className="h-7 w-56 bg-muted/20 animate-pulse rounded-lg" />
@@ -106,7 +91,6 @@ export function ProfileSkeleton() {
             </CardContent>
           </Card>
 
-          {/* Strava Connectivity Card */}
           <Card className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
             <CardHeader className="space-y-4 px-6 py-6 md:px-8 md:py-8 border-b border-border/40">
               <div className="h-7 w-48 bg-muted/20 animate-pulse rounded-lg" />
@@ -125,6 +109,22 @@ export function ProfileSkeleton() {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function ProfileSkeleton() {
+  return (
+    <PageContainer>
+      <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex gap-1 p-1 bg-muted/10 backdrop-blur-md rounded-2xl w-fit border border-border/40">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-9 w-24 sm:w-32 bg-muted/10 animate-pulse rounded-xl" />
+          ))}
+        </div>
+        <div className="h-10 w-40 bg-red-500/10 animate-pulse rounded-xl border border-red-500/10 hidden md:block" />
+      </div>
+      <ProfileContentSkeleton />
     </PageContainer>
   );
 }

@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { HTTP_STATUS } from '@/lib/constants';
 import { prisma } from '@/server/database';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
-import { logger } from '@/server/infrastructure/logger';
 
 export const runtime = 'nodejs';
+
+const USER_WITH_PROFILE_SELECT = {
+  id: true,
+  email: true,
+  createdAt: true,
+  externalAccounts: {
+    where: { provider: 'strava' },
+    select: { externalId: true, tokenExpiresAt: true },
+    take: 1,
+  },
+  profile: {
+    select: {
+      weight: true,
+      age: true,
+      maxHeartRate: true,
+      vma: true,
+      goal: true,
+    },
+  },
+} as const;
 
 export async function GET(request: NextRequest) {
   return handleGetRequest(
@@ -12,29 +32,11 @@ export async function GET(request: NextRequest) {
     async (userId) => {
       const user = await prisma.users.findUnique({
         where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          createdAt: true,
-          externalAccounts: {
-            where: { provider: 'strava' },
-            select: { externalId: true, tokenExpiresAt: true },
-            take: 1,
-          },
-          profile: {
-            select: {
-              weight: true,
-              age: true,
-              maxHeartRate: true,
-              vma: true,
-              goal: true,
-            },
-          },
-        },
+        select: USER_WITH_PROFILE_SELECT,
       });
 
       if (!user) {
-        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
+        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: HTTP_STATUS.NOT_FOUND });
       }
 
       const stravaAccount = user.externalAccounts[0] ?? null;
@@ -81,41 +83,19 @@ export async function PUT(request: NextRequest) {
         goal: goal !== undefined ? goal : undefined,
       };
 
-      try {
-        await prisma.user_profiles.upsert({
-          where: { userId },
-          create: { userId, ...updateData },
-          update: updateData,
-        });
-      } catch (error) {
-        logger.warn({ error, userId }, 'Failed to update user profile');
-      }
+      await prisma.user_profiles.upsert({
+        where: { userId },
+        create: { userId, ...updateData },
+        update: updateData,
+      });
 
       const user = await prisma.users.findUnique({
         where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          createdAt: true,
-          externalAccounts: {
-            where: { provider: 'strava' },
-            select: { externalId: true, tokenExpiresAt: true },
-            take: 1,
-          },
-          profile: {
-            select: {
-              weight: true,
-              age: true,
-              maxHeartRate: true,
-              vma: true,
-              goal: true,
-            },
-          },
-        },
+        select: USER_WITH_PROFILE_SELECT,
       });
 
       if (!user) {
-        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
+        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: HTTP_STATUS.NOT_FOUND });
       }
 
       const stravaAccount = user.externalAccounts[0] ?? null;

@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { ProfileSkeleton, AnalyticsSkeleton, HistorySkeleton } from '../profile-skeleton';
+import { ProfileSkeleton, ProfileContentSkeleton, AnalyticsSkeleton, HistorySkeleton } from '../profile-skeleton';
 
 describe('ProfileSkeleton', () => {
   it('should render skeleton container', () => {
@@ -28,6 +28,25 @@ describe('ProfileSkeleton', () => {
 
   it('should render table rows in training zones card', () => {
     const { container } = render(<ProfileSkeleton />);
+    const tableRows = container.querySelectorAll('tbody tr');
+    expect(tableRows.length).toBe(6);
+  });
+});
+
+describe('ProfileContentSkeleton', () => {
+  it('should render skeleton container', () => {
+    const { container } = render(<ProfileContentSkeleton />);
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('should have animated elements', () => {
+    const { container } = render(<ProfileContentSkeleton />);
+    const animatedElements = container.querySelectorAll('.animate-pulse');
+    expect(animatedElements.length).toBeGreaterThan(0);
+  });
+
+  it('should render table rows in training zones card', () => {
+    const { container } = render(<ProfileContentSkeleton />);
     const tableRows = container.querySelectorAll('tbody tr');
     expect(tableRows.length).toBe(6);
   });

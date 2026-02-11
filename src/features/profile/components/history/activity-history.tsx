@@ -70,12 +70,17 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
                 }
               </CardDescription>
             </div>
-            <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-center gap-1 p-1 bg-muted/20 backdrop-blur-md rounded-2xl border border-border/40 shadow-sm">
               <Button
                 variant={historyViewMode === 'heatmap' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setHistoryViewMode('heatmap')}
-                className={`h-8 px-3 active:scale-95 transition-all ${historyViewMode === 'heatmap' ? 'bg-violet-600 text-white' : 'text-muted-foreground'}`}
+                className={cn(
+                  "h-8 px-4 rounded-xl active:scale-95 transition-all text-xs font-medium",
+                  historyViewMode === 'heatmap' 
+                    ? "bg-violet-600 text-white hover:bg-violet-700 shadow-none" 
+                    : "text-muted-foreground hover:bg-white/5"
+                )}
               >
                 <Grid3X3 className="h-4 w-4 mr-2" />
                 Heatmap
@@ -84,7 +89,12 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
                 variant={historyViewMode === 'calendar' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setHistoryViewMode('calendar')}
-                className={`h-8 px-3 active:scale-95 transition-all ${historyViewMode === 'calendar' ? 'bg-violet-600 text-white' : 'text-muted-foreground'}`}
+                className={cn(
+                  "h-8 px-4 rounded-xl active:scale-95 transition-all text-xs font-medium",
+                  historyViewMode === 'calendar' 
+                    ? "bg-violet-600 text-white hover:bg-violet-700 shadow-none" 
+                    : "text-muted-foreground hover:bg-white/5"
+                )}
               >
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 Calendrier

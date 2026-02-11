@@ -11,7 +11,7 @@ vi.mock('@/components/ui/select', () => ({
   ),
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
   SelectValue: () => <span>value</span>,
 }));
 
@@ -23,6 +23,7 @@ vi.mock('@/components/ui/date-picker', () => ({
 
 describe('DateRangeSelector', () => {
   const mockOnDateRangeChange = vi.fn();
+  const mockOnGranularityChange = vi.fn();
   const mockOnCustomStartDateChange = vi.fn();
   const mockOnCustomEndDateChange = vi.fn();
 
@@ -35,15 +36,19 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="all" 
         onDateRangeChange={mockOnDateRangeChange}
+        granularity="week"
+        onGranularityChange={mockOnGranularityChange}
         customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
         customDateError={undefined}
+        rangeLabel="26 jan → 8 fév 2026"
       />
     );
 
-    expect(screen.getByTestId('mock-select')).toBeInTheDocument();
+    expect(screen.getAllByTestId('mock-select').length).toBe(2);
+    expect(screen.getByTestId('range-label')).toHaveTextContent('26 jan → 8 fév 2026');
   });
 
   it('should show date pickers when custom range is selected', () => {
@@ -51,11 +56,14 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="custom" 
         onDateRangeChange={mockOnDateRangeChange}
+        granularity="week"
+        onGranularityChange={mockOnGranularityChange}
         customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
         customDateError={undefined}
+        rangeLabel="26 jan → 8 fév 2026"
       />
     );
 
@@ -68,15 +76,20 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="all" 
         onDateRangeChange={mockOnDateRangeChange}
+        granularity="week"
+        onGranularityChange={mockOnGranularityChange}
         customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
         customDateError={undefined}
+        rangeLabel="26 jan → 8 fév 2026"
       />
     );
 
-    fireEvent.click(screen.getByText('change'));
+    const selects = screen.getAllByTestId('mock-select');
+    const rangeSelect = selects.find((select) => select.getAttribute('data-value') === 'all');
+    fireEvent.click(rangeSelect?.querySelector('button') as HTMLButtonElement);
 
     expect(mockOnDateRangeChange).toHaveBeenCalledWith('custom');
   });
@@ -86,11 +99,14 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="custom" 
         onDateRangeChange={mockOnDateRangeChange}
+        granularity="week"
+        onGranularityChange={mockOnGranularityChange}
         customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
         customDateError={undefined}
+        rangeLabel="26 jan → 8 fév 2026"
       />
     );
 
@@ -106,11 +122,14 @@ describe('DateRangeSelector', () => {
       <DateRangeSelector 
         dateRange="custom" 
         onDateRangeChange={mockOnDateRangeChange}
+        granularity="week"
+        onGranularityChange={mockOnGranularityChange}
         customStartDate=""
         onCustomStartDateChange={mockOnCustomStartDateChange}
         customEndDate=""
         onCustomEndDateChange={mockOnCustomEndDateChange}
         customDateError="Invalid range"
+        rangeLabel="26 jan → 8 fév 2026"
       />
     );
 
