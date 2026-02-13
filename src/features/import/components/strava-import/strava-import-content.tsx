@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useDeferredValue } from 'react';
-import { X } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import {
   DialogDescription,
   DialogHeader,
@@ -255,15 +254,7 @@ export function StravaImportContent({
           <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight">
             Importer depuis Strava
           </DialogTitle>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-foreground hover:bg-muted transition-all shrink-0 -mt-1 absolute right-4 md:right-8 top-6 md:top-8"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <CloseButton onClick={handleClose} className="absolute right-4 md:right-8 top-6 md:top-8" />
         </div>
         <DialogDescription className="text-sm md:text-base text-muted-foreground/70 font-medium mt-1">
           {mode === 'complete'

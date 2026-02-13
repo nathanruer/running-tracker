@@ -61,7 +61,7 @@ describe('WorkoutTypeField', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByText('Type de séance')).toBeInTheDocument();
+    expect(screen.getByText('Type de fractionné')).toBeInTheDocument();
   });
 
   it('should render custom input when isCustomType is true', () => {
@@ -112,7 +112,7 @@ describe('WorkoutTypeField', () => {
       </FormWrapper>
     );
 
-    const resetButton = screen.getByRole('button');
+    const resetButton = screen.getByTestId('btn-reset-workout-type');
     fireEvent.click(resetButton);
 
     expect(onCustomTypeChange).toHaveBeenCalledWith(false);

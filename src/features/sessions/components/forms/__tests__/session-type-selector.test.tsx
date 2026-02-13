@@ -76,7 +76,7 @@ describe('SessionTypeSelector', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByTestId('input-custom-session-type')).toBeInTheDocument();
+    expect(screen.getByTestId('input-session-type')).toBeInTheDocument();
     expect(screen.getByTestId('btn-reset-session-type')).toBeInTheDocument();
   });
 
@@ -93,7 +93,7 @@ describe('SessionTypeSelector', () => {
       </FormWrapper>
     );
 
-    const input = screen.getByTestId('input-custom-session-type');
+    const input = screen.getByTestId('input-session-type');
     fireEvent.change(input, { target: { value: 'Mon type personnalisé' } });
 
     expect(onChange).toHaveBeenCalledWith('Mon type personnalisé');
@@ -131,7 +131,7 @@ describe('SessionTypeSelector', () => {
       </FormWrapper>
     );
 
-    expect(screen.getByTestId('input-custom-session-type')).toHaveValue('Mon type');
+    expect(screen.getByTestId('input-session-type')).toHaveValue('Mon type');
   });
 
   it('should switch to custom when selecting custom option', () => {

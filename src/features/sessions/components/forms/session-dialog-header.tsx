@@ -1,4 +1,5 @@
-import { RotateCcw, X } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
 import {
   DialogHeader,
   DialogTitle,
@@ -35,14 +36,7 @@ export function SessionDialogHeader({ mode, onReset, entryMode = 'done' }: Sessi
           {title}
         </DialogTitle>
         <DialogClose asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-foreground hover:bg-muted transition-all shrink-0 -mt-1"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          <CloseButton className="-mt-1" />
         </DialogClose>
       </div>
       <div className="flex flex-col sm:flex-row w-full gap-3 md:gap-4 items-start sm:items-center justify-between mt-1">

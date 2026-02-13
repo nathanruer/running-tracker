@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { CalendarIcon, X } from "lucide-react"
+import { CalendarIcon } from "lucide-react"
+import { CloseButton } from "./close-button"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 
@@ -59,18 +60,14 @@ export function DatePicker({
         </PopoverContent>
       </Popover>
       {allowClear && date && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
+        <CloseButton
           onClick={(e) => {
             e.preventDefault();
             onSelect?.(undefined);
           }}
-        >
-          <X className="h-3 w-3" />
-        </Button>
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+          iconClassName="h-3.5 w-3.5"
+        />
       )}
     </div>
   )

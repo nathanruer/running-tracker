@@ -7,13 +7,16 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetClose,
 } from '@/components/ui/sheet';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
+import { CloseButton } from '@/components/ui/close-button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
@@ -223,9 +226,12 @@ export function SessionDetailsSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-lg lg:max-w-2xl p-0 gap-0 overflow-hidden flex flex-col [&>button]:z-50">
+        <SheetContent hideClose className="w-full sm:max-w-lg lg:max-w-2xl p-0 gap-0 overflow-hidden flex flex-col">
           <ScrollArea className="flex-1">
             <div className="relative isolate overflow-hidden">
+              <SheetClose asChild>
+                <CloseButton className="absolute right-6 top-6 z-50" />
+              </SheetClose>
               {hasRoute ? (
                 <div className="h-80 w-full flex items-center justify-center relative">
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background z-20" />
@@ -514,17 +520,22 @@ export function SessionDetailsSheet({
       </Sheet>
 
       <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden gap-0">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="text-lg">
-              Parcours du {session.date 
-                ? new Date(session.date).toLocaleDateString('fr-FR', { 
-                    day: 'numeric', 
-                    month: 'long' 
-                  }) 
-                : 'séance'
-              }
-            </DialogTitle>
+        <DialogContent hideClose className="max-w-3xl p-0 overflow-hidden gap-0">
+          <DialogHeader className="p-4 pb-2 relative">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg">
+                Parcours du {session.date 
+                  ? new Date(session.date).toLocaleDateString('fr-FR', { 
+                      day: 'numeric', 
+                      month: 'long' 
+                    }) 
+                  : 'séance'
+                }
+              </DialogTitle>
+              <DialogClose asChild>
+                <CloseButton />
+              </DialogClose>
+            </div>
           </DialogHeader>
           <div className="w-full h-[60vh]">
             {decodedCoordinates.length > 0 && (
