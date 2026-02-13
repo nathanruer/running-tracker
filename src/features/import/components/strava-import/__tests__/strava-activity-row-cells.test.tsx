@@ -24,11 +24,18 @@ vi.mock('@/components/ui/checkbox', () => ({
   ),
 }));
 
+vi.mock('@/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 describe('ActivityCheckboxCell', () => {
   it('renders checkbox with correct checked state', () => {
     render(
       <table><tbody><tr>
-        <ActivityCheckboxCell selected={true} onToggle={() => {}} />
+        <ActivityCheckboxCell selected={true} alreadyImported={false} onToggle={() => {}} />
       </tr></tbody></table>
     );
 
@@ -39,7 +46,7 @@ describe('ActivityCheckboxCell', () => {
   it('renders checkbox as unchecked when not selected', () => {
     render(
       <table><tbody><tr>
-        <ActivityCheckboxCell selected={false} onToggle={() => {}} />
+        <ActivityCheckboxCell selected={false} alreadyImported={false} onToggle={() => {}} />
       </tr></tbody></table>
     );
 
@@ -51,7 +58,7 @@ describe('ActivityCheckboxCell', () => {
     const mockToggle = vi.fn();
     render(
       <table><tbody><tr>
-        <ActivityCheckboxCell selected={false} onToggle={mockToggle} />
+        <ActivityCheckboxCell selected={false} alreadyImported={false} onToggle={mockToggle} />
       </tr></tbody></table>
     );
 
@@ -60,13 +67,24 @@ describe('ActivityCheckboxCell', () => {
     expect(mockToggle).toHaveBeenCalled();
   });
 
+  it('renders badge when alreadyImported', () => {
+    render(
+      <table><tbody><tr>
+        <ActivityCheckboxCell selected={false} alreadyImported={true} onToggle={() => {}} />
+      </tr></tbody></table>
+    );
+
+    expect(screen.getByText('Déjà importée')).toBeInTheDocument();
+    expect(screen.queryByTestId('checkbox')).not.toBeInTheDocument();
+  });
+
   it('stops propagation when table cell is clicked', () => {
     const mockToggle = vi.fn();
     const mockParentClick = vi.fn();
 
     render(
       <table onClick={mockParentClick}><tbody><tr>
-        <ActivityCheckboxCell selected={false} onToggle={mockToggle} />
+        <ActivityCheckboxCell selected={false} alreadyImported={false} onToggle={mockToggle} />
       </tr></tbody></table>
     );
 
@@ -188,6 +206,7 @@ describe('StravaActivityRowCells', () => {
         <StravaActivityRowCells
           activity={mockActivity}
           selected={false}
+          alreadyImported={false}
           onToggle={mockToggle}
         />
       </tr></tbody></table>
@@ -207,6 +226,7 @@ describe('StravaActivityRowCells', () => {
         <StravaActivityRowCells
           activity={mockActivity}
           selected={true}
+          alreadyImported={false}
           onToggle={() => {}}
         />
       </tr></tbody></table>

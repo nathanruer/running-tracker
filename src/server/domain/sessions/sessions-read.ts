@@ -472,6 +472,14 @@ export async function fetchSessionTypes(userId: string): Promise<string[]> {
   return Array.from(typeSet).sort();
 }
 
+export async function getImportedExternalIds(userId: string, source: string): Promise<Set<string>> {
+  const rows = await prisma.external_activities.findMany({
+    where: { userId, source },
+    select: { externalId: true },
+  });
+  return new Set(rows.map(r => r.externalId));
+}
+
 export async function fetchSessionById(
   userId: string,
   id: string

@@ -6,7 +6,7 @@ describe('StravaImportFooter', () => {
   const defaultProps = {
     selectedCount: 5,
     status: 'idle' as const,
-    progress: { imported: 0, total: 0 },
+    progress: { imported: 0, skipped: 0, total: 0 },
     onCancel: vi.fn(),
     onImport: vi.fn(),
     onCancelImport: vi.fn(),
@@ -43,7 +43,7 @@ describe('StravaImportFooter', () => {
   });
 
   it('should show progress bar when importing', () => {
-    render(<StravaImportFooter {...defaultProps} status="importing" progress={{ imported: 5, total: 10 }} />);
+    render(<StravaImportFooter {...defaultProps} status="importing" progress={{ imported: 5, skipped: 0, total: 10 }} />);
 
     expect(screen.getByText('5 sur 10')).toBeInTheDocument();
     expect(screen.getByText('50%')).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('StravaImportFooter', () => {
   it('should show cancel button that calls onCancelImport during import', () => {
     const onCancelImport = vi.fn();
     render(
-      <StravaImportFooter {...defaultProps} status="importing" progress={{ imported: 2, total: 10 }} onCancelImport={onCancelImport} />
+      <StravaImportFooter {...defaultProps} status="importing" progress={{ imported: 2, skipped: 0, total: 10 }} onCancelImport={onCancelImport} />
     );
 
     fireEvent.click(screen.getByText('Annuler'));
@@ -90,14 +90,14 @@ describe('StravaImportFooter', () => {
   });
 
   it('should show Fermer button and amber state on error', () => {
-    render(<StravaImportFooter {...defaultProps} status="error" progress={{ imported: 3, total: 10 }} />);
+    render(<StravaImportFooter {...defaultProps} status="error" progress={{ imported: 3, skipped: 0, total: 10 }} />);
 
     expect(screen.getByText('Fermer')).toBeInTheDocument();
     expect(screen.getByText(/interrompu/)).toBeInTheDocument();
   });
 
   it('should show Fermer button and partial count on cancelled', () => {
-    render(<StravaImportFooter {...defaultProps} status="cancelled" progress={{ imported: 7, total: 10 }} />);
+    render(<StravaImportFooter {...defaultProps} status="cancelled" progress={{ imported: 7, skipped: 0, total: 10 }} />);
 
     expect(screen.getByText('Fermer')).toBeInTheDocument();
     expect(screen.getByText('7 sur 10 importées — interrompu')).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe('StravaImportFooter', () => {
 
   it('should call onCancel when Fermer is clicked in terminal state', () => {
     const onCancel = vi.fn();
-    render(<StravaImportFooter {...defaultProps} status="error" progress={{ imported: 3, total: 10 }} onCancel={onCancel} />);
+    render(<StravaImportFooter {...defaultProps} status="error" progress={{ imported: 3, skipped: 0, total: 10 }} onCancel={onCancel} />);
 
     fireEvent.click(screen.getByText('Fermer'));
 
@@ -113,7 +113,7 @@ describe('StravaImportFooter', () => {
   });
 
   it('should show percentage during import', () => {
-    render(<StravaImportFooter {...defaultProps} status="importing" progress={{ imported: 75, total: 100 }} />);
+    render(<StravaImportFooter {...defaultProps} status="importing" progress={{ imported: 75, skipped: 0, total: 100 }} />);
 
     expect(screen.getByText('75%')).toBeInTheDocument();
     expect(screen.getByText('75 sur 100')).toBeInTheDocument();

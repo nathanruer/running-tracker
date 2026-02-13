@@ -4,7 +4,7 @@ import { StravaActivityRow } from '../strava-activity-row';
 import type { FormattedStravaActivity } from '@/lib/services/api-client';
 
 vi.mock('@/components/ui/table', () => ({
-  TableRow: ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+  TableRow: ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
     <tr className={className} onClick={onClick} data-testid="table-row">{children}</tr>
   ),
   TableCell: ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
@@ -16,6 +16,13 @@ vi.mock('@/components/ui/checkbox', () => ({
   Checkbox: ({ checked, onCheckedChange }: { checked?: boolean; onCheckedChange?: () => void }) => (
     <input type="checkbox" checked={checked} onChange={onCheckedChange} data-testid="checkbox" />
   ),
+}));
+
+vi.mock('@/components/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 describe('StravaActivityRow', () => {
@@ -38,7 +45,7 @@ describe('StravaActivityRow', () => {
 
   const mockToggleSelect = vi.fn();
 
-  const renderRow = (props?: Partial<{ activity: FormattedStravaActivity; index: number; selected: boolean; imported: boolean }>) => {
+  const renderRow = (props?: Partial<{ activity: FormattedStravaActivity; index: number; selected: boolean; alreadyImported: boolean }>) => {
     return render(
       <table>
         <tbody>
@@ -47,7 +54,7 @@ describe('StravaActivityRow', () => {
             index={props?.index ?? 0}
             selected={props?.selected ?? false}
             onToggleSelect={mockToggleSelect}
-            imported={props?.imported}
+            alreadyImported={props?.alreadyImported ?? false}
           />
         </tbody>
       </table>
@@ -96,7 +103,7 @@ describe('StravaActivityRow', () => {
     renderRow({ index: 5 });
     const row = screen.getByTestId('table-row');
     fireEvent.click(row);
-    expect(mockToggleSelect).toHaveBeenCalledWith(5);
+    expect(mockToggleSelect).toHaveBeenCalledWith(5, expect.any(Object));
   });
 
   it('applies selected styles when selected', () => {
@@ -111,10 +118,16 @@ describe('StravaActivityRow', () => {
     expect(checkbox).toBeChecked();
   });
 
-  it('applies imported styles when imported', () => {
-    renderRow({ imported: true });
+  it('applies imported styles when alreadyImported', () => {
+    renderRow({ alreadyImported: true });
     const row = screen.getByTestId('table-row');
-    expect(row).toHaveClass('opacity-40');
-    expect(row).toHaveClass('pointer-events-none');
+    expect(row.className).toContain('opacity-40');
+    expect(row.className).toContain('cursor-default');
+  });
+
+  it('shows badge instead of checkbox when alreadyImported', () => {
+    renderRow({ alreadyImported: true });
+    expect(screen.getByText('Déjà importée')).toBeInTheDocument();
+    expect(screen.queryByTestId('checkbox')).not.toBeInTheDocument();
   });
 });

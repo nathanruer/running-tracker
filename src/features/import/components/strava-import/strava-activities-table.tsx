@@ -12,7 +12,9 @@ export function StravaActivitiesTable({
   mode,
   isSelected,
   isAllSelected,
-  toggleSelect,
+  isSomeSelected,
+  importableCount,
+  toggleSelectWithEvent,
   toggleSelectAll,
   sortColumn,
   handleSort,
@@ -26,7 +28,7 @@ export function StravaActivitiesTable({
   totalCount,
   totalLoadedCount,
   onSearchAll,
-  importedIndices,
+  importedKeys,
 }: StravaActivitiesTableProps) {
   if (filteredActivities.length === 0 && searchQuery.trim()) {
     return (
@@ -51,6 +53,8 @@ export function StravaActivitiesTable({
             mode={mode}
             hasActivities={filteredActivities.length > 0}
             isAllSelected={isAllSelected()}
+            isSomeSelected={isSomeSelected()}
+            importableCount={importableCount}
             onToggleSelectAll={toggleSelectAll}
             sortColumn={sortColumn}
             onSort={handleSort}
@@ -59,14 +63,15 @@ export function StravaActivitiesTable({
           <TableBody>
             {activities.map((activity) => {
               const index = filteredActivities.findIndex((a) => a.externalId === activity.externalId);
+              const isImported = !!(activity.externalId && importedKeys.has(activity.externalId));
               return (
                 <StravaActivityRow
                   key={activity.externalId}
                   activity={activity}
                   index={index}
                   selected={isSelected(index)}
-                  onToggleSelect={toggleSelect}
-                  imported={importedIndices?.has(index)}
+                  onToggleSelect={(idx, e) => toggleSelectWithEvent(idx, e)}
+                  alreadyImported={isImported}
                 />
               );
             })}

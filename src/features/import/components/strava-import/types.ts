@@ -43,6 +43,8 @@ export interface StravaTableHeaderProps {
   mode: 'create' | 'edit' | 'complete';
   hasActivities: boolean;
   isAllSelected: boolean;
+  isSomeSelected: boolean;
+  importableCount: number;
   onToggleSelectAll: () => void;
   sortColumn: string | null;
   onSort: (column: string) => void;
@@ -53,18 +55,19 @@ export interface StravaActivityRowProps {
   activity: FormattedStravaActivity;
   index: number;
   selected: boolean;
-  onToggleSelect: (index: number) => void;
-  imported?: boolean;
+  onToggleSelect: (index: number, e?: React.MouseEvent) => void;
+  alreadyImported: boolean;
 }
 
 export interface StravaActivitiesTableProps {
   activities: FormattedStravaActivity[];
   filteredActivities: FormattedStravaActivity[];
   mode: 'create' | 'edit' | 'complete';
-  selectedIndices: Set<number>;
   isSelected: (index: number) => boolean;
   isAllSelected: () => boolean;
-  toggleSelect: (index: number) => void;
+  isSomeSelected: () => boolean;
+  importableCount: number;
+  toggleSelectWithEvent: (index: number, event?: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean }) => void;
   toggleSelectAll: () => void;
   sortColumn: string | null;
   handleSort: (column: string) => void;
@@ -78,7 +81,7 @@ export interface StravaActivitiesTableProps {
   totalCount: number | undefined;
   totalLoadedCount: number;
   onSearchAll: () => void;
-  importedIndices?: Set<number>;
+  importedKeys: Set<string>;
 }
 
 export interface SmartSearchEmptyStateProps {
@@ -95,7 +98,7 @@ import type { ChunkedImportStatus } from '../../hooks/use-chunked-import';
 export interface StravaImportFooterProps {
   selectedCount: number;
   status: ChunkedImportStatus;
-  progress: { imported: number; total: number };
+  progress: { imported: number; skipped: number; total: number };
   onCancel: () => void;
   onImport: () => void;
   onCancelImport: () => void;

@@ -160,8 +160,8 @@ export async function deleteSession(id: string): Promise<void> {
 
 export async function bulkImportSessions(
   sessions: TrainingSessionPayload[],
-): Promise<{ count: number; message: string }> {
-  const data = await apiRequest<{ count: number; message: string }>(
+): Promise<{ count: number; skipped: number; message: string }> {
+  const data = await apiRequest<{ count: number; skipped: number; message: string }>(
     '/api/sessions/bulk',
     {
       method: 'POST',

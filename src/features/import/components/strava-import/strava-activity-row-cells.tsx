@@ -1,14 +1,43 @@
 import { cn } from '@/lib/utils';
 import { TableCell } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Check } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { FormattedStravaActivity } from '@/lib/services/api-client';
 
 interface CheckboxCellProps {
   selected: boolean;
+  alreadyImported: boolean;
   onToggle: () => void;
 }
 
-export function ActivityCheckboxCell({ selected, onToggle }: CheckboxCellProps) {
+export function ActivityCheckboxCell({ selected, alreadyImported, onToggle }: CheckboxCellProps) {
+  if (alreadyImported) {
+    return (
+      <TableCell className="py-3 md:py-4 px-2 md:px-4">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-center">
+                <div className="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 border border-green-500/20 shadow-sm shadow-green-500/5">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="font-medium text-[11px] py-1 px-2">
+              Déjà importée
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </TableCell>
+    );
+  }
+
   return (
     <TableCell className="py-3 md:py-4 px-2 md:px-4" onClick={(e) => e.stopPropagation()}>
       <Checkbox
@@ -121,13 +150,14 @@ export function ActivityHeartRateCell({ heartRate }: HeartRateCellProps) {
 interface AllCellsProps {
   activity: FormattedStravaActivity;
   selected: boolean;
+  alreadyImported: boolean;
   onToggle: () => void;
 }
 
-export function StravaActivityRowCells({ activity, selected, onToggle }: AllCellsProps) {
+export function StravaActivityRowCells({ activity, selected, alreadyImported, onToggle }: AllCellsProps) {
   return (
     <>
-      <ActivityCheckboxCell selected={selected} onToggle={onToggle} />
+      <ActivityCheckboxCell selected={selected} alreadyImported={alreadyImported} onToggle={onToggle} />
       <ActivityDateCell date={activity.date} />
       <ActivityNameCell name={activity.comments} />
       <ActivityDurationCell duration={activity.duration} />

@@ -35,6 +35,10 @@ vi.mock('@/server/auth', () => ({
   getUserIdFromRequest: vi.fn(() => 'user-123'),
 }));
 
+vi.mock('@/server/domain/sessions/sessions-read', () => ({
+  getImportedExternalIds: vi.fn(() => Promise.resolve(new Set<string>())),
+}));
+
 vi.mock('@/server/infrastructure/logger', () => ({
   logger: {
     error: vi.fn(),

@@ -173,14 +173,16 @@ async function upsertWeatherObservation(workoutId: string, weather: Record<strin
   });
 }
 
-async function upsertExternalActivity(workoutId: string, source: string | null, externalId: string | null, stravaData: Prisma.JsonValue | null, date: Date | null) {
+async function upsertExternalActivity(workoutId: string, userId: string, source: string | null, externalId: string | null, stravaData: Prisma.JsonValue | null, date: Date | null) {
   if (!source || !externalId) return null;
   const shouldMarkNoStreams =
     source === 'strava' && isStravaActivityLikelyStreamless(stravaData);
 
   const existing = await prisma.external_activities.findFirst({
-    where: { workoutId, source, externalId },
+    where: { userId, source, externalId },
   });
+
+  if (existing && existing.workoutId !== workoutId) return null;
 
   const activity = existing
     ? await prisma.external_activities.update({
@@ -193,6 +195,7 @@ async function upsertExternalActivity(workoutId: string, source: string | null, 
     : await prisma.external_activities.create({
         data: {
           workoutId,
+          userId,
           source,
           externalId,
           startedAt: date,
@@ -394,6 +397,7 @@ export async function createCompletedSession(
 
   await upsertExternalActivity(
     workout.id,
+    userId,
     (payload.source as string | null) ?? null,
     (payload.externalId as string | null) ?? null,
     (sanitizedStrava as Prisma.JsonValue | null) ?? null,
@@ -474,6 +478,7 @@ export async function completePlannedSession(
 
   await upsertExternalActivity(
     workout.id,
+    userId,
     (payload.source as string | null) ?? null,
     (payload.externalId as string | null) ?? null,
     (sanitizedStrava as Prisma.JsonValue | null) ?? null,
@@ -548,6 +553,7 @@ export async function updateSession(
       const sanitizedStrava = parsePayload(stravaPayloadSchema, updates.stravaData, 'strava');
       await upsertExternalActivity(
         workout.id,
+        userId,
         (updates.source as string | null) ?? null,
         (updates.externalId as string | null) ?? null,
         (sanitizedStrava as Prisma.JsonValue | null) ?? null,

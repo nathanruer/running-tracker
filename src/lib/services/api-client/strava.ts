@@ -17,6 +17,7 @@ export interface FormattedStravaActivity {
   averageCadence?: number | null;
   averageTemp?: number | null;
   calories?: number | null;
+  alreadyImported?: boolean;
 }
 
 export interface StravaActivitiesResponse {

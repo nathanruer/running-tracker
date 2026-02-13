@@ -15,13 +15,15 @@ vi.mock('@/components/ui/table', () => ({
 }));
 
 vi.mock('@/components/ui/checkbox', () => ({
-  Checkbox: ({ checked, onCheckedChange, className }: { checked: boolean; onCheckedChange: () => void; className?: string }) => (
+  Checkbox: ({ checked, onCheckedChange, className, disabled }: { checked: boolean | 'indeterminate'; onCheckedChange: () => void; className?: string; disabled?: boolean }) => (
     <input
       type="checkbox"
-      checked={checked}
+      checked={checked === true}
       onChange={onCheckedChange}
       className={className}
+      disabled={disabled}
       data-testid="select-all-checkbox"
+      data-state={checked === 'indeterminate' ? 'indeterminate' : checked ? 'checked' : 'unchecked'}
     />
   ),
 }));
@@ -38,6 +40,8 @@ describe('StravaTableHeader', () => {
     mode: 'create' as const,
     hasActivities: true,
     isAllSelected: false,
+    isSomeSelected: false,
+    importableCount: 10,
     onToggleSelectAll: mockOnToggleSelectAll,
     sortColumn: null,
     onSort: mockOnSort,

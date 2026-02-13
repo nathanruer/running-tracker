@@ -117,14 +117,41 @@ export function StravaImportContent({
     });
   }, [defaultComparator]);
 
+  const importedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const a of activities) {
+      if (a.alreadyImported && a.externalId) keys.add(a.externalId);
+    }
+    for (const key of chunkedImport.importedKeys) {
+      keys.add(key);
+    }
+    return keys;
+  }, [activities, chunkedImport.importedKeys]);
+
+  const disabledKeys = importedKeys;
+
+  const importableCount = useMemo(() => {
+    return filteredActivities.filter((a) => !a.externalId || !importedKeys.has(a.externalId)).length;
+  }, [filteredActivities, importedKeys]);
+
   const {
-    selectedIndices,
-    toggleSelect,
+    toggleSelectWithEvent,
     toggleSelectAll,
     clearSelection,
     isSelected,
     isAllSelected,
-  } = useTableSelection(filteredActivities, mode === 'complete' ? 'single' : 'multiple');
+    isSomeSelected,
+    getSelectedItems,
+    selectedCount,
+  } = useTableSelection(filteredActivities, {
+    mode: mode === 'complete' ? 'single' : 'multiple',
+    getKey: (a) => a.externalId!,
+    disabledKeys,
+  });
+
+  useEffect(() => {
+    clearSelection();
+  }, [deferredSearchQuery, clearSelection]);
 
   const buildSessionPayload = (activity: FormattedStravaActivity) => ({
     date: activity.date,
@@ -145,7 +172,8 @@ export function StravaImportContent({
   });
 
   const handleImportSelected = wrapAsync(async () => {
-    if (selectedIndices.size === 0) {
+    const selected = getSelectedItems();
+    if (selected.length === 0) {
       toast({
         title: 'Attention',
         description: 'Veuillez sélectionner au moins une activité',
@@ -153,10 +181,8 @@ export function StravaImportContent({
       return;
     }
 
-    const selectedActivities = Array.from(selectedIndices).map((i) => filteredActivities[i]);
-
-    if (mode === 'complete' || selectedIndices.size === 1) {
-      const activity = selectedActivities[0];
+    if (mode === 'complete' || selected.length === 1) {
+      const activity = selected[0];
       onImport(activity);
       onOpenChange(false);
       clearSelection();
@@ -169,18 +195,24 @@ export function StravaImportContent({
       return;
     }
 
-    const indices = Array.from(selectedIndices);
-    const sessions = selectedActivities.map(buildSessionPayload);
+    const sessions = selected.map(buildSessionPayload);
+    const externalIds = selected.map((a) => a.externalId!);
 
-    const result = await chunkedImport.start(sessions, indices);
+    const result = await chunkedImport.start(sessions, externalIds);
 
     if (chunkedImport.status === 'error' || chunkedImport.status === 'cancelled') {
       return;
     }
 
+    const parts: string[] = [];
+    parts.push(`${result.imported} séance${result.imported > 1 ? 's' : ''} Strava importée${result.imported > 1 ? 's' : ''} avec succès`);
+    if (result.skipped > 0) {
+      parts.push(`${result.skipped} déjà importée${result.skipped > 1 ? 's' : ''}`);
+    }
+
     toast({
       title: 'Import réussi',
-      description: `${result.imported} séance${result.imported > 1 ? 's' : ''} Strava importée${result.imported > 1 ? 's' : ''} avec succès`,
+      description: parts.join(' — '),
     });
 
     clearSelection();
@@ -189,6 +221,7 @@ export function StravaImportContent({
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stravaActivities() });
     }
 
     if (onBulkImportSuccess) {
@@ -207,6 +240,7 @@ export function StravaImportContent({
         queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.stravaActivities() });
       }
       chunkedImport.reset();
       clearSelection();
@@ -284,10 +318,11 @@ export function StravaImportContent({
                   activities={sortedActivities}
                   filteredActivities={filteredActivities}
                   mode={mode}
-                  selectedIndices={selectedIndices}
                   isSelected={isSelected}
                   isAllSelected={isAllSelected}
-                  toggleSelect={toggleSelect}
+                  isSomeSelected={isSomeSelected}
+                  importableCount={importableCount}
+                  toggleSelectWithEvent={toggleSelectWithEvent}
                   toggleSelectAll={toggleSelectAll}
                   sortColumn={sortColumn}
                   handleSort={handleSort}
@@ -301,12 +336,12 @@ export function StravaImportContent({
                   totalCount={totalCount}
                   totalLoadedCount={activities.length}
                   onSearchAll={() => loadAllForSearch(deferredSearchQuery)}
-                  importedIndices={chunkedImport.importedIndices}
+                  importedKeys={importedKeys}
                 />
               </div>
 
               <StravaImportFooter
-                selectedCount={selectedIndices.size}
+                selectedCount={selectedCount}
                 status={chunkedImport.status}
                 progress={chunkedImport.progress}
                 onCancel={handleClose}

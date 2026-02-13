@@ -5,6 +5,7 @@ import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { createCompletedSession, deleteSessions, logSessionWriteError, recalculateSessionNumbers } from '@/server/domain/sessions/sessions-write';
+import { getImportedExternalIds } from '@/server/domain/sessions/sessions-read';
 import { logger } from '@/server/infrastructure/logger';
 
 export const runtime = 'nodejs';
@@ -28,11 +29,18 @@ export async function POST(request: NextRequest) {
       );
 
       try {
+        const importedIds = await getImportedExternalIds(userId, 'strava');
         let count = 0;
+        let skipped = 0;
         const weatherQueue: Array<{ id: string; stravaData: unknown; date: string }> = [];
         const streamQueueIds: string[] = [];
 
         for (const session of validatedSessions) {
+          if (session.externalId && importedIds.has(session.externalId)) {
+            skipped++;
+            continue;
+          }
+
           const { intervalDetails, stravaData, weather: importedWeather, averageTemp, ...sessionData } = session;
           const workout = await createCompletedSession(
             {
@@ -47,6 +55,10 @@ export async function POST(request: NextRequest) {
           );
           count++;
 
+          if (session.externalId) {
+            importedIds.add(session.externalId);
+          }
+
           if (!importedWeather && stravaData) {
             weatherQueue.push({ id: workout.id, stravaData, date: session.date });
           }
@@ -58,11 +70,12 @@ export async function POST(request: NextRequest) {
 
         await recalculateSessionNumbers(userId);
 
+        const message = skipped > 0
+          ? `${count} séance${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} avec succès (${skipped} déjà importée${skipped > 1 ? 's' : ''})`
+          : `${count} séance${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} avec succès`;
+
         const response = NextResponse.json(
-          {
-            message: `${count} séance${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} avec succès`,
-            count,
-          },
+          { message, count, skipped },
           { status: HTTP_STATUS.CREATED }
         );
 

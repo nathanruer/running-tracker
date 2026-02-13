@@ -19,6 +19,7 @@ model users {
   profile              user_profiles?
   preferences          user_preferences?
   externalAccounts     external_accounts[]
+  externalActivities   external_activities[]
 }
 
 model user_profiles {
@@ -198,6 +199,7 @@ model workout_metrics_derived {
 model external_activities {
   id             String   @id @default(cuid())
   workoutId      String
+  userId         String
   source         String
   externalId     String
   sourceStatus   String?  @default("imported")
@@ -208,10 +210,12 @@ model external_activities {
   updatedAt      DateTime @updatedAt
 
   workouts       workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  user           users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   external_payloads external_payloads?
 
+  @@unique([userId, source, externalId])
   @@index([workoutId])
-  @@index([source, externalId])
+  @@index([userId, source])
 }
 
 model external_payloads {

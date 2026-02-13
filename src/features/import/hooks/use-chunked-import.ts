@@ -6,13 +6,14 @@ export type ChunkedImportStatus = 'idle' | 'importing' | 'done' | 'error' | 'can
 
 interface ChunkedImportProgress {
   imported: number;
+  skipped: number;
   total: number;
 }
 
 interface ChunkedImportState {
   status: ChunkedImportStatus;
   progress: ChunkedImportProgress;
-  importedIndices: Set<number>;
+  importedKeys: Set<string>;
 }
 
 const BATCH_SIZE = 20;
@@ -20,8 +21,8 @@ const BATCH_SIZE = 20;
 export function useChunkedImport() {
   const [state, setState] = useState<ChunkedImportState>({
     status: 'idle',
-    progress: { imported: 0, total: 0 },
-    importedIndices: new Set(),
+    progress: { imported: 0, skipped: 0, total: 0 },
+    importedKeys: new Set(),
   });
 
   const cancelledRef = useRef(false);
@@ -30,8 +31,8 @@ export function useChunkedImport() {
     cancelledRef.current = false;
     setState({
       status: 'idle',
-      progress: { imported: 0, total: 0 },
-      importedIndices: new Set(),
+      progress: { imported: 0, skipped: 0, total: 0 },
+      importedKeys: new Set(),
     });
   }, []);
 
@@ -41,56 +42,58 @@ export function useChunkedImport() {
 
   const start = useCallback(async (
     sessions: TrainingSessionPayload[],
-    indices: number[],
-  ): Promise<{ imported: number; total: number }> => {
+    externalIds: string[],
+  ): Promise<{ imported: number; skipped: number; total: number }> => {
     cancelledRef.current = false;
     const total = sessions.length;
 
     setState({
       status: 'importing',
-      progress: { imported: 0, total },
-      importedIndices: new Set(),
+      progress: { imported: 0, skipped: 0, total },
+      importedKeys: new Set(),
     });
 
     let imported = 0;
-    const allImportedIndices = new Set<number>();
+    let skipped = 0;
+    const allImportedKeys = new Set<string>();
 
     for (let i = 0; i < total; i += BATCH_SIZE) {
       if (cancelledRef.current) {
         setState((prev) => ({ ...prev, status: 'cancelled' }));
-        return { imported, total };
+        return { imported, skipped, total };
       }
 
       const batchSessions = sessions.slice(i, i + BATCH_SIZE);
-      const batchIndices = indices.slice(i, i + BATCH_SIZE);
+      const batchKeys = externalIds.slice(i, i + BATCH_SIZE);
 
       try {
         const result = await bulkImportSessions(batchSessions);
         imported += result.count;
-        for (const idx of batchIndices) allImportedIndices.add(idx);
+        skipped += result.skipped ?? 0;
+        for (const key of batchKeys) allImportedKeys.add(key);
 
         setState({
           status: 'importing',
-          progress: { imported, total },
-          importedIndices: new Set(allImportedIndices),
+          progress: { imported, skipped, total },
+          importedKeys: new Set(allImportedKeys),
         });
       } catch {
         setState((prev) => ({
           ...prev,
           status: 'error',
-          progress: { imported, total },
+          progress: { imported, skipped, total },
         }));
-        return { imported, total };
+        return { imported, skipped, total };
       }
     }
 
     setState((prev) => ({
       ...prev,
       status: 'done',
-      progress: { imported, total },
+      progress: { imported, skipped, total },
     }));
 
-    return { imported, total };
+    return { imported, skipped, total };
   }, []);
 
   return {

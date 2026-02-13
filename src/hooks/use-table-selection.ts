@@ -1,30 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
-/**
- * Generic hook for managing table row selection
- * Supports both single and multiple selection modes
- *
- * @template T Type of items being selected
- * @param items Array of items available for selection
- * @param mode Selection mode - 'single' allows only one selection, 'multiple' allows many
- * @returns Object with selection state and handlers
- *
- * @example
- * const { selectedIndices, toggleSelect, toggleSelectAll, getSelectedItems } =
- *   useTableSelection(sessions, 'multiple');
- *
- * // In your render:
- * <Checkbox
- *   checked={selectedIndices.has(index)}
- *   onCheckedChange={() => toggleSelect(index)}
- * />
- */
 type SelectionMode = 'single' | 'multiple';
 type SelectionKey = string | number;
 type KeyGetter<T, K extends SelectionKey> = (item: T, index: number) => K;
 type UseTableSelectionOptions<T, K extends SelectionKey> = {
   mode?: SelectionMode;
   getKey?: KeyGetter<T, K>;
+  disabledKeys?: Set<K>;
 };
 
 export function useTableSelection<T, K extends SelectionKey = number>(
@@ -35,8 +17,12 @@ export function useTableSelection<T, K extends SelectionKey = number>(
   const mode = options?.mode ?? 'multiple';
   const getKey: KeyGetter<T, K> =
     options?.getKey ?? ((_: T, index: number) => index as unknown as K);
+  const disabledKeys = options?.disabledKeys;
 
   const [selectedKeys, setSelectedKeys] = useState<Set<K>>(new Set());
+  const lastToggledIndex = useRef<number | null>(null);
+
+  const isDisabled = (key: K): boolean => !!disabledKeys?.has(key);
 
   const getKeyForIndex = (index: number): K => {
     const item = items[index];
@@ -46,13 +32,11 @@ export function useTableSelection<T, K extends SelectionKey = number>(
     return getKey(item, index);
   };
 
-  /**
-   * Toggles selection of a specific item by index
-   * In single mode, selecting a new item deselects the previous one
-   * @param index Index of item to toggle
-   */
   const toggleSelect = (index: number) => {
     const key = getKeyForIndex(index);
+    if (isDisabled(key)) return;
+
+    lastToggledIndex.current = index;
     setSelectedKeys((prev) => {
       const newSelected = new Set(prev);
 
@@ -67,9 +51,56 @@ export function useTableSelection<T, K extends SelectionKey = number>(
 
       return newSelected;
     });
+  };
+
+  const toggleSelectWithEvent = (
+    index: number,
+    event?: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean }
+  ) => {
+    const key = getKeyForIndex(index);
+    if (isDisabled(key)) return;
+
+    if (event?.shiftKey && mode === 'multiple' && lastToggledIndex.current !== null) {
+      const start = Math.min(lastToggledIndex.current, index);
+      const end = Math.max(lastToggledIndex.current, index);
+
+      setSelectedKeys((prev) => {
+        const newSelected = new Set(prev);
+        for (let i = start; i <= end; i++) {
+          const k = getKeyForIndex(i);
+          if (!isDisabled(k)) {
+            newSelected.add(k);
+          }
+        }
+        return newSelected;
+      });
+      lastToggledIndex.current = index;
+      return;
+    }
+
+    if (event?.metaKey || event?.ctrlKey) {
+      const key = getKeyForIndex(index);
+      setSelectedKeys((prev) => {
+        const newSelected = new Set(prev);
+        if (newSelected.has(key)) {
+          newSelected.delete(key);
+        } else {
+          if (mode === 'single') {
+            newSelected.clear();
+          }
+          newSelected.add(key);
+        }
+        return newSelected;
+      });
+      lastToggledIndex.current = index;
+      return;
+    }
+
+    toggleSelect(index);
   };
 
   const toggleSelectByKey = (key: K) => {
+    if (isDisabled(key)) return;
     setSelectedKeys((prev) => {
       const newSelected = new Set(prev);
 
@@ -85,6 +116,12 @@ export function useTableSelection<T, K extends SelectionKey = number>(
       return newSelected;
     });
   };
+
+  const selectableItems = disabledKeys
+    ? items.filter((item, index) => !isDisabled(getKey(item, index)))
+    : items;
+
+  const selectableKeys = new Set(selectableItems.map(getKey));
 
   const toggleSelectAll = () => {
     if (mode === 'single') {
@@ -92,16 +129,17 @@ export function useTableSelection<T, K extends SelectionKey = number>(
     }
 
     setSelectedKeys((prev) => {
-      if (prev.size === items.length) {
+      const currentSelectableSelected = Array.from(prev).filter(k => selectableKeys.has(k));
+      if (currentSelectableSelected.length === selectableItems.length && selectableItems.length > 0) {
         return new Set();
       }
-      return new Set(items.map(getKey));
+      return new Set(selectableItems.map(getKey));
     });
   };
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedKeys(new Set());
-  };
+  }, []);
 
   const selectIndices = (indices: number[]) => {
     if (mode === 'single' && indices.length > 1) {
@@ -147,17 +185,26 @@ export function useTableSelection<T, K extends SelectionKey = number>(
   });
 
   const isAllSelected = (): boolean => {
-    return selectedIndices.size === items.length && items.length > 0;
+    if (selectableItems.length === 0) return false;
+    return selectableItems.every((item) => {
+      const key = getKey(item, items.indexOf(item));
+      return selectedKeys.has(key);
+    });
   };
 
   const isSomeSelected = (): boolean => {
-    return selectedIndices.size > 0 && selectedIndices.size < items.length;
+    const count = selectableItems.filter((item) => {
+      const key = getKey(item, items.indexOf(item));
+      return selectedKeys.has(key);
+    }).length;
+    return count > 0 && count < selectableItems.length;
   };
 
   return {
     selectedKeys,
     selectedIndices,
     toggleSelect,
+    toggleSelectWithEvent,
     toggleSelectByKey,
     toggleSelectAll,
     clearSelection,

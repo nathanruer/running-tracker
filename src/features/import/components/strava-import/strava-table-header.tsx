@@ -36,9 +36,11 @@ function SortableHeader({ column, label, sortColumn, onSort, SortIcon, className
 
 export const StravaTableHeader = React.forwardRef<HTMLTableSectionElement, StravaTableHeaderProps>(
   function StravaTableHeader(
-    { mode, hasActivities, isAllSelected, onToggleSelectAll, sortColumn, onSort, SortIcon },
+    { mode, hasActivities, isAllSelected, isSomeSelected, importableCount, onToggleSelectAll, sortColumn, onSort, SortIcon },
     ref
   ) {
+    const checkboxState = isAllSelected ? true : isSomeSelected ? 'indeterminate' as const : false;
+
     return (
       <TableHeader
         ref={ref}
@@ -48,8 +50,9 @@ export const StravaTableHeader = React.forwardRef<HTMLTableSectionElement, Strav
           <TableHead className="w-[40px] md:w-[50px] py-4 px-2 md:px-4">
             {mode !== 'complete' && (
               <Checkbox
-                checked={hasActivities && isAllSelected}
+                checked={hasActivities && checkboxState}
                 onCheckedChange={onToggleSelectAll}
+                disabled={importableCount === 0}
                 className="border-muted-foreground/30"
               />
             )}
