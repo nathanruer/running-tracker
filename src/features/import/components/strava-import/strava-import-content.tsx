@@ -53,6 +53,7 @@ export function StravaImportContent({
     loadAllForSearch,
     loadAllActivities,
     cancelLoading,
+    isRefreshing,
   } = useStravaActivities(open);
 
   const chunkedImport = useChunkedImport();
@@ -304,7 +305,7 @@ export function StravaImportContent({
               />
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
-                <LoadingBar isLoading={loadingMore} />
+                <LoadingBar isLoading={loadingMore || isRefreshing} />
                 <StravaActivitiesTable
                   activities={sortedActivities}
                   filteredActivities={filteredActivities}

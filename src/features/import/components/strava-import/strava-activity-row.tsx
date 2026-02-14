@@ -16,7 +16,7 @@ export const StravaActivityRow = React.memo(function StravaActivityRow({
       className={cn(
         "transition-colors group/row border-none",
         alreadyImported
-          ? "opacity-40 bg-green-500/[0.01] hover:bg-green-500/[0.03] cursor-default"
+          ? "opacity-40 bg-green-500/[0.01] hover:bg-green-500/[0.01] cursor-default"
           : selected
             ? "bg-violet-500/5 hover:bg-violet-500/10 cursor-pointer"
             : "hover:bg-muted/30 cursor-pointer"
