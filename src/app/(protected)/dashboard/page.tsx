@@ -4,8 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import SessionDialog from '@/features/sessions/components/forms/session-dialog';
-import { StravaImportDialog } from '@/features/import';
+import dynamic from 'next/dynamic';
 import { SessionsTable, type BulkEnrichmentSelection, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
@@ -24,6 +23,15 @@ import {
 import { bulkEnrichSessionStreams, bulkEnrichSessionWeather, getSessionById } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
+
+const SessionDialog = dynamic(
+  () => import('@/features/sessions/components/forms/session-dialog'),
+  { ssr: false }
+);
+const StravaImportDialog = dynamic(
+  () => import('@/features/import').then((m) => ({ default: m.StravaImportDialog })),
+  { ssr: false }
+);
 
 const SESSION_DETAILS_STALE_TIME = 5 * 60 * 1000;
 
