@@ -98,39 +98,45 @@ export function useStreamingChat(): UseStreamingChatReturn {
         if (!reader) throw new Error('Stream non disponible');
 
         const decoder = new TextDecoder();
+        let buffer = '';
         let accumulatedContent = '';
         let jsonResponse: unknown = null;
+
+        const processLine = (line: string) => {
+          if (!line.startsWith('data: ')) return;
+          const dataStr = line.slice(6).trim();
+          if (!dataStr) return;
+
+          const event: StreamEvent = JSON.parse(dataStr);
+
+          if (event.type === 'chunk') {
+            accumulatedContent += event.data;
+            setStreamingContent(accumulatedContent);
+          } else if (event.type === 'json') {
+            jsonResponse = JSON.parse(event.data);
+          } else if (event.type === 'error') {
+            throw new Error(event.data);
+          }
+        };
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter((line) => line.startsWith('data: '));
-
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
           for (const line of lines) {
-            const dataStr = line.slice(6);
-            if (!dataStr) continue;
-
-            try {
-              const event: StreamEvent = JSON.parse(dataStr);
-
-              if (event.type === 'chunk') {
-                accumulatedContent += event.data;
-                setStreamingContent(accumulatedContent);
-              } else if (event.type === 'json') {
-                jsonResponse = JSON.parse(event.data);
-              } else if (event.type === 'error') {
-                throw new Error(event.data);
-              }
-            } catch (parseError) {
-              if (parseError instanceof SyntaxError) continue;
-              throw parseError;
-            }
+            processLine(line);
           }
         }
 
-        const finalContent = accumulatedContent || 'Reponse recue';
+        buffer += decoder.decode();
+        if (buffer) {
+          processLine(buffer);
+        }
+
+        const finalContent = accumulatedContent || 'Réponse reçue';
         const recommendations = jsonResponse && typeof jsonResponse === 'object' && 'recommended_sessions' in jsonResponse
           ? jsonResponse
           : null;

@@ -85,6 +85,55 @@ describe('useStreamingChat', () => {
     });
   });
 
+  it('should parse an SSE event split across two network reads', async () => {
+    const fullEvent = 'data: {"type":"json","data":"{\\"recommended_sessions\\":[{\\"duration_min\\":45,\\"estimated_distance_km\\":8}]}"}\n\n';
+    const splitAt = 40;
+    const mockReader = {
+      read: vi.fn()
+        .mockResolvedValueOnce({
+          done: false,
+          value: new TextEncoder().encode('data: {"type":"chunk","data":"Voici"}\n\n' + fullEvent.slice(0, splitAt)),
+        })
+        .mockResolvedValueOnce({
+          done: false,
+          value: new TextEncoder().encode(fullEvent.slice(splitAt)),
+        })
+        .mockResolvedValueOnce({
+          done: false,
+          value: new TextEncoder().encode('data: {"type":"done","data":""}\n\n'),
+        })
+        .mockResolvedValueOnce({ done: true, value: undefined }),
+    };
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => mockReader,
+      },
+    });
+
+    const { Wrapper, queryClient } = createWrapper();
+    queryClient.setQueryData(queryKeys.conversation('conv-1'), {
+      id: 'conv-1',
+      chat_messages: [],
+    });
+
+    const { result } = renderHook(() => useStreamingChat(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.sendStreamingMessage('conv-1', 'Test message');
+    });
+
+    const conversation = queryClient.getQueryData(queryKeys.conversation('conv-1')) as {
+      chat_messages: Array<{ role: string; recommendations: unknown }>;
+    };
+    const assistantMessage = conversation.chat_messages.find((m) => m.role === 'assistant');
+    expect(assistantMessage?.recommendations).toEqual({
+      recommended_sessions: [{ duration_min: 45, estimated_distance_km: 8 }],
+    });
+    expect(toastMock).not.toHaveBeenCalled();
+  });
+
   it('should accumulate streaming content', async () => {
     const mockReader = {
       read: vi.fn()

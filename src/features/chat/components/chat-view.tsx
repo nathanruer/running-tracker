@@ -143,7 +143,6 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
       <MessageList
         messages={messages}
         isLoading={isConversationLoading}
-        isSending={false}
         isStreaming={isStreaming}
         streamingContent={streamingContent}
         loadingSessionId={loadingSessionId}

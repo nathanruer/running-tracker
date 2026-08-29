@@ -5,7 +5,6 @@ import {
   createConversation,
   renameConversation,
   deleteConversation,
-  sendMessage,
 } from '@/lib/services/api-client/conversations';
 import * as clientModule from '@/lib/services/api-client/client';
 
@@ -109,36 +108,4 @@ describe('Conversations API', () => {
     });
   });
 
-  describe('sendMessage', () => {
-    it('sends a message to a conversation', async () => {
-      const mockResponse = {
-        userMessage: { id: 'msg-1', role: 'user', content: 'Hello' },
-        assistantMessage: { id: 'msg-2', role: 'assistant', content: 'Hi there!' },
-      };
-      mockApiRequest.mockResolvedValue(mockResponse);
-
-      const result = await sendMessage('conv-1', 'Hello');
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/conversations/conv-1/messages', {
-        method: 'POST',
-        body: JSON.stringify({ content: 'Hello' }),
-      });
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('handles messages with special characters', async () => {
-      const mockResponse = {
-        userMessage: { id: 'msg-1', role: 'user', content: 'Séance de côtes' },
-        assistantMessage: { id: 'msg-2', role: 'assistant', content: 'Bonne idée!' },
-      };
-      mockApiRequest.mockResolvedValue(mockResponse);
-
-      await sendMessage('conv-1', 'Séance de côtes');
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/api/conversations/conv-1/messages', {
-        method: 'POST',
-        body: JSON.stringify({ content: 'Séance de côtes' }),
-      });
-    });
-  });
 });

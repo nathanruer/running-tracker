@@ -31,12 +31,10 @@ export {
   createConversationWithMessage,
   renameConversation,
   deleteConversation,
-  sendMessage,
   type Conversation,
   type Message,
   type MessageRecommendations,
   type ConversationWithMessages,
-  type SendMessageResponse,
   type CreateConversationWithMessageResponse,
 } from './conversations';
 

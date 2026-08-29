@@ -3,10 +3,8 @@ import { useMutation, useQueryClient, type InfiniteData, type QueryKey } from '@
 import { useToast } from '@/hooks/use-toast';
 import type { AIRecommendedSession, TrainingSession } from '@/lib/types';
 import {
-  sendMessage as apiSendMessage,
   deleteSession,
   addPlannedSession,
-  type ConversationWithMessages,
 } from '@/lib/services/api-client';
 import { isFractionneType } from '@/lib/utils/session-type';
 import { queryKeys } from '@/lib/constants/query-keys';
@@ -328,73 +326,11 @@ export function useChatMutations(conversationId: string | null) {
     },
   });
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
-      if (!conversationId) throw new Error('Aucune conversation sélectionnée');
-      return apiSendMessage(conversationId, content);
-    },
-    onMutate: async (content: string) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.conversation(conversationId) });
-
-      const previousConversation = queryClient.getQueryData(queryKeys.conversation(conversationId));
-
-      queryClient.setQueryData(queryKeys.conversation(conversationId), (old: ConversationWithMessages | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          chat_messages: [
-            ...old.chat_messages,
-            {
-              id: `temp-${crypto.randomUUID()}`,
-              role: 'user',
-              content,
-              createdAt: new Date().toISOString(),
-              recommendations: null,
-            },
-          ],
-        };
-      });
-
-      return { previousConversation };
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.conversation(conversationId), (old: ConversationWithMessages | undefined) => {
-        if (!old) return old;
-
-        const messagesWithoutTemp = old.chat_messages.filter((m) => !m.id.toString().startsWith('temp-'));
-
-        return {
-          ...old,
-          chat_messages: [
-            ...messagesWithoutTemp,
-            data.userMessage,
-            data.assistantMessage
-          ],
-        };
-      });
-
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
-    },
-    onError: (error, _variables, context) => {
-      if (context?.previousConversation) {
-        queryClient.setQueryData(queryKeys.conversation(conversationId), context.previousConversation);
-      }
-      toast({
-        title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Erreur lors de l\'envoi du message',
-        variant: 'destructive',
-      });
-    },
-  });
-
   return {
     acceptSession: acceptSessionMutation.mutate,
     deleteSession: deleteSessionMutation.mutate,
-    sendMessage: sendMessageMutation.mutate,
     isAccepting: acceptSessionMutation.isPending,
     isDeleting: deleteSessionMutation.isPending,
-    isSending: sendMessageMutation.isPending,
     loadingSessionId,
   };
 }

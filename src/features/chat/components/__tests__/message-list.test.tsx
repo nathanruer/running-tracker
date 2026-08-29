@@ -26,7 +26,6 @@ describe('MessageList', () => {
   const defaultProps = {
     messages: [],
     isLoading: false,
-    isSending: false,
     loadingSessionId: null,
     allSessions: [] as TrainingSession[],
     onAcceptSession: mockOnAcceptSession,
@@ -57,12 +56,6 @@ describe('MessageList', () => {
 
       const userMessage = container.querySelector('.bg-violet-600');
       expect(userMessage).toBeInTheDocument();
-    });
-
-    it('should display sending indicator when isSending is true', () => {
-      render(<MessageList {...defaultProps} isSending={true} />);
-
-      expect(screen.getByText('Le coach réfléchit...')).toBeInTheDocument();
     });
 
     it('should render streaming content when provided', () => {

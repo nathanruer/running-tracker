@@ -29,11 +29,6 @@ export interface ConversationWithMessages extends Conversation {
   chat_messages: Message[];
 }
 
-export interface SendMessageResponse {
-  userMessage: Message;
-  assistantMessage: Message;
-}
-
 /**
  * Fetches all conversations for the current user
  */
@@ -79,18 +74,6 @@ export async function renameConversation(id: string, title: string): Promise<Con
 export async function deleteConversation(id: string): Promise<void> {
   await apiRequest(`/api/conversations/${id}`, {
     method: 'DELETE',
-  });
-}
-
-/**
- * Sends a message to a conversation
- * @param conversationId Conversation ID
- * @param content Message content
- */
-export async function sendMessage(conversationId: string, content: string): Promise<SendMessageResponse> {
-  return apiRequest<SendMessageResponse>(`/api/conversations/${conversationId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify({ content }),
   });
 }
 

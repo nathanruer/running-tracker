@@ -29,7 +29,6 @@ function useDebouncedCallback(callback: () => void, delay: number): () => void {
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
-  isSending: boolean;
   isStreaming?: boolean;
   streamingContent?: string;
   loadingSessionId: string | null;
@@ -40,7 +39,6 @@ interface MessageListProps {
 
 export const MessageList = memo(function MessageList({
   messages,
-  isSending,
   isStreaming = false,
   streamingContent = '',
   loadingSessionId,
@@ -93,13 +91,13 @@ export const MessageList = memo(function MessageList({
   }, [isStreaming, streamingContent, scrollToBottom]);
 
   useEffect(() => {
-    if (!isStreaming && !isSending && containerRef.current) {
+    if (!isStreaming && containerRef.current) {
       containerRef.current.scrollTo({
         top: containerRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
-  }, [messages.length, isStreaming, isSending]);
+  }, [messages.length, isStreaming]);
 
   return (
     <div
@@ -197,7 +195,7 @@ export const MessageList = memo(function MessageList({
         </div>
       ))}
 
-      {(isSending || isStreaming) && (
+      {isStreaming && (
         <div
           ref={streamingRef}
           className="flex gap-3 md:gap-4"
