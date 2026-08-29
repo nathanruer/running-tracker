@@ -1,4 +1,4 @@
-import { FilterX, Plus, RefreshCw, X } from 'lucide-react';
+import { FilterX, Plus, X } from 'lucide-react';
 import { CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
@@ -61,7 +61,6 @@ interface SessionsTableToolbarProps {
   isEnriching?: boolean;
   actions: {
     onNewSession?: () => void;
-    onOpenImport?: () => void;
   };
   selectedType: string;
   availableTypes: string[];
@@ -159,38 +158,26 @@ export function SessionsTableToolbar({
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-3 shrink-0 ml-1">
-            {actions.onOpenImport && (
-              <Button
-                data-testid="btn-intervals-import"
-                onClick={actions.onOpenImport}
-                variant="outline"
-                size="sm"
-                className="relative rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-5 transition-all active:scale-95 flex items-center justify-center shrink-0"
-                title="Importer les courses depuis intervals.icu"
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Importer</span>
-                {newActivitiesCount > 0 && (
-                  <span
-                    data-testid="intervals-new-badge"
-                    className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-violet-600 text-white text-[10px] font-black flex items-center justify-center"
-                  >
-                    {newActivitiesCount}
-                  </span>
-                )}
-              </Button>
-            )}
             {actions.onNewSession && (
               <Button
                 data-testid="btn-new-session"
                 onClick={actions.onNewSession}
                 variant="action"
                 size="sm"
-                className="rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-8 transition-all active:scale-95 flex items-center justify-center border border-violet-400/20 shadow-none shrink-0"
+                className="relative rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-8 transition-all active:scale-95 flex items-center justify-center border border-violet-400/20 shadow-none shrink-0"
                 title="Nouvelle séance"
               >
                 <Plus className="h-4 w-4 md:h-4 md:w-4" />
                 <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Nouvelle séance</span>
+                {newActivitiesCount > 0 && (
+                  <span
+                    data-testid="intervals-new-badge"
+                    title={`${newActivitiesCount} course${newActivitiesCount > 1 ? 's' : ''} à importer depuis intervals.icu`}
+                    className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-violet-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-background"
+                  >
+                    {newActivitiesCount}
+                  </span>
+                )}
               </Button>
             )}
           </div>

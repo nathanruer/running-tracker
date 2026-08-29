@@ -294,7 +294,6 @@ function DashboardContent() {
     onView: handleViewSession,
     onPrefetchDetails: prefetchSessionDetails,
     onNewSession: openNewSession,
-    onOpenImport: () => setIsStravaDialogOpen(true),
     onBulkEnrich: handleBulkEnrich,
   };
 

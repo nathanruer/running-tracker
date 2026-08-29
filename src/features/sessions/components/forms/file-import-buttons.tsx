@@ -1,5 +1,6 @@
 import { Watch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNewIntervalsCount } from '@/features/import/hooks/use-new-intervals-count';
 
 interface FileImportButtonsProps {
   mode?: 'create' | 'edit' | 'complete';
@@ -10,6 +11,8 @@ export function FileImportButtons({
   mode = 'create',
   onStravaClick,
 }: FileImportButtonsProps) {
+  const newActivitiesCount = useNewIntervalsCount();
+
   if (mode === 'edit' || !onStravaClick) {
     return null;
   }
@@ -33,6 +36,11 @@ export function FileImportButtons({
             >
               <Watch className="mr-2 h-4 w-4" />
               Importer depuis intervals.icu
+              {newActivitiesCount > 0 && (
+                <span className="ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-white/20 text-white text-[10px] font-black flex items-center justify-center">
+                  {newActivitiesCount}
+                </span>
+              )}
             </Button>
           )}
         </div>

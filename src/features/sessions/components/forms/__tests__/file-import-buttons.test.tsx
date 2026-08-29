@@ -2,6 +2,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { FileImportButtons } from '../file-import-buttons';
 
+vi.mock('@/features/import/hooks/use-new-intervals-count', () => ({
+  useNewIntervalsCount: () => 0,
+}));
+
 describe('FileImportButtons', () => {
   it('should render strava button in create mode with onStravaClick', () => {
     const onStravaClick = vi.fn();
