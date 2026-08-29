@@ -12,7 +12,6 @@ import { PageContainer } from '@/components/layout/page-container';
 import { ProfileForm, SecurityForm, TrainingZonesTable, IntervalsAccountCard } from '@/features/profile/components/account';
 import { ProfileContentSkeleton, AnalyticsSkeleton, HistorySkeleton } from '@/features/profile/components/profile-skeleton';
 import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
-import { CACHE_STORAGE_KEY } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { useUrlParams } from '@/hooks/use-url-params';
@@ -25,7 +24,6 @@ import {
   VALID_GRANULARITIES,
   VALID_PROFILE_TABS,
   type ProfileTab,
-  type ProfileUrlParams,
 } from '@/features/profile/constants/profile-url-params';
 
 const AnalyticsView = dynamic(
@@ -44,11 +42,7 @@ const ActivityHistory = dynamic(
   }
 );
 
-type ProfilePageClientProps = {
-  initialParams: ProfileUrlParams;
-};
-
-export default function ProfilePageClient({ initialParams }: ProfilePageClientProps) {
+export default function ProfilePageClient() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -72,8 +66,7 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
       },
       from: { key: 'from', defaultValue: '' },
       to: { key: 'to', defaultValue: '' },
-    },
-    { initialValues: initialParams }
+    }
   );
 
   const activeView = params.tab;
@@ -135,7 +128,6 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
       queryClient.clear();
 
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(CACHE_STORAGE_KEY);
       }
 
       window.location.href = '/';

@@ -16,7 +16,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { loginUser, registerUser } from '@/lib/services/api-client';
-import { CACHE_STORAGE_KEY } from '@/lib/constants';
 import { ErrorCode, AppError } from '@/lib/errors';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { ErrorMessage } from '@/components/ui/error-message';
@@ -59,7 +58,6 @@ const LoginCard = () => {
 
     queryClient.clear();
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(CACHE_STORAGE_KEY);
     }
 
     router.replace('/dashboard');

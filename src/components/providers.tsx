@@ -1,14 +1,12 @@
 'use client';
 
-import { ReactNode, useState, useSyncExternalStore, useCallback } from 'react';
+import { ReactNode, useState, useCallback } from 'react';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { ErrorModal } from '@/components/ui/error-modal';
 import { ErrorProvider } from '@/contexts/error-context';
-import { CACHE_TIME, GC_TIME, MS_PER_DAY, CACHE_STORAGE_KEY } from '@/lib/constants';
+import { CACHE_TIME, GC_TIME } from '@/lib/constants';
 import { reportError } from '@/lib/errors/reporter';
 
 interface ProvidersProps {
@@ -39,53 +37,12 @@ export const Providers = ({ children }: ProvidersProps) => {
       })
   );
 
-  const [persister] = useState(() =>
-    typeof window !== 'undefined'
-      ? createAsyncStoragePersister({
-          storage: window.localStorage,
-          key: CACHE_STORAGE_KEY,
-        })
-      : null
-  );
-
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
-
   const handleSessionExpired = useCallback(() => {
-    window.location.href = '/login';
+    window.location.href = '/';
   }, []);
 
-  if (!mounted || !persister) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <ErrorProvider onSessionExpired={handleSessionExpired}>
-          <TooltipProvider delayDuration={150}>
-            {children}
-            <Toaster />
-            <ErrorModal />
-          </TooltipProvider>
-        </ErrorProvider>
-      </QueryClientProvider>
-    );
-  }
-
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister,
-        maxAge: 7 * MS_PER_DAY,
-        dehydrateOptions: {
-          shouldDehydrateQuery: (query) => {
-            const key = query.queryKey[0];
-            return key !== 'user' && key !== 'conversations' && key !== 'conversation';
-          },
-        },
-      }}
-    >
+    <QueryClientProvider client={queryClient}>
       <ErrorProvider onSessionExpired={handleSessionExpired}>
         <TooltipProvider delayDuration={150}>
           {children}
@@ -93,7 +50,6 @@ export const Providers = ({ children }: ProvidersProps) => {
           <ErrorModal />
         </TooltipProvider>
       </ErrorProvider>
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 };
-

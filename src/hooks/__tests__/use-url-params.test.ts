@@ -2,285 +2,178 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useUrlParams } from '../use-url-params';
 
-const mockReplaceState = vi.fn();
+const mockReplace = vi.fn();
+let currentSearch = '';
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => '/test',
+  useSearchParams: () => new URLSearchParams(currentSearch),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  currentSearch = '';
   Object.defineProperty(window, 'location', {
     value: { search: '', pathname: '/test' },
     writable: true,
   });
-  window.history.replaceState = mockReplaceState;
 });
 
+function setUrl(search: string) {
+  currentSearch = search;
+  window.location.search = search;
+}
+
+const defs = {
+  name: { key: 'name', defaultValue: '' },
+  count: { key: 'count', defaultValue: '0' },
+};
+
 describe('useUrlParams', () => {
-  describe('initialization', () => {
-    it('should return default values when URL has no params', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-          count: { key: 'count', defaultValue: '0' },
-        })
-      );
+  describe('reading from the URL', () => {
+    it('returns default values when URL has no params', () => {
+      const { result } = renderHook(() => useUrlParams(defs));
       expect(result.current.params).toEqual({ name: '', count: '0' });
     });
 
-    it('should read values from URL', () => {
-      window.location.search = '?name=hello&count=5';
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-          count: { key: 'count', defaultValue: '0' },
-        })
-      );
+    it('reads values from the URL', () => {
+      setUrl('?name=hello&count=5');
+      const { result } = renderHook(() => useUrlParams(defs));
       expect(result.current.params).toEqual({ name: 'hello', count: '5' });
     });
 
-    it('should use default for missing URL params', () => {
-      window.location.search = '?name=hello';
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-          count: { key: 'count', defaultValue: '0' },
-        })
-      );
+    it('uses defaults for missing params', () => {
+      setUrl('?name=hello');
+      const { result } = renderHook(() => useUrlParams(defs));
       expect(result.current.params).toEqual({ name: 'hello', count: '0' });
     });
 
-    it('should honor initialValues when provided', () => {
-      window.location.search = '?name=hello';
-      const { result } = renderHook(() =>
-        useUrlParams(
-          {
-            name: { key: 'name', defaultValue: '' },
-          },
-          { initialValues: { name: 'server' } }
-        )
-      );
-      expect(result.current.params).toEqual({ name: 'server' });
-    });
-  });
-
-  describe('validation', () => {
-    it('should validate URL values and use valid ones', () => {
-      window.location.search = '?period=week';
+    it('falls back to default when validation rejects the raw value', () => {
+      setUrl('?mode=invalid');
       const { result } = renderHook(() =>
         useUrlParams({
-          period: {
-            key: 'period',
-            defaultValue: 'all',
-            validate: (raw) => (['all', 'week', 'month'].includes(raw) ? raw : null),
+          mode: {
+            key: 'mode',
+            defaultValue: 'list',
+            validate: (raw) => (raw === 'grid' || raw === 'list' ? raw : null),
           },
         })
       );
-      expect(result.current.params.period).toBe('week');
+      expect(result.current.params.mode).toBe('list');
     });
 
-    it('should fall back to default for invalid values', () => {
-      window.location.search = '?period=invalid';
+    it('keeps validated values', () => {
+      setUrl('?mode=grid');
       const { result } = renderHook(() =>
         useUrlParams({
-          period: {
-            key: 'period',
-            defaultValue: 'all',
-            validate: (raw) => (['all', 'week', 'month'].includes(raw) ? raw : null),
+          mode: {
+            key: 'mode',
+            defaultValue: 'list',
+            validate: (raw) => (raw === 'grid' || raw === 'list' ? raw : null),
           },
         })
       );
-      expect(result.current.params.period).toBe('all');
+      expect(result.current.params.mode).toBe('grid');
     });
   });
 
-  describe('setParam', () => {
-    it('should update a single param', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-        })
-      );
-      act(() => result.current.setParam('name', 'test'));
-      expect(result.current.params.name).toBe('test');
+  describe('writing to the URL', () => {
+    it('replaces the URL with the new param', () => {
+      const { result } = renderHook(() => useUrlParams(defs));
+
+      act(() => {
+        result.current.setParam('name', 'hello');
+      });
+
+      expect(mockReplace).toHaveBeenCalledWith('/test?name=hello', { scroll: false });
     });
 
-    it('should sync to URL', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-        })
-      );
-      act(() => result.current.setParam('name', 'test'));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      expect(lastCall?.[2]).toContain('name=test');
+    it('omits params equal to their default', () => {
+      setUrl('?name=hello');
+      const { result } = renderHook(() => useUrlParams(defs));
+
+      act(() => {
+        result.current.setParam('name', '');
+      });
+
+      expect(mockReplace).toHaveBeenCalledWith('/test', { scroll: false });
     });
 
-    it('should not trigger re-render if value is unchanged', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: 'initial' },
-        })
-      );
-      const paramsBefore = result.current.params;
-      act(() => result.current.setParam('name', 'initial'));
-      expect(result.current.params).toBe(paramsBefore);
-    });
-  });
+    it('applies multiple updates atomically via setParams', () => {
+      const { result } = renderHook(() => useUrlParams(defs));
 
-  describe('setParams', () => {
-    it('should update multiple params at once', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-          count: { key: 'count', defaultValue: '0' },
-        })
-      );
-      act(() => result.current.setParams({ name: 'hello', count: '5' }));
-      expect(result.current.params).toEqual({ name: 'hello', count: '5' });
+      act(() => {
+        result.current.setParams({ name: 'a', count: '2' });
+      });
+
+      expect(mockReplace).toHaveBeenCalledTimes(1);
+      const url = mockReplace.mock.calls[0][0] as string;
+      expect(url).toContain('name=a');
+      expect(url).toContain('count=2');
     });
 
-    it('should produce a single URL update for batch changes', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          a: { key: 'a', defaultValue: '' },
-          b: { key: 'b', defaultValue: '' },
-        })
-      );
-      mockReplaceState.mockClear();
-      act(() => result.current.setParams({ a: 'x', b: 'y' }));
-      const urlCalls = mockReplaceState.mock.calls.filter((c) => c[2]?.includes('a=x'));
-      expect(urlCalls.length).toBe(1);
-    });
+    it('preserves foreign query params it does not own', () => {
+      setUrl('?other=keep&name=x');
+      const { result } = renderHook(() => useUrlParams(defs));
 
-    it('should not trigger re-render if no values changed', () => {
-      window.location.search = '?name=hello';
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-        })
-      );
-      const paramsBefore = result.current.params;
-      act(() => result.current.setParams({ name: 'hello' }));
-      expect(result.current.params).toBe(paramsBefore);
-    });
-  });
+      act(() => {
+        result.current.setParam('name', 'y');
+      });
 
-  describe('URL building', () => {
-    it('should omit default values from URL', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-          type: { key: 'type', defaultValue: 'all' },
-        })
-      );
-      act(() => result.current.setParam('type', 'all'));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      expect(lastCall?.[2]).toBe('/test');
-    });
-
-    it('should produce clean URL when all values are defaults', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-        })
-      );
-      act(() => result.current.setParam('name', ''));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      expect(lastCall?.[2]).toBe('/test');
-    });
-
-    it('should use custom serialize function', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          items: {
-            key: 'items',
-            defaultValue: '',
-            serialize: (v) => String(v).toUpperCase(),
-          },
-        })
-      );
-      act(() => result.current.setParam('items', 'hello'));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      expect(lastCall?.[2]).toContain('items=HELLO');
-    });
-
-    it('should preserve Next.js history state', () => {
-      const mockState = { __NA: true };
-      Object.defineProperty(window.history, 'state', { value: mockState, writable: true });
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-        })
-      );
-      act(() => result.current.setParam('name', 'test'));
-      expect(mockReplaceState.mock.calls.at(-1)?.[0]).toBe(mockState);
-    });
-  });
-
-  describe('key mapping', () => {
-    it('should map internal names to URL keys', () => {
-      const { result } = renderHook(() =>
-        useUrlParams({
-          dateRange: { key: 'range', defaultValue: 'all' },
-        })
-      );
-      act(() => result.current.setParam('dateRange', '4weeks'));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      expect(lastCall?.[2]).toContain('range=4weeks');
-      expect(lastCall?.[2]).not.toContain('dateRange');
-    });
-
-    it('should read URL keys into internal names', () => {
-      window.location.search = '?range=4weeks';
-      const { result } = renderHook(() =>
-        useUrlParams({
-          dateRange: { key: 'range', defaultValue: 'all' },
-        })
-      );
-      expect(result.current.params.dateRange).toBe('4weeks');
-    });
-  });
-
-  describe('foreign params preservation', () => {
-    it('should preserve URL params not owned by this hook', () => {
-      window.location.search = '?tab=analytics&other=keep';
-      const { result } = renderHook(() =>
-        useUrlParams({
-          name: { key: 'name', defaultValue: '' },
-        })
-      );
-      act(() => result.current.setParam('name', 'test'));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      const url = lastCall?.[2] as string;
-      expect(url).toContain('tab=analytics');
+      const url = mockReplace.mock.calls[0][0] as string;
       expect(url).toContain('other=keep');
-      expect(url).toContain('name=test');
+      expect(url).toContain('name=y');
     });
 
-    it('should not destroy foreign params when setting defaults', () => {
-      window.location.search = '?tab=analytics';
+    it('uses a custom serializer when provided', () => {
       const { result } = renderHook(() =>
         useUrlParams({
-          name: { key: 'name', defaultValue: '' },
+          flag: {
+            key: 'flag',
+            defaultValue: false as boolean,
+            serialize: (v) => (v ? 'yes' : ''),
+          },
         })
       );
-      act(() => result.current.setParam('name', ''));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      const url = lastCall?.[2] as string;
-      expect(url).toContain('tab=analytics');
+
+      act(() => {
+        result.current.setParam('flag', true);
+      });
+
+      expect(mockReplace).toHaveBeenCalledWith('/test?flag=yes', { scroll: false });
     });
 
-    it('should only remove its own keys when resetting to defaults', () => {
-      window.location.search = '?tab=analytics&name=hello&range=4weeks';
+    it('drops params whose serializer returns an empty string', () => {
+      setUrl('?flag=yes');
       const { result } = renderHook(() =>
         useUrlParams({
-          name: { key: 'name', defaultValue: '' },
+          flag: {
+            key: 'flag',
+            defaultValue: false as boolean,
+            validate: (raw) => raw === 'yes',
+            serialize: (v) => (v ? 'yes' : ''),
+          },
         })
       );
-      act(() => result.current.setParam('name', ''));
-      const lastCall = mockReplaceState.mock.calls.at(-1);
-      const url = lastCall?.[2] as string;
-      expect(url).toContain('tab=analytics');
-      expect(url).toContain('range=4weeks');
-      expect(url).not.toContain('name=');
+
+      act(() => {
+        result.current.setParam('flag', false);
+      });
+
+      expect(mockReplace).toHaveBeenCalledWith('/test', { scroll: false });
+    });
+  });
+
+  describe('URL as source of truth', () => {
+    it('reflects new search params on rerender (back/forward navigation)', () => {
+      const { result, rerender } = renderHook(() => useUrlParams(defs));
+      expect(result.current.params.name).toBe('');
+
+      setUrl('?name=from-history');
+      rerender();
+
+      expect(result.current.params.name).toBe('from-history');
     });
   });
 });
