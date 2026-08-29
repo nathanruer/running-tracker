@@ -17,23 +17,34 @@ export function hasStravaRouteInPayload(payload: unknown): boolean {
   return hasPolyline(payload);
 }
 
+export interface PayloadStreamFields {
+  hasPolyline: boolean;
+  manual: boolean;
+  externalIdFieldNull: boolean | null;
+  uploadIdFieldNull: boolean | null;
+}
+
 /**
  * Heuristic used to avoid proposing streams enrichment for activities that are
  * known to be manual/non-GPS on Strava (usually streamless).
  */
+export function isLikelyStreamlessFromFields(fields: PayloadStreamFields): boolean {
+  if (fields.manual) return true;
+  const explicitNoUploadReference =
+    fields.externalIdFieldNull === true && fields.uploadIdFieldNull === true;
+  return explicitNoUploadReference && !fields.hasPolyline;
+}
+
 export function isStravaActivityLikelyStreamless(payload: unknown): boolean {
   if (!isRecord(payload)) return false;
 
-  if (payload.manual === true) {
-    return true;
-  }
+  const fieldNull = (key: string): boolean | null =>
+    Object.prototype.hasOwnProperty.call(payload, key) ? payload[key] == null : null;
 
-  const hasExternalIdField = Object.prototype.hasOwnProperty.call(payload, 'external_id');
-  const hasUploadIdField = Object.prototype.hasOwnProperty.call(payload, 'upload_id');
-  const explicitNoUploadReference = hasExternalIdField
-    && hasUploadIdField
-    && payload.external_id == null
-    && payload.upload_id == null;
-
-  return explicitNoUploadReference && !hasPolyline(payload);
+  return isLikelyStreamlessFromFields({
+    hasPolyline: hasPolyline(payload),
+    manual: payload.manual === true,
+    externalIdFieldNull: fieldNull('external_id'),
+    uploadIdFieldNull: fieldNull('upload_id'),
+  });
 }

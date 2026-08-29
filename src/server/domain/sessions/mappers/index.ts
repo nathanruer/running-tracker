@@ -5,6 +5,7 @@ export {
 } from './session.mapper';
 
 export type {
+  ExternalFlags,
   WorkoutMetricsRaw,
   PlanSessionData,
   ExternalActivityData,

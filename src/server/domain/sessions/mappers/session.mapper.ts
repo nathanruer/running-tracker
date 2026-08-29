@@ -11,6 +11,7 @@ import type { TrainingSession } from '@/lib/types';
 import { formatDuration } from '@/lib/utils/duration/format';
 import {
   hasStravaRouteInPayload,
+  isLikelyStreamlessFromFields,
   isStravaActivityLikelyStreamless,
 } from '@/server/domain/sessions/stream-eligibility';
 
@@ -121,6 +122,8 @@ export interface SessionMapperOptions {
    * @default true
    */
   includeFullData?: boolean;
+
+  externalFlags?: ExternalFlags | null;
   
   /**
    * If true, includes weather data even when includeFullData is false.
@@ -249,6 +252,17 @@ function buildBaseSession(workout: WorkoutBase): Omit<
  * // Table view (minimal data)
  * const session = mapWorkoutToSession(workout, { includeFullData: false });
  */
+export interface ExternalFlags {
+  source: string;
+  externalId: string;
+  sourceStatus: string | null;
+  hasPayload: boolean;
+  hasPolyline: boolean;
+  manual: boolean;
+  externalIdFieldNull: boolean | null;
+  uploadIdFieldNull: boolean | null;
+}
+
 export function mapWorkoutToSession(
   workout: WorkoutBase | WorkoutFull,
   options: SessionMapperOptions = {}
@@ -257,33 +271,57 @@ export function mapWorkoutToSession(
   const base = buildBaseSession(workout);
 
   if (!opts.includeFullData) {
-    const external = workout.external_activities
-      ? selectExternalActivity(workout.external_activities)
-      : null;
+    let externalId: string | null;
+    let source: string | null;
+    let hasStravaRoute: boolean;
+    let hasNoStreamsMarker: boolean;
+    let hasExternal: boolean;
+
+    if (opts.externalFlags !== undefined) {
+      const flags = opts.externalFlags;
+      hasExternal = flags != null;
+      externalId = flags?.externalId ?? null;
+      source = flags?.source ?? null;
+      hasStravaRoute = flags?.hasPolyline ?? false;
+      hasNoStreamsMarker = flags != null
+        && (
+          flags.sourceStatus === 'no_streams'
+          || !flags.hasPayload
+          || isLikelyStreamlessFromFields(flags)
+        );
+    } else {
+      const external = workout.external_activities
+        ? selectExternalActivity(workout.external_activities)
+        : null;
+      hasExternal = external != null;
+      externalId = external?.externalId ?? null;
+      source = external?.source ?? null;
+      hasStravaRoute = external != null
+        && hasStravaRouteInPayload(external.external_payloads?.payload);
+      hasNoStreamsMarker = external != null
+        && (
+          external.sourceStatus === 'no_streams'
+          || !external.external_payloads?.payload
+          || isStravaActivityLikelyStreamless(external.external_payloads?.payload)
+        );
+    }
+
     const weather = opts.includeWeather ? mapWeather(workout.weather_observations ?? null) : null;
-    const hasStravaRoute = external != null
-      && hasStravaRouteInPayload(external.external_payloads?.payload);
-    const weatherNotEnrichable = external != null && !hasStravaRoute;
+    const weatherNotEnrichable = hasExternal && !hasStravaRoute;
     const hasWeather = workout.weather_observations !== undefined
       ? Boolean(workout.weather_observations) || weatherNotEnrichable
       : undefined;
     const hasStreamsByCount = workout._count?.workout_streams !== undefined
       ? workout._count.workout_streams > 0
       : undefined;
-    const hasNoStreamsMarker = external != null
-      && (
-        external.sourceStatus === 'no_streams'
-        || !external.external_payloads?.payload
-        || isStravaActivityLikelyStreamless(external.external_payloads?.payload)
-      );
     const hasStreams = hasStreamsByCount !== undefined
       ? hasStreamsByCount || hasNoStreamsMarker
       : undefined;
 
     return {
       ...base,
-      externalId: external?.externalId ?? null,
-      source: external?.source ?? null,
+      externalId,
+      source,
       stravaData: null,
       stravaStreams: null,
       averageTemp: weather?.temperature ?? null,

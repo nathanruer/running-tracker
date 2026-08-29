@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/server/database';
 import type { TrainingSession } from '@/lib/types';
 import { parseSortParam, type SortConfig } from '@/lib/domain/sessions/sorting';
-import { mapWorkoutToSession, mapPlanToSession } from '@/server/domain/sessions/mappers';
+import { mapWorkoutToSession, mapPlanToSession, type ExternalFlags } from '@/server/domain/sessions/mappers';
 
 type SessionFilters = {
   userId: string;
@@ -233,6 +233,67 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
   );
 }
 
+interface ExternalFlagsRow {
+  workout_id: string;
+  source: string;
+  external_id: string;
+  source_status: string | null;
+  has_payload: boolean;
+  has_polyline: boolean;
+  manual: boolean;
+  external_id_null: boolean | null;
+  upload_id_null: boolean | null;
+}
+
+async function fetchExternalFlags(
+  userId: string,
+  workoutIds: string[]
+): Promise<Map<string, ExternalFlags>> {
+  if (workoutIds.length === 0) return new Map();
+
+  const rows = await prisma.$queryRaw<ExternalFlagsRow[]>`
+    SELECT
+      ea."workoutId" AS workout_id,
+      ea.source,
+      ea."externalId" AS external_id,
+      ea."sourceStatus" AS source_status,
+      (ep.payload IS NOT NULL) AS has_payload,
+      COALESCE(length(trim(ep.payload->'map'->>'summary_polyline')) > 0, false) AS has_polyline,
+      COALESCE(ep.payload->>'manual', '') = 'true' AS manual,
+      CASE
+        WHEN ep.payload->'external_id' IS NULL THEN NULL
+        WHEN jsonb_typeof(ep.payload->'external_id') = 'null' THEN true
+        ELSE false
+      END AS external_id_null,
+      CASE
+        WHEN ep.payload->'upload_id' IS NULL THEN NULL
+        WHEN jsonb_typeof(ep.payload->'upload_id') = 'null' THEN true
+        ELSE false
+      END AS upload_id_null
+    FROM external_activities ea
+    LEFT JOIN external_payloads ep ON ep."externalActivityId" = ea.id
+    WHERE ea."userId" = ${userId}
+      AND ea."workoutId" IN (${Prisma.join(workoutIds)})
+    ORDER BY ea."workoutId", CASE WHEN ea.source = 'strava' THEN 0 ELSE 1 END
+  `;
+
+  const map = new Map<string, ExternalFlags>();
+  for (const row of rows) {
+    if (map.has(row.workout_id)) continue;
+    map.set(row.workout_id, {
+      source: row.source,
+      externalId: row.external_id,
+      sourceStatus: row.source_status,
+      hasPayload: row.has_payload,
+      hasPolyline: row.has_polyline,
+      manual: row.manual,
+      externalIdFieldNull: row.external_id_null,
+      uploadIdFieldNull: row.upload_id_null,
+    });
+  }
+  return map;
+}
+
 export async function fetchSessions(
   filters: SessionFilters & { includePlannedDateAsDate?: boolean }
 ): Promise<TrainingSession[]> {
@@ -297,22 +358,6 @@ export async function fetchSessions(
   };
 
   if (isTableView) {
-    workoutSelect.external_activities = {
-      where: {
-        source: 'strava',
-      },
-      select: {
-        source: true,
-        externalId: true,
-        sourceStatus: true,
-        external_payloads: {
-          select: {
-            payload: true,
-          },
-        },
-      },
-      take: 1,
-    };
     workoutSelect.weather_observations = {
       select: {
         id: true,
@@ -395,11 +440,18 @@ export async function fetchSessions(
       : Promise.resolve([]),
   ]);
 
+  const externalFlagsMap = isTableView
+    ? await fetchExternalFlags(userId, workouts.map((workout) => workout.id))
+    : null;
+
   const workoutMap = new Map(
     workouts.map((workout) => [
       workout.id,
       isTableView
-        ? mapWorkoutToSession(workout, { includeFullData: false })
+        ? mapWorkoutToSession(workout, {
+            includeFullData: false,
+            externalFlags: externalFlagsMap?.get(workout.id) ?? null,
+          })
         : isExportView
           ? mapWorkoutToSession(workout, { includeFullData: false, includeWeather: true })
           : mapWorkoutToSession(workout),
