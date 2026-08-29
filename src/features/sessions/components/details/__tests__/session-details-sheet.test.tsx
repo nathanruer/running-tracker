@@ -123,6 +123,17 @@ describe('SessionDetailsSheet', () => {
     expect(screen.getByText('800')).toBeInTheDocument();
   });
 
+  it('should render sensors and external link for intervals.icu sessions too', () => {
+    const intervalsSession = { ...mockSession, source: 'intervals_icu', externalId: 'i123' };
+    renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={intervalsSession} />);
+
+    expect(screen.getByText('Données Capteurs')).toBeInTheDocument();
+    expect(screen.getByText('Voir sur intervals.icu')).toHaveAttribute(
+      'href',
+      'https://intervals.icu/activities/i123'
+    );
+  });
+
   it('should render Intervals section for interval sessions', () => {
     renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     

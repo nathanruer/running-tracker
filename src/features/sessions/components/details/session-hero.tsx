@@ -13,8 +13,14 @@ interface SessionHeroProps {
   isPlannedSession: boolean;
   hasRoute: boolean;
   mapPath: string | null;
-  showStravaLink: boolean;
+  externalSource: string | null;
   onExpandMap: () => void;
+}
+
+function externalActivityLink(source: string, externalId: string): { href: string; label: string } {
+  return source === 'strava'
+    ? { href: `https://www.strava.com/activities/${externalId}`, label: 'Voir sur Strava' }
+    : { href: `https://intervals.icu/activities/${externalId}`, label: 'Voir sur intervals.icu' };
 }
 
 function formatLongDate(value: string): string {
@@ -36,9 +42,13 @@ export function SessionHero({
   isPlannedSession,
   hasRoute,
   mapPath,
-  showStravaLink,
+  externalSource,
   onExpandMap,
 }: SessionHeroProps) {
+  const externalLink =
+    externalSource && session.externalId
+      ? externalActivityLink(externalSource, session.externalId)
+      : null;
   return (
     <div className="relative isolate overflow-hidden">
       <SheetClose asChild>
@@ -87,9 +97,9 @@ export function SessionHero({
             {sessionTitle(session)}
           </SheetTitle>
           <div className="flex items-center justify-between w-full pt-2">
-            {showStravaLink && session.externalId ? (
+            {externalLink ? (
               <a
-                href={`https://www.strava.com/activities/${session.externalId}`}
+                href={externalLink.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-all duration-300"
@@ -97,7 +107,7 @@ export function SessionHero({
                 <div className="p-1.5 rounded-md bg-muted/50 group-hover:bg-primary/10 transition-colors">
                   <ExternalLink className="w-3 h-3" />
                 </div>
-                Voir sur Strava
+                {externalLink.label}
               </a>
             ) : (
               <div></div>

@@ -54,7 +54,7 @@ export function SessionDetailsSheet({
   const hasRoute = decodedCoordinates.length > 0 && !!mapPath;
   const canEnrichWeather = !isPlannedSession && hasExternalData && hasRoute && !session.weather;
   const canEnrichStreams =
-    !isPlannedSession && hasStravaData && !!session.externalId && session.hasStreams !== true;
+    !isPlannedSession && hasExternalData && !!session.externalId && session.hasStreams !== true;
 
   return (
     <>
@@ -66,7 +66,7 @@ export function SessionDetailsSheet({
               isPlannedSession={isPlannedSession}
               hasRoute={hasRoute}
               mapPath={mapPath}
-              showStravaLink={hasStravaData}
+              externalSource={hasExternalData ? session.source ?? null : null}
               onExpandMap={() => setMapDialogOpen(true)}
             />
 
@@ -94,7 +94,7 @@ export function SessionDetailsSheet({
                 </div>
               )}
 
-              {hasStravaData && (
+              {hasExternalData && (
                 <div className="space-y-6 pt-2">
                   {(session.elevationGain || session.averageCadence || session.calories) && (
                     <div className="space-y-6">
@@ -144,7 +144,7 @@ export function SessionDetailsSheet({
                 </div>
               )}
 
-              {hasStravaData && session.stravaStreams && (
+              {hasExternalData && session.stravaStreams && (
                 <div className="space-y-6">
                   <SectionTitle>Analyse de la séance</SectionTitle>
                   <StreamsSection streams={session.stravaStreams} />
