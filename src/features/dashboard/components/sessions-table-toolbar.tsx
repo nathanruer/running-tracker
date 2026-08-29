@@ -1,4 +1,4 @@
-import { FilterX, Loader2, Plus, RefreshCw, X } from 'lucide-react';
+import { FilterX, Plus, RefreshCw, X } from 'lucide-react';
 import { CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
@@ -13,7 +13,6 @@ import {
 import { SelectionBar } from './selection-bar';
 import { PeriodFilter } from './period-filter';
 import type { Period } from '../hooks/use-dashboard-filters';
-import { useIntervalsImport } from '@/features/import/hooks/use-intervals-import';
 
 const PERIOD_LABELS: Record<Period, string> = {
   all: 'Tout',
@@ -61,6 +60,7 @@ interface SessionsTableToolbarProps {
   isEnriching?: boolean;
   actions: {
     onNewSession?: () => void;
+    onOpenImport?: () => void;
   };
   selectedType: string;
   availableTypes: string[];
@@ -100,7 +100,6 @@ export function SessionsTableToolbar({
   hasActiveFilters,
   onClearFilters,
 }: SessionsTableToolbarProps) {
-  const intervalsImport = useIntervalsImport();
   const trimmedSearch = searchQuery.trim();
   const activeFilters = [
     ...(selectedType !== 'all'
@@ -158,22 +157,19 @@ export function SessionsTableToolbar({
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-3 shrink-0 ml-1">
-            <Button
-              data-testid="btn-intervals-import"
-              onClick={() => intervalsImport.mutate({})}
-              disabled={intervalsImport.isPending}
-              variant="outline"
-              size="sm"
-              className="rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-5 transition-all active:scale-95 flex items-center justify-center shrink-0"
-              title="Importer les courses depuis intervals.icu"
-            >
-              {intervalsImport.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+            {actions.onOpenImport && (
+              <Button
+                data-testid="btn-intervals-import"
+                onClick={actions.onOpenImport}
+                variant="outline"
+                size="sm"
+                className="rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-5 transition-all active:scale-95 flex items-center justify-center shrink-0"
+                title="Importer les courses depuis intervals.icu"
+              >
                 <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Importer</span>
-            </Button>
+                <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Importer</span>
+              </Button>
+            )}
             {actions.onNewSession && (
               <Button
                 data-testid="btn-new-session"

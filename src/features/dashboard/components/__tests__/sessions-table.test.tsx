@@ -5,10 +5,6 @@ import { SessionsTable } from '../sessions-table';
 import type { TrainingSession } from '@/lib/types';
 import type { SortConfig } from '@/lib/domain/sessions';
 
-vi.mock('@/features/import/hooks/use-intervals-import', () => ({
-  useIntervalsImport: () => ({ mutate: vi.fn(), isPending: false }),
-}));
-
 const originalIO = globalThis.IntersectionObserver;
 
 beforeEach(() => {

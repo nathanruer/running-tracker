@@ -27,6 +27,7 @@ export interface SessionActions {
   onView?: (session: TrainingSession) => void;
   onPrefetchDetails?: (sessionId: string) => void;
   onNewSession?: () => void;
+  onOpenImport?: () => void;
   onBulkEnrich?: (selection: BulkEnrichmentSelection) => Promise<void> | void;
 }
 
@@ -148,7 +149,7 @@ export function SessionsTable({
           isDeleting={isDeleting}
           isEnriching={isEnriching}
           enrichableCount={enrichableIds.length}
-          actions={{ onNewSession: actions.onNewSession }}
+          actions={{ onNewSession: actions.onNewSession, onOpenImport: actions.onOpenImport }}
           selectedType={selectedType}
           availableTypes={availableTypes}
           onTypeChange={onTypeChange}
