@@ -23,6 +23,7 @@ export const queryKeys = {
   sessionsAll: (userId?: string | null) => [QUERY_KEYS.SESSIONS, 'all', userId ?? null] as const,
   sessionById: (id: string | null) => [QUERY_KEYS.SESSIONS, 'detail', id] as const,
   sessionsHistory: () => [QUERY_KEYS.SESSIONS, 'history'] as const,
+  plannedUpcoming: (userId: string | null | undefined) => [QUERY_KEYS.SESSIONS, 'planned-upcoming', userId ?? null] as const,
   sessionsPaginated: (params: {
     selectedType: string;
     sortKey: string;

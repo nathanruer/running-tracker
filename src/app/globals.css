@@ -130,3 +130,13 @@
     scrollbar-color: hsl(var(--secondary)) hsl(var(--background));
   }
 }
+
+@layer components {
+  .label-caps {
+    @apply text-[11px] font-bold uppercase tracking-widest leading-none;
+  }
+
+  .label-caps-muted {
+    @apply label-caps text-muted-foreground;
+  }
+}

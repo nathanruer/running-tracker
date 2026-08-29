@@ -44,7 +44,7 @@ export default async function DashboardPage({
 
   const sessionTypeFilter = selectedType !== 'all' ? selectedType : undefined;
 
-  const [user, types, count, firstPage] = await Promise.all([
+  const [user, types, count, firstPage, plannedSessions] = await Promise.all([
     getUserProfilePayload(userId),
     fetchSessionTypes(userId),
     fetchSessionCount({ userId, sessionType: sessionTypeFilter, search, dateFrom }),
@@ -58,6 +58,13 @@ export default async function DashboardPage({
       dateFrom,
       view: 'table',
     }),
+    fetchSessions({
+      userId,
+      limit: 20,
+      offset: 0,
+      status: 'planned',
+      view: 'table',
+    }),
   ]);
 
   if (!user) {
@@ -66,6 +73,7 @@ export default async function DashboardPage({
 
   const queryClient = new QueryClient();
   queryClient.setQueryData(queryKeys.user(), user);
+  queryClient.setQueryData(queryKeys.plannedUpcoming(userId), plannedSessions);
   queryClient.setQueryData(queryKeys.sessionTypes(userId), [...types].sort());
   queryClient.setQueryData(
     queryKeys.sessionsCount({ selectedType, search, dateFrom, userId }),

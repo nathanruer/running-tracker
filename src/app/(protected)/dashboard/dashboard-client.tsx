@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { SessionsTable, type BulkEnrichmentSelection, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
+import { UpcomingSessions } from '@/features/dashboard/components/upcoming-sessions';
+import { useUpcomingSessions } from '@/features/dashboard/hooks/use-upcoming-sessions';
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
@@ -74,6 +76,8 @@ function DashboardContent() {
   } = useDashboardData(selectedType, sortParam, searchQuery, dateFrom);
 
   const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, deletingIds } = mutations;
+
+  const { upcoming: upcomingSessions } = useUpcomingSessions(user?.id);
 
   const handleSessionSuccess = (session: TrainingSession) => {
     handleEntitySuccess();
@@ -303,6 +307,11 @@ function DashboardContent() {
 
   return (
     <PageContainer testId="dashboard-container" mobileTitle="Dashboard">
+      <UpcomingSessions
+        sessions={upcomingSessions}
+        onComplete={handleEdit}
+        onView={handleViewSession}
+      />
       {initialLoading || sessions.length > 0 || selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all' ? (
         <SessionsTable
           sessions={sessions}

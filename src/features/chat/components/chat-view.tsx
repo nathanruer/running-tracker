@@ -14,6 +14,8 @@ import { MessageList } from './message-list';
 
 export type { Message, ConversationWithMessages as Conversation } from '@/lib/services/api-client';
 
+const AUTO_RETRY_WINDOW_MS = 2 * 60 * 1000;
+
 interface ChatViewProps {
   conversationId: string | null;
   onConversationCreated?: (id: string) => void;
@@ -55,14 +57,15 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
 
   const messages = conversation?.chat_messages ?? [];
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-  const AUTO_RETRY_WINDOW_MS = 2 * 60 * 1000;
-  const lastMessageIsRecent = lastMessage?.createdAt
-    ? Date.now() - new Date(lastMessage.createdAt).getTime() < AUTO_RETRY_WINDOW_MS
-    : false;
-  const needsResponse = conversationId && lastMessage?.role === 'user' && lastMessageIsRecent;
+  const needsResponse = conversationId && lastMessage?.role === 'user';
 
   useEffect(() => {
     if (!needsResponse || isStreaming || !lastMessage || !conversationId) return;
+
+    const isRecent = lastMessage.createdAt
+      ? Date.now() - new Date(lastMessage.createdAt).getTime() < AUTO_RETRY_WINDOW_MS
+      : false;
+    if (!isRecent) return;
 
     const messageKey = `${conversationId}-${lastMessage.id}`;
     if (processedMessageKey.current === messageKey) return;

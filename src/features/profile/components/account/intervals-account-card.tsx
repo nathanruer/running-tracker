@@ -72,7 +72,7 @@ export function IntervalsAccountCard({ intervalsAthleteId }: IntervalsAccountCar
         <CardHeader className="p-4 md:p-6">
           <CardTitle className="text-xl font-bold">Services Connectés</CardTitle>
           <CardDescription>
-            intervals.icu reçoit tes courses Garmin et alimente l'import automatique.
+            intervals.icu reçoit tes courses Garmin et alimente l&apos;import automatique.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0 md:pt-0 space-y-4">

@@ -275,3 +275,10 @@ export async function getSessionsAnalytics(filters: {
   const params = new URLSearchParams(filters);
   return apiRequest<SessionsAnalyticsResponse>(`/api/sessions/analytics?${params}`);
 }
+
+export async function getPlannedSessions(): Promise<TrainingSession[]> {
+  const data = await apiRequest<{ sessions: TrainingSession[] }>(
+    '/api/sessions?status=planned&view=table&limit=20'
+  );
+  return data.sessions;
+}
