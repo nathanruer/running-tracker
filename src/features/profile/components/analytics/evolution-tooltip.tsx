@@ -38,7 +38,7 @@ const PROJECTION_STYLES: Record<ProjectionVariant, {
     container: 'bg-white/5 border border-white/5',
     dot: 'bg-muted-foreground/30',
     labelClassName: 'text-muted-foreground/40',
-    kmUnitClassName: 'text-[9px] font-bold text-muted-foreground/20 uppercase',
+    kmUnitClassName: 'text-[10px] font-bold text-muted-foreground/20 uppercase',
     durationClassName: 'text-[10px] font-bold text-muted-foreground/40 tabular-nums',
   },
   projected: {
@@ -46,7 +46,7 @@ const PROJECTION_STYLES: Record<ProjectionVariant, {
     container: 'bg-violet-500/10 border border-violet-500/10',
     dot: 'bg-violet-500',
     labelClassName: 'text-violet-500/70',
-    kmUnitClassName: 'text-[9px] font-bold text-muted-foreground/20 uppercase',
+    kmUnitClassName: 'text-[10px] font-bold text-muted-foreground/20 uppercase',
     durationClassName: 'text-[10px] font-bold text-foreground/70 tabular-nums',
   },
 };
@@ -70,12 +70,12 @@ function ChangeIndicator({
         'flex items-center gap-1 font-bold',
         align === 'right' && 'justify-end',
         isPositive ? 'text-emerald-500' : 'text-rose-500',
-        'text-[8px] sm:text-[9px]',
+        'text-[10px]',
         className
       )}
     >
       <span>{isPositive ? '↑' : '↓'} {Math.abs(value)}%</span>
-      <span className={cn('opacity-30 font-medium whitespace-nowrap text-[7px] sm:text-[8px]', labelClassName)}>vs sem. préc.</span>
+      <span className={cn('opacity-30 font-medium whitespace-nowrap text-[10px]', labelClassName)}>vs sem. préc.</span>
     </div>
   );
 }
@@ -91,14 +91,14 @@ function MetricSummary({
 }: MetricSummaryProps) {
   return (
     <div className={cn('space-y-1.5 sm:space-y-2', align === 'right' && 'text-right')}>
-      <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.15em]">{title}</p>
+      <p className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.15em]">{title}</p>
       <div className="space-y-0.5 sm:space-y-1">
         <div className={cn('flex items-baseline gap-1', align === 'right' && 'justify-end')}>
           <span className={cn('text-xl sm:text-2xl md:text-3xl font-black text-foreground tabular-nums tracking-tighter', valueClassName)}>
             {value}
           </span>
           {unit && (
-            <span className={cn('text-[8px] sm:text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest', unitClassName)}>
+            <span className={cn('text-[10px] font-bold text-muted-foreground/20 uppercase tracking-widest', unitClassName)}>
               {unit}
             </span>
           )}
@@ -128,7 +128,7 @@ function ProjectionCard({
     <div className={cn('space-y-2.5 sm:space-y-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl', styles.container)}>
       <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
         <div className={cn('w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full', styles.dot)} />
-        <span className={cn('text-[7px] sm:text-[8px] font-black uppercase tracking-widest leading-none', styles.labelClassName)}>
+        <span className={cn('text-[10px] font-black uppercase tracking-widest leading-none', styles.labelClassName)}>
           {styles.label}
         </span>
       </div>
@@ -136,12 +136,12 @@ function ProjectionCard({
         <div className="space-y-0.5 sm:space-y-1">
           <div className="flex items-baseline gap-1">
             <span className="text-lg sm:text-xl md:text-2xl font-black tabular-nums tracking-tighter">{km}</span>
-            <span className={cn(styles.kmUnitClassName, 'text-[8px] sm:text-[9px]')}>KM</span>
+            <span className={cn(styles.kmUnitClassName, 'text-[10px]')}>KM</span>
           </div>
           <ChangeIndicator value={changePercent} />
         </div>
         <div className="space-y-0.5">
-          <p className={cn(styles.durationClassName, 'text-[9px] sm:text-[10px]')}>{formatDuration(durationSeconds)}</p>
+          <p className={cn(styles.durationClassName, 'text-[10px]')}>{formatDuration(durationSeconds)}</p>
           <ChangeIndicator value={changePercentDuration} />
         </div>
       </div>
@@ -221,7 +221,7 @@ export function EvolutionTooltipContent({ active, payload, label, coordinate, co
             <div className="flex items-center gap-3">
               <h4 className="text-base sm:text-lg font-black text-foreground tracking-tight uppercase leading-none">{label}</h4>
               {isCurrent && (
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-500 text-[8px] font-black uppercase tracking-widest">
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-500 text-[10px] font-black uppercase tracking-widest">
                   <span className="h-1 w-1 rounded-full bg-violet-500 animate-pulse" />
                   En cours
                 </span>
@@ -232,9 +232,9 @@ export function EvolutionTooltipContent({ active, payload, label, coordinate, co
               <div className="flex items-baseline gap-1">
                 <span className="text-[10px] font-black tabular-nums">{completedCount}</span>
                 {showProjection && totalSessionsGoal > 0 && (
-                  <span className="text-[9px] text-muted-foreground/40 font-bold">/ {totalSessionsGoal}</span>
+                  <span className="text-[10px] text-muted-foreground/40 font-bold">/ {totalSessionsGoal}</span>
                 )}
-                <span className="text-[8px] text-muted-foreground/40 font-bold uppercase tracking-wider ml-0.5">sessions</span>
+                <span className="text-[10px] text-muted-foreground/40 font-bold uppercase tracking-wider ml-0.5">sessions</span>
               </div>
             </div>
           </div>

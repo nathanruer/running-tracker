@@ -83,7 +83,7 @@ function Calendar({
         table: "w-full border-collapse",
         weekdays: cn("flex justify-between mt-2", defaultClassNames.weekdays),
         weekday: cn(
-          "text-muted-foreground/50 flex-1 select-none text-[9px] font-black uppercase tracking-widest text-center",
+          "text-muted-foreground/50 flex-1 select-none text-[10px] font-black uppercase tracking-widest text-center",
           defaultClassNames.weekday
         ),
         week: cn("mt-1.5 flex w-full gap-1", defaultClassNames.week),

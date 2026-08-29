@@ -36,7 +36,7 @@ function ActiveFilterChip({ id, label, onRemove }: ActiveFilterChipProps) {
       size="sm"
       data-testid={`active-filter-${id}`}
       onClick={onRemove}
-      className="h-8 px-2.5 rounded-full border border-border/40 bg-muted/10 text-[9px] md:text-[10px] font-bold text-muted-foreground/80 hover:text-foreground hover:bg-muted/20 transition-colors flex items-center gap-2"
+      className="h-8 px-2.5 rounded-full border border-border/40 bg-muted/10 text-[10px] font-bold text-muted-foreground/80 hover:text-foreground hover:bg-muted/20 transition-colors flex items-center gap-2"
       aria-label={`Retirer le filtre ${label}`}
     >
       <span className="max-w-[160px] truncate">{label}</span>
@@ -192,7 +192,7 @@ export function SessionsTableToolbar({
 
           <div className="flex flex-wrap items-center gap-2">
             <Select value={selectedType} onValueChange={onTypeChange}>
-              <SelectTrigger data-testid="filter-session-type" className="w-auto min-w-[120px] max-w-[150px] md:w-[160px] h-9 md:h-10 rounded-xl bg-muted/5 border-border/40 font-bold text-[9px] md:text-[11px] uppercase tracking-wider hover:bg-muted/10 transition-colors">
+              <SelectTrigger data-testid="filter-session-type" className="w-auto min-w-[120px] max-w-[150px] md:w-[160px] h-9 md:h-10 rounded-xl bg-muted/5 border-border/40 font-bold text-[10px] md:text-[11px] uppercase tracking-wider hover:bg-muted/10 transition-colors">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border/40 shadow-2xl">
@@ -224,7 +224,7 @@ export function SessionsTableToolbar({
             variant="ghost"
             size="sm"
             onClick={onClearFilters}
-            className="h-8 px-2.5 rounded-full text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[9px] md:text-[10px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5"
+            className="h-8 px-2.5 rounded-full text-violet-600 hover:text-violet-700 hover:bg-violet-600/5 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5"
           >
             <FilterX className="h-3.5 w-3.5" />
             <span>Tout effacer</span>

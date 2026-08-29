@@ -75,11 +75,11 @@ export const RecommendationCard = memo(function RecommendationCard({
             {sessionInfo.structure && sessionInfo.structure.toLowerCase() !== session.session_type?.toLowerCase() ? (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-violet-600">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-violet-600">
                     {session.session_type}
                   </span>
                   {isCompleted && (
-                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
                       Réalisée
                     </span>
                   )}
@@ -95,7 +95,7 @@ export const RecommendationCard = memo(function RecommendationCard({
                 </h4>
                 {isCompleted && (
                   <div className="flex">
-                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-green-500 bg-green-500/10 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
                       Réalisée
                     </span>
                   </div>

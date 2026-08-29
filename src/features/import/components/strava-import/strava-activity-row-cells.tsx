@@ -103,7 +103,7 @@ export function ActivityDistanceCell({ distance }: DistanceCellProps) {
         <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">
           {distance.toFixed(2)}
         </span>
-        <span className="ml-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">km</span>
+        <span className="ml-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">km</span>
       </div>
     </TableCell>
   );
@@ -120,7 +120,7 @@ export function ActivityPaceCell({ pace }: PaceCellProps) {
         <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">
           {pace}
         </span>
-        <span className="ml-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">/km</span>
+        <span className="ml-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">/km</span>
       </div>
     </TableCell>
   );
@@ -138,7 +138,7 @@ export function ActivityHeartRateCell({ heartRate }: HeartRateCellProps) {
           <span className="font-medium tabular-nums text-foreground/100 text-sm md:text-[15px] tracking-tight">
             {Math.round(heartRate)}
           </span>
-          <span className="ml-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">bpm</span>
+          <span className="ml-0.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">bpm</span>
         </div>
       ) : (
         <span className="text-muted-foreground/10 text-[15px]">-</span>

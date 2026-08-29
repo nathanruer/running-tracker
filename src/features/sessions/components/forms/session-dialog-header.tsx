@@ -49,7 +49,7 @@ export function SessionDialogHeader({ mode, onReset, entryMode = 'done' }: Sessi
           variant="ghost"
           size="sm"
           onClick={onReset}
-          className="h-7 w-fit px-3 rounded-xl text-[9px] font-black uppercase tracking-widest text-muted-foreground/30 hover:text-red-600 hover:bg-red-500/5 transition-all shrink-0 border border-transparent hover:border-red-500/10 ml-auto sm:ml-0"
+          className="h-7 w-fit px-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 hover:text-red-600 hover:bg-red-500/5 transition-all shrink-0 border border-transparent hover:border-red-500/10 ml-auto sm:ml-0"
         >
           <RotateCcw className="mr-1.5 h-3 w-3" />
           Réinitialiser

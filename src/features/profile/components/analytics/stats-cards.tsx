@@ -87,11 +87,11 @@ export function StatsCards({
                   <span className="text-xl font-black text-foreground/40 tabular-nums leading-none tracking-tight">
                     {stat.average}
                   </span>
-                  <span className="text-[9px] font-bold text-muted-foreground/30 uppercase leading-none">
+                  <span className="text-[10px] font-bold text-muted-foreground/30 uppercase leading-none">
                     {stat.averageUnit}
                   </span>
                 </div>
-                <p className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-[0.2em] leading-none mt-2">
+                <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-[0.2em] leading-none mt-2">
                   Moyenne active
                 </p>
               </div>

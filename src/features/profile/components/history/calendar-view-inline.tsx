@@ -132,7 +132,7 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
                   <div 
                     key={idx}
                     className={cn(
-                      "text-[9px] px-2 py-1 rounded-md truncate w-full font-bold uppercase tracking-tight border",
+                      "text-[10px] px-2 py-1 rounded-md truncate w-full font-bold uppercase tracking-tight border",
                       isCompleted(session) 
                         ? 'bg-violet-500/10 text-violet-600 border-violet-500/20' 
                         : 'bg-muted text-muted-foreground border-border/50'
@@ -143,7 +143,7 @@ export function CalendarViewInline({ sessions, onDayClick }: CalendarViewInlineP
                   </div>
                 ))}
                 {daySessions.length > 2 && (
-                  <div className="text-[9px] text-muted-foreground font-bold px-1 mt-0.5">
+                  <div className="text-[10px] text-muted-foreground font-bold px-1 mt-0.5">
                     + {daySessions.length - 2} SÉANCES
                   </div>
                 )}

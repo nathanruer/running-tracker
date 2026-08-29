@@ -60,7 +60,7 @@ export function DateRangeSelector({
                 date={customStartDate ? new Date(customStartDate + 'T00:00:00') : undefined}
                 onSelect={(date: Date | undefined) => onCustomStartDateChange(date ? formatDateToISO(date) : '')}
                 placeholder="Début"
-                className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-fit min-w-[110px] md:min-w-[150px] transition-all px-2.5 hover:bg-muted/10 border-none shadow-none"
+                className="h-7 md:h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider w-fit min-w-[110px] md:min-w-[150px] transition-all px-2.5 hover:bg-muted/10 border-none shadow-none"
               />
               <span className="text-[10px] text-muted-foreground/30 font-black">→</span>
                 <DatePicker
@@ -68,12 +68,12 @@ export function DateRangeSelector({
                 date={customEndDate ? new Date(customEndDate + 'T00:00:00') : undefined}
                 onSelect={(date: Date | undefined) => onCustomEndDateChange(date ? formatDateToISO(date) : '')}
                 placeholder="Fin"
-                className="h-7 md:h-8 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider w-fit min-w-[110px] md:min-w-[150px] transition-all px-2.5 hover:bg-muted/10 border-none shadow-none"
+                className="h-7 md:h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider w-fit min-w-[110px] md:min-w-[150px] transition-all px-2.5 hover:bg-muted/10 border-none shadow-none"
               />
             </div>
 
             {customDateError && (
-              <div data-testid="custom-date-error" className="text-[8px] font-black text-red-400 uppercase tracking-tighter bg-red-400/10 px-2 py-1 rounded-lg border border-red-400/20 whitespace-nowrap">
+              <div data-testid="custom-date-error" className="text-[10px] font-black text-red-400 uppercase tracking-tighter bg-red-400/10 px-2 py-1 rounded-lg border border-red-400/20 whitespace-nowrap">
                 {customDateError}
               </div>
             )}

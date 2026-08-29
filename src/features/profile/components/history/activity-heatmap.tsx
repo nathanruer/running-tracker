@@ -110,7 +110,7 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
           </div>
           <div className="flex items-center gap-1.5 bg-muted/30 px-2 py-0.5 rounded-full border border-border/20">
             <Circle className="w-1.5 h-1.5 fill-violet-500 text-violet-500" />
-            <span className="text-[9px] font-black text-foreground/80 leading-none">{day.sessions.length}</span>
+            <span className="text-[10px] font-black text-foreground/80 leading-none">{day.sessions.length}</span>
           </div>
         </div>
         
@@ -120,11 +120,11 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">Réalisé</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Réalisé</span>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm font-black text-foreground tabular-nums">{completedKm.toFixed(1)}</span>
-                  <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">KM</span>
+                  <span className="text-[10px] font-bold text-muted-foreground/30 uppercase">KM</span>
                 </div>
               </div>
               <div className="space-y-1.5 pl-3">
@@ -147,11 +147,11 @@ export function ActivityHeatmap({ sessions, onDayClick }: ActivityHeatmapProps) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Programmé</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Programmé</span>
                 </div>
                 <div className="flex items-baseline gap-1 opacity-60">
                   <span className="text-sm font-black text-foreground tabular-nums">{plannedKm.toFixed(1)}</span>
-                  <span className="text-[8px] font-bold text-muted-foreground/30 uppercase">KM</span>
+                  <span className="text-[10px] font-bold text-muted-foreground/30 uppercase">KM</span>
                 </div>
               </div>
               <div className="space-y-1.5 pl-3">

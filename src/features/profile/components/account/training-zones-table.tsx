@@ -86,7 +86,7 @@ export function TrainingZonesTable({ maxHeartRate, vma }: TrainingZonesTableProp
                         <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-tight text-foreground">
                           {zone.name.split(' - ')[0]}
                         </span>
-                        <span className="text-[9px] font-medium text-muted-foreground hidden md:inline">
+                        <span className="text-[10px] font-medium text-muted-foreground hidden md:inline">
                           {zone.name.split(' - ')[1]}
                         </span>
                        </div>

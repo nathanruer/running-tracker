@@ -28,7 +28,7 @@ export function IntervalStepsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead className="sticky top-0 z-20">
-          <tr className="bg-muted/50 dark:bg-white/[0.03] backdrop-blur-md border-b border-white/[0.05] text-muted-foreground/60 uppercase tracking-[0.15em] text-[9px] font-black">
+          <tr className="bg-muted/50 dark:bg-white/[0.03] backdrop-blur-md border-b border-white/[0.05] text-muted-foreground/60 uppercase tracking-[0.15em] text-[10px] font-black">
             <th className={cn("py-3 text-left font-black w-16", compact ? "px-2" : "px-4")}>Intervalle</th>
             <th className={cn("py-3 text-center font-black", compact ? "px-2" : "px-4")}>Durée</th>
             <th className={cn("py-3 text-center font-black", compact ? "px-2" : "px-4")}>Distance</th>
@@ -75,7 +75,7 @@ export function IntervalStepsTable({
                   
                   <div className="flex items-center gap-2">
                     <span className={cn(
-                      "font-black tracking-wider text-[9px] uppercase",
+                      "font-black tracking-wider text-[10px] uppercase",
                       step.stepType === 'effort' ? "text-violet-500" : 
                       step.stepType === 'recovery' ? "text-green-500/80" : "text-muted-foreground"
                     )}>
@@ -94,7 +94,7 @@ export function IntervalStepsTable({
                       <span className="font-mono text-[13px] font-bold tabular-nums text-foreground/90">
                         {displayDistance.toFixed(2)}
                       </span>
-                      <span className="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-tighter">km</span>
+                      <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-tighter">km</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground/30">-</span>
@@ -106,7 +106,7 @@ export function IntervalStepsTable({
                       <span className="font-mono text-[13px] font-black tabular-nums text-foreground tracking-tight">
                         {(normalizePaceFormat(displayPace) || displayPace)}
                       </span>
-                      <span className="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-tighter">/km</span>
+                      <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-tighter">/km</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground/30">-</span>
@@ -120,7 +120,7 @@ export function IntervalStepsTable({
                         <span className="font-mono text-[13px] font-bold tabular-nums text-foreground/70">
                           {step.hrRange || Math.round(hrValue)}
                         </span>
-                        <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter">bpm</span>
+                        <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">bpm</span>
                       </div>
                     ) : (
                       <span className="text-muted-foreground/30">-</span>

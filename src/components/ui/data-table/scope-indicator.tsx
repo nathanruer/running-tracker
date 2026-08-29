@@ -18,7 +18,7 @@ export function ScopeIndicator({
     return (
       <div className="flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 backdrop-blur-md rounded-full px-2 md:px-3 py-1 md:py-1.5 shadow-sm shrink-0">
         <Loader2 className="h-2.5 w-2.5 text-violet-500 animate-spin" />
-        <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.15em] text-violet-500 whitespace-nowrap">
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.15em] text-violet-500 whitespace-nowrap">
           <span className="hidden xs:inline">Recherche... </span>{searchProgress.loaded}/{searchProgress.total || '?'}
         </span>
       </div>
@@ -57,7 +57,7 @@ export function ScopeIndicator({
     )}>
       <div className="flex items-center transition-all duration-500 px-2 md:px-3 gap-2 min-w-0">
         <span className={cn(
-          "text-[9px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.15em] whitespace-nowrap transition-colors duration-500 leading-none truncate text-muted-foreground/40"
+          "text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.15em] whitespace-nowrap transition-colors duration-500 leading-none truncate text-muted-foreground/40"
         )}>
           <span className="md:hidden">{scopeTextShort}</span>
           <span className="hidden md:inline">{scopeTextFull}</span>
@@ -76,7 +76,7 @@ export function ScopeIndicator({
             className="px-1 md:px-2 h-6 text-orange-500/60 hover:text-orange-500 transition-all active:scale-95 group rounded-full flex items-center gap-1 md:gap-1.5 shrink-0"
           >
             <Loader2 className="h-2.5 w-2.5 animate-spin" />
-            <span className="hidden md:inline text-[9px] md:text-[10px] font-bold uppercase tracking-wider leading-none whitespace-nowrap">Annuler</span>
+            <span className="hidden md:inline text-[10px] font-bold uppercase tracking-wider leading-none whitespace-nowrap">Annuler</span>
             <X className="h-2.5 w-2.5 opacity-30 group-hover:opacity-100 shrink-0" />
           </button>
         ) : (
@@ -85,7 +85,7 @@ export function ScopeIndicator({
             className="px-1 md:px-2 h-6 text-muted-foreground/30 hover:text-violet-500 transition-all active:scale-95 rounded-full flex items-center shrink-0 gap-1"
           >
             <ChevronDown className="md:hidden h-3 w-3" />
-            <span className="hidden md:inline text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all leading-none whitespace-nowrap">Tout charger</span>
+            <span className="hidden md:inline text-[10px] font-bold uppercase tracking-widest transition-all leading-none whitespace-nowrap">Tout charger</span>
           </button>
         )}
       </div>

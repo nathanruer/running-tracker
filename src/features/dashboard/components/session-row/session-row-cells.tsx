@@ -55,7 +55,7 @@ export function MetricCell({
           </span>
           {unit && (
             <span className={cn(
-              "ml-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest",
+              "ml-0.5 text-[10px] font-bold uppercase tracking-widest",
               unitColor
             )}>
               {unit}
@@ -163,7 +163,7 @@ export function SessionTypeCell({
         </div>
         {(workoutTypeLabel || intervalStructure) && (
           <span className={cn(
-            "text-[9px] font-bold uppercase tracking-widest",
+            "text-[10px] font-bold uppercase tracking-widest",
             isPlanned ? 'font-bold' : 'font-black',
             labelColor
           )}>
@@ -232,7 +232,7 @@ export function RPECell({ rpe, rpeColor, className }: RPECellProps) {
         <span className={cn("text-sm md:text-[15px] font-semibold tracking-tight", rpeColor)}>
           {rpe}
         </span>
-        <span className="ml-0.5 text-[8px] md:text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+        <span className="ml-0.5 text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
           /10
         </span>
       </div>

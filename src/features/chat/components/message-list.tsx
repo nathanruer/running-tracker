@@ -143,7 +143,7 @@ export const MessageList = memo(function MessageList({
 
             {message.role === 'assistant' && message.recommendations?.recommended_sessions && (
               <div className="w-full space-y-4 pt-1">
-                <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-1">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-1">
                   <div className="h-px flex-1 bg-border/40" />
                   {message.recommendations.recommended_sessions.length === 1
                     ? '1 Recommandation du coach'
@@ -179,7 +179,7 @@ export const MessageList = memo(function MessageList({
             )}
 
             {message.role === 'assistant' && message.model && (
-              <p className="text-[9px] text-muted-foreground/30 font-black uppercase tracking-[0.15em] px-2">
+              <p className="text-[10px] text-muted-foreground/30 font-black uppercase tracking-[0.15em] px-2">
                 Modèle: {message.model}
               </p>
             )}

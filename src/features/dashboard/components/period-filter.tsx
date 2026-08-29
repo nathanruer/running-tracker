@@ -24,7 +24,7 @@ export function PeriodFilter({ period, onPeriodChange }: PeriodFilterProps) {
           data-testid={`period-btn-${option.value}`}
           onClick={() => onPeriodChange(option.value)}
           className={cn(
-            'px-2.5 md:px-4 py-1.5 rounded-lg text-[8px] md:text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap',
+            'px-2.5 md:px-4 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap',
             period === option.value
               ? 'bg-violet-600 text-white active:scale-95'
               : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted/20'

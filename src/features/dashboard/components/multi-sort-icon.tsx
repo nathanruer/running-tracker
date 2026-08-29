@@ -29,7 +29,7 @@ export function MultiSortIcon({ column, sortConfig }: MultiSortIconProps) {
           className={cn(
             'absolute -top-1.5 -right-1.5 flex items-center justify-center',
             'min-w-[14px] h-[14px] rounded-full',
-            'text-[9px] font-bold',
+            'text-[10px] font-bold',
             'bg-violet-600 text-white'
           )}
         >

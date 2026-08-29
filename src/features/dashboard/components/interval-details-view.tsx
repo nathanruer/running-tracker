@@ -169,7 +169,7 @@ export function IntervalDetailsView({
             }
           ].map((stat) => (
             <div key={stat.label} className="flex flex-col gap-1">
-              <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] leading-none">
+              <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] leading-none">
                 {stat.label}
               </span>
               <div className="flex flex-col">
@@ -181,13 +181,13 @@ export function IntervalDetailsView({
                     {stat.value || '--'}
                   </span>
                   {stat.unit && stat.value && stat.value !== '-' && (
-                    <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                    <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
                       {stat.unit}
                     </span>
                   )}
                 </div>
                 {stat.target && stat.value && stat.value !== '-' && (
-                  <span className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-tight leading-none mt-0.5">
+                  <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-tight leading-none mt-0.5">
                     Obj. {stat.target}
                   </span>
                 )}
@@ -210,9 +210,9 @@ export function IntervalDetailsView({
           className="w-[210px]"
         >
           <TabsList className="grid grid-cols-3 h-8 bg-white/[0.03] border border-white/[0.05] p-0.5 shadow-sm">
-            <TabsTrigger value="all" className="text-[9px] uppercase font-bold h-7 data-[state=active]:bg-white/10">Tous</TabsTrigger>
-            <TabsTrigger value="effort" disabled={!hasEffortSteps} className="text-[9px] uppercase font-bold h-7 data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-400">Efforts</TabsTrigger>
-            <TabsTrigger value="recovery" disabled={!hasRecoverySteps} className="text-[9px] uppercase font-bold h-7 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Récups</TabsTrigger>
+            <TabsTrigger value="all" className="text-[10px] uppercase font-bold h-7 data-[state=active]:bg-white/10">Tous</TabsTrigger>
+            <TabsTrigger value="effort" disabled={!hasEffortSteps} className="text-[10px] uppercase font-bold h-7 data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-400">Efforts</TabsTrigger>
+            <TabsTrigger value="recovery" disabled={!hasRecoverySteps} className="text-[10px] uppercase font-bold h-7 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Récups</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
