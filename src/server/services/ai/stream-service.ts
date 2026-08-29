@@ -145,13 +145,16 @@ export async function* processStreamingMessage(
     }
   } catch (err: unknown) {
     if (isQuotaError(err)) {
+      const content = accumulatedText.trim() || QUOTA_MESSAGE;
       await createConversationMessage({
         conversationId: ctx.conversationId,
         role: 'assistant',
-        content: QUOTA_MESSAGE,
+        content,
         model: GROQ_MODEL,
       });
-      yield { type: 'chunk', data: QUOTA_MESSAGE };
+      if (!accumulatedText.trim()) {
+        yield { type: 'chunk', data: QUOTA_MESSAGE };
+      }
       yield { type: 'done', data: '' };
       return;
     }

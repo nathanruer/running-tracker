@@ -55,7 +55,11 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
 
   const messages = conversation?.chat_messages ?? [];
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-  const needsResponse = conversationId && lastMessage?.role === 'user';
+  const AUTO_RETRY_WINDOW_MS = 2 * 60 * 1000;
+  const lastMessageIsRecent = lastMessage?.createdAt
+    ? Date.now() - new Date(lastMessage.createdAt).getTime() < AUTO_RETRY_WINDOW_MS
+    : false;
+  const needsResponse = conversationId && lastMessage?.role === 'user' && lastMessageIsRecent;
 
   useEffect(() => {
     if (!needsResponse || isStreaming || !lastMessage || !conversationId) return;

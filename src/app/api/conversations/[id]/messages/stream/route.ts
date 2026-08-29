@@ -7,6 +7,22 @@ import { processStreamingMessage } from '@/server/services/ai/stream-service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const GENERATION_LOCK_TTL_MS = 2 * 60 * 1000;
+const activeGenerations = new Map<string, number>();
+
+function acquireGenerationLock(conversationId: string): boolean {
+  const startedAt = activeGenerations.get(conversationId);
+  if (startedAt && Date.now() - startedAt < GENERATION_LOCK_TTL_MS) {
+    return false;
+  }
+  activeGenerations.set(conversationId, Date.now());
+  return true;
+}
+
+function releaseGenerationLock(conversationId: string): void {
+  activeGenerations.delete(conversationId);
+}
+
 export async function POST(
   request: NextRequest,
   props: { params: Promise<{ id: string }> }
@@ -40,7 +56,14 @@ export async function POST(
   });
 
   if (!conversation) {
-    return NextResponse.json({ error: 'Conversation non trouvee' }, { status: 404 });
+    return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
+  }
+
+  if (!acquireGenerationLock(params.id)) {
+    return NextResponse.json(
+      { error: 'Une réponse est déjà en cours de génération pour cette conversation.' },
+      { status: 409 }
+    );
   }
 
   const encoder = new TextEncoder();
@@ -66,6 +89,8 @@ export async function POST(
         const errorMessage = `data: ${JSON.stringify({ type: 'error', data: 'Une erreur est survenue' })}\n\n`;
         controller.enqueue(encoder.encode(errorMessage));
         controller.close();
+      } finally {
+        releaseGenerationLock(params.id);
       }
     },
   });
