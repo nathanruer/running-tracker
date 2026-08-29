@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { bulkDeleteSchema, bulkImportSchema } from '@/lib/validation';
 import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
 import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
@@ -70,28 +70,29 @@ export async function POST(request: NextRequest) {
           ? `${count} séance${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} avec succès (${skipped} déjà importée${skipped > 1 ? 's' : ''})`
           : `${count} séance${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} avec succès`;
 
-        const response = NextResponse.json(
+        if (streamQueueIds.length > 0 || weatherQueue.length > 0) {
+          after(async () => {
+            if (streamQueueIds.length > 0) {
+              try {
+                await bulkEnrichStreamsForIds(userId, streamQueueIds, { concurrency: 2 });
+              } catch (error) {
+                logger.warn({ error, userId }, 'Failed to enrich bulk streams');
+              }
+            }
+            if (weatherQueue.length > 0) {
+              try {
+                await enrichBulkWeather(weatherQueue, userId, { concurrency: 3 });
+              } catch (error) {
+                logger.warn({ error, userId }, 'Failed to enrich bulk weather');
+              }
+            }
+          });
+        }
+
+        return NextResponse.json(
           { message, count, skipped },
           { status: HTTP_STATUS.CREATED }
         );
-
-        if (streamQueueIds.length > 0) {
-          try {
-            await bulkEnrichStreamsForIds(userId, streamQueueIds, { concurrency: 2 });
-          } catch (error) {
-            logger.warn({ error, userId }, 'Failed to enrich bulk streams');
-          }
-        }
-
-        if (weatherQueue.length > 0) {
-          try {
-            await enrichBulkWeather(weatherQueue, userId, { concurrency: 3 });
-          } catch (error) {
-            logger.warn({ error, userId }, 'Failed to enrich bulk weather');
-          }
-        }
-
-        return response;
       } catch (error) {
         await logSessionWriteError(error, { userId, action: 'bulk-import' });
         return NextResponse.json(

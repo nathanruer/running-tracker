@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { logger } from '@/server/infrastructure/logger';
 import {
   getIntervalsActivities,
-  getIntervalsActivityStreams,
   getIntervalsApiKey,
   mapIntervalsActivityToSessionPayload,
   IMPORTABLE_TYPES,
@@ -22,7 +21,8 @@ import {
   findExistingWorkoutWindows,
   matchesExistingWorkout,
 } from '@/server/domain/sessions/import-dedup';
-import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
+import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
+import { bulkEnrichWeatherForIds } from '@/server/domain/sessions/weather-bulk';
 
 export const runtime = 'nodejs';
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
         let imported = 0;
         let skipped = 0;
-        const weatherQueue: Array<{ id: string; stravaData: unknown; date: string }> = [];
+        const importedWorkoutIds: string[] = [];
 
         for (const activity of runs) {
           if (importedIds.has(activity.id)) {
@@ -94,18 +94,13 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          const streams = await getIntervalsActivityStreams(apiKey, activity.id).catch((error) => {
-            logger.warn({ error, activityId: activity.id }, 'intervals-streams-fetch-failed');
-            return [];
-          });
-
-          const payload = mapIntervalsActivityToSessionPayload(activity, streams);
+          const payload = mapIntervalsActivityToSessionPayload(activity, []);
 
           try {
             const workout = await createCompletedSession(payload, userId, { skipRecalculate: true });
             imported++;
             importedIds.add(activity.id);
-            weatherQueue.push({ id: workout.id, stravaData: payload.stravaData, date: payload.date });
+            importedWorkoutIds.push(workout.id);
           } catch (error) {
             if (error instanceof DuplicateExternalActivityError) {
               skipped++;
@@ -117,22 +112,21 @@ export async function POST(request: NextRequest) {
 
         if (imported > 0) {
           await recalculateSessionNumbers(userId);
+
+          after(async () => {
+            try {
+              await bulkEnrichStreamsForIds(userId, importedWorkoutIds, { concurrency: 2 });
+              await bulkEnrichWeatherForIds(userId, importedWorkoutIds, { concurrency: 3 });
+            } catch (error) {
+              logger.warn({ error, userId }, 'intervals-deferred-enrichment-failed');
+            }
+          });
         }
 
-        const response = NextResponse.json(
+        return NextResponse.json(
           { imported, skipped, total: runs.length },
           { status: imported > 0 ? HTTP_STATUS.CREATED : HTTP_STATUS.OK }
         );
-
-        if (weatherQueue.length > 0) {
-          try {
-            await enrichBulkWeather(weatherQueue, userId, { concurrency: 3 });
-          } catch (error) {
-            logger.warn({ error, userId }, 'Failed to enrich intervals import weather');
-          }
-        }
-
-        return response;
       } catch (error) {
         await logSessionWriteError(error, { userId, action: 'intervals-import' });
         return NextResponse.json(

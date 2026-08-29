@@ -309,6 +309,35 @@ export async function updateSessionStreams(
   return workout.id;
 }
 
+export async function attachRoutePolyline(
+  workoutId: string,
+  userId: string,
+  polyline: string
+) {
+  const external = await prisma.external_activities.findFirst({
+    where: { workoutId, userId },
+    select: { id: true, externalId: true, external_payloads: { select: { payload: true } } },
+  });
+
+  if (!external?.external_payloads) return null;
+
+  const payload = external.external_payloads.payload;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  if ((payload as Record<string, unknown>).map) return external.id;
+
+  await prisma.external_payloads.update({
+    where: { externalActivityId: external.id },
+    data: {
+      payload: {
+        ...(payload as Record<string, unknown>),
+        map: { id: `route_${external.externalId}`, summary_polyline: polyline },
+      } as Prisma.InputJsonValue,
+    },
+  });
+
+  return external.id;
+}
+
 export async function markSessionNoStreams(
   id: string,
   userId: string

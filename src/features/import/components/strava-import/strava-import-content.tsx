@@ -27,6 +27,8 @@ import { StravaLoadingSkeleton } from './strava-loading-skeleton';
 import { LoadingBar } from '@/components/ui/loading-bar';
 import type { StravaImportContentProps } from './types';
 
+const DEFERRED_ENRICHMENT_REFRESH_MS = 15_000;
+
 export function StravaImportContent({
   open,
   onOpenChange,
@@ -221,6 +223,9 @@ export function StravaImportContent({
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
       queryClient.invalidateQueries({ queryKey: queryKeys.intervalsActivities() });
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
+      }, DEFERRED_ENRICHMENT_REFRESH_MS);
     }
 
     if (onBulkImportSuccess) {

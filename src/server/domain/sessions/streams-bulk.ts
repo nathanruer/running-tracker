@@ -3,7 +3,7 @@ import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
 import { pMap } from '@/lib/utils/async';
 import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
-import { markSessionNoStreams, updateSessionStreams } from './sessions-write';
+import { attachRoutePolyline, markSessionNoStreams, updateSessionStreams } from './sessions-write';
 import { isStravaActivityLikelyStreamless } from './stream-eligibility';
 
 export interface BulkStreamsEnrichmentSummary {
@@ -103,7 +103,9 @@ export async function bulkEnrichStreamsForIds(
     }
 
     const stravaActivity = workout.external_activities.find(
-      (activity) => activity.source === 'strava' && Boolean(activity.externalId)
+      (activity) =>
+        (activity.source === 'strava' || activity.source === 'intervals_icu') &&
+        Boolean(activity.externalId)
     );
 
     if (!stravaActivity?.externalId) {
@@ -163,6 +165,10 @@ export async function bulkEnrichStreamsForIds(
         if (!updatedId) {
           failed.push(task.id);
           return;
+        }
+
+        if (streamResult.polyline) {
+          await attachRoutePolyline(task.id, userId, streamResult.polyline);
         }
 
         enriched.push(task.id);
