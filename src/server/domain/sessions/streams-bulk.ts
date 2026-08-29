@@ -30,6 +30,7 @@ interface StreamsEnrichmentTask {
   id: string;
   source: string;
   externalId: string;
+  polylineOnly?: boolean;
 }
 
 function uniqueIds(ids: string[]): string[] {
@@ -98,6 +99,22 @@ export async function bulkEnrichStreamsForIds(
 
   for (const workout of workouts) {
     if (workout._count.workout_streams > 0) {
+      const intervalsActivity = workout.external_activities.find(
+        (activity) => activity.source === 'intervals_icu' && Boolean(activity.externalId)
+      );
+      const payload = intervalsActivity?.external_payloads?.payload;
+      const hasMap =
+        !!payload && typeof payload === 'object' && !Array.isArray(payload) &&
+        Boolean((payload as Record<string, unknown>).map);
+      if (intervalsActivity?.externalId && !hasMap) {
+        tasks.push({
+          id: workout.id,
+          source: intervalsActivity.source,
+          externalId: intervalsActivity.externalId,
+          polylineOnly: true,
+        });
+        continue;
+      }
       alreadyHasStreams.push(workout.id);
       continue;
     }
@@ -144,6 +161,16 @@ export async function bulkEnrichStreamsForIds(
           userId,
           'bulk-enrich-streams'
         );
+
+        if (task.polylineOnly) {
+          if (streamResult.status === 'ok' && streamResult.polyline) {
+            await attachRoutePolyline(task.id, userId, streamResult.polyline);
+            enriched.push(task.id);
+          } else {
+            alreadyHasStreams.push(task.id);
+          }
+          return;
+        }
 
         if (streamResult.status === 'no_streams') {
           await markSessionNoStreams(task.id, userId);

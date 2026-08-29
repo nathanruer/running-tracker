@@ -63,13 +63,22 @@ export function buildPolylineFromStreams(streams: IntervalsStream[]): string | n
   return encodePolyline(downsample(pairs, MAX_POLYLINE_POINTS));
 }
 
+const MAPPED_STREAM_TYPES = new Set([
+  'time',
+  'distance',
+  'velocity_smooth',
+  'heartrate',
+  'cadence',
+  'altitude',
+]);
+
 export function mapStreamsToStravaShape(
   streams: IntervalsStream[]
 ): Record<string, { data: number[]; series_type: 'distance'; original_size: number; resolution: 'high' }> | null {
   const result: Record<string, { data: number[]; series_type: 'distance'; original_size: number; resolution: 'high' }> = {};
 
   for (const stream of streams) {
-    if (stream.type === 'latlng') continue;
+    if (!MAPPED_STREAM_TYPES.has(stream.type)) continue;
     const data = stream.data.filter((v): v is number => typeof v === 'number');
     if (data.length === 0) continue;
     result[stream.type] = {

@@ -78,8 +78,7 @@ export async function getIntervalsActivityStreams(
   apiKey: string,
   activityId: string
 ): Promise<IntervalsStream[]> {
-  const types = ['time', 'distance', 'velocity_smooth', 'heartrate', 'cadence', 'altitude', 'latlng'];
-  const params = new URLSearchParams({ types: types.join(',') });
-  const data = await fetchIntervals(apiKey, `/activity/${activityId}/streams?${params}`);
+  // No `types` filter: intervals.icu returns latlng as all-null when it is requested explicitly.
+  const data = await fetchIntervals(apiKey, `/activity/${activityId}/streams`);
   return z.array(intervalsStreamSchema).parse(data);
 }
