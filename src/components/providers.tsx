@@ -6,7 +6,6 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from '@/components/ui/sonner';
 import { ErrorModal } from '@/components/ui/error-modal';
 import { ErrorProvider } from '@/contexts/error-context';
 import { CACHE_TIME, GC_TIME, MS_PER_DAY, CACHE_STORAGE_KEY } from '@/lib/constants';
@@ -66,7 +65,6 @@ export const Providers = ({ children }: ProvidersProps) => {
           <TooltipProvider delayDuration={150}>
             {children}
             <Toaster />
-            <Sonner />
             <ErrorModal />
           </TooltipProvider>
         </ErrorProvider>
@@ -92,7 +90,6 @@ export const Providers = ({ children }: ProvidersProps) => {
         <TooltipProvider delayDuration={150}>
           {children}
           <Toaster />
-          <Sonner />
           <ErrorModal />
         </TooltipProvider>
       </ErrorProvider>
