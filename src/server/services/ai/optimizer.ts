@@ -1,6 +1,7 @@
 import 'server-only';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
+import { readSummaryMeta, SUMMARY_PAYLOAD_TYPE } from './summarizer';
 import type { Prisma } from '@prisma/client';
 
 type ChatRole = 'user' | 'assistant' | 'system';
@@ -78,17 +79,29 @@ export async function getOptimizedConversationHistory(
     include: { conversation_message_payloads: true },
   });
 
-  const normalizedMessages: ChatMessageRecord[] = allMessages.map((message) => {
-    const payload = message.conversation_message_payloads.find(
-      (item: { payloadType: string }) => item.payloadType === 'recommendations'
-    );
-    return {
-      role: message.role as ChatRole,
-      content: message.content,
-      recommendations: payload?.payload ?? null,
-      createdAt: message.createdAt,
-    };
-  });
+  const summaries = allMessages.filter((message) => message.role === 'system');
+  const lastSummary = summaries[summaries.length - 1] ?? null;
+  const lastSummaryMeta = lastSummary
+    ? readSummaryMeta(
+        lastSummary.conversation_message_payloads.find(
+          (item) => item.payloadType === SUMMARY_PAYLOAD_TYPE
+        )?.payload
+      )
+    : null;
+
+  const normalizedMessages: ChatMessageRecord[] = allMessages
+    .filter((message) => message.role !== 'system')
+    .map((message) => {
+      const payload = message.conversation_message_payloads.find(
+        (item: { payloadType: string }) => item.payloadType === 'recommendations'
+      );
+      return {
+        role: message.role as ChatRole,
+        content: message.content,
+        recommendations: payload?.payload ?? null,
+        createdAt: message.createdAt,
+      };
+    });
 
   const totalMessages = normalizedMessages.length;
 
@@ -112,7 +125,17 @@ export async function getOptimizedConversationHistory(
   const recentMessages = normalizedMessages.slice(-recentCount);
   const olderMessages = normalizedMessages.slice(0, -recentCount);
 
-  const summary = summarizeMessages(olderMessages);
+  const coveredCount = Math.max(0, (lastSummaryMeta?.messageCountAtGeneration ?? 0) - recentCount);
+  const uncoveredOlder = olderMessages.slice(Math.min(coveredCount, olderMessages.length));
+  const summaryParts: string[] = [];
+  if (lastSummary?.content) {
+    summaryParts.push(`[Mémoire de la conversation]\n${lastSummary.content}`);
+  }
+  const heuristicSummary = summarizeMessages(lastSummary ? uncoveredOlder : olderMessages);
+  if (heuristicSummary) {
+    summaryParts.push(heuristicSummary);
+  }
+  const summary = summaryParts.join('\n\n');
 
   const optimizedMessages: Array<{ role: ChatRole; content: string }> = [];
 

@@ -3,6 +3,7 @@ import { prisma } from '@/server/database';
 import { requireAuth } from '@/server/auth/middleware';
 import { logger } from '@/server/infrastructure/logger';
 import { processStreamingMessage } from '@/server/services/ai/stream-service';
+import { maybeRefreshConversationSummary } from '@/server/services/ai/summarizer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +92,7 @@ export async function POST(
         controller.close();
       } finally {
         releaseGenerationLock(params.id);
+        void maybeRefreshConversationSummary(params.id);
       }
     },
   });

@@ -25,7 +25,7 @@ export interface StreamContext {
 
 let groqProvider: ReturnType<typeof createGroq> | null = null;
 
-function getGroqProvider() {
+export function getGroqProvider() {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('Clé API Groq manquante');
   }

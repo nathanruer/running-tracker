@@ -29,6 +29,7 @@ export async function fetchConversationWithMessages(userId: string, conversation
     where: { id: conversationId, userId },
     include: {
       conversation_messages: {
+        where: { role: { not: 'system' } },
         orderBy: { createdAt: 'asc' },
         include: {
           conversation_message_payloads: true,
