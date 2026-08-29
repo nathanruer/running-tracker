@@ -190,6 +190,18 @@ export function useStreamingChat(): UseStreamingChatReturn {
         queryClient.invalidateQueries({ queryKey: queryKeys.conversations() });
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
+          queryClient.setQueryData(
+            queryKeys.conversation(conversationId),
+            (old: ConversationWithMessages | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                chat_messages: old.chat_messages.filter(
+                  (m) => !m.id.toString().startsWith('temp-')
+                ),
+              };
+            }
+          );
           return;
         }
 

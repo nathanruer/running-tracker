@@ -269,14 +269,16 @@ describe('ChatView', () => {
       expect(mockSendStreamingMessage).not.toHaveBeenCalled();
     });
 
-    it('should disable input and button when streaming', async () => {
+    it('should disable input and show an active stop button when streaming', async () => {
       mockIsStreaming = true;
 
       render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Envoyez un message...')).toBeDisabled();
-        expect(screen.getByRole('button')).toBeDisabled();
+        const stopButton = screen.getByTestId('chat-stop-button');
+        expect(stopButton).toBeEnabled();
+        expect(stopButton).toHaveAccessibleName('Arrêter la génération');
       });
     });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
@@ -50,6 +50,7 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
     streamingContent,
     isStreaming,
     sendStreamingMessage,
+    cancelStream,
   } = useStreamingChat();
 
   const messages = conversation?.chat_messages ?? [];
@@ -167,20 +168,29 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
             disabled={isStreaming}
             className="flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm md:text-base px-5 h-10 md:h-12"
           />
-          <Button
-            data-testid="chat-send-button"
-            onClick={handleSendMessage}
-            disabled={isStreaming || !input.trim()}
-            size="icon"
-            variant="action"
-            className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
-          >
-            {isStreaming ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
+          {isStreaming ? (
+            <Button
+              data-testid="chat-stop-button"
+              onClick={cancelStream}
+              size="icon"
+              variant="action"
+              aria-label="Arrêter la génération"
+              className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
+            >
+              <Square className="h-3.5 w-3.5 fill-current" />
+            </Button>
+          ) : (
+            <Button
+              data-testid="chat-send-button"
+              onClick={handleSendMessage}
+              disabled={!input.trim()}
+              size="icon"
+              variant="action"
+              className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
+            >
               <Send className="h-4 w-4" />
-            )}
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
     </div>
