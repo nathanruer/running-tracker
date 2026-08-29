@@ -59,7 +59,7 @@ describe('getOptimizedConversationHistory', () => {
 
   it('should summarize older messages when exceeding limit', async () => {
     const longContent = 'x'.repeat(200);
-    const messages = Array.from({ length: 8 }, (_, i) => ({
+    const messages = Array.from({ length: 15 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
       content: `${longContent} Message ${i}`,
       createdAt: new Date(Date.now() + i * 1000),
@@ -69,7 +69,7 @@ describe('getOptimizedConversationHistory', () => {
 
     const result = await getOptimizedConversationHistory('conv-1');
 
-    expect(result.messages[0].role).toBe('system');
+    expect(result.messages[0].role).toBe('user');
     expect(result.messages[0].content).toContain('Résumé de 3 messages');
     expect(result.messages).toHaveLength(OPTIMIZATION_CONFIG.RECENT_MESSAGES_COUNT + 1);
     expect(result.tokensSaved).toBeGreaterThan(0);
@@ -95,7 +95,7 @@ describe('getOptimizedConversationHistory', () => {
           { payloadType: 'recommendations', payload: { responseType: 'analysis', message: 'Performance analysis' } },
         ],
       },
-      ...Array.from({ length: 5 }, (_, i) => ({
+      ...Array.from({ length: 12 }, (_, i) => ({
         role: i % 2 === 0 ? 'user' : 'assistant',
         content: `Recent ${i}`,
         createdAt: new Date(5 + i),
@@ -114,7 +114,7 @@ describe('getOptimizedConversationHistory', () => {
 
   it('should calculate token savings correctly', async () => {
     const longContent = 'x'.repeat(400);
-    const messages = Array.from({ length: 10 }, (_, i) => ({
+    const messages = Array.from({ length: 17 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
       content: longContent,
       createdAt: new Date(i),
@@ -140,7 +140,7 @@ describe('getOptimizedConversationHistory', () => {
   it('should handle assistant message with plain content fallback', async () => {
     const messages = [
       { role: 'assistant', content: 'Plain assistant response', createdAt: new Date(0), conversation_message_payloads: [] },
-      ...Array.from({ length: 6 }, (_, i) => ({
+      ...Array.from({ length: 13 }, (_, i) => ({
         role: i % 2 === 0 ? 'user' : 'assistant',
         content: `Message ${i} with some text`,
         createdAt: new Date(i + 1),

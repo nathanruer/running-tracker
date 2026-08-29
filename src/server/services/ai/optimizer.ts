@@ -19,7 +19,7 @@ interface RecommendationData {
 }
 
 export const OPTIMIZATION_CONFIG = {
-  RECENT_MESSAGES_COUNT: 5,
+  RECENT_MESSAGES_COUNT: 12,
 };
 
 function estimateTokenCount(text: string): number {
@@ -118,7 +118,7 @@ export async function getOptimizedConversationHistory(
 
   if (summary) {
     optimizedMessages.push({
-      role: 'system',
+      role: 'user',
       content: summary,
     });
   }

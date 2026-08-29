@@ -1,26 +1,42 @@
 import 'server-only';
-import Groq from 'groq-sdk';
+import { createGroq } from '@ai-sdk/groq';
+import { streamText, stepCountIs, type ModelMessage } from 'ai';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
 import { toPrismaJson } from '@/server/utils/prisma-json';
 import { getHttpStatus } from '@/lib/utils/error';
-
-const QUOTA_STATUSES = new Set([429, 413]);
-import { classifyIntent } from './intent';
-import { fetchConditionalContext } from './data';
-import { buildDynamicPrompt } from './prompts';
 import { getOptimizedConversationHistory } from './optimizer';
-import { extractJsonFromAI, AIParseError } from './parser';
-import { validateAndFixRecommendations, validateAIResponse } from './validator';
-import { callGroq, streamGroq, GROQ_MODEL } from './groq-client';
+import { AGENT_SYSTEM_PROMPT } from './prompts/system';
+import { buildAgentTools, type ProposedRecommendations } from './tools';
+import { GROQ_MODEL, GROQ_MAX_TOKENS, GROQ_TEMPERATURE } from './groq-client';
 import type { AIResponseValidated } from '@/lib/validation/schemas/ai-response';
 import type { Prisma, conversation_messages } from '@prisma/client';
+
+const QUOTA_STATUSES = new Set([429, 413]);
+const MAX_AGENT_STEPS = 5;
+const QUOTA_MESSAGE = 'Quota de tokens atteint. Veuillez réessayer plus tard.';
 
 export interface StreamContext {
   userId: string;
   conversationId: string;
   userMessage: string;
   skipSaveUserMessage?: boolean;
+}
+
+let groqProvider: ReturnType<typeof createGroq> | null = null;
+
+function getGroqProvider() {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('Clé API Groq manquante');
+  }
+  if (!groqProvider) {
+    groqProvider = createGroq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groqProvider;
+}
+
+export function resetAgentProvider(): void {
+  groqProvider = null;
 }
 
 async function createConversationMessage({
@@ -59,36 +75,33 @@ async function createConversationMessage({
   return message;
 }
 
-function buildMessages(
-  systemPrompt: string,
-  contextMessage: string | null,
-  optimizedHistory: { messages: Array<{ role: string; content: string }> }
-): Groq.Chat.ChatCompletionMessageParam[] {
-  const messages: Groq.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-  ];
+async function updateConversationTimestamp(conversationId: string): Promise<void> {
+  await prisma.conversations.updateMany({
+    where: { id: conversationId },
+    data: { updatedAt: new Date() },
+  });
+}
 
-  if (contextMessage) {
-    messages.push({ role: 'user', content: contextMessage });
+function extractAssistantContent(
+  accumulatedText: string,
+  recommendations: AIResponseValidated | null
+): string {
+  if (accumulatedText.trim()) return accumulatedText;
+  if (recommendations?.responseType === 'recommendations') {
+    return recommendations.week_summary ?? recommendations.rationale ?? 'Voici mes recommandations.';
   }
+  return "Je suis là pour t'aider.";
+}
 
-  messages.push(
-    ...optimizedHistory.messages.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content,
-    }))
-  );
-
-  return messages;
+function isQuotaError(error: unknown): boolean {
+  if (QUOTA_STATUSES.has(getHttpStatus(error) ?? 0)) return true;
+  const message = error instanceof Error ? error.message : '';
+  return /\b(429|413|rate.?limit)\b/i.test(message);
 }
 
 export async function* processStreamingMessage(
   ctx: StreamContext
 ): AsyncGenerator<{ type: 'chunk' | 'done' | 'json'; data: string }, void, unknown> {
-  const intentResult = await classifyIntent(ctx.userMessage);
-  const intent = intentResult.intent;
-  const requiresJson = intent === 'recommendation_request';
-
   if (!ctx.skipSaveUserMessage) {
     await createConversationMessage({
       conversationId: ctx.conversationId,
@@ -97,130 +110,71 @@ export async function* processStreamingMessage(
     });
   }
 
-  const fetchedContext = await fetchConditionalContext(ctx.userId, intentResult.requiredData);
-  const { systemPrompt, contextMessage } = buildDynamicPrompt(intent, fetchedContext);
-  const optimizedHistory = await getOptimizedConversationHistory(ctx.conversationId);
-  const messages = buildMessages(systemPrompt, contextMessage, optimizedHistory);
+  const history = await getOptimizedConversationHistory(ctx.conversationId);
+  const messages: ModelMessage[] = history.messages.map((m) => ({
+    role: m.role === 'assistant' ? 'assistant' : 'user',
+    content: m.content,
+  }));
 
-  if (requiresJson) {
-    yield* processJsonResponse(ctx, messages);
-  } else {
-    yield* processTextResponse(ctx, messages);
-  }
-}
+  const proposed: ProposedRecommendations[] = [];
+  let accumulatedText = '';
 
-async function* processJsonResponse(
-  ctx: StreamContext,
-  messages: Groq.Chat.ChatCompletionMessageParam[]
-): AsyncGenerator<{ type: 'chunk' | 'done' | 'json'; data: string }, void, unknown> {
   try {
-    const completion = await callGroq(messages);
-    const rawText = completion.choices[0]?.message?.content ?? '';
+    const result = streamText({
+      model: getGroqProvider()(GROQ_MODEL),
+      system: AGENT_SYSTEM_PROMPT,
+      messages,
+      tools: buildAgentTools(ctx.userId, proposed),
+      stopWhen: stepCountIs(MAX_AGENT_STEPS),
+      temperature: GROQ_TEMPERATURE,
+      maxOutputTokens: GROQ_MAX_TOKENS,
+    });
 
-    let parsedResponse: unknown;
-    try {
-      parsedResponse = extractJsonFromAI(rawText);
-    } catch (e) {
-      if (e instanceof AIParseError) {
-        logger.warn({ rawText: rawText.substring(0, 500) }, 'AI response parse error');
-        parsedResponse = {
-          responseType: 'conversation' as const,
-          message: 'Je rencontre un probleme technique. Peux-tu reformuler ta demande?',
-        };
-      } else {
-        throw e;
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') {
+        accumulatedText += part.text;
+        yield { type: 'chunk', data: part.text };
+      } else if (part.type === 'tool-result' && part.toolName === 'propose_sessions') {
+        const latest = proposed[proposed.length - 1];
+        if (latest) {
+          yield { type: 'json', data: JSON.stringify(latest.validated) };
+        }
+      } else if (part.type === 'error') {
+        throw part.error;
       }
     }
-
-    const validationResult = validateAIResponse(parsedResponse);
-    if (!validationResult.success) {
-      logger.warn({ error: validationResult.error }, 'AI response validation failed');
-    }
-
-    const response = validateAndFixRecommendations(parsedResponse);
-    const assistantContent = extractAssistantContent(response);
-
-    const payload =
-      response.responseType === 'recommendations' ? toPrismaJson(response) : undefined;
-
-    await createConversationMessage({
-      conversationId: ctx.conversationId,
-      role: 'assistant',
-      content: assistantContent,
-      model: GROQ_MODEL,
-      payload: payload
-        ? { payload, payloadType: 'recommendations', payloadVersion: 'v1' }
-        : undefined,
-    });
-
-    await updateConversationTimestamp(ctx.conversationId);
-
-    yield { type: 'json', data: JSON.stringify(response) };
-    yield { type: 'done', data: '' };
   } catch (err: unknown) {
-    if (QUOTA_STATUSES.has(getHttpStatus(err) ?? 0)) {
-      await createRateLimitMessage(ctx.conversationId);
-      yield { type: 'chunk', data: 'Quota de tokens atteint. Veuillez reessayer plus tard.' };
+    if (isQuotaError(err)) {
+      await createConversationMessage({
+        conversationId: ctx.conversationId,
+        role: 'assistant',
+        content: QUOTA_MESSAGE,
+        model: GROQ_MODEL,
+      });
+      yield { type: 'chunk', data: QUOTA_MESSAGE };
       yield { type: 'done', data: '' };
       return;
     }
+    logger.error({ err, conversationId: ctx.conversationId }, 'agent-stream-failed');
     throw err;
   }
-}
 
-async function* processTextResponse(
-  ctx: StreamContext,
-  messages: Groq.Chat.ChatCompletionMessageParam[]
-): AsyncGenerator<{ type: 'chunk' | 'done' | 'json'; data: string }, void, unknown> {
-  const chunks: string[] = [];
+  const recommendations = proposed[proposed.length - 1]?.validated ?? null;
+  const assistantContent = extractAssistantContent(accumulatedText, recommendations);
+  const payload =
+    recommendations?.responseType === 'recommendations' ? toPrismaJson(recommendations) : null;
 
-  try {
-    for await (const chunk of streamGroq(messages)) {
-      chunks.push(chunk);
-      yield { type: 'chunk', data: chunk };
-    }
-
-    await createConversationMessage({
-      conversationId: ctx.conversationId,
-      role: 'assistant',
-      content: chunks.join(''),
-      model: GROQ_MODEL,
-    });
-
-    await updateConversationTimestamp(ctx.conversationId);
-
-    yield { type: 'done', data: '' };
-  } catch (err: unknown) {
-    if (QUOTA_STATUSES.has(getHttpStatus(err) ?? 0)) {
-      await createRateLimitMessage(ctx.conversationId);
-      yield { type: 'chunk', data: 'Quota de tokens atteint. Veuillez reessayer plus tard.' };
-      yield { type: 'done', data: '' };
-      return;
-    }
-    throw err;
-  }
-}
-
-function extractAssistantContent(response: AIResponseValidated): string {
-  if (response.responseType === 'conversation') {
-    return response.message || 'Je suis la pour t\'aider.';
-  }
-  return response.week_summary ?? response.rationale ?? 'Voici mes recommandations.';
-}
-
-async function updateConversationTimestamp(conversationId: string): Promise<void> {
-  const timestamp = new Date();
-  await prisma.conversations.updateMany({
-    where: { id: conversationId },
-    data: { updatedAt: timestamp },
-  });
-}
-
-async function createRateLimitMessage(conversationId: string): Promise<conversation_messages> {
-  return createConversationMessage({
-    conversationId,
+  await createConversationMessage({
+    conversationId: ctx.conversationId,
     role: 'assistant',
-    content: 'Quota de tokens atteint. Veuillez reessayer plus tard.',
+    content: assistantContent,
     model: GROQ_MODEL,
+    payload: payload
+      ? { payload, payloadType: 'recommendations', payloadVersion: 'v1' }
+      : undefined,
   });
+
+  await updateConversationTimestamp(ctx.conversationId);
+
+  yield { type: 'done', data: '' };
 }

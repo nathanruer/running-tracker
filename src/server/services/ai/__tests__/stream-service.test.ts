@@ -1,315 +1,191 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { processStreamingMessage } from '../stream-service';
-import { AIParseError } from '../parser';
+import { prisma } from '@/server/database';
+import type { ProposedRecommendations } from '../tools';
 
-const prismaCreate = vi.hoisted(() => vi.fn());
-const prismaUpdateMany = vi.hoisted(() => vi.fn());
-const payloadCreate = vi.hoisted(() => vi.fn());
+const streamTextMock = vi.hoisted(() => vi.fn());
+const buildAgentToolsMock = vi.hoisted(() => vi.fn());
+
+vi.mock('ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('ai')>();
+  return { ...actual, streamText: streamTextMock };
+});
+
+vi.mock('../tools', () => ({
+  buildAgentTools: buildAgentToolsMock,
+}));
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    conversation_messages: { create: prismaCreate },
-    conversation_message_payloads: { create: payloadCreate },
-    conversations: { updateMany: prismaUpdateMany },
+    conversation_messages: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+    },
+    conversation_message_payloads: {
+      create: vi.fn(),
+    },
+    conversations: {
+      updateMany: vi.fn(),
+    },
   },
 }));
 
 vi.mock('@/server/infrastructure/logger', () => ({
-  logger: { warn: vi.fn() },
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }));
 
-vi.mock('@/server/utils/prisma-json', () => ({
-  toPrismaJson: vi.fn(() => ({ mocked: true })),
-}));
+function fullStreamOf(parts: Array<Record<string, unknown>>) {
+  return {
+    fullStream: (async function* () {
+      for (const part of parts) yield part;
+    })(),
+  };
+}
 
-const getHttpStatusMock = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/utils/error', () => ({
-  getHttpStatus: (...args: unknown[]) => getHttpStatusMock(...args),
-}));
+async function collect(ctx: Parameters<typeof import('../stream-service').processStreamingMessage>[0]) {
+  const { processStreamingMessage } = await import('../stream-service');
+  const events: Array<{ type: string; data: string }> = [];
+  for await (const event of processStreamingMessage(ctx)) {
+    events.push(event);
+  }
+  return events;
+}
 
-const classifyIntentMock = vi.hoisted(() => vi.fn());
-vi.mock('../intent', () => ({
-  classifyIntent: (...args: unknown[]) => classifyIntentMock(...args),
-}));
+const baseCtx = { userId: 'user-1', conversationId: 'conv-1', userMessage: 'salut coach' };
 
-vi.mock('../data', () => ({
-  fetchConditionalContext: vi.fn(async () => ({ stats: [] })),
-}));
+const validatedRecommendations = {
+  responseType: 'recommendations' as const,
+  rationale: 'Plan équilibré.',
+  recommended_sessions: [
+    { duration_min: 45, estimated_distance_km: 8, recommendation_id: 'rec-1' },
+  ],
+};
 
-vi.mock('../prompts', () => ({
-  buildDynamicPrompt: vi.fn(() => ({ systemPrompt: 'sys', contextMessage: 'ctx' })),
-}));
-
-vi.mock('../optimizer', () => ({
-  getOptimizedConversationHistory: vi.fn(async () => ({ messages: [{ role: 'user', content: 'hi' }] })),
-}));
-
-const extractJsonFromAIMock = vi.hoisted(() => vi.fn());
-vi.mock('../parser', () => ({
-  extractJsonFromAI: (...args: unknown[]) => extractJsonFromAIMock(...args),
-  AIParseError: class AIParseError extends Error {},
-}));
-
-const validateAndFixRecommendationsMock = vi.hoisted(() => vi.fn((value: unknown) => value));
-const validateAIResponseMock = vi.hoisted(() => vi.fn());
-vi.mock('../validator', () => ({
-  validateAndFixRecommendations: (value: unknown) => validateAndFixRecommendationsMock(value),
-  validateAIResponse: (value: unknown) => validateAIResponseMock(value),
-}));
-
-const callGroqMock = vi.hoisted(() => vi.fn());
-const streamGroqMock = vi.hoisted(() => vi.fn());
-vi.mock('../groq-client', () => ({
-  GROQ_MODEL: 'mock-model',
-  callGroq: (...args: unknown[]) => callGroqMock(...args),
-  streamGroq: (...args: unknown[]) => streamGroqMock(...args),
-}));
-
-describe('stream-service', () => {
+describe('processStreamingMessage (agent)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    prismaCreate.mockResolvedValue({ id: 'msg-1' });
-    prismaUpdateMany.mockResolvedValue({ count: 1 });
-    payloadCreate.mockResolvedValue({});
-    getHttpStatusMock.mockReturnValue(undefined);
-    validateAIResponseMock.mockReturnValue({ success: true });
+    vi.stubEnv('GROQ_API_KEY', 'test-key');
+    vi.mocked(prisma.conversation_messages.create).mockResolvedValue({ id: 'msg-1' } as never);
+    vi.mocked(prisma.conversation_messages.findMany).mockResolvedValue([
+      {
+        role: 'user',
+        content: 'salut coach',
+        createdAt: new Date(),
+        conversation_message_payloads: [],
+      },
+    ] as never);
+    vi.mocked(prisma.conversations.updateMany).mockResolvedValue({ count: 1 } as never);
+    buildAgentToolsMock.mockImplementation(() => ({}));
   });
 
-  it('processes json responses and stores assistant message', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    callGroqMock.mockResolvedValue({
-      choices: [{ message: { content: '{"responseType":"recommendations","week_summary":"ok"}' } }],
-    });
-    extractJsonFromAIMock.mockReturnValue({
-      responseType: 'recommendations',
-      week_summary: 'ok',
-    });
+  it('streams text deltas and persists the assistant message', async () => {
+    streamTextMock.mockReturnValue(
+      fullStreamOf([
+        { type: 'text-delta', id: 't1', text: 'Salut ' },
+        { type: 'text-delta', id: 't1', text: 'champion !' },
+      ])
+    );
 
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
+    const events = await collect(baseCtx);
 
-    expect(chunks.some((c) => c.type === 'json')).toBe(true);
-    expect(chunks.some((c) => c.type === 'done')).toBe(true);
-    expect(prismaCreate).toHaveBeenCalled();
-    expect(prismaUpdateMany).toHaveBeenCalled();
+    expect(events).toEqual([
+      { type: 'chunk', data: 'Salut ' },
+      { type: 'chunk', data: 'champion !' },
+      { type: 'done', data: '' },
+    ]);
+
+    const assistantCall = vi
+      .mocked(prisma.conversation_messages.create)
+      .mock.calls.find((call) => call[0].data.role === 'assistant');
+    expect(assistantCall?.[0].data.content).toBe('Salut champion !');
   });
 
-  it('processes text responses and streams chunks', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'conversation', requiredData: [] });
-    streamGroqMock.mockImplementation(async function* () {
-      yield 'A';
-      yield 'B';
-    });
+  it('saves the user message unless skipSaveUserMessage is set', async () => {
+    streamTextMock.mockReturnValue(fullStreamOf([{ type: 'text-delta', id: 't1', text: 'ok' }]));
 
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
+    await collect(baseCtx);
+    const userCalls = vi
+      .mocked(prisma.conversation_messages.create)
+      .mock.calls.filter((call) => call[0].data.role === 'user');
+    expect(userCalls).toHaveLength(1);
 
-    expect(chunks.filter((c) => c.type === 'chunk').map((c) => c.data).join('')).toBe('AB');
-    expect(chunks.some((c) => c.type === 'done')).toBe(true);
+    vi.mocked(prisma.conversation_messages.create).mockClear();
+    streamTextMock.mockReturnValue(fullStreamOf([{ type: 'text-delta', id: 't1', text: 'ok' }]));
+    await collect({ ...baseCtx, skipSaveUserMessage: true });
+    const userCallsSkipped = vi
+      .mocked(prisma.conversation_messages.create)
+      .mock.calls.filter((call) => call[0].data.role === 'user');
+    expect(userCallsSkipped).toHaveLength(0);
   });
 
-  it('handles rate limit errors with a fallback message', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    callGroqMock.mockRejectedValue(new Error('rate limit'));
-    getHttpStatusMock.mockReturnValue(429);
-
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
-
-    expect(chunks[0]?.data).toContain('Quota de tokens atteint');
-    expect(chunks.some((c) => c.type === 'done')).toBe(true);
-    expect(prismaCreate).toHaveBeenCalled();
-  });
-
-  it('handles parse errors with fallback response', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    callGroqMock.mockResolvedValue({
-      choices: [{ message: { content: 'not json' } }],
-    });
-    extractJsonFromAIMock.mockImplementation(() => {
-      throw new AIParseError('bad json');
-    });
-
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
-
-    expect(chunks.some((c) => c.type === 'json')).toBe(true);
-    expect(validateAndFixRecommendationsMock).toHaveBeenCalled();
-  });
-
-  it('logs validation warning when response is invalid', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    callGroqMock.mockResolvedValue({
-      choices: [{ message: { content: '{"responseType":"conversation","message":"ok"}' } }],
-    });
-    extractJsonFromAIMock.mockReturnValue({
-      responseType: 'conversation',
-      message: 'ok',
-    });
-    validateAIResponseMock.mockReturnValueOnce({ success: false as const, error: 'bad', fallback: { responseType: 'conversation', message: 'error' } });
-
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
-
-    expect(chunks.some((c) => c.type === 'json')).toBe(true);
-  });
-
-  it('skips saving user message when skipSaveUserMessage is true', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'conversation', requiredData: [] });
-    streamGroqMock.mockImplementation(async function* () {
-      yield 'A';
-    });
-
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-      skipSaveUserMessage: true,
-    })) {
-      chunks.push(chunk);
-    }
-
-    expect(chunks.some((c) => c.type === 'done')).toBe(true);
-    expect(prismaCreate).toHaveBeenCalledTimes(1);
-  });
-
-  it('handles rate limit for text responses', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'conversation', requiredData: [] });
-    streamGroqMock.mockImplementation(async function* () {
-      throw new Error('rate limit');
-    });
-    getHttpStatusMock.mockReturnValue(429);
-
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
-
-    expect(chunks[0]?.data).toContain('Quota de tokens atteint');
-    expect(prismaCreate).toHaveBeenCalled();
-  });
-
-  it('omits context message when prompt has none', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    callGroqMock.mockResolvedValue({
-      choices: [{ message: { content: '{"responseType":"conversation","message":"ok"}' } }],
-    });
-    extractJsonFromAIMock.mockReturnValue({
-      responseType: 'conversation',
-      message: 'ok',
-    });
-
-    const buildDynamicPrompt = await import('../prompts');
-    vi.mocked(buildDynamicPrompt.buildDynamicPrompt).mockReturnValueOnce({ systemPrompt: 'sys', contextMessage: null, requiresJson: true });
-
-    const chunks = [];
-    for await (const chunk of processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    })) {
-      chunks.push(chunk);
-    }
-
-    const messages = callGroqMock.mock.calls[0][0];
-    expect(messages.some((m: { role: string; content: string }) => m.content === 'ctx')).toBe(false);
-  });
-
-  it('rethrows non-AIParseError exceptions in JSON response', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    callGroqMock.mockResolvedValue({
-      choices: [{ message: { content: 'some content' } }],
-    });
-    const genericError = new Error('generic error');
-    extractJsonFromAIMock.mockImplementation(() => {
-      throw genericError;
-    });
-
-    const generator = processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    });
-
-    await expect(async () => {
-      for await (const chunk of generator) void chunk; {
-        // consume generator
+  it('emits the validated recommendations as a json event and persists the v1 payload', async () => {
+    buildAgentToolsMock.mockImplementation(
+      (_userId: string, proposed: ProposedRecommendations[]) => {
+        proposed.push({ validated: validatedRecommendations });
+        return {};
       }
-    }).rejects.toThrow('generic error');
+    );
+    streamTextMock.mockReturnValue(
+      fullStreamOf([
+        { type: 'text-delta', id: 't1', text: 'Voici le plan.' },
+        { type: 'tool-result', toolName: 'propose_sessions', toolCallId: 'call-1', input: {}, output: 'ok' },
+      ])
+    );
+
+    const events = await collect(baseCtx);
+
+    const jsonEvent = events.find((e) => e.type === 'json');
+    expect(jsonEvent).toBeDefined();
+    expect(JSON.parse(jsonEvent!.data)).toEqual(validatedRecommendations);
+    expect(events.at(-1)).toEqual({ type: 'done', data: '' });
+
+    expect(prisma.conversation_message_payloads.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ payloadType: 'recommendations', payloadVersion: 'v1' }),
+      })
+    );
   });
 
-  it('rethrows non-429 errors in JSON response', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-    const serverError = new Error('server error');
-    callGroqMock.mockRejectedValue(serverError);
-    getHttpStatusMock.mockReturnValue(500);
-
-    const generator = processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    });
-
-    await expect(async () => {
-      for await (const chunk of generator) void chunk; {
-        // consume generator
+  it('falls back to the rationale when no text was streamed alongside recommendations', async () => {
+    buildAgentToolsMock.mockImplementation(
+      (_userId: string, proposed: ProposedRecommendations[]) => {
+        proposed.push({ validated: validatedRecommendations });
+        return {};
       }
-    }).rejects.toThrow('server error');
+    );
+    streamTextMock.mockReturnValue(
+      fullStreamOf([
+        { type: 'tool-result', toolName: 'propose_sessions', toolCallId: 'call-1', input: {}, output: 'ok' },
+      ])
+    );
+
+    await collect(baseCtx);
+
+    const assistantCall = vi
+      .mocked(prisma.conversation_messages.create)
+      .mock.calls.find((call) => call[0].data.role === 'assistant');
+    expect(assistantCall?.[0].data.content).toBe('Plan équilibré.');
   });
 
-  it('rethrows non-429 errors in text response', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'conversation', requiredData: [] });
-    const serverError = new Error('server error');
-    streamGroqMock.mockImplementation(async function* () {
-      throw serverError;
-    });
-    getHttpStatusMock.mockReturnValue(500);
+  it('handles quota errors with a persisted quota message', async () => {
+    streamTextMock.mockReturnValue(
+      fullStreamOf([{ type: 'error', error: new Error('429 rate limit exceeded') }])
+    );
 
-    const generator = processStreamingMessage({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    });
+    const events = await collect(baseCtx);
 
-    await expect(async () => {
-      for await (const chunk of generator) void chunk; {
-        // consume generator
-      }
-    }).rejects.toThrow('server error');
+    expect(events.at(-2)?.data).toContain('Quota de tokens atteint');
+    expect(events.at(-1)).toEqual({ type: 'done', data: '' });
+    const assistantCall = vi
+      .mocked(prisma.conversation_messages.create)
+      .mock.calls.find((call) => call[0].data.role === 'assistant');
+    expect(assistantCall?.[0].data.content).toContain('Quota de tokens atteint');
+  });
+
+  it('rethrows non-quota errors', async () => {
+    streamTextMock.mockReturnValue(
+      fullStreamOf([{ type: 'error', error: new Error('boom') }])
+    );
+
+    await expect(collect(baseCtx)).rejects.toThrow('boom');
   });
 });
