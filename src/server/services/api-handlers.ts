@@ -58,7 +58,15 @@ export async function handleApiRequest<T = unknown>(
 
     let data: T;
     if (schema) {
-      const body = await request.json();
+      let body: unknown;
+      try {
+        body = await request.json();
+      } catch {
+        return NextResponse.json(
+          { error: 'Corps de requête invalide' },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        );
+      }
       data = schema.parse(body);
     } else {
       data = {} as T;

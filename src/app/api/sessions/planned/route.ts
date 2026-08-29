@@ -1,43 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleApiRequest } from '@/server/services/api-handlers';
+import { partialSessionSchema } from '@/lib/validation';
 import { createPlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
+
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(
     request,
-    null,
-    async (_data, userId) => {
-      const body = await request.json();
-      const {
-        sessionType,
-        targetDuration,
-        targetDistance,
-        targetPace,
-        targetHeartRateBpm,
-        targetRPE,
-        intervalDetails,
-        plannedDate,
-        recommendationId,
-        comments,
-      } = body;
-
+    partialSessionSchema,
+    async (payload, userId) => {
       try {
-        const plan = await createPlannedSession(
-          {
-            sessionType,
-            targetDuration,
-            targetDistance,
-            targetPace,
-            targetHeartRateBpm,
-            targetRPE,
-            intervalDetails,
-            plannedDate,
-            recommendationId,
-            comments,
-          },
-          userId
-        );
+        const plan = await createPlannedSession(payload, userId);
 
         const session = await fetchSessionById(userId, plan.id);
         return NextResponse.json({ session });

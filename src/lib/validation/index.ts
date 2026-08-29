@@ -4,6 +4,10 @@ export * from './auth';
 export {
   sessionSchema,
   partialSessionSchema,
+  completeSessionSchema,
+  bulkImportSchema,
+  bulkPlannedSchema,
+  bulkDeleteSchema,
   intervalStepSchema,
   intervalDetailsSchema,
   type SessionInput,

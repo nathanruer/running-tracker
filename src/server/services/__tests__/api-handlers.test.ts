@@ -55,6 +55,28 @@ describe('api-handlers', () => {
       expect(response.status).toBe(200);
     });
 
+    it('should return 400 when the body is malformed JSON', async () => {
+      const schema = z.object({ name: z.string() });
+
+      const mockRequest = {
+        json: vi.fn().mockRejectedValue(new SyntaxError('Unexpected token')),
+      } as unknown as NextRequest;
+
+      (requireAuth as ReturnType<typeof vi.fn>).mockReturnValue({
+        success: true,
+        userId: 'user-123',
+      });
+
+      const handler = vi.fn();
+
+      const response = await handleApiRequest(mockRequest, schema, handler, {
+        logContext: 'test',
+      });
+
+      expect(response.status).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
     it('should handle request without schema validation', async () => {
       const mockRequest = {} as NextRequest;
 

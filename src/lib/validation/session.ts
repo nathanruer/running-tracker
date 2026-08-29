@@ -84,6 +84,28 @@ export const partialSessionSchema = sessionSchema
   .merge(plannedSessionFields)
   .partial();
 
+const validDateString = z.string().refine(
+  (value) => !isNaN(new Date(value).getTime()),
+  { message: 'Une date valide est requise' }
+);
+
+export const completeSessionSchema = partialSessionSchema.extend({
+  date: validDateString,
+  stravaStreams: z.record(z.string(), z.unknown()).nullable().optional(),
+});
+
+export const bulkImportSchema = z.object({
+  sessions: z.array(sessionSchema).min(1, { message: 'Le tableau de séances est requis' }).max(100),
+});
+
+export const bulkPlannedSchema = z.object({
+  sessions: z.array(partialSessionSchema).min(1, { message: 'Le tableau de séances est requis et ne peut pas être vide' }).max(100),
+});
+
+export const bulkDeleteSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1, { message: "Le tableau d'identifiants est requis" }).max(500),
+});
+
 // ============================================================================
 // INFERRED TYPES
 // ============================================================================

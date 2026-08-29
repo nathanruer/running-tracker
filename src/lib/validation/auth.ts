@@ -12,3 +12,16 @@ export const loginSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+const emptyToUndefined = (value: unknown) =>
+  value === '' || value == null ? undefined : value;
+
+export const updateProfileSchema = z.object({
+  weight: z.preprocess(emptyToUndefined, z.coerce.number().positive().max(400).optional()),
+  age: z.preprocess(emptyToUndefined, z.coerce.number().int().min(10).max(120).optional()),
+  maxHeartRate: z.preprocess(emptyToUndefined, z.coerce.number().int().min(80).max(250).optional()),
+  vma: z.preprocess(emptyToUndefined, z.coerce.number().positive().max(30).optional()),
+  goal: z.string().max(2000).optional(),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

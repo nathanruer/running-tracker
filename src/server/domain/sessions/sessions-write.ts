@@ -335,7 +335,11 @@ export async function markSessionNoStreams(
   return external.id;
 }
 
-export async function createPlannedSession(payload: Record<string, unknown>, userId: string) {
+export async function createPlannedSession(
+  payload: Record<string, unknown>,
+  userId: string,
+  options?: { skipRecalculate?: boolean }
+) {
   const plannedDate = payload.plannedDate ? new Date(String(payload.plannedDate)) : null;
 
   const plan = await prisma.plan_sessions.create({
@@ -357,7 +361,9 @@ export async function createPlannedSession(payload: Record<string, unknown>, use
     },
   });
 
-  await recalculateSessionNumbers(userId);
+  if (!options?.skipRecalculate) {
+    await recalculateSessionNumbers(userId);
+  }
 
   return plan;
 }

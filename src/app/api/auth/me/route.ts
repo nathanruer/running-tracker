@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { HTTP_STATUS } from '@/lib/constants';
+import { updateProfileSchema } from '@/lib/validation';
 import { prisma } from '@/server/database';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 
@@ -64,25 +65,8 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   return handleApiRequest(
     request,
-    null,
-    async (_data, userId) => {
-      const body = await request.json();
-      const { weight, age, maxHeartRate, vma, goal } = body;
-
-      const updateData: {
-        weight?: number;
-        age?: number;
-        maxHeartRate?: number;
-        vma?: number;
-        goal?: string;
-      } = {
-        weight: weight !== undefined && weight !== '' ? parseFloat(weight) : undefined,
-        age: age !== undefined && age !== '' ? parseInt(age) : undefined,
-        maxHeartRate: maxHeartRate !== undefined && maxHeartRate !== '' ? parseInt(maxHeartRate) : undefined,
-        vma: vma !== undefined && vma !== '' ? parseFloat(vma) : undefined,
-        goal: goal !== undefined ? goal : undefined,
-      };
-
+    updateProfileSchema,
+    async (updateData, userId) => {
       await prisma.user_profiles.upsert({
         where: { userId },
         create: { userId, ...updateData },

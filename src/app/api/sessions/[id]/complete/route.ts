@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 import { handleApiRequest } from '@/server/services/api-handlers';
+import { completeSessionSchema } from '@/lib/validation';
 import { HTTP_STATUS } from '@/lib/constants';
 import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
 import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
@@ -14,16 +15,8 @@ export async function PATCH(
 
   return handleApiRequest(
     request,
-    null,
-    async (_data, userId) => {
-      const body = await request.json();
-      if (!body?.date || isNaN(new Date(body.date).getTime())) {
-        return NextResponse.json(
-          { error: 'Une date valide est requise pour terminer une séance' },
-          { status: HTTP_STATUS.BAD_REQUEST }
-        );
-      }
-
+    completeSessionSchema,
+    async (body, userId) => {
       try {
         const streamResult = await fetchStreamsForSessionWithStatus(
           body.source ?? null,
