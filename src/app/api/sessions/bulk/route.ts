@@ -4,7 +4,7 @@ import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
 import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { createCompletedSession, deleteSessions, logSessionWriteError, recalculateSessionNumbers } from '@/server/domain/sessions/sessions-write';
+import { createCompletedSession, deleteSessions, DuplicateExternalActivityError, logSessionWriteError, recalculateSessionNumbers } from '@/server/domain/sessions/sessions-write';
 import { getImportedExternalIds } from '@/server/domain/sessions/sessions-read';
 import { logger } from '@/server/infrastructure/logger';
 
@@ -42,17 +42,26 @@ export async function POST(request: NextRequest) {
           }
 
           const { intervalDetails, stravaData, weather: importedWeather, averageTemp, ...sessionData } = session;
-          const workout = await createCompletedSession(
-            {
-              ...sessionData,
-              intervalDetails,
-              stravaData,
-              weather: importedWeather ?? null,
-              averageTemp: averageTemp ?? null,
-            },
-            userId,
-            { skipRecalculate: true }
-          );
+          let workout;
+          try {
+            workout = await createCompletedSession(
+              {
+                ...sessionData,
+                intervalDetails,
+                stravaData,
+                weather: importedWeather ?? null,
+                averageTemp: averageTemp ?? null,
+              },
+              userId,
+              { skipRecalculate: true }
+            );
+          } catch (error) {
+            if (error instanceof DuplicateExternalActivityError) {
+              skipped++;
+              continue;
+            }
+            throw error;
+          }
           count++;
 
           if (session.externalId) {
