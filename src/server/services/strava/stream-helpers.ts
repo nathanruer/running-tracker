@@ -35,7 +35,10 @@ export async function fetchStreamsForSessionWithStatus(
       }
       const [streams, latlngs] = await Promise.all([
         getIntervalsActivityStreams(apiKey, externalId),
-        getIntervalsActivityMap(apiKey, externalId).catch(() => []),
+        getIntervalsActivityMap(apiKey, externalId).catch((error: unknown) => {
+          logger.warn({ error, externalId, logContext }, 'intervals-map-fetch-failed');
+          return [];
+        }),
       ]);
       const mapped = mapStreamsToStravaShape(streams);
       const polyline = buildPolylineFromLatLngs(latlngs);

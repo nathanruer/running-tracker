@@ -260,7 +260,7 @@ describe('session.mapper', () => {
         expect(session.hasWeather).toBe(false);
       });
 
-      it('should mark weather as non-enrichable when Strava route is missing', () => {
+      it('should report hasWeather false when no weather is stored, even without a route', () => {
         const workout = createWorkoutFull({
           weather_observations: null,
           external_activities: [
@@ -278,7 +278,7 @@ describe('session.mapper', () => {
         });
         const session = mapWorkoutToSession(workout, { includeFullData: false });
 
-        expect(session.hasWeather).toBe(true);
+        expect(session.hasWeather).toBe(false);
       });
 
       it('should expose hasStreams from lightweight count in table view', () => {

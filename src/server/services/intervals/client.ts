@@ -39,24 +39,39 @@ const intervalsAthleteSchema = z.object({
 
 export type IntervalsAthlete = z.infer<typeof intervalsAthleteSchema>;
 
+const RETRY_DELAYS_MS = [1500, 4000];
+
+function isRetryable(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
 async function fetchIntervals(apiKey: string, path: string): Promise<unknown> {
   const auth = Buffer.from(`API_KEY:${apiKey}`).toString('base64');
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { Authorization: `Basic ${auth}` },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      headers: { Authorization: `Basic ${auth}` },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
 
-  if (!response.ok) {
+    if (response.ok) {
+      return response.json();
+    }
+
     const body = await response.text().catch(() => '');
+    if (isRetryable(response.status) && attempt < RETRY_DELAYS_MS.length) {
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : RETRY_DELAYS_MS[attempt];
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      continue;
+    }
+
     const error = new Error(
       `intervals.icu request failed: ${response.status} ${body.slice(0, 200)}`
     ) as Error & { status: number };
     error.status = response.status;
     throw error;
   }
-
-  return response.json();
 }
 
 export async function getIntervalsAthlete(apiKey: string): Promise<IntervalsAthlete> {

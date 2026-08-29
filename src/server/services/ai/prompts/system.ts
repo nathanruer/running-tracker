@@ -28,6 +28,7 @@ RÈGLES D'ENTRAÎNEMENT (non négociables):
 
 STRUCTURE D'UN FRACTIONNÉ (champ interval_details obligatoire):
 - workoutType: "VMA"|"SEUIL"|"TEMPO", repetitionCount, effortDuration/recoveryDuration "MM:SS", targetEffortPace/targetRecoveryPace "MM:SS", targetEffortHR.
+- Répétitions définies en distance (400 m, 800 m, 1 km…): renseigne effortDistance en km (800 m → 0.8) ET effortDuration = temps de cet effort à l'allure cible (800 m à 04:30/km → "03:36"). Ne jamais écrire une distance dans un champ durée.
 - steps: warmup -> [effort -> recovery]* -> effort -> cooldown (jamais de recovery juste avant le cooldown). Chaque step: stepType, duration "MM:SS", distance (km, calculée durée×allure), pace "MM:SS", hr (warmup/cooldown ~135, recovery ~145, effort selon intensité).
-- interval_structure: "<TYPE>: NxMM:SS R:MM:SS" (ex: "VMA: 8x01:00 R:01:00").
+- interval_structure: "<TYPE>: NxMM:SS R:MM:SS" (ex: "VMA: 8x01:00 R:01:00") ou "<TYPE>: Nx800m R:MM:SS" pour des répétitions en distance.
 Footing/Sortie longue: pas d'intervalles — durée, distance, allure cible, FC cible.`;

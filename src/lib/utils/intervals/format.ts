@@ -15,6 +15,11 @@ export function formatDurationAlwaysMMSS(seconds: number): string {
 /**
  * Generates a human-readable interval structure string
  */
+export function formatEffortDistance(distanceKm: number): string {
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
+  return Number.isInteger(distanceKm) ? `${distanceKm}km` : `${distanceKm.toFixed(1)}km`;
+}
+
 export function generateIntervalStructure(intervalDetails: IntervalDetails | null | undefined): string {
   if (!intervalDetails) return '';
 
@@ -31,10 +36,15 @@ export function generateIntervalStructure(intervalDetails: IntervalDetails | nul
     return normalizeDurationFormat(dur) || dur;
   };
 
-  if (workoutType && repetitionCount && effortDuration && recoveryDuration) {
-    const formattedEffort = formatDur(effortDuration);
-    const formattedRecovery = formatDur(recoveryDuration);
-    return `${workoutType}: ${repetitionCount}x${formattedEffort} R:${formattedRecovery}`;
+  const effortLabel = intervalDetails.effortDistance
+    ? formatEffortDistance(intervalDetails.effortDistance)
+    : formatDur(effortDuration);
+
+  if (workoutType && repetitionCount && effortLabel && recoveryDuration) {
+    return `${workoutType}: ${repetitionCount}x${effortLabel} R:${formatDur(recoveryDuration)}`;
+  }
+  if (workoutType && repetitionCount && effortLabel) {
+    return `${workoutType}: ${repetitionCount}x${effortLabel}`;
   }
 
   if (workoutType && intervalDetails.steps?.length) {
