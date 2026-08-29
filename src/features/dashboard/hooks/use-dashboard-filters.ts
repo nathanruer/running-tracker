@@ -1,5 +1,8 @@
 'use client';
 
+import { computeDateFrom, VALID_PERIODS, type Period } from '@/lib/domain/sessions/period';
+export type { Period };
+
 import { useCallback, useMemo } from 'react';
 import { startOfWeek, startOfMonth, startOfYear, format } from 'date-fns';
 import {
@@ -11,26 +14,10 @@ import {
 } from '@/lib/domain/sessions';
 import { useUrlParams } from '@/hooks/use-url-params';
 
-export type Period = 'all' | 'week' | 'month' | 'year';
 
-const VALID_PERIODS = new Set<string>(['all', 'week', 'month', 'year']);
 
 function validatePeriod(raw: string): Period | null {
   return VALID_PERIODS.has(raw) ? (raw as Period) : null;
-}
-
-function computeDateFrom(period: Period): string | undefined {
-  const now = new Date();
-  switch (period) {
-    case 'week':
-      return format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-    case 'month':
-      return format(startOfMonth(now), 'yyyy-MM-dd');
-    case 'year':
-      return format(startOfYear(now), 'yyyy-MM-dd');
-    default:
-      return undefined;
-  }
 }
 
 export function useDashboardFilters() {
