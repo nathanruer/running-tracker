@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback } from 'react';
-import { useQuery, useInfiniteQuery, type QueryKey } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useEntityMutations } from '@/hooks/use-entity-mutations';
 import {
   getCurrentUser,
@@ -11,64 +11,9 @@ import {
 } from '@/lib/services/api-client';
 import { type TrainingSession } from '@/lib/types';
 import { CACHE_TIME } from '@/lib/constants/time';
-import { QUERY_KEYS, queryKeys } from '@/lib/constants/query-keys';
-import { compareValues, getClientSortValue, parseSortParam, SORTABLE_COLUMNS } from '@/lib/domain/sessions/sorting';
+import { queryKeys } from '@/lib/constants/query-keys';
 
 const LIMIT = 10;
-
-const matchesSessionFilters = (
-  session: TrainingSession,
-  filters: {
-    selectedType?: string;
-    search?: string;
-    dateFrom?: string;
-    userId?: string | null;
-  }
-) => {
-  if (filters.userId && session.userId !== filters.userId) return false;
-
-  const selectedType = filters.selectedType ?? 'all';
-  if (selectedType !== 'all' && session.sessionType !== selectedType) return false;
-
-  const search = filters.search?.trim().toLowerCase() ?? '';
-  if (search) {
-    const comments = session.comments?.toLowerCase() ?? '';
-    const sessionType = session.sessionType?.toLowerCase() ?? '';
-    if (!comments.includes(search) && !sessionType.includes(search)) return false;
-  }
-
-  if (filters.dateFrom && session.status !== 'planned') {
-    if (session.date) {
-      if (new Date(session.date).getTime() < new Date(filters.dateFrom).getTime()) return false;
-    }
-  }
-
-  return true;
-};
-
-const buildSortFn = (sortParam?: string | null) => {
-  const sortConfig = parseSortParam(sortParam ?? null);
-
-  if (!sortConfig.length) {
-    return (a: TrainingSession, b: TrainingSession) => {
-      const statusCompare = compareValues(a.status ?? null, b.status ?? null, 'desc');
-      if (statusCompare !== 0) return statusCompare;
-      return compareValues(a.sessionNumber ?? null, b.sessionNumber ?? null, 'desc');
-    };
-  }
-
-  return (a: TrainingSession, b: TrainingSession) => {
-    for (const item of sortConfig) {
-      const columnConfig = SORTABLE_COLUMNS[item.column];
-      const valueA = getClientSortValue(a, item.column);
-      const valueB = getClientSortValue(b, item.column);
-      const invertDirection = 'invertDirection' in columnConfig ? !!columnConfig.invertDirection : false;
-      const cmp = compareValues(valueA, valueB, item.direction, invertDirection);
-      if (cmp !== 0) return cmp;
-    }
-    return 0;
-  };
-};
 
 export function useDashboardData(
   selectedType: string,
@@ -91,7 +36,7 @@ export function useDashboardData(
     staleTime: 15 * 60 * 1000,
   });
 
-  const mutations = useEntityMutations<TrainingSession>({
+  const mutations = useEntityMutations({
     baseQueryKey: 'sessions',
     deleteEntity: deleteSession,
     bulkDeleteEntities: async (ids: string[]) => {
@@ -101,30 +46,6 @@ export function useDashboardData(
     messages: {
       bulkDeleteSuccessTitle: 'Séances supprimées',
       bulkDeleteSuccess: (count) => `${count} séance${count > 1 ? 's' : ''} supprimée${count > 1 ? 's' : ''}.`,
-    },
-    invalidateOnEntitySuccess: true,
-    pageSize: LIMIT,
-    sortFn: buildSortFn(sortParam),
-    shouldIncludeEntityInQuery: (queryKey: QueryKey, session: TrainingSession) => {
-      if (!Array.isArray(queryKey) || queryKey[0] !== QUERY_KEYS.SESSIONS) return true;
-      const scope = queryKey[1];
-
-      if (scope === 'all') {
-        const userId = queryKey[2] as string | null | undefined;
-        return matchesSessionFilters(session, { userId });
-      }
-
-      if (scope === 'paginated') {
-        const params = queryKey[2] as {
-          selectedType?: string;
-          search?: string;
-          dateFrom?: string;
-          userId?: string | null;
-        };
-        return matchesSessionFilters(session, params ?? {});
-      }
-
-      return true;
     },
   });
 

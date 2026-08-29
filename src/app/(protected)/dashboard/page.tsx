@@ -76,7 +76,7 @@ function DashboardContent() {
   const { handleDelete: deleteMutation, handleBulkDelete, handleEntitySuccess, deletingIds } = mutations;
 
   const handleSessionSuccess = (session: TrainingSession) => {
-    handleEntitySuccess(session);
+    handleEntitySuccess();
     queryClient.setQueryData(queryKeys.sessionById(session.id), session);
     queryClient.invalidateQueries({ queryKey: queryKeys.sessionById(session.id) });
   };
