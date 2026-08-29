@@ -86,6 +86,7 @@ describe('/api/conversations/[id]', () => {
         },
         include: {
           conversation_messages: {
+            where: { role: { not: 'system' } },
             orderBy: { createdAt: 'asc' },
             include: {
               conversation_message_payloads: true,
@@ -146,6 +147,7 @@ describe('/api/conversations/[id]', () => {
         expect.objectContaining({
           include: {
             conversation_messages: {
+              where: { role: { not: 'system' } },
               orderBy: { createdAt: 'asc' },
               include: {
                 conversation_message_payloads: true,
