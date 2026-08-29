@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/server/database';
+import { fetchConversationSummaries } from '@/server/domain/conversations/conversations-read';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 export async function GET(request: NextRequest) {
   return handleGetRequest(
     request,
     async (userId) => {
-      const conversations = await prisma.conversations.findMany({
-        where: { userId },
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: { conversation_messages: true },
-          },
-        },
-      });
-
-      const normalized = conversations.map(({ _count, ...rest }) => ({
-        ...rest,
-        _count: { chat_messages: _count.conversation_messages },
-      }));
+      const normalized = await fetchConversationSummaries(userId);
 
       return NextResponse.json(normalized);
     },

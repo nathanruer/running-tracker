@@ -1,105 +1,51 @@
-'use client';
-
-import { useState, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
-import { MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { SESSION_COOKIE_NAME } from '@/lib/constants';
+import { queryKeys } from '@/lib/constants/query-keys';
+import { verifySessionToken } from '@/server/auth';
+import { getUserProfilePayload } from '@/server/domain/users/user-profile';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import { ChatSidebar } from '@/features/chat/components/chat-sidebar';
-import { ChatView } from '@/features/chat/components/chat-view';
-import { ChatSkeleton } from '@/features/chat/components/chat-skeleton';
-import { useConversations } from '@/features/chat/hooks/use-conversations';
+  fetchConversationSummaries,
+  fetchConversationWithMessages,
+} from '@/server/domain/conversations/conversations-read';
+import ChatClient from '../chat-client';
 
-function getIdFromParams(params: ReturnType<typeof useParams>): string | null {
-  if (!params.id) return null;
-  return Array.isArray(params.id) ? params.id[0] : params.id;
-}
+export default async function ChatPage({
+  params,
+}: {
+  params: Promise<{ id?: string[] }>;
+}) {
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  const payload = token ? verifySessionToken(token) : null;
+  if (!payload) {
+    redirect('/');
+  }
+  const userId = payload.userId;
 
-export default function ChatPage() {
-  const params = useParams();
+  const { id } = await params;
+  const conversationId = id?.[0] ?? null;
 
-  const urlId = useMemo(() => getIdFromParams(params), [params]);
-  const [localId, setLocalId] = useState<string | null | undefined>(undefined);
-  const [isConversationsOpen, setIsConversationsOpen] = useState(false);
+  const [user, conversations, conversation] = await Promise.all([
+    getUserProfilePayload(userId),
+    fetchConversationSummaries(userId),
+    conversationId ? fetchConversationWithMessages(userId, conversationId) : null,
+  ]);
 
-  const selectedConversationId = localId === undefined ? urlId : localId;
+  if (!user) {
+    redirect('/');
+  }
 
-  const { showSkeleton } = useConversations();
-
-  const handleSelectConversation = useCallback((id: string) => {
-    const newId = id || null;
-    setLocalId(newId);
-    window.history.replaceState(null, '', newId ? `/chat/${newId}` : '/chat');
-  }, []);
-
-  const handleSelectConversationMobile = useCallback((id: string) => {
-    handleSelectConversation(id);
-    setIsConversationsOpen(false);
-  }, [handleSelectConversation]);
-
-  const handleConversationCreated = useCallback((id: string) => {
-    setLocalId(id);
-    window.history.replaceState(null, '', `/chat/${id}`);
-  }, []);
-
-  if (showSkeleton) {
-    return <ChatSkeleton mode={selectedConversationId ? 'conversation' : 'landing'} />;
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(queryKeys.user(), user);
+  queryClient.setQueryData(queryKeys.conversations(), conversations);
+  if (conversationId && conversation) {
+    queryClient.setQueryData(queryKeys.conversation(conversationId), conversation);
   }
 
   return (
-    <div className="w-full h-full md:py-8 px-0 md:px-6 xl:px-12 flex flex-col overflow-hidden bg-background">
-      <div className="mx-auto w-full max-w-[90rem] h-full flex flex-col relative min-h-0">
-        <div className="flex items-center justify-between px-6 py-6 md:hidden shrink-0">
-          <h1 className="text-3xl font-black text-primary tracking-tighter">Coach IA</h1>
-          <Button
-            onClick={() => setIsConversationsOpen(true)}
-            size="icon"
-            variant="ghost"
-            title="Voir toutes les conversations"
-            className="rounded-full h-11 w-11 text-muted-foreground/30 hover:text-primary hover:bg-muted"
-          >
-            <MessageSquare className="h-6 w-6" />
-          </Button>
-        </div>
-
-        <Sheet open={isConversationsOpen} onOpenChange={setIsConversationsOpen}>
-          <SheetContent side="right" className="w-full sm:w-[400px] p-0 border-l border-border/10 bg-background">
-            <SheetHeader className="sr-only">
-              <SheetTitle>Conversations</SheetTitle>
-            </SheetHeader>
-            <div className="h-full flex flex-col">
-              <ChatSidebar
-                selectedConversationId={selectedConversationId}
-                onSelectConversation={handleSelectConversationMobile}
-                isMobile={true}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <div className="flex-1 flex md:h-[calc(100vh-12rem)] gap-6 min-h-0 overflow-hidden">
-          <div className="hidden md:block">
-            <ChatSidebar
-              selectedConversationId={selectedConversationId}
-              onSelectConversation={handleSelectConversation}
-              isMobile={false}
-            />
-          </div>
-
-          <div className="flex-1 flex flex-col min-h-0">
-            <ChatView
-              key={selectedConversationId || 'new'}
-              conversationId={selectedConversationId}
-              onConversationCreated={handleConversationCreated}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ChatClient />
+    </HydrationBoundary>
   );
 }

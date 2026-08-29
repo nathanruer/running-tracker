@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/server/database';
+import { fetchConversationWithMessages } from '@/server/domain/conversations/conversations-read';
 import { handleGetRequest, handleApiRequest, handleDeleteRequest } from '@/server/services/api-handlers';
 export async function GET(
   request: NextRequest,
@@ -10,48 +11,13 @@ export async function GET(
   return handleGetRequest(
     request,
     async (userId) => {
-      const conversation = await prisma.conversations.findFirst({
-        where: {
-          id: params.id,
-          userId,
-        },
-        include: {
-          conversation_messages: {
-            orderBy: { createdAt: 'asc' },
-            include: {
-              conversation_message_payloads: true,
-            },
-          },
-        },
-      });
+      const conversation = await fetchConversationWithMessages(userId, params.id);
 
       if (!conversation) {
         return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
       }
 
-      const chatMessages = conversation.conversation_messages.map((message) => {
-        const payload = message.conversation_message_payloads.find(
-          (item) => item.payloadType === 'recommendations'
-        );
-
-        return {
-          id: message.id,
-          conversationId: message.conversationId,
-          role: message.role,
-          content: message.content,
-          model: message.model ?? null,
-          recommendations: payload?.payload ?? null,
-          createdAt: message.createdAt,
-        };
-      });
-
-      const { conversation_messages: _conversation_messages, ...rest } = conversation;
-      void _conversation_messages;
-
-      return NextResponse.json({
-        ...rest,
-        chat_messages: chatMessages,
-      });
+      return NextResponse.json(conversation);
     },
     { logContext: 'get-conversation' }
   );
