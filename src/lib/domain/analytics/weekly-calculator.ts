@@ -49,6 +49,8 @@ export interface BucketedStats {
   averageDurationPerBucket: number;
   averageSessionsPerBucket: number;
   averageKmPerActiveBucket: number;
+  averageDurationPerActiveBucket: number;
+  averageSessionsPerActiveBucket: number;
   activeBucketsCount: number;
   totalBuckets: number;
   chartData: BucketChartDataPoint[];
@@ -161,6 +163,8 @@ export function calculateBucketedStats(params: {
       averageDurationPerBucket: 0,
       averageSessionsPerBucket: 0,
       averageKmPerActiveBucket: 0,
+      averageDurationPerActiveBucket: 0,
+      averageSessionsPerActiveBucket: 0,
       activeBucketsCount: 0,
       totalBuckets: 0,
       chartData: [],
@@ -395,6 +399,8 @@ export function calculateBucketedStats(params: {
     averageDurationPerBucket: totalBuckets > 0 ? totalDurationSeconds / totalBuckets : 0,
     averageSessionsPerBucket: totalBuckets > 0 ? totalSessions / totalBuckets : 0,
     averageKmPerActiveBucket: activeBucketsCount > 0 ? totalKm / activeBucketsCount : 0,
+    averageDurationPerActiveBucket: activeBucketsCount > 0 ? totalDurationSeconds / activeBucketsCount : 0,
+    averageSessionsPerActiveBucket: activeBucketsCount > 0 ? totalSessions / activeBucketsCount : 0,
     activeBucketsCount,
     totalBuckets,
     chartData,

@@ -92,7 +92,7 @@ export function StatsCards({
                   </span>
                 </div>
                 <p className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-[0.2em] leading-none mt-2">
-                  Moyenne
+                  Moyenne active
                 </p>
               </div>
             </div>

@@ -14,6 +14,8 @@ vi.mock('@/features/profile/hooks/use-analytics-data', () => ({
       averageDurationPerBucket: 900,
       averageSessionsPerBucket: 1.25,
       averageKmPerActiveBucket: 10,
+      averageDurationPerActiveBucket: 3600,
+      averageSessionsPerActiveBucket: 2,
       activeBucketsCount: 2,
       totalBuckets: 4,
       chartData: [],

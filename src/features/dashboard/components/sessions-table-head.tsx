@@ -26,6 +26,12 @@ export function SessionsTableHead({
     onSort(column, e.shiftKey);
   };
 
+  const ariaSortFor = (column: SortColumn, config: SortConfig): 'ascending' | 'descending' | 'none' => {
+    const entry = config.find((s) => s.column === column);
+    if (!entry) return 'none';
+    return entry.direction === 'asc' ? 'ascending' : 'descending';
+  };
+
   return (
     <TableHeader className="bg-transparent">
       <TableRow className="border-border/40 hover:bg-transparent">
@@ -38,10 +44,9 @@ export function SessionsTableHead({
           />
         </TableHead>
         <TableHead className="w-16 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6 hidden sm:table-cell">#</TableHead>
-        <TableHead className="w-16 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6 hidden lg:table-cell">Sem.</TableHead>
         <TableHead className="w-24 md:w-32 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Date</TableHead>
         <TableHead className="w-32 md:w-40 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">Séance</TableHead>
-        <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
+        <TableHead aria-sort={ariaSortFor('duration', sortConfig)} className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
           <button
             data-testid="sort-duration"
             onClick={(e) => handleSort('duration', e)}
@@ -51,7 +56,7 @@ export function SessionsTableHead({
             <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'duration') ? 'text-foreground' : 'group-hover:text-foreground/80')}>Durée</span>
           </button>
         </TableHead>
-        <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
+        <TableHead aria-sort={ariaSortFor('distance', sortConfig)} className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
           <button
             data-testid="sort-distance"
             onClick={(e) => handleSort('distance', e)}
@@ -61,7 +66,7 @@ export function SessionsTableHead({
             <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'distance') ? 'text-foreground' : 'group-hover:text-foreground/80')}>Dist.</span>
           </button>
         </TableHead>
-        <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
+        <TableHead aria-sort={ariaSortFor('avgPace', sortConfig)} className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
           <button
             data-testid="sort-avgPace"
             onClick={(e) => handleSort('avgPace', e)}
@@ -71,7 +76,7 @@ export function SessionsTableHead({
             <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'avgPace') ? 'text-foreground' : 'group-hover:text-foreground/80')}>Allure</span>
           </button>
         </TableHead>
-        <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
+        <TableHead aria-sort={ariaSortFor('avgHeartRate', sortConfig)} className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
           <button
             data-testid="sort-avgHeartRate"
             onClick={(e) => handleSort('avgHeartRate', e)}
@@ -81,7 +86,7 @@ export function SessionsTableHead({
             <span className={cn("transition-colors uppercase", sortConfig.some(s => s.column === 'avgHeartRate') ? 'text-foreground' : 'group-hover:text-foreground/80')}>FC</span>
           </button>
         </TableHead>
-        <TableHead className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
+        <TableHead aria-sort={ariaSortFor('perceivedExertion', sortConfig)} className="w-20 md:w-24 whitespace-nowrap text-center text-[9px] md:text-[11px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-muted-foreground/60 py-4 md:py-6">
           <button
             data-testid="sort-perceivedExertion"
             onClick={(e) => handleSort('perceivedExertion', e)}

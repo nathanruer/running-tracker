@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { FilterX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { getISOWeekKey, formatWeekRangeLabel } from '@/lib/utils/date/week';
 import { SessionRow } from './session-row';
 import type { TrainingSession } from '@/lib/types';
 
@@ -12,6 +13,7 @@ interface SessionsTableBodyProps {
   hasActiveFilters?: boolean;
   selectedSessions: Set<string>;
   deletingIds: Set<string>;
+  showWeekSeparators?: boolean;
   onToggleSelect: (id: string) => void;
   actions: {
     onEdit: (session: TrainingSession) => void;
@@ -39,11 +41,6 @@ function SessionsTableSkeleton() {
           {/* # Number */}
           <TableCell className="hidden sm:table-cell py-4">
             <div className="h-3 w-4 animate-pulse rounded-full bg-muted/10 mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
-          </TableCell>
-          
-          {/* Week */}
-          <TableCell className="hidden lg:table-cell py-4">
-            <div className="h-3 w-4 animate-pulse rounded-full bg-muted/5 mx-auto" style={{ animationDelay: `${i * 100}ms` }} />
           </TableCell>
           
           {/* Date */}
@@ -106,7 +103,7 @@ function SessionsEmptyState({
 
   return (
     <TableRow>
-      <TableCell colSpan={12} className="h-64 text-center">
+      <TableCell colSpan={11} className="h-64 text-center">
         <div className={cn(
           "flex flex-col items-center justify-center gap-3 transition-opacity duration-300",
           isFetching ? "opacity-40" : "opacity-100"
@@ -133,6 +130,7 @@ export function SessionsTableBody({
   hasActiveFilters,
   selectedSessions,
   deletingIds,
+  showWeekSeparators = false,
   onToggleSelect,
   actions,
 }: SessionsTableBodyProps) {
@@ -173,20 +171,54 @@ export function SessionsTableBody({
 
   return (
     <TableBody>
-      {visibleSessions.map((session) => (
-        <SessionRow
-          key={session.id}
-          session={session}
-          onEdit={actions.onEdit}
-          onDelete={actions.onDelete}
-          showCheckbox={true}
-          isSelected={selectedSessions.has(session.id)}
-          isDeleting={deletingIds.has(session.id)}
-          onToggleSelect={() => onToggleSelect(session.id)}
-          onView={actions.onView}
-          onPrefetchDetails={actions.onPrefetchDetails}
-        />
-      ))}
+      {visibleSessions.map((session, index) => {
+        const separatorLabel = showWeekSeparators
+          ? weekSeparatorLabel(session, index > 0 ? visibleSessions[index - 1] : null)
+          : null;
+
+        return (
+          <Fragment key={session.id}>
+            {separatorLabel && (
+              <TableRow data-testid="week-separator" className="border-none hover:bg-transparent">
+                <TableCell colSpan={11} className="pt-6 pb-1 px-4 md:px-6">
+                  <div className="flex items-center gap-3">
+                    <span className="label-caps-muted whitespace-nowrap">{separatorLabel}</span>
+                    <div className="h-px flex-1 bg-border/40" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            <SessionRow
+              session={session}
+              onEdit={actions.onEdit}
+              onDelete={actions.onDelete}
+              showCheckbox={true}
+              isSelected={selectedSessions.has(session.id)}
+              isDeleting={deletingIds.has(session.id)}
+              onToggleSelect={() => onToggleSelect(session.id)}
+              onView={actions.onView}
+              onPrefetchDetails={actions.onPrefetchDetails}
+            />
+          </Fragment>
+        );
+      })}
     </TableBody>
   );
+}
+
+function sessionWeekKey(session: TrainingSession): string | null {
+  const dateStr = session.date ?? session.plannedDate;
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  return getISOWeekKey(date);
+}
+
+function weekSeparatorLabel(session: TrainingSession, previous: TrainingSession | null): string | null {
+  const key = sessionWeekKey(session);
+  const prevKey = previous ? sessionWeekKey(previous) : undefined;
+  if (key === prevKey) return null;
+  if (key === null) return previous === null ? 'À planifier' : null;
+  const dateStr = (session.date ?? session.plannedDate) as string;
+  return formatWeekRangeLabel(new Date(dateStr));
 }

@@ -182,6 +182,7 @@ export function SessionsTable({
                 isFetching={isFetching}
                 hasActiveFilters={hasActiveFilters}
                 selectedSessions={selectedSessions}
+                showWeekSeparators={sortConfig.length === 0}
                 deletingIds={deletingIds}
                 onToggleSelect={toggleSelectByKey}
                 actions={{

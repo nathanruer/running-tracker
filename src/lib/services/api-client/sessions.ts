@@ -260,6 +260,8 @@ export interface SessionsAnalyticsResponse {
     averageDurationPerBucket: number;
     averageSessionsPerBucket: number;
     averageKmPerActiveBucket: number;
+    averageDurationPerActiveBucket: number;
+    averageSessionsPerActiveBucket: number;
     activeBucketsCount: number;
     totalBuckets: number;
     chartData: import('@/lib/domain/analytics/weekly-calculator').BucketChartDataPoint[];

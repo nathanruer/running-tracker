@@ -353,7 +353,9 @@ describe('SessionsTable', () => {
     expect(screen.getByText('Récupération')).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
-    expect(rows.length).toBe(4);
+    const separators = screen.queryAllByTestId('week-separator');
+    expect(rows.length - separators.length).toBe(4);
+    expect(separators.length).toBeGreaterThan(0);
   });
 
   it('should clear active filters', async () => {

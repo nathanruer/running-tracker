@@ -80,12 +80,8 @@ export const SessionRow = React.memo(function SessionRow({
         <TableCell className="font-semibold text-center whitespace-nowrap text-muted-foreground/40 hidden sm:table-cell">
           {session.sessionNumber}
         </TableCell>
-        
-        <TableCell className="text-center font-semibold whitespace-nowrap text-muted-foreground/30 tracking-tight hidden lg:table-cell">
-          {session.week ?? '-'}
-        </TableCell>
-        
-        <DateCell 
+
+        <DateCell
           dateDisplay={data.dateDisplay} 
           isPlanned={data.isPlanned} 
         />

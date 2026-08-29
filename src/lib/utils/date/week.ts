@@ -3,6 +3,8 @@
  * Used for session numbering and week grouping.
  */
 
+import { MONTHS_SHORT_FR } from './index';
+
 /**
  * Returns an ISO week key in format "YYYY-Wnn" (e.g., "2024-W01")
  * Uses ISO 8601 week numbering where weeks start on Monday.
@@ -60,4 +62,20 @@ export function getISOWeekEnd(date: Date): Date {
   end.setDate(end.getDate() + 6);
   end.setHours(23, 59, 59, 999);
   return end;
+}
+
+/**
+ * Formats a week range label like "Semaine du 24 – 30 août" (year appended when not current).
+ */
+export function formatWeekRangeLabel(date: Date, now: Date = new Date()): string {
+  const start = getISOWeekStart(date);
+  const end = getISOWeekEnd(date);
+  const startMonth = MONTHS_SHORT_FR[start.getMonth()];
+  const endMonth = MONTHS_SHORT_FR[end.getMonth()];
+  const yearSuffix = end.getFullYear() !== now.getFullYear() ? ` ${end.getFullYear()}` : '';
+
+  if (start.getMonth() === end.getMonth()) {
+    return `Semaine du ${start.getDate()} – ${end.getDate()} ${endMonth}${yearSuffix}`;
+  }
+  return `Semaine du ${start.getDate()} ${startMonth} – ${end.getDate()} ${endMonth}${yearSuffix}`;
 }

@@ -64,9 +64,9 @@ export function AnalyticsView({
         totalKm={stats.totalKm}
         totalSessions={stats.totalSessions}
         totalDurationSeconds={stats.totalDurationSeconds}
-        averageKm={stats.averageKmPerBucket}
-        averageDurationSeconds={stats.averageDurationPerBucket}
-        averageSessions={stats.averageSessionsPerBucket}
+        averageKm={stats.averageKmPerActiveBucket}
+        averageDurationSeconds={stats.averageDurationPerActiveBucket}
+        averageSessions={stats.averageSessionsPerActiveBucket}
         granularity={granularity}
       />
 

@@ -39,6 +39,8 @@ describe('useAnalyticsData', () => {
         averageDurationPerBucket: 900,
         averageSessionsPerBucket: 3,
         averageKmPerActiveBucket: 30,
+        averageDurationPerActiveBucket: 3600,
+        averageSessionsPerActiveBucket: 3,
         activeBucketsCount: 4,
         totalBuckets: 4,
         chartData: [],

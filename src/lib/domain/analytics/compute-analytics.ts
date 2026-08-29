@@ -33,6 +33,8 @@ export const EMPTY_BUCKETED_STATS: BucketedStats = {
   averageDurationPerBucket: 0,
   averageSessionsPerBucket: 0,
   averageKmPerActiveBucket: 0,
+  averageDurationPerActiveBucket: 0,
+  averageSessionsPerActiveBucket: 0,
   activeBucketsCount: 0,
   totalBuckets: 0,
   chartData: [],

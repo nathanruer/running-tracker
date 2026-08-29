@@ -144,7 +144,6 @@ export function EvolutionChart({ chartData, granularity, onGranularityChange }: 
                     content={(props) => (
                       <EvolutionTooltipContent
                         {...props}
-                        granularity={granularity}
                         containerEl={containerEl}
                       />
                     )}

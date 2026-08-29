@@ -2,7 +2,6 @@ import { type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity } from 'lucide-react';
 import type { BucketChartDataPoint } from '@/lib/domain/analytics/weekly-calculator';
-import type { ChartGranularity } from '@/lib/domain/analytics/date-range';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/utils/duration/format';
 
@@ -10,7 +9,6 @@ export type TooltipContentProps = {
   active?: boolean;
   payload?: ReadonlyArray<{ payload: BucketChartDataPoint }>;
   label?: string | number;
-  granularity: ChartGranularity;
   coordinate?: { x: number; y: number };
   containerEl: HTMLDivElement | null;
 };
@@ -151,7 +149,7 @@ function ProjectionCard({
   );
 }
 
-export function EvolutionTooltipContent({ active, payload, label, granularity, coordinate, containerEl }: TooltipContentProps) {
+export function EvolutionTooltipContent({ active, payload, label, coordinate, containerEl }: TooltipContentProps) {
   if (!active || !payload || payload.length === 0 || !coordinate || !containerEl || typeof document === 'undefined') return null;
 
   const data = payload[0].payload as BucketChartDataPoint;
@@ -219,12 +217,9 @@ export function EvolutionTooltipContent({ active, payload, label, granularity, c
     >
       <div className="flex items-start justify-between mb-6">
         <div className="space-y-1.5">
-          <p className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">{label}</p>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              {granularity === 'week' && data.trainingWeek && (
-                <h4 className="text-lg sm:text-xl font-black text-foreground tracking-tighter italic leading-none">SEMAINE {data.trainingWeek}</h4>
-              )}
+              <h4 className="text-base sm:text-lg font-black text-foreground tracking-tight uppercase leading-none">{label}</h4>
               {isCurrent && (
                 <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-500 text-[8px] font-black uppercase tracking-widest">
                   <span className="h-1 w-1 rounded-full bg-violet-500 animate-pulse" />

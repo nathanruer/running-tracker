@@ -213,11 +213,6 @@ describe('SessionRow', () => {
   });
 
   describe('Edge cases', () => {
-    it('handles missing week gracefully', () => {
-      renderRow({ ...mockCompletedSession, week: null });
-      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
-    });
-
     it('handles missing date gracefully for planned session', () => {
       renderRow({ ...mockPlannedSession, plannedDate: null });
       expect(screen.getAllByText('-').length).toBeGreaterThan(0);

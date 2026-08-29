@@ -5,6 +5,7 @@ import {
   getISOWeekYear,
   getISOWeekStart,
   getISOWeekEnd,
+  formatWeekRangeLabel,
 } from '../week';
 
 describe('week utilities', () => {
@@ -128,5 +129,21 @@ describe('week utilities', () => {
       
       expect(end.getDate()).toBe(14);
     });
+  });
+});
+
+describe('formatWeekRangeLabel', () => {
+  const now = new Date('2026-08-29T12:00:00');
+
+  it('formats a same-month week without year when current year', () => {
+    expect(formatWeekRangeLabel(new Date('2026-08-26'), now)).toBe('Semaine du 24 – 30 août');
+  });
+
+  it('formats a cross-month week with both months', () => {
+    expect(formatWeekRangeLabel(new Date('2026-09-01'), now)).toBe('Semaine du 31 août – 6 sep');
+  });
+
+  it('appends the year for non-current years', () => {
+    expect(formatWeekRangeLabel(new Date('2025-10-15'), now)).toBe('Semaine du 13 – 19 oct 2025');
   });
 });
