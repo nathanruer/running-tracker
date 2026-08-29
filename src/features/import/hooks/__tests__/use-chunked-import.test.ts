@@ -55,7 +55,7 @@ describe('useChunkedImport', () => {
 
     expect(mockBulkImportSessions).toHaveBeenCalledTimes(1);
     expect(mockBulkImportSessions).toHaveBeenCalledWith(sessions);
-    expect(importResult).toEqual({ imported: 20, skipped: 0, total: 5 });
+    expect(importResult).toEqual({ status: 'done', imported: 20, skipped: 0, total: 5 });
     expect(result.current.status).toBe('done');
     expect(result.current.progress).toEqual({ imported: 20, skipped: 0, total: 5 });
     expect(result.current.importedKeys).toEqual(new Set(['ext-0', 'ext-1', 'ext-2', 'ext-3', 'ext-4']));

@@ -48,4 +48,9 @@ export {
 
 export { apiRequest } from './client';
 
-export { importFromIntervals, type IntervalsImportResult } from './intervals';
+export {
+  importFromIntervals,
+  getIntervalsActivitiesList,
+  importIntervalsSelection,
+  type IntervalsImportResult,
+} from './intervals';

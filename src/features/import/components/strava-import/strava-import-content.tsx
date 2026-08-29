@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getStravaActivityDetails, type FormattedStravaActivity } from '@/lib/services/api-client';
+import { importIntervalsSelection, type FormattedStravaActivity } from '@/lib/services/api-client';
 import { useStravaActivities } from '../../hooks/use-strava-activities';
 import { useChunkedImport } from '../../hooks/use-chunked-import';
 import { useTableSort } from '@/hooks/use-table-sort';
@@ -19,7 +19,6 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/constants/query-keys';
-import { StravaConnectScreen } from './strava-connect-screen';
 import { StravaToolbar } from './strava-toolbar';
 import { StravaActivitiesTable } from './strava-activities-table';
 import { StravaImportFooter } from './strava-import-footer';
@@ -44,7 +43,6 @@ export function StravaImportContent({
     loadingMore,
     hasMore,
     isConnected,
-    connectToStrava,
     loadMore,
     totalCount,
     searchLoading,
@@ -56,7 +54,12 @@ export function StravaImportContent({
     isRefreshing,
   } = useStravaActivities(open);
 
-  const chunkedImport = useChunkedImport();
+  const chunkedImport = useChunkedImport({
+    sendBatch: async (_sessions, externalIds) => {
+      const result = await importIntervalsSelection(externalIds);
+      return { count: result.imported, skipped: result.skipped };
+    },
+  });
 
   const { toast } = useToast();
   const { error: importError, wrapAsync } = useErrorHandler({ scope: 'local' });
@@ -186,12 +189,6 @@ export function StravaImportContent({
       onImport(activity);
       onOpenChange(false);
       clearSelection();
-
-      if (activity.externalId) {
-        getStravaActivityDetails(activity.externalId)
-          .then((detailed) => onImport(detailed))
-          .catch(() => {});
-      }
       return;
     }
 
@@ -200,12 +197,12 @@ export function StravaImportContent({
 
     const result = await chunkedImport.start(sessions, externalIds);
 
-    if (chunkedImport.status === 'error' || chunkedImport.status === 'cancelled') {
+    if (result.status === 'error' || result.status === 'cancelled') {
       return;
     }
 
     const parts: string[] = [];
-    parts.push(`${result.imported} séance${result.imported > 1 ? 's' : ''} Strava importée${result.imported > 1 ? 's' : ''} avec succès`);
+    parts.push(`${result.imported} séance${result.imported > 1 ? 's' : ''} importée${result.imported > 1 ? 's' : ''} avec succès`);
     if (result.skipped > 0) {
       parts.push(`${result.skipped} déjà importée${result.skipped > 1 ? 's' : ''}`);
     }
@@ -221,7 +218,7 @@ export function StravaImportContent({
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.stravaActivities() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.intervalsActivities() });
     }
 
     if (onBulkImportSuccess) {
@@ -240,7 +237,7 @@ export function StravaImportContent({
         queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionsCountBase() });
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionTypesBase() });
-        queryClient.invalidateQueries({ queryKey: queryKeys.stravaActivities() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.intervalsActivities() });
       }
       chunkedImport.reset();
       clearSelection();
@@ -269,7 +266,12 @@ export function StravaImportContent({
           <ErrorMessage error={importError} className="mb-4" onRetry={loadMore} />
         </div>
         {!isConnected ? (
-          <StravaConnectScreen loading={loading} onConnect={connectToStrava} />
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">intervals.icu non configuré</p>
+            <p className="text-xs text-muted-foreground/70 max-w-sm">
+              Ajoute ta clé API dans le fichier .env (INTERVALS_ICU_API_KEY) puis redémarre le serveur.
+            </p>
+          </div>
         ) : (
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">
             <div

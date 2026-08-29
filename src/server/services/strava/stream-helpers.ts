@@ -1,6 +1,8 @@
 import 'server-only';
 import { getActivityStreams } from './client';
 import { getValidAccessToken } from './auth-helpers';
+import { getIntervalsActivityStreams } from '@/server/services/intervals/client';
+import { mapStreamsToStravaShape, buildPolylineFromStreams, INTERVALS_SOURCE } from '@/server/services/intervals/mapper';
 import type { StravaStreamSet } from '@/lib/types';
 import { logger } from '@/server/infrastructure/logger';
 import { prisma } from '@/server/database';
@@ -15,6 +17,7 @@ export type StreamFetchStatus =
 export interface StreamFetchResult {
   status: StreamFetchStatus;
   streams: StravaStreamSet | null;
+  polyline?: string | null;
 }
 
 export async function fetchStreamsForSessionWithStatus(
@@ -23,6 +26,21 @@ export async function fetchStreamsForSessionWithStatus(
   userId: string,
   logContext: string = 'fetch-streams'
 ): Promise<StreamFetchResult> {
+  if (source === INTERVALS_SOURCE && externalId) {
+    try {
+      const streams = await getIntervalsActivityStreams(externalId);
+      const mapped = mapStreamsToStravaShape(streams);
+      const polyline = buildPolylineFromStreams(streams);
+      if (!mapped) {
+        return { status: 'no_streams', streams: null, polyline };
+      }
+      return { status: 'ok', streams: mapped as unknown as StravaStreamSet, polyline };
+    } catch (error) {
+      logger.warn({ error, externalId, logContext }, 'intervals-streams-fetch-failed');
+      return { status: 'error', streams: null };
+    }
+  }
+
   if (source !== 'strava' || !externalId) {
     return { status: 'not_strava', streams: null };
   }

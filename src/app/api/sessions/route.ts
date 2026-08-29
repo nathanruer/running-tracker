@@ -3,7 +3,7 @@ import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { sessionSchema } from '@/lib/validation';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSession } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
 import { toPrismaJson } from '@/server/utils/prisma-json';
 import { fetchSessions } from '@/server/domain/sessions/sessions-read';
 import { createCompletedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
@@ -58,17 +58,26 @@ export async function POST(request: NextRequest) {
     async (payload, userId) => {
       try {
         const sessionDate = new Date(payload.date);
-        let weather = null;
-        if (payload.stravaData) {
-          weather = await enrichSessionWithWeather(payload.stravaData, sessionDate);
-        }
 
-        const stravaStreams = await fetchStreamsForSession(
+        const streamResult = await fetchStreamsForSessionWithStatus(
           payload.source ?? null,
           payload.externalId ?? null,
           userId,
           'session-import'
         );
+        const stravaStreams = streamResult.streams;
+
+        if (payload.stravaData && streamResult.polyline && !payload.stravaData.map) {
+          payload.stravaData.map = {
+            id: `${payload.source}_${payload.externalId}`,
+            summary_polyline: streamResult.polyline,
+          };
+        }
+
+        let weather = null;
+        if (payload.stravaData) {
+          weather = await enrichSessionWithWeather(payload.stravaData, sessionDate);
+        }
 
         const workout = await createCompletedSession(
           {

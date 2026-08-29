@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { getStravaActivities, type FormattedStravaActivity } from '@/lib/services/api-client';
+import { getIntervalsActivitiesList, type FormattedStravaActivity } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { CACHE_TIME } from '@/lib/constants/time';
 
@@ -12,14 +12,10 @@ export interface SearchProgress {
   total: number;
 }
 
-const PAGE_SIZE = 30;
 
-function isAuthError(error: unknown): boolean {
+function isNotConfiguredError(error: unknown): boolean {
   const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
-  return errorMessage.includes('non connecté') ||
-         errorMessage.includes('401') ||
-         errorMessage.includes('400') ||
-         errorMessage.includes('unauthorized');
+  return errorMessage.includes('non configur');
 }
 
 export function useStravaActivities(open: boolean) {
@@ -41,9 +37,9 @@ export function useStravaActivities(open: boolean) {
     error,
     refetch,
   } = useInfiniteQuery({
-    queryKey: queryKeys.stravaActivities(),
-    queryFn: async ({ pageParam }) => {
-      return await getStravaActivities(PAGE_SIZE, pageParam);
+    queryKey: queryKeys.intervalsActivities(),
+    queryFn: async () => {
+      return await getIntervalsActivitiesList();
     },
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => {
@@ -53,12 +49,12 @@ export function useStravaActivities(open: boolean) {
     staleTime: 0, // SWR: always refetch in background, show cache instantly
     gcTime: CACHE_TIME.STRAVA_ACTIVITIES, // Keep cache for instant display
     retry: (failureCount, err) => {
-      if (isAuthError(err)) return false;
+      if (isNotConfiguredError(err)) return false;
       return failureCount < 1;
     },
   });
 
-  const isConnected = !isError || !isAuthError(error);
+  const isConnected = !isError || !isNotConfiguredError(error);
   const activities = data?.pages.flatMap(page => page.activities) ?? [];
   const uniqueActivities = [...new Map(activities.map(a => [a.externalId, a])).values()];
   const totalCount = data?.pages[0]?.totalCount;
@@ -170,15 +166,11 @@ export function useStravaActivities(open: boolean) {
   }, []);
 
   const refresh = useCallback(() => {
-    queryClient.removeQueries({ queryKey: queryKeys.stravaActivities() });
+    queryClient.removeQueries({ queryKey: queryKeys.intervalsActivities() });
     setSearchLoading(false);
     setIsLoadingAll(false);
     refetch();
   }, [queryClient, refetch]);
-
-  const connectToStrava = () => {
-    window.location.href = '/api/auth/strava/authorize';
-  };
 
   useEffect(() => {
     return () => {
@@ -194,7 +186,6 @@ export function useStravaActivities(open: boolean) {
     hasMore,
     isConnected,
     loadMore,
-    connectToStrava,
     totalCount,
     searchLoading,
     isLoadingAll,

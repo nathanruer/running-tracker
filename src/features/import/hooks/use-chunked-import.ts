@@ -2,6 +2,21 @@ import { useState, useRef, useCallback } from 'react';
 import { bulkImportSessions } from '@/lib/services/api-client';
 import type { TrainingSessionPayload } from '@/lib/types';
 
+export interface ChunkedBatchResult {
+  count: number;
+  skipped: number;
+}
+
+export type ChunkedBatchSender = (
+  sessions: TrainingSessionPayload[],
+  externalIds: string[],
+) => Promise<ChunkedBatchResult>;
+
+const defaultSender: ChunkedBatchSender = async (sessions) => {
+  const result = await bulkImportSessions(sessions);
+  return { count: result.count, skipped: result.skipped ?? 0 };
+};
+
 export type ChunkedImportStatus = 'idle' | 'importing' | 'done' | 'error' | 'cancelled';
 
 interface ChunkedImportProgress {
@@ -18,7 +33,8 @@ interface ChunkedImportState {
 
 const BATCH_SIZE = 20;
 
-export function useChunkedImport() {
+export function useChunkedImport(options?: { sendBatch?: ChunkedBatchSender }) {
+  const sendBatch = options?.sendBatch ?? defaultSender;
   const [state, setState] = useState<ChunkedImportState>({
     status: 'idle',
     progress: { imported: 0, skipped: 0, total: 0 },
@@ -43,7 +59,7 @@ export function useChunkedImport() {
   const start = useCallback(async (
     sessions: TrainingSessionPayload[],
     externalIds: string[],
-  ): Promise<{ imported: number; skipped: number; total: number }> => {
+  ): Promise<{ status: ChunkedImportStatus; imported: number; skipped: number; total: number }> => {
     cancelledRef.current = false;
     const total = sessions.length;
 
@@ -60,14 +76,14 @@ export function useChunkedImport() {
     for (let i = 0; i < total; i += BATCH_SIZE) {
       if (cancelledRef.current) {
         setState((prev) => ({ ...prev, status: 'cancelled' }));
-        return { imported, skipped, total };
+        return { status: 'cancelled', imported, skipped, total };
       }
 
       const batchSessions = sessions.slice(i, i + BATCH_SIZE);
       const batchKeys = externalIds.slice(i, i + BATCH_SIZE);
 
       try {
-        const result = await bulkImportSessions(batchSessions);
+        const result = await sendBatch(batchSessions, batchKeys);
         imported += result.count;
         skipped += result.skipped ?? 0;
         for (const key of batchKeys) allImportedKeys.add(key);
@@ -83,7 +99,7 @@ export function useChunkedImport() {
           status: 'error',
           progress: { imported, skipped, total },
         }));
-        return { imported, skipped, total };
+        return { status: 'error', imported, skipped, total };
       }
     }
 
@@ -93,8 +109,8 @@ export function useChunkedImport() {
       progress: { imported, skipped, total },
     }));
 
-    return { imported, skipped, total };
-  }, []);
+    return { status: 'done', imported, skipped, total };
+  }, [sendBatch]);
 
   return {
     ...state,

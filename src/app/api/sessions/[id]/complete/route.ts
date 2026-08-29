@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSession } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
 import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { completePlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
@@ -25,22 +25,30 @@ export async function PATCH(
       }
 
       try {
-        let weather = body.weather ?? null;
-        if (!weather && body.stravaData) {
-          weather = await enrichSessionWithWeather(body.stravaData, new Date(body.date));
-        }
-        const stravaStreams = await fetchStreamsForSession(
+        const streamResult = await fetchStreamsForSessionWithStatus(
           body.source ?? null,
           body.externalId ?? null,
           userId,
           'session-completion'
         );
 
+        if (body.stravaData && streamResult.polyline && !body.stravaData.map) {
+          body.stravaData.map = {
+            id: `${body.source}_${body.externalId}`,
+            summary_polyline: streamResult.polyline,
+          };
+        }
+
+        let weather = body.weather ?? null;
+        if (!weather && body.stravaData) {
+          weather = await enrichSessionWithWeather(body.stravaData, new Date(body.date));
+        }
+
         const workout = await completePlannedSession(
           id,
           {
             ...body,
-            stravaStreams: stravaStreams ? body.stravaStreams ?? stravaStreams : body.stravaStreams,
+            stravaStreams: streamResult.streams ?? body.stravaStreams ?? null,
             weather,
           },
           userId

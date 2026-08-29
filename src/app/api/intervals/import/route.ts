@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/server/database';
+import { z } from 'zod';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { logger } from '@/server/infrastructure/logger';
@@ -18,44 +18,24 @@ import {
   recalculateSessionNumbers,
 } from '@/server/domain/sessions/sessions-write';
 import { getImportedExternalIds } from '@/server/domain/sessions/sessions-read';
+import {
+  findExistingWorkoutWindows,
+  matchesExistingWorkout,
+} from '@/server/domain/sessions/import-dedup';
 import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
 
 export const runtime = 'nodejs';
 
 const DEFAULT_LOOKBACK_DAYS = 30;
-const CROSS_SOURCE_TIME_WINDOW_MS = 3 * 60 * 1000;
-const CROSS_SOURCE_DISTANCE_TOLERANCE = 0.05;
+const SELECTION_HISTORY_YEARS = 3;
+const MAX_SELECTION = 100;
+
+const importBodySchema = z.object({
+  externalIds: z.array(z.string().min(1)).max(MAX_SELECTION).optional(),
+});
 
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 19);
-}
-
-async function findExistingWorkoutWindows(userId: string, oldest: Date) {
-  const workouts = await prisma.workouts.findMany({
-    where: { userId, date: { gte: oldest } },
-    select: {
-      date: true,
-      workout_metrics_raw: { select: { distanceMeters: true } },
-    },
-  });
-
-  return workouts.map((w) => ({
-    time: w.date.getTime(),
-    distanceMeters: w.workout_metrics_raw?.distanceMeters ?? null,
-  }));
-}
-
-function matchesExistingWorkout(
-  existing: Array<{ time: number; distanceMeters: number | null }>,
-  activityDate: Date,
-  activityDistanceMeters: number
-): boolean {
-  return existing.some((w) => {
-    if (Math.abs(w.time - activityDate.getTime()) > CROSS_SOURCE_TIME_WINDOW_MS) return false;
-    if (w.distanceMeters == null || activityDistanceMeters <= 0) return true;
-    const ratio = Math.abs(w.distanceMeters - activityDistanceMeters) / activityDistanceMeters;
-    return ratio <= CROSS_SOURCE_DISTANCE_TOLERANCE;
-  });
 }
 
 export async function POST(request: NextRequest) {
@@ -70,7 +50,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const oldest = new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+      const rawBody = await request.json().catch(() => ({}));
+      const parsedBody = importBodySchema.safeParse(rawBody ?? {});
+      if (!parsedBody.success) {
+        return NextResponse.json(
+          { error: `Sélection invalide (maximum ${MAX_SELECTION} activités par lot)` },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        );
+      }
+      const selection = parsedBody.data.externalIds;
+
+      const oldest = selection
+        ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() - SELECTION_HISTORY_YEARS); return d; })()
+        : new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
       const newest = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       try {
@@ -80,7 +72,10 @@ export async function POST(request: NextRequest) {
           findExistingWorkoutWindows(userId, new Date(oldest.getTime() - 24 * 60 * 60 * 1000)),
         ]);
 
-        const runs = activities.filter((a) => IMPORTABLE_TYPES.has(a.type ?? ''));
+        const selectedIds = selection ? new Set(selection) : null;
+        const runs = activities.filter(
+          (a) => IMPORTABLE_TYPES.has(a.type ?? '') && (!selectedIds || selectedIds.has(a.id))
+        );
 
         let imported = 0;
         let skipped = 0;

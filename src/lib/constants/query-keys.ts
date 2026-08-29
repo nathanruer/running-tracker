@@ -10,6 +10,7 @@ export const QUERY_KEYS = {
   CONVERSATION: 'conversation',
   ANALYTICS: 'analytics',
   STRAVA_ACTIVITIES: 'stravaActivities',
+  INTERVALS_ACTIVITIES: 'intervalsActivities',
   SESSIONS_COUNT: 'sessionsCount',
 } as const;
 
@@ -45,4 +46,5 @@ export const queryKeys = {
     byRange: (range: string) => [QUERY_KEYS.ANALYTICS, range] as const,
   },
   stravaActivities: () => [QUERY_KEYS.STRAVA_ACTIVITIES] as const,
+  intervalsActivities: () => [QUERY_KEYS.INTERVALS_ACTIVITIES] as const,
 } as const;

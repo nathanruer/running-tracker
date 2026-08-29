@@ -5,7 +5,7 @@ import { useStravaActivities } from '../use-strava-activities';
 import * as apiClient from '@/lib/services/api-client';
 
 vi.mock('@/lib/services/api-client', () => ({
-  getStravaActivities: vi.fn(),
+  getIntervalsActivitiesList: vi.fn(),
 }));
 
 const mockHandleError = vi.fn();
@@ -66,11 +66,11 @@ describe('useStravaActivities', () => {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.getStravaActivities).not.toHaveBeenCalled();
+    expect(apiClient.getIntervalsActivitiesList).not.toHaveBeenCalled();
   });
 
   it('should fetch activities when dialog opens', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockResolvedValue({
+    vi.mocked(apiClient.getIntervalsActivitiesList).mockResolvedValue({
       activities: [mockActivity],
       hasMore: false,
       totalCount: 1,
@@ -88,29 +88,12 @@ describe('useStravaActivities', () => {
 
     expect(result.current.activities).toEqual([mockActivity]);
     expect(result.current.isConnected).toBe(true);
-    expect(apiClient.getStravaActivities).toHaveBeenCalledWith(30, undefined);
+    expect(apiClient.getIntervalsActivitiesList).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle 401 unauthorized error', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockRejectedValue(
-      new Error('401 Unauthorized')
-    );
-
-    const { result } = renderHook(() => useStravaActivities(true), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.isConnected).toBe(false);
-    expect(result.current.activities).toEqual([]);
-  });
-
-  it('should handle 400 bad request error', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockRejectedValue(
-      new Error('400 Bad Request')
+  it('should flag missing configuration as not connected', async () => {
+    vi.mocked(apiClient.getIntervalsActivitiesList).mockRejectedValue(
+      new Error('intervals.icu non configuré (INTERVALS_ICU_API_KEY manquante)')
     );
 
     const { result } = renderHook(() => useStravaActivities(true), {
@@ -126,7 +109,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should stay connected on non-auth errors', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockRejectedValue(
+    vi.mocked(apiClient.getIntervalsActivitiesList).mockRejectedValue(
       new Error('500 Server Error')
     );
 
@@ -136,7 +119,7 @@ describe('useStravaActivities', () => {
 
     // Wait for the query to fail, then verify user stays connected
     await waitFor(() => {
-      expect(apiClient.getStravaActivities).toHaveBeenCalled();
+      expect(apiClient.getIntervalsActivitiesList).toHaveBeenCalled();
     });
 
     // Non-auth errors should not disconnect the user
@@ -145,7 +128,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should show cached activities instantly and refetch in background (SWR)', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockResolvedValue({
+    vi.mocked(apiClient.getIntervalsActivitiesList).mockResolvedValue({
       activities: [mockActivity],
       hasMore: false,
       totalCount: 1,
@@ -168,12 +151,12 @@ describe('useStravaActivities', () => {
 
     // Background refetch happens (SWR pattern)
     await waitFor(() => {
-      expect(apiClient.getStravaActivities).toHaveBeenCalledTimes(2);
+      expect(apiClient.getIntervalsActivitiesList).toHaveBeenCalledTimes(2);
     });
   });
 
   it('should reload when refresh is called', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockResolvedValue({
+    vi.mocked(apiClient.getIntervalsActivitiesList).mockResolvedValue({
       activities: [mockActivity],
       hasMore: false,
       totalCount: 1,
@@ -187,42 +170,19 @@ describe('useStravaActivities', () => {
       expect(result.current.isConnected).toBe(true);
     });
 
-    expect(apiClient.getStravaActivities).toHaveBeenCalledTimes(1);
+    expect(apiClient.getIntervalsActivitiesList).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       result.current.refresh();
     });
 
     await waitFor(() => {
-      expect(apiClient.getStravaActivities).toHaveBeenCalledTimes(2);
+      expect(apiClient.getIntervalsActivitiesList).toHaveBeenCalledTimes(2);
     });
-  });
-
-  it('should provide connectToStrava function', () => {
-    const { result } = renderHook(() => useStravaActivities(false), {
-      wrapper: createWrapper(),
-    });
-
-    expect(typeof result.current.connectToStrava).toBe('function');
-  });
-
-  it('should redirect to Strava auth when connectToStrava is called', () => {
-    Object.defineProperty(window, 'location', {
-      value: { href: '' },
-      writable: true,
-    });
-
-    const { result } = renderHook(() => useStravaActivities(false), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.connectToStrava();
-
-    expect(window.location.href).toBe('/api/auth/strava/authorize');
   });
 
   it('should handle empty activities array from API', async () => {
-    vi.mocked(apiClient.getStravaActivities).mockResolvedValue({
+    vi.mocked(apiClient.getIntervalsActivitiesList).mockResolvedValue({
       activities: [],
       hasMore: false,
       totalCount: 0,
@@ -249,7 +209,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should load more activities when loadMore is called', async () => {
-    vi.mocked(apiClient.getStravaActivities)
+    vi.mocked(apiClient.getIntervalsActivitiesList)
       .mockResolvedValueOnce({
         activities: [mockActivity],
         hasMore: true,
@@ -278,11 +238,11 @@ describe('useStravaActivities', () => {
       expect(result.current.activities).toHaveLength(2);
     });
 
-    expect(apiClient.getStravaActivities).toHaveBeenCalledTimes(2);
+    expect(apiClient.getIntervalsActivitiesList).toHaveBeenCalledTimes(2);
   });
 
   it('should deduplicate activities with same externalId', async () => {
-    vi.mocked(apiClient.getStravaActivities)
+    vi.mocked(apiClient.getIntervalsActivitiesList)
       .mockResolvedValueOnce({
         activities: [mockActivity],
         hasMore: true,
@@ -332,7 +292,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should load all activities when loadAllActivities is called', async () => {
-    vi.mocked(apiClient.getStravaActivities)
+    vi.mocked(apiClient.getIntervalsActivitiesList)
       .mockResolvedValueOnce({
         activities: [mockActivity],
         hasMore: true,
@@ -361,7 +321,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should stop search when match is found', async () => {
-    vi.mocked(apiClient.getStravaActivities)
+    vi.mocked(apiClient.getIntervalsActivitiesList)
       .mockResolvedValueOnce({
         activities: [mockActivity],
         hasMore: true,
