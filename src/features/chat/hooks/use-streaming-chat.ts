@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import type { ConversationWithMessages } from '@/lib/services/api-client';
+import { getConversation, type ConversationWithMessages } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 
 interface StreamEvent {
@@ -14,19 +13,26 @@ interface SendStreamingMessageOptions {
   skipSaveUserMessage?: boolean;
 }
 
+interface FailedMessage {
+  conversationId: string;
+  content: string;
+}
+
 interface UseStreamingChatReturn {
   streamingContent: string;
   isStreaming: boolean;
   sendStreamingMessage: (conversationId: string, content: string, options?: SendStreamingMessageOptions) => Promise<void>;
   cancelStream: () => void;
+  lastFailedMessage: FailedMessage | null;
+  retryFailedMessage: () => Promise<void>;
 }
 
 export function useStreamingChat(): UseStreamingChatReturn {
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [lastFailedMessage, setLastFailedMessage] = useState<FailedMessage | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   useEffect(() => {
     return () => {
@@ -59,6 +65,7 @@ export function useStreamingChat(): UseStreamingChatReturn {
       abortControllerRef.current = controller;
       setIsStreaming(true);
       setStreamingContent('');
+      setLastFailedMessage(null);
 
       if (!skipOptimistic) {
         queryClient.setQueryData(
@@ -218,24 +225,49 @@ export function useStreamingChat(): UseStreamingChatReturn {
           }
         );
 
-        toast({
-          title: 'Erreur',
-          description: error instanceof Error ? error.message : 'Erreur lors de l\'envoi',
-          variant: 'destructive',
-        });
+        setLastFailedMessage({ conversationId, content });
       } finally {
         setIsStreaming(false);
         setStreamingContent('');
         abortControllerRef.current = null;
       }
     },
-    [queryClient, toast]
+    [queryClient]
   );
+
+  const retryFailedMessage = useCallback(async () => {
+    if (!lastFailedMessage) return;
+    const { conversationId, content } = lastFailedMessage;
+    setLastFailedMessage(null);
+
+    let alreadyPersisted = false;
+    try {
+      const fresh = await queryClient.fetchQuery({
+        queryKey: queryKeys.conversation(conversationId),
+        queryFn: () => getConversation(conversationId),
+        staleTime: 0,
+      });
+      const last = fresh?.chat_messages?.[fresh.chat_messages.length - 1];
+      alreadyPersisted = last?.role === 'user' && last.content === content;
+    } catch {
+      alreadyPersisted = false;
+    }
+
+    await sendStreamingMessage(
+      conversationId,
+      content,
+      alreadyPersisted
+        ? { skipOptimisticUserMessage: true, skipSaveUserMessage: true }
+        : undefined
+    );
+  }, [lastFailedMessage, queryClient, sendStreamingMessage]);
 
   return {
     streamingContent,
     isStreaming,
     sendStreamingMessage,
     cancelStream,
+    lastFailedMessage,
+    retryFailedMessage,
   };
 }

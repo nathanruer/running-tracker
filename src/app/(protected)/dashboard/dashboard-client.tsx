@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { SessionsTable, type BulkEnrichmentSelection, type SessionActions } from '@/features/dashboard/components/sessions-table';
 import { SessionsEmptyState } from '@/features/dashboard/components/sessions-empty-state';
+import { SessionsErrorState } from '@/features/dashboard/components/sessions-error-state';
 import { UpcomingSessions } from '@/features/dashboard/components/upcoming-sessions';
 import { useUpcomingSessions } from '@/features/dashboard/hooks/use-upcoming-sessions';
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton';
@@ -66,6 +67,8 @@ function DashboardContent() {
     totalCount,
     initialLoading,
     isFetchingData,
+    sessionsError,
+    refetchSessions,
     hasMore,
     isFetchingNextPage,
     fetchNextPage,
@@ -312,7 +315,9 @@ function DashboardContent() {
         onComplete={handleEdit}
         onView={handleViewSession}
       />
-      {initialLoading || sessions.length > 0 || selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all' ? (
+      {sessionsError && sessions.length === 0 ? (
+        <SessionsErrorState onRetry={() => refetchSessions()} isRetrying={isFetchingData} />
+      ) : initialLoading || sessions.length > 0 || selectedType !== 'all' || searchQuery.trim() !== '' || period !== 'all' ? (
         <SessionsTable
           sessions={sessions}
           availableTypes={availableTypes}

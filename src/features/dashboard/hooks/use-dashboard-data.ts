@@ -70,7 +70,9 @@ export function useDashboardData(
     hasNextPage,
     isFetchingNextPage,
     isLoading: paginatedSessionsLoading,
-    isFetching: paginatedSessionsFetching
+    isFetching: paginatedSessionsFetching,
+    isError: sessionsError,
+    refetch: refetchSessions,
   } = useInfiniteQuery({
     queryKey: queryKeys.sessionsPaginated({
       selectedType,
@@ -148,6 +150,8 @@ export function useDashboardData(
     totalCount,
     initialLoading,
     isFetchingData: paginatedSessionsFetching && !isFetchingNextPage,
+    sessionsError,
+    refetchSessions,
     hasMore: hasNextPage,
     isFetchingNextPage,
     fetchNextPage,

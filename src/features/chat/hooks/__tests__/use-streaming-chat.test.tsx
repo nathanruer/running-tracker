@@ -288,7 +288,7 @@ describe('useStreamingChat', () => {
     expect(conversation.chat_messages[0].role).toBe('assistant');
   });
 
-  it('should toast on stream error events', async () => {
+  it('should expose lastFailedMessage on stream error events', async () => {
     const mockReader = {
       read: vi.fn()
         .mockResolvedValueOnce({
@@ -311,10 +311,10 @@ describe('useStreamingChat', () => {
       await result.current.sendStreamingMessage('conv-1', 'Hello');
     });
 
-    expect(toastMock).toHaveBeenCalled();
+    expect(result.current.lastFailedMessage).toEqual({ conversationId: 'conv-1', content: 'Hello' });
   });
 
-  it('should toast when response is not ok', async () => {
+  it('should expose lastFailedMessage when response is not ok', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: false,
       body: null,
@@ -328,7 +328,7 @@ describe('useStreamingChat', () => {
       await result.current.sendStreamingMessage('conv-1', 'Hello');
     });
 
-    expect(toastMock).toHaveBeenCalled();
+    expect(result.current.lastFailedMessage).toEqual({ conversationId: 'conv-1', content: 'Hello' });
   });
 
   it('should use skipSaveUserMessage option', async () => {
@@ -419,7 +419,7 @@ describe('useStreamingChat', () => {
       await result.current.sendStreamingMessage('conv-1', 'Hello');
     });
 
-    expect(toastMock).toHaveBeenCalled();
+    expect(result.current.lastFailedMessage).toEqual({ conversationId: 'conv-1', content: 'Hello' });
     const conversation = queryClient.getQueryData(queryKeys.conversation('conv-1')) as { chat_messages: Array<{ id: string }> };
     expect(conversation.chat_messages.filter(m => m.id.startsWith('temp-'))).toHaveLength(0);
 
@@ -533,7 +533,7 @@ describe('useStreamingChat', () => {
       await result.current.sendStreamingMessage('conv-1', 'Hello');
     });
 
-    expect(toastMock).toHaveBeenCalled();
+    expect(result.current.lastFailedMessage).toEqual({ conversationId: 'conv-1', content: 'Hello' });
     const conversation = queryClient.getQueryData(queryKeys.conversation('conv-1'));
     expect(conversation).toBeUndefined();
   });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, Square } from 'lucide-react';
+import { Send, Loader2, Square, AlertCircle, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
@@ -53,7 +53,11 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
     isStreaming,
     sendStreamingMessage,
     cancelStream,
+    lastFailedMessage,
+    retryFailedMessage,
   } = useStreamingChat();
+
+  const showRetryBanner = !isStreaming && lastFailedMessage?.conversationId === conversationId;
 
   const messages = conversation?.chat_messages ?? [];
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
@@ -160,6 +164,27 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
       />
 
       <div className="shrink-0 w-full p-4 md:p-6 bg-background">
+        {showRetryBanner && (
+          <div
+            data-testid="chat-retry-banner"
+            className="w-full max-w-4xl mx-auto mb-3 flex items-center justify-between gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/5 px-4 py-2.5 animate-in fade-in slide-in-from-bottom-2"
+          >
+            <div className="flex items-center gap-2 text-sm text-rose-400 font-medium">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>L&apos;envoi du message a échoué.</span>
+            </div>
+            <Button
+              data-testid="chat-retry-button"
+              onClick={retryFailedMessage}
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-xl shrink-0"
+            >
+              <RotateCw className="h-3.5 w-3.5 mr-1.5" />
+              Réessayer
+            </Button>
+          </div>
+        )}
         <div className="relative w-full max-w-4xl mx-auto flex items-center bg-muted/40 backdrop-blur-xl rounded-full border border-border/20 p-1.5 focus-within:border-violet-500/40 shadow-xl transition-all">
           <Input
             data-testid="chat-input"

@@ -75,6 +75,8 @@ vi.mocked(useStreamingChat).mockImplementation(() => ({
   isStreaming: mockIsStreaming,
   sendStreamingMessage: mockSendStreamingMessage,
   cancelStream: vi.fn(),
+  lastFailedMessage: null,
+  retryFailedMessage: vi.fn(),
 }));
 
 const mockCreateAndRedirect = vi.fn();
@@ -150,6 +152,25 @@ describe('ChatView', () => {
           },
         ],
       });
+    });
+
+    it('should show retry banner and trigger retry when last send failed', async () => {
+      const mockRetry = vi.fn();
+      vi.mocked(useStreamingChat).mockImplementationOnce(() => ({
+        streamingContent: '',
+        isStreaming: false,
+        sendStreamingMessage: mockSendStreamingMessage,
+        cancelStream: vi.fn(),
+        lastFailedMessage: { conversationId: 'conv-1', content: 'Hello' },
+        retryFailedMessage: mockRetry,
+      }));
+
+      render(<ChatView conversationId="conv-1" />, { wrapper: createWrapper() });
+
+      const banner = await screen.findByTestId('chat-retry-banner');
+      expect(banner).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('chat-retry-button'));
+      expect(mockRetry).toHaveBeenCalled();
     });
 
     it('should display conversation title', async () => {
