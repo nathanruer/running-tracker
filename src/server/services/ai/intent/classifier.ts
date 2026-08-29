@@ -4,7 +4,7 @@ import { Intent, IntentResult, INTENT_DATA_MAP, VALID_INTENTS } from './types';
 import { withRetry } from '@/lib/utils/retry';
 import { getHttpStatus } from '@/lib/utils/error';
 
-const CLASSIFIER_MODEL = 'llama-3.1-8b-instant';
+const CLASSIFIER_MODEL = process.env.GROQ_CLASSIFIER_MODEL ?? 'openai/gpt-oss-20b';
 
 const CLASSIFIER_PROMPT = `Tu es un classificateur d'intentions pour un coach de running. Analyse le message et retourne JSON.
 
@@ -51,7 +51,8 @@ export async function classifyIntent(message: string): Promise<IntentResult> {
           { role: 'user', content: message },
         ],
         temperature: 0.1,
-        max_tokens: 50,
+        max_tokens: 400,
+        reasoning_effort: 'low',
         response_format: { type: 'json_object' },
       }),
     {
