@@ -116,7 +116,7 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
   const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
     queryKey: queryKeys.sessionsAll(user?.id ?? null),
     queryFn: () => getSessions(undefined, undefined, undefined, undefined, undefined, undefined, 'analytics'),
-    enabled: !!user && (activeView === 'analytics' || activeView === 'history'),
+    enabled: !!user && activeView === 'history',
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,
   });
@@ -212,7 +212,6 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
           <AnalyticsSkeleton />
         ) : (
           <AnalyticsView
-            sessions={sessions}
             dateRange={params.range}
             onDateRangeChange={handleDateRangeChange}
             granularity={params.granularity}

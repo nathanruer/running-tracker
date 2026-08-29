@@ -248,3 +248,30 @@ export async function completeSession(
     body: JSON.stringify(session),
   });
 }
+
+export interface SessionsAnalyticsResponse {
+  customDateError: string;
+  rangeLabel: string;
+  stats: {
+    totalKm: number;
+    totalSessions: number;
+    totalDurationSeconds: number;
+    averageKmPerBucket: number;
+    averageDurationPerBucket: number;
+    averageSessionsPerBucket: number;
+    averageKmPerActiveBucket: number;
+    activeBucketsCount: number;
+    totalBuckets: number;
+    chartData: import('@/lib/domain/analytics/weekly-calculator').BucketChartDataPoint[];
+  };
+}
+
+export async function getSessionsAnalytics(filters: {
+  dateRange: string;
+  granularity: string;
+  customStartDate: string;
+  customEndDate: string;
+}): Promise<SessionsAnalyticsResponse> {
+  const params = new URLSearchParams(filters);
+  return apiRequest<SessionsAnalyticsResponse>(`/api/sessions/analytics?${params}`);
+}

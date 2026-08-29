@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { useAnalyticsData, type AnalyticsFilters } from '../use-analytics-data';
+import { computeAnalytics, type AnalyticsFilters } from '../compute-analytics';
 import type { TrainingSession } from '@/lib/types';
 
 const calculateBucketedStatsMock = vi.fn();
@@ -63,7 +62,7 @@ const defaultFilters: AnalyticsFilters = {
   customEndDate: '',
 };
 
-describe('useAnalyticsData', () => {
+describe('computeAnalytics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -82,7 +81,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: '3', status: 'planned', date: null, plannedDate: null }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
+      const result = { current: computeAnalytics(sessions, defaultFilters) };
 
       expect(result.current.stats).toBeDefined();
     });
@@ -94,7 +93,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: '3', status: 'completed', date: '2024-01-15' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
+      const result = { current: computeAnalytics(sessions, defaultFilters) };
 
       expect(result.current.stats).toBeDefined();
     });
@@ -106,7 +105,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: '1', status: 'completed', date: '2024-01-15' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
+      const result = { current: computeAnalytics(sessions, defaultFilters) };
 
       expect(result.current.stats).toBeDefined();
       expect(result.current.rangeLabel).toBeDefined();
@@ -124,7 +123,7 @@ describe('useAnalyticsData', () => {
         customEndDate: '2024-01-31',
       };
 
-      const { result } = renderHook(() => useAnalyticsData(sessions, filters));
+      const result = { current: computeAnalytics(sessions, filters) };
 
       expect(result.current.stats).toBeDefined();
       expect(result.current.customDateError).toBe('');
@@ -136,7 +135,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: 'c1', status: 'completed', date: '2024-01-20' }),
       ];
 
-      renderHook(() => useAnalyticsData(sessions, { ...defaultFilters, dateRange: '4weeks' }));
+      ({ result: { current: computeAnalytics(sessions, { ...defaultFilters, dateRange: '4weeks' }) } });
 
       const lastCall = calculateBucketedStatsMock.mock.lastCall;
       expect(lastCall?.[0].includePlannedInOpenBucket).toBe(false);
@@ -155,7 +154,7 @@ describe('useAnalyticsData', () => {
         customEndDate: '',
       };
 
-      renderHook(() => useAnalyticsData(sessions, filters));
+      ({ result: { current: computeAnalytics(sessions, filters) } });
 
       const lastCall = calculateBucketedStatsMock.mock.lastCall;
       expect(lastCall?.[0].includePlannedInOpenBucket).toBe(true);
@@ -166,7 +165,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: 'c1', status: 'completed', date: '2024-01-15' }),
       ];
 
-      renderHook(() => useAnalyticsData(sessions, defaultFilters));
+      ({ result: { current: computeAnalytics(sessions, defaultFilters) } });
 
       const lastCall = calculateBucketedStatsMock.mock.lastCall;
       expect(lastCall?.[0].includePlannedInOpenBucket).toBe(true);
@@ -175,7 +174,7 @@ describe('useAnalyticsData', () => {
 
   describe('empty data handling', () => {
     it('should handle empty sessions array', () => {
-      const { result } = renderHook(() => useAnalyticsData([], defaultFilters));
+      const result = { current: computeAnalytics([], defaultFilters) };
 
       expect(result.current.stats).toBeDefined();
     });
@@ -186,7 +185,7 @@ describe('useAnalyticsData', () => {
         createSession({ id: '2', status: 'planned', week: 2, date: '2024-01-22' }),
       ];
 
-      const { result } = renderHook(() => useAnalyticsData(sessions, defaultFilters));
+      const result = { current: computeAnalytics(sessions, defaultFilters) };
 
       expect(result.current.stats).toBeDefined();
     });

@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { AnalyticsView } from '../analytics-view';
-import type { TrainingSession } from '@/lib/types';
 
 vi.mock('@/features/profile/hooks/use-analytics-data', () => ({
   useAnalyticsData: () => ({
@@ -38,7 +37,6 @@ describe('AnalyticsView', () => {
   it('renders analytics sections', async () => {
     render(
       <AnalyticsView
-        sessions={[] as TrainingSession[]}
         dateRange="4weeks"
         onDateRangeChange={vi.fn()}
         granularity="week"

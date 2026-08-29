@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { type TrainingSession } from '@/lib/types';
 import type { ChartGranularity, DateRangeType } from '@/lib/domain/analytics/date-range';
 import { useAnalyticsData } from '../hooks/use-analytics-data';
 import { StatsCards } from './analytics/stats-cards';
@@ -19,7 +18,6 @@ const EvolutionChart = dynamic(
 );
 
 export interface AnalyticsViewProps {
-  sessions: TrainingSession[];
   dateRange: DateRangeType;
   onDateRangeChange: (value: DateRangeType) => void;
   granularity: ChartGranularity;
@@ -31,7 +29,6 @@ export interface AnalyticsViewProps {
 }
 
 export function AnalyticsView({
-  sessions,
   dateRange,
   onDateRangeChange,
   granularity,
@@ -41,7 +38,7 @@ export function AnalyticsView({
   customEndDate,
   onCustomEndDateChange,
 }: AnalyticsViewProps) {
-  const { customDateError, rangeLabel, stats } = useAnalyticsData(sessions, {
+  const { customDateError, rangeLabel, stats } = useAnalyticsData({
     dateRange,
     granularity,
     customStartDate,
