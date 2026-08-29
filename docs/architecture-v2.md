@@ -78,7 +78,7 @@
 
 ## ADR-10 — Qualité : CI en place, pre-push léger
 
-**Décision.** GitHub Actions : typecheck + lint + tests unitaires sur push ; e2e sur PR vers main. Pre-push husky réduit à typecheck + lint (les 3 navigateurs e2e + build sortent du chemin local). `.env.example` versionné. Dépendances mortes purgées (20 packages + 2 overrides périmés).
+**Décision.** GitHub Actions : typecheck + lint + tests unitaires + build sur push/PR. Les e2e restent locales à la demande (elles exigent la dev DB et un utilisateur de test ; les brancher en CI demanderait des secrets + une DB de service — non prioritaire). Pre-push husky réduit à typecheck + lint + tests unitaires (~20 s) ; les e2e 3-navigateurs et le build sortent du chemin local. `.env.example` versionné. Dépendances mortes purgées (20 packages + 2 overrides périmés).
 
 ## Séquencement des chantiers
 
