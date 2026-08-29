@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, getOptionalAuth } from '../middleware';
+import { requireAuth } from '../middleware';
 import { getUserIdFromRequest } from '../index';
 
 vi.mock('../index', () => ({
@@ -57,32 +57,6 @@ describe('auth/middleware', () => {
         const data = await result.error.json();
         expect(data.error).toBe('Non authentifié');
       }
-    });
-  });
-
-  describe('getOptionalAuth', () => {
-    it('should return userId when authenticated', () => {
-      vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-
-      const request = new NextRequest('http://localhost/api/test', {
-        method: 'GET',
-      });
-
-      const result = getOptionalAuth(request);
-
-      expect(result).toBe('user-123');
-    });
-
-    it('should return null when not authenticated', () => {
-      vi.mocked(getUserIdFromRequest).mockReturnValue(null);
-
-      const request = new NextRequest('http://localhost/api/test', {
-        method: 'GET',
-      });
-
-      const result = getOptionalAuth(request);
-
-      expect(result).toBeNull();
     });
   });
 });

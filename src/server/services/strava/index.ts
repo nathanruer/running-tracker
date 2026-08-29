@@ -1,6 +1,5 @@
 import 'server-only';
 export {
-  exchangeCodeForTokens,
   refreshAccessToken,
   getActivities,
   getActivityDetails,

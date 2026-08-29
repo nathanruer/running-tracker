@@ -10,7 +10,6 @@ export {
 
 export {
   SessionDetailsSheet,
-  WeatherWidget,
   StreamsSection,
   StreamChart,
   LeafletRoute,
@@ -18,7 +17,6 @@ export {
 
 export {
   IntervalFields,
-  IntervalStepsSection,
   IntervalConfig,
   IntervalStepFields,
   IntervalStepList,

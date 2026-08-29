@@ -506,9 +506,8 @@ export function SessionDetailsSheet({
                       {session.intervalDetails.steps.length} segments
                     </span>
                   </div>
-                  <IntervalDetailsView 
+                  <IntervalDetailsView
                     intervalDetails={session.intervalDetails}
-                    isPlanned={isPlannedSession}
                     compact={true}
                     className="px-0 py-2"
                   />

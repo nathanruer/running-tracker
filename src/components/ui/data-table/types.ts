@@ -14,13 +14,6 @@ export interface ScopeIndicatorProps {
   isFiltering?: boolean;
 }
 
-export interface LoadAllButtonProps {
-  hasMore: boolean;
-  loading: boolean;
-  onLoadAll: () => void;
-  onCancel: () => void;
-}
-
 export interface InfiniteScrollTriggerProps {
   hasMore: boolean;
   loading: boolean;

@@ -13,7 +13,6 @@ import { IntervalStepsTable } from './interval-steps-table';
 
 interface IntervalDetailsViewProps {
   intervalDetails: IntervalDetails;
-  isPlanned?: boolean;
   compact?: boolean;
 }
 

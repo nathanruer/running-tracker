@@ -14,7 +14,7 @@ export {
   type StravaActivitiesTableProps,
 } from './components/strava-import';
 
-export { StravaBadge, StravaConnectButton } from './components/strava-badge';
+export { StravaBadge } from './components/strava-badge';
 
 export { useStravaActivities, type FormattedStravaActivity } from './hooks/use-strava-activities';
 

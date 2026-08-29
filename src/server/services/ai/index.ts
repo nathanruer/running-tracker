@@ -24,5 +24,5 @@ export type { FetchedContext } from './data';
 export { buildDynamicPrompt, BASE_PERSONALITY, formatContextForIntent } from './prompts';
 export type { BuiltPrompt } from './prompts';
 
-export { processStreamingMessage, prepareStreamContext } from './stream-service';
-export type { StreamContext, StreamResult } from './stream-service';
+export { processStreamingMessage } from './stream-service';
+export type { StreamContext } from './stream-service';

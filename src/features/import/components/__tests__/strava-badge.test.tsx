@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import { StravaBadge, StravaConnectButton } from '../strava-badge';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { StravaBadge } from '../strava-badge';
 
 describe('StravaBadge', () => {
   it('should render with default orange variant', () => {
@@ -54,60 +54,5 @@ describe('StravaBadge', () => {
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
-  });
-});
-
-describe('StravaConnectButton', () => {
-  it('should render connect button text', () => {
-    render(<StravaConnectButton onClick={() => {}} />);
-
-    expect(screen.getByText('Se connecter avec Strava')).toBeInTheDocument();
-  });
-
-  it('should call onClick when clicked', () => {
-    const onClick = vi.fn();
-    render(<StravaConnectButton onClick={onClick} />);
-
-    fireEvent.click(screen.getByRole('button'));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should show loading text when loading', () => {
-    render(<StravaConnectButton onClick={() => {}} loading />);
-
-    expect(screen.getByText('Connexion...')).toBeInTheDocument();
-    expect(screen.queryByText('Se connecter avec Strava')).not.toBeInTheDocument();
-  });
-
-  it('should be disabled when loading', () => {
-    render(<StravaConnectButton onClick={() => {}} loading />);
-
-    expect(screen.getByRole('button')).toBeDisabled();
-  });
-
-  it('should not be disabled when not loading', () => {
-    render(<StravaConnectButton onClick={() => {}} />);
-
-    expect(screen.getByRole('button')).not.toBeDisabled();
-  });
-
-  it('should apply custom className', () => {
-    render(<StravaConnectButton onClick={() => {}} className="custom-class" />);
-
-    expect(screen.getByRole('button')).toHaveClass('custom-class');
-  });
-
-  it('should have strava orange background color', () => {
-    render(<StravaConnectButton onClick={() => {}} />);
-
-    expect(screen.getByRole('button')).toHaveStyle({ backgroundColor: '#FC4C02' });
-  });
-
-  it('should not call onClick when disabled', () => {
-    const onClick = vi.fn();
-    render(<StravaConnectButton onClick={onClick} loading />);
-
-    fireEvent.click(screen.getByRole('button'));
-    expect(onClick).not.toHaveBeenCalled();
   });
 });

@@ -11,7 +11,6 @@ import { getOptimizedConversationHistory } from './optimizer';
 import { extractJsonFromAI, AIParseError } from './parser';
 import { validateAndFixRecommendations, validateAIResponse } from './validator';
 import { callGroq, streamGroq, GROQ_MODEL } from './groq-client';
-import type { Intent } from './intent/types';
 import type { AIResponseValidated } from '@/lib/validation/schemas/ai-response';
 import type { Prisma, conversation_messages } from '@prisma/client';
 
@@ -20,12 +19,6 @@ export interface StreamContext {
   conversationId: string;
   userMessage: string;
   skipSaveUserMessage?: boolean;
-}
-
-export interface StreamResult {
-  userMessageId: string;
-  intent: Intent;
-  requiresJson: boolean;
 }
 
 async function createConversationMessage({
@@ -62,22 +55,6 @@ async function createConversationMessage({
   }
 
   return message;
-}
-
-export async function prepareStreamContext(ctx: StreamContext): Promise<StreamResult> {
-  const intentResult = await classifyIntent(ctx.userMessage);
-
-  const userMessage = await createConversationMessage({
-    conversationId: ctx.conversationId,
-    role: 'user',
-    content: ctx.userMessage,
-  });
-
-  return {
-    userMessageId: userMessage.id,
-    intent: intentResult.intent,
-    requiresJson: intentResult.intent === 'recommendation_request',
-  };
 }
 
 function buildMessages(

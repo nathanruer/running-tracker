@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  exchangeCodeForTokens,
   refreshAccessToken,
   getActivities,
   getActivityDetails,
@@ -26,40 +25,6 @@ describe('Strava client', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-  });
-
-  describe('exchangeCodeForTokens', () => {
-    it('should exchange code for tokens successfully', async () => {
-      const mockTokens = {
-        access_token: 'access-token',
-        refresh_token: 'refresh-token',
-        expires_at: 1234567890,
-      };
-
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockTokens),
-      } as Response);
-
-      const result = await exchangeCodeForTokens('auth-code');
-
-      expect(global.fetch).toHaveBeenCalledWith(STRAVA_URLS.TOKEN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('auth-code'),
-      });
-      expect(result).toEqual(mockTokens);
-    });
-
-    it('should throw error when exchange fails', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: false,
-      } as Response);
-
-      await expect(exchangeCodeForTokens('invalid-code')).rejects.toThrow(
-        'Failed to exchange code for tokens'
-      );
-    });
   });
 
   describe('refreshAccessToken', () => {

@@ -125,12 +125,6 @@ describe('useSessionRowData', () => {
       expect(result.current.distance).toBe('10.00');
     });
 
-    it('should set hasApprox flag for planned sessions', () => {
-      const session = createPlannedSession({ targetPace: '05:30' });
-      const { result } = renderHook(() => useSessionRowData(session));
-      expect(result.current.hasApprox).toBe(true);
-    });
-
     it('should use targetRPE for planned sessions', () => {
       const session = createPlannedSession({ targetRPE: 6 });
       const { result } = renderHook(() => useSessionRowData(session));

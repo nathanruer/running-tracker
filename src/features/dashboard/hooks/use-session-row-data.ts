@@ -20,7 +20,6 @@ export interface SessionRowDisplayData {
   workoutTypeLabel: string | null;
   intervalStructure: string | null;
   dateDisplay: string | null;
-hasApprox: boolean;
 }
 
 /**
@@ -121,7 +120,6 @@ export function useSessionRowData(session: TrainingSession): SessionRowDisplayDa
       workoutTypeLabel,
       intervalStructure,
       dateDisplay,
-      hasApprox: isPlanned,
     };
   }, [session]);
 }

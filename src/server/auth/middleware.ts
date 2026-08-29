@@ -41,20 +41,3 @@ export function requireAuth(request: NextRequest): AuthResult {
     userId,
   };
 }
-
-/**
- * Optional authentication middleware
- * Returns userId if authenticated, or null if not authenticated (without error)
- *
- * @param request NextRequest object
- * @returns userId or null
- *
- * @example
- * export async function GET(request: NextRequest) {
- *   const userId = getOptionalAuth(request);
- *   // userId might be null, handle accordingly
- * }
- */
-export function getOptionalAuth(request: NextRequest): string | null {
-  return getUserIdFromRequest(request);
-}

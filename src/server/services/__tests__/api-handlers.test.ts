@@ -91,26 +91,6 @@ describe('api-handlers', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should return custom auth error message when provided', async () => {
-      const schema = z.object({ name: z.string() });
-      const mockRequest = {} as NextRequest;
-
-      (requireAuth as ReturnType<typeof vi.fn>).mockReturnValue({
-        success: false,
-        error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-      });
-
-      const handler = vi.fn();
-
-      const response = await handleApiRequest(mockRequest, schema, handler, {
-        authErrorMessage: 'Custom auth error',
-      });
-
-      expect(response.status).toBe(401);
-      const data = await response.json();
-      expect(data).toEqual({ error: 'Custom auth error' });
-    });
-
     it('should skip authentication when requireAuth is false', async () => {
       const schema = z.object({ name: z.string() });
       const mockRequest = {

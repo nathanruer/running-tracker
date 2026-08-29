@@ -248,9 +248,8 @@ export function ActivityHistory({ sessions }: ActivityHistoryProps) {
                       </p>
                     </div>
                     <div className={cn("rounded-2xl overflow-hidden border border-border/40", session.type === 'planned' ? 'opacity-80' : '')}>
-                      <IntervalDetailsView 
-                        intervalDetails={session.intervalDetails} 
-                        isPlanned={session.type === 'planned'} 
+                      <IntervalDetailsView
+                        intervalDetails={session.intervalDetails}
                       />
                     </div>
                   </div>

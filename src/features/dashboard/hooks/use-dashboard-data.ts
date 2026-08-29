@@ -227,7 +227,6 @@ export function useDashboardData(
     totalCount,
     initialLoading,
     isFetchingData: paginatedSessionsFetching && !isFetchingNextPage,
-    isFiltering: paginatedSessionsFetching && !isFetchingNextPage && !!(search || selectedType !== 'all' || dateFrom),
     hasMore: hasNextPage,
     isFetchingNextPage,
     fetchNextPage,

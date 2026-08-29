@@ -37,31 +37,6 @@ export const STRAVA_STATE_COOKIE_NAME = 'rt_strava_state';
 export const STRAVA_STATE_MAX_AGE = 10 * 60;
 
 // ============================================================================
-// JWT
-// ============================================================================
-
-/**
- * JWT token configuration
- */
-export const JWT_CONFIG = {
-  EXPIRES_IN: '7d',
-
-  ALGORITHM: 'HS256' as const,
-} as const;
-
-// ============================================================================
-// AUTHORIZATION HEADER
-// ============================================================================
-
-/**
- * Authorization header configuration
- */
-export const AUTH_HEADER = {
-  NAME: 'authorization',
-  PREFIX: 'Bearer ',
-} as const;
-
-// ============================================================================
 // OAUTH GRANT TYPES
 // ============================================================================
 

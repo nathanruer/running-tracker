@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { processStreamingMessage, prepareStreamContext } from '../stream-service';
+import { processStreamingMessage } from '../stream-service';
 import { AIParseError } from '../parser';
 
 const prismaCreate = vi.hoisted(() => vi.fn());
@@ -311,49 +311,5 @@ describe('stream-service', () => {
         // consume generator
       }
     }).rejects.toThrow('server error');
-  });
-});
-
-describe('prepareStreamContext', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    prismaCreate.mockResolvedValue({ id: 'msg-1' });
-  });
-
-  it('classifies intent and saves user message', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'conversation', requiredData: [] });
-
-    const result = await prepareStreamContext({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'hello',
-    });
-
-    expect(classifyIntentMock).toHaveBeenCalledWith('hello');
-    expect(prismaCreate).toHaveBeenCalledWith({
-      data: {
-        conversationId: 'c1',
-        role: 'user',
-        content: 'hello',
-      },
-    });
-    expect(result).toEqual({
-      userMessageId: 'msg-1',
-      intent: 'conversation',
-      requiresJson: false,
-    });
-  });
-
-  it('sets requiresJson to true for recommendation_request intent', async () => {
-    classifyIntentMock.mockResolvedValue({ intent: 'recommendation_request', requiredData: [] });
-
-    const result = await prepareStreamContext({
-      userId: 'u1',
-      conversationId: 'c1',
-      userMessage: 'give me a training plan',
-    });
-
-    expect(result.requiresJson).toBe(true);
-    expect(result.intent).toBe('recommendation_request');
   });
 });

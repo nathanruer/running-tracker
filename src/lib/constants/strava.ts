@@ -10,9 +10,6 @@ export const STRAVA_URLS = {
   API_BASE: 'https://www.strava.com/api/v3',
 
   ACTIVITY_BASE: 'https://www.strava.com/activities',
-
-  ACTIVITY_STREAMS: (id: number) =>
-    `https://www.strava.com/api/v3/activities/${id}/streams`,
 } as const;
 
 // ============================================================================
@@ -36,15 +33,3 @@ export const STRAVA_SUCCESS = {
   CONNECTED: 'strava_connected',
   DISCONNECTED: 'strava_disconnected',
 } as const;
-
-// ============================================================================
-// STRAVA CONFIGURATION
-// ============================================================================
-
-export const STRAVA_SCOPES = {
-  ACTIVITY_READ: 'activity:read',
-  ACTIVITY_READ_ALL: 'activity:read_all',
-  ACTIVITY_WRITE: 'activity:write',
-} as const;
-
-export const STRAVA_DEFAULT_SCOPE = 'activity:read_all';

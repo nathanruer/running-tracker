@@ -14,31 +14,6 @@ const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 
 /**
- * Exchanges authorization code for access and refresh tokens
- * @param code Authorization code from Strava redirect
- * @returns Object containing access and refresh tokens
- */
-export async function exchangeCodeForTokens(code: string): Promise<StravaTokens> {
-  const response = await fetch(STRAVA_URLS.TOKEN, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: STRAVA_CLIENT_ID,
-      client_secret: STRAVA_CLIENT_SECRET,
-      code,
-      grant_type: GRANT_TYPES.AUTHORIZATION_CODE,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to exchange code for tokens');
-  }
-
-  const data = await response.json();
-  return stravaTokensSchema.parse(data);
-}
-
-/**
  * Refreshes an expired access token
  * @param refreshToken Current refresh token
  * @returns Object containing new access and refresh tokens

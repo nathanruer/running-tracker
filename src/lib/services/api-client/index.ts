@@ -43,7 +43,6 @@ export { updateUser } from './users';
 export {
   getStravaActivities,
   getStravaActivityDetails,
-  getImportedStravaIds,
   type FormattedStravaActivity,
 } from './strava';
 

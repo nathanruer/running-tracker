@@ -7,7 +7,6 @@ import { HTTP_STATUS } from '@/lib/constants';
 
 export interface ApiHandlerOptions {
   requireAuth?: boolean;
-  authErrorMessage?: string;
   logContext?: string;
 }
 
@@ -44,7 +43,6 @@ export async function handleApiRequest<T = unknown>(
 ): Promise<NextResponse> {
   const {
     requireAuth: needsAuth = true,
-    authErrorMessage,
     logContext = 'api-request',
   } = options;
 
@@ -53,12 +51,6 @@ export async function handleApiRequest<T = unknown>(
     if (needsAuth) {
       const auth = requireAuth(request);
       if (!auth.success) {
-        if (authErrorMessage) {
-          return NextResponse.json(
-            { error: authErrorMessage },
-            { status: HTTP_STATUS.UNAUTHORIZED }
-          );
-        }
         return auth.error;
       }
       userId = auth.userId;

@@ -158,7 +158,6 @@ export const SessionRow = React.memo(function SessionRow({
           <TableCell colSpan={12} className={intervalRowClassName}>
             <IntervalDetailsView
               intervalDetails={session.intervalDetails!}
-              isPlanned={data.isPlanned}
             />
           </TableCell>
         </TableRow>

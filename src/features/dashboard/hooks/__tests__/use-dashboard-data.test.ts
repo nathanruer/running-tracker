@@ -749,24 +749,5 @@ describe('useDashboardData', () => {
 
       expect((infiniteCall.placeholderData as (prev: typeof previousData) => typeof previousData)(previousData)).toBe(previousData);
     });
-
-    it('should set isFiltering based on inputs and fetching', () => {
-      vi.mocked(useQuery).mockReturnValue({ data: mockUser, isLoading: false } as ReturnType<typeof useQuery>);
-
-      vi.mocked(useInfiniteQuery).mockReturnValue({
-        data: { pages: [[createSession('1')]], pageParams: [0] },
-        fetchNextPage: vi.fn(),
-        hasNextPage: false,
-        isFetchingNextPage: false,
-        isLoading: false,
-        isFetching: true,
-      } as unknown as ReturnType<typeof useInfiniteQuery>);
-
-      const { result: withFilter } = renderHook(() => useDashboardData('Footing', null, '', '2024-01-01'));
-      expect(withFilter.current.isFiltering).toBe(true);
-
-      const { result: withoutFilter } = renderHook(() => useDashboardData('all'));
-      expect(withoutFilter.current.isFiltering).toBe(false);
-    });
   });
 });

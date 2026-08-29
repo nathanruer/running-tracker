@@ -36,7 +36,3 @@ export async function getStravaActivities(perPage: number = 30, before?: number)
 export async function getStravaActivityDetails(activityId: string): Promise<FormattedStravaActivity> {
   return apiRequest<FormattedStravaActivity>(`/api/strava/activities/${activityId}`);
 }
-
-export async function getImportedStravaIds(): Promise<string[]> {
-  return apiRequest<string[]>('/api/sessions/strava-ids');
-}

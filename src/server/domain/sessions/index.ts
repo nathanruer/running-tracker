@@ -21,14 +21,6 @@ export {
   logSessionWriteError,
 } from './sessions-write';
 
-export {
-  buildSearchFilter,
-  buildWorkoutsSearchFilter,
-  buildPlanSessionsSearchFilter,
-  buildDateFilter,
-  buildSessionTypeFilter,
-  combineFilters,
-} from './filters';
 export { bulkEnrichStreamsForIds } from './streams-bulk';
 
 export { mapWorkoutToSession, mapPlanToSession } from './mappers';

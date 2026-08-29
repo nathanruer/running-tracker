@@ -37,8 +37,6 @@ export const GC_TIME = {
 
 export const SESSION_DURATION = MS_PER_WEEK;
 
-export const JWT_EXPIRES_IN = '7d';
-
 // ============================================================================
 // DATE RANGE PRESETS
 // ============================================================================
@@ -69,18 +67,3 @@ export const UI_DELAYS = {
   QUERY_INVALIDATION: 500,
   TRUNCATION_DETECTION: 50,
 } as const;
-
-// ============================================================================
-// TOAST CONFIGURATION
-// ============================================================================
-
-export const TOAST_CONFIG = {
-  LIMIT: 1,
-  REMOVE_DELAY: 1000000,
-} as const;
-
-// ============================================================================
-// TEST TIMEOUTS
-// ============================================================================
-
-export const TEST_TIMEOUT = 100;

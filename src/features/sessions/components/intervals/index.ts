@@ -2,7 +2,6 @@ export { IntervalConfig } from './interval-config';
 export { IntervalFields } from './interval-fields';
 export { IntervalStepFields } from './interval-step-fields';
 export { IntervalStepList } from './interval-step-list';
-export { IntervalStepsSection } from './interval-steps-section';
 export { SortableIntervalStep } from './sortable-interval-step';
 export { EffortRecoverySection } from './effort-recovery-section';
 export { ModeToggleButton } from './mode-toggle-button';

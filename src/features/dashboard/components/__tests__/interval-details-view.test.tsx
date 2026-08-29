@@ -22,14 +22,14 @@ describe('IntervalDetailsView', () => {
   };
 
   it('should display "Moy. Réelle" for a completed session', () => {
-    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} isPlanned={false} />);
+    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} />);
     expect(screen.getByText('Objectif Séance')).toBeInTheDocument();
     expect(screen.getAllByText('Allure').length).toBeGreaterThan(0);
     expect(screen.getAllByText('FC').length).toBeGreaterThan(0);
   });
 
   it('should display "Moy. Prévue" for a planned session', () => {
-    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} isPlanned={true} />);
+    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} />);
     expect(screen.getByText('Objectif Séance')).toBeInTheDocument();
     expect(screen.getAllByText('Allure').length).toBeGreaterThan(0);
     expect(screen.getAllByText('FC').length).toBeGreaterThan(0);
@@ -37,7 +37,7 @@ describe('IntervalDetailsView', () => {
 
   it('should correctly format target paces with a leading zero', () => {
     const details = { ...mockIntervalDetails, targetEffortPace: '4:15' };
-    render(<IntervalDetailsView intervalDetails={details} isPlanned={true} />);
+    render(<IntervalDetailsView intervalDetails={details} />);
     expect(screen.getAllByText('04:15').length).toBeGreaterThan(0);
   });
 
@@ -52,7 +52,7 @@ describe('IntervalDetailsView', () => {
         { stepNumber: 4, stepType: 'effort' as const, duration: '08:00', distance: 1.6, pace: '05:00', hr: null, hrRange: '162-174' },
       ]
     };
-    render(<IntervalDetailsView intervalDetails={detailsWithHRRange} isPlanned={true} />);
+    render(<IntervalDetailsView intervalDetails={detailsWithHRRange} />);
     // Should display the HR range from effort steps in the "Cible" section
     expect(screen.getByText(/162-174 bpm/i)).toBeInTheDocument();
   });
@@ -65,7 +65,7 @@ describe('IntervalDetailsView', () => {
         { stepNumber: 1, stepType: 'effort' as const, duration: '02:50', distance: 0.67, pace: '04:15', hr: null },
       ]
     };
-    render(<IntervalDetailsView intervalDetails={detailsNoHR} isPlanned={false} />);
+    render(<IntervalDetailsView intervalDetails={detailsNoHR} />);
     expect(screen.queryByText(/bpm/i)).not.toBeInTheDocument();
   });
 
@@ -76,13 +76,13 @@ describe('IntervalDetailsView', () => {
         { stepNumber: 1, stepType: 'effort' as const, duration: '05:00', distance: 1.0, pace: null as string | null, hr: 180 },
       ]
     };
-    render(<IntervalDetailsView intervalDetails={detailsWithMissingPace} isPlanned={false} />);
+    render(<IntervalDetailsView intervalDetails={detailsWithMissingPace} />);
     // 5 minutes for 1km = 05:00/km pace - multiple 05:00 may exist, so check that at least one exists
     expect(screen.getAllByText('05:00').length).toBeGreaterThan(0);
   });
 
   it('should show totals section when there are steps with distance and time', () => {
-    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} isPlanned={false} />);
+    render(<IntervalDetailsView intervalDetails={mockIntervalDetails} />);
     expect(screen.getAllByText('Temps').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Distance').length).toBeGreaterThan(0);
     expect(screen.getAllByText('0.67').length).toBeGreaterThan(0);
