@@ -10,6 +10,13 @@ import { STRAVA_URLS } from '@/lib/constants/strava';
 import { GRANT_TYPES } from '@/lib/constants/auth';
 import { z } from 'zod';
 
+async function stravaError(response: Response, action: string): Promise<Error> {
+  const body = await response.text().catch(() => '');
+  const error = new Error(`${action}: ${response.status} ${body.slice(0, 200)}`) as Error & { status: number };
+  error.status = response.status;
+  return error;
+}
+
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 
@@ -31,7 +38,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<StravaTo
   });
 
   if (!response.ok) {
-    throw new Error('Failed to refresh access token');
+    throw await stravaError(response, 'Failed to refresh access token');
   }
 
   const data = await response.json();
@@ -66,7 +73,7 @@ export async function getActivities(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch activities');
+    throw await stravaError(response, 'Failed to fetch activities');
   }
 
   const data = await response.json();
@@ -182,7 +189,7 @@ export async function getAthleteStats(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch athlete stats');
+    throw await stravaError(response, 'Failed to fetch athlete stats');
   }
 
   return response.json();

@@ -2,7 +2,7 @@ import 'server-only';
 import Groq from 'groq-sdk';
 
 export const GROQ_MODEL = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b';
-export const GROQ_MAX_TOKENS = 16000;
+export const GROQ_MAX_TOKENS = Number(process.env.GROQ_MAX_TOKENS ?? 4000);
 export const GROQ_TEMPERATURE = 0.7;
 
 let groqInstance: Groq | null = null;

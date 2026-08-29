@@ -4,6 +4,8 @@ import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
 import { toPrismaJson } from '@/server/utils/prisma-json';
 import { getHttpStatus } from '@/lib/utils/error';
+
+const QUOTA_STATUSES = new Set([429, 413]);
 import { classifyIntent } from './intent';
 import { fetchConditionalContext } from './data';
 import { buildDynamicPrompt } from './prompts';
@@ -156,7 +158,7 @@ async function* processJsonResponse(
     yield { type: 'json', data: JSON.stringify(response) };
     yield { type: 'done', data: '' };
   } catch (err: unknown) {
-    if (getHttpStatus(err) === 429) {
+    if (QUOTA_STATUSES.has(getHttpStatus(err) ?? 0)) {
       await createRateLimitMessage(ctx.conversationId);
       yield { type: 'chunk', data: 'Quota de tokens atteint. Veuillez reessayer plus tard.' };
       yield { type: 'done', data: '' };
@@ -189,7 +191,7 @@ async function* processTextResponse(
 
     yield { type: 'done', data: '' };
   } catch (err: unknown) {
-    if (getHttpStatus(err) === 429) {
+    if (QUOTA_STATUSES.has(getHttpStatus(err) ?? 0)) {
       await createRateLimitMessage(ctx.conversationId);
       yield { type: 'chunk', data: 'Quota de tokens atteint. Veuillez reessayer plus tard.' };
       yield { type: 'done', data: '' };

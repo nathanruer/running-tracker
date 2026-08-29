@@ -50,13 +50,15 @@ describe('Strava client', () => {
       expect(result).toEqual(mockTokens);
     });
 
-    it('should throw error when refresh fails', async () => {
+    it('should throw error with upstream status when refresh fails', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
+        status: 401,
+        text: async () => '{"message":"invalid"}',
       } as Response);
 
       await expect(refreshAccessToken('invalid-token')).rejects.toThrow(
-        'Failed to refresh access token'
+        'Failed to refresh access token: 401'
       );
     });
   });
@@ -129,13 +131,15 @@ describe('Strava client', () => {
       );
     });
 
-    it('should throw error when fetch fails', async () => {
+    it('should throw error with upstream status when fetch fails', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
+        status: 403,
+        text: async () => '{"errors":[{"code":"Inactive"}]}',
       } as Response);
 
       await expect(getActivities('access-token')).rejects.toThrow(
-        'Failed to fetch activities'
+        'Failed to fetch activities: 403'
       );
     });
   });
