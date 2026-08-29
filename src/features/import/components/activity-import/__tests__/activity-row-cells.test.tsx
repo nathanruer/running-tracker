@@ -8,8 +8,8 @@ import {
   ActivityDistanceCell,
   ActivityPaceCell,
   ActivityHeartRateCell,
-  StravaActivityRowCells,
-} from '../strava-activity-row-cells';
+  ActivityRowCells,
+} from '../activity-row-cells';
 import type { FormattedStravaActivity } from '@/lib/services/api-client';
 
 vi.mock('@/components/ui/table', () => ({
@@ -181,7 +181,7 @@ describe('ActivityHeartRateCell', () => {
   });
 });
 
-describe('StravaActivityRowCells', () => {
+describe('ActivityRowCells', () => {
   const mockActivity: FormattedStravaActivity = {
     externalId: '123456',
     date: '2024-01-15T10:00:00.000Z',
@@ -203,7 +203,7 @@ describe('StravaActivityRowCells', () => {
     const mockToggle = vi.fn();
     render(
       <table><tbody><tr>
-        <StravaActivityRowCells
+        <ActivityRowCells
           activity={mockActivity}
           selected={false}
           alreadyImported={false}
@@ -223,7 +223,7 @@ describe('StravaActivityRowCells', () => {
   it('passes selected state to checkbox', () => {
     render(
       <table><tbody><tr>
-        <StravaActivityRowCells
+        <ActivityRowCells
           activity={mockActivity}
           selected={true}
           alreadyImported={false}

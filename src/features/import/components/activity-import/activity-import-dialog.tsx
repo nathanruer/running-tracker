@@ -1,24 +1,24 @@
 'use client';
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { StravaImportContent } from './strava-import-content';
-import type { StravaImportDialogProps } from './types';
+import { ActivityImportContent } from './activity-import-content';
+import type { ActivityImportDialogProps } from './types';
 
-export function StravaImportDialog({
+export function ActivityImportDialog({
   open,
   onOpenChange,
   onImport,
   mode = 'create',
   queryClient,
   onBulkImportSuccess,
-}: StravaImportDialogProps) {
+}: ActivityImportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         hideClose
         className="max-h-[90vh] overflow-hidden p-0 w-[95vw] sm:max-w-[800px] rounded-2xl border-border/50 shadow-2xl bg-background/95 backdrop-blur-xl"
       >
-        <StravaImportContent
+        <ActivityImportContent
           open={open}
           onOpenChange={onOpenChange}
           onImport={onImport}

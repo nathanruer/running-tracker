@@ -1,12 +1,12 @@
 import { Table, TableBody } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { InfiniteScrollTrigger, EndOfList } from '@/components/ui/data-table';
-import { StravaTableHeader } from './strava-table-header';
-import { StravaActivityRow } from './strava-activity-row';
+import { ImportTableHeader } from './table-header';
+import { ActivityRow } from './activity-row';
 import { SmartSearchEmptyState } from './smart-search-empty-state';
-import type { StravaActivitiesTableProps } from './types';
+import type { ActivityTableProps } from './types';
 
-export function StravaActivitiesTable({
+export function ActivityTable({
   activities,
   filteredActivities,
   mode,
@@ -29,7 +29,7 @@ export function StravaActivitiesTable({
   totalLoadedCount,
   onSearchAll,
   importedKeys,
-}: StravaActivitiesTableProps) {
+}: ActivityTableProps) {
   if (filteredActivities.length === 0 && searchQuery.trim()) {
     return (
       <ScrollArea className="flex-1">
@@ -48,7 +48,7 @@ export function StravaActivitiesTable({
     <ScrollArea className="flex-1">
       <div className="min-w-full overflow-x-auto px-4 md:px-8 py-2">
         <Table>
-          <StravaTableHeader
+          <ImportTableHeader
             ref={topRef}
             mode={mode}
             hasActivities={filteredActivities.length > 0}
@@ -65,7 +65,7 @@ export function StravaActivitiesTable({
               const index = filteredActivities.findIndex((a) => a.externalId === activity.externalId);
               const isImported = !!(activity.externalId && importedKeys.has(activity.externalId));
               return (
-                <StravaActivityRow
+                <ActivityRow
                   key={activity.externalId}
                   activity={activity}
                   index={index}

@@ -6,9 +6,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { StravaLoadingSkeletonProps } from './types';
+import type { ImportLoadingSkeletonProps } from './types';
 
-export function StravaLoadingSkeleton({ rows = 6 }: StravaLoadingSkeletonProps) {
+export function ImportLoadingSkeleton({ rows = 6 }: ImportLoadingSkeletonProps) {
   return (
     <div className="absolute inset-0 z-50 flex flex-col bg-background">
       {/* Toolbar Skeleton */}

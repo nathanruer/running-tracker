@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { FormattedStravaActivity } from '@/lib/services/api-client';
 
-export interface StravaImportDialogProps {
+export interface ActivityImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (data: FormattedStravaActivity) => void;
@@ -10,7 +10,7 @@ export interface StravaImportDialogProps {
   onBulkImportSuccess?: () => void;
 }
 
-export interface StravaImportContentProps {
+export interface ActivityImportContentProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (data: FormattedStravaActivity) => void;
@@ -19,12 +19,12 @@ export interface StravaImportContentProps {
   onBulkImportSuccess?: () => void;
 }
 
-export interface StravaConnectScreenProps {
+export interface ConnectScreenProps {
   loading: boolean;
   onConnect: () => void;
 }
 
-export interface StravaToolbarProps {
+export interface ImportToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   activitiesCount: number;
@@ -39,7 +39,7 @@ export interface StravaToolbarProps {
   onCancelLoadAll: () => void;
 }
 
-export interface StravaTableHeaderProps {
+export interface ImportTableHeaderProps {
   mode: 'create' | 'edit' | 'complete';
   hasActivities: boolean;
   isAllSelected: boolean;
@@ -51,7 +51,7 @@ export interface StravaTableHeaderProps {
   SortIcon: React.FC<{ column: string }>;
 }
 
-export interface StravaActivityRowProps {
+export interface ActivityRowProps {
   activity: FormattedStravaActivity;
   index: number;
   selected: boolean;
@@ -59,7 +59,7 @@ export interface StravaActivityRowProps {
   alreadyImported: boolean;
 }
 
-export interface StravaActivitiesTableProps {
+export interface ActivityTableProps {
   activities: FormattedStravaActivity[];
   filteredActivities: FormattedStravaActivity[];
   mode: 'create' | 'edit' | 'complete';
@@ -95,7 +95,7 @@ export interface SmartSearchEmptyStateProps {
 
 import type { ChunkedImportStatus } from '../../hooks/use-chunked-import';
 
-export interface StravaImportFooterProps {
+export interface ImportFooterProps {
   selectedCount: number;
   status: ChunkedImportStatus;
   progress: { imported: number; skipped: number; total: number };
@@ -104,6 +104,6 @@ export interface StravaImportFooterProps {
   onCancelImport: () => void;
 }
 
-export interface StravaLoadingSkeletonProps {
+export interface ImportLoadingSkeletonProps {
   rows?: number;
 }

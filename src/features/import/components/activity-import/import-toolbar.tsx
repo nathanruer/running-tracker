@@ -1,8 +1,8 @@
 import { SearchInput } from '@/components/ui/search-input';
 import { ScopeIndicator } from '@/components/ui/data-table';
-import type { StravaToolbarProps } from './types';
+import type { ImportToolbarProps } from './types';
 
-export function StravaToolbar({
+export function ImportToolbar({
   searchQuery,
   onSearchChange,
   activitiesCount,
@@ -15,7 +15,7 @@ export function StravaToolbar({
   searchProgress,
   onLoadAll,
   onCancelLoadAll,
-}: StravaToolbarProps) {
+}: ImportToolbarProps) {
   return (
     <div className="px-4 md:px-8 py-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 border-b border-border/10">
       <SearchInput

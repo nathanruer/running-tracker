@@ -18,7 +18,7 @@ function isNotConfiguredError(error: unknown): boolean {
   return errorMessage.includes('non configur');
 }
 
-export function useStravaActivities(open: boolean) {
+export function useExternalActivities(open: boolean) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [searchProgress, setSearchProgress] = useState<SearchProgress>({ loaded: 0, total: 0 });

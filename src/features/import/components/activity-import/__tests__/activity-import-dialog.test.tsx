@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { StravaImportDialog } from '../strava-import-dialog';
+import { ActivityImportDialog } from '../activity-import-dialog';
 
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) => (
@@ -28,9 +28,9 @@ vi.mock('@/components/ui/button', () => ({
   ),
 }));
 
-vi.mock('../strava-import-content', () => ({
-  StravaImportContent: ({ onOpenChange }: { onOpenChange: (open: boolean) => void }) => (
-    <div data-testid="strava-import-content">
+vi.mock('../activity-import-content', () => ({
+  ActivityImportContent: ({ onOpenChange }: { onOpenChange: (open: boolean) => void }) => (
+    <div data-testid="activity-import-content">
       <button onClick={() => onOpenChange(false)} className="rounded-xl">Close</button>
       <span>Importer depuis Strava</span>
       <span>Sélectionnez vos activités Strava.</span>
@@ -42,7 +42,7 @@ vi.mock('../strava-import-content', () => ({
   ),
 }));
 
-describe('StravaImportDialog', () => {
+describe('ActivityImportDialog', () => {
   const mockOnOpenChange = vi.fn();
   const mockOnImport = vi.fn();
 
@@ -52,7 +52,7 @@ describe('StravaImportDialog', () => {
 
   it('does not render when closed', () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={false}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}
@@ -63,7 +63,7 @@ describe('StravaImportDialog', () => {
 
   it('renders when open', async () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}
@@ -76,7 +76,7 @@ describe('StravaImportDialog', () => {
 
   it('displays the dialog title', async () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}
@@ -89,7 +89,7 @@ describe('StravaImportDialog', () => {
 
   it('displays description for create mode', async () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}
@@ -103,7 +103,7 @@ describe('StravaImportDialog', () => {
 
   it('displays description for complete mode', async () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}
@@ -117,7 +117,7 @@ describe('StravaImportDialog', () => {
 
   it('shows connect screen when not connected', async () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}
@@ -130,7 +130,7 @@ describe('StravaImportDialog', () => {
 
   it('calls onOpenChange when close button is clicked', async () => {
     render(
-      <StravaImportDialog
+      <ActivityImportDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         onImport={mockOnImport}

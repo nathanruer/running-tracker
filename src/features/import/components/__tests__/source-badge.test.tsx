@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { StravaBadge } from '../strava-badge';
+import { SourceBadge } from '../source-badge';
 
-describe('StravaBadge', () => {
+describe('SourceBadge', () => {
   it('should render with default orange variant', () => {
-    render(<StravaBadge />);
+    render(<SourceBadge />);
 
     expect(screen.getByText('Powered by Strava')).toBeInTheDocument();
     expect(screen.getByTitle('Powered by Strava')).toHaveAttribute(
@@ -14,28 +14,28 @@ describe('StravaBadge', () => {
   });
 
   it('should render with orange color', () => {
-    render(<StravaBadge variant="orange" />);
+    render(<SourceBadge variant="orange" />);
 
     const text = screen.getByText('Powered by Strava');
     expect(text).toHaveStyle({ color: '#FC4C02' });
   });
 
   it('should render with white color', () => {
-    render(<StravaBadge variant="white" />);
+    render(<SourceBadge variant="white" />);
 
     const text = screen.getByText('Powered by Strava');
     expect(text).toHaveStyle({ color: '#FFFFFF' });
   });
 
   it('should render with black color', () => {
-    render(<StravaBadge variant="black" />);
+    render(<SourceBadge variant="black" />);
 
     const text = screen.getByText('Powered by Strava');
     expect(text).toHaveStyle({ color: '#000000' });
   });
 
   it('should open link in new tab', () => {
-    render(<StravaBadge />);
+    render(<SourceBadge />);
 
     const link = screen.getByTitle('Powered by Strava');
     expect(link).toHaveAttribute('target', '_blank');
@@ -43,14 +43,14 @@ describe('StravaBadge', () => {
   });
 
   it('should apply custom className', () => {
-    render(<StravaBadge className="custom-class" />);
+    render(<SourceBadge className="custom-class" />);
 
     const link = screen.getByTitle('Powered by Strava');
     expect(link).toHaveClass('custom-class');
   });
 
   it('should render SVG icon', () => {
-    const { container } = render(<StravaBadge />);
+    const { container } = render(<SourceBadge />);
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();

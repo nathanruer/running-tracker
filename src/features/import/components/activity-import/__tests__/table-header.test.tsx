@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { StravaTableHeader } from '../strava-table-header';
+import { ImportTableHeader } from '../table-header';
 
 vi.mock('@/components/ui/table', () => ({
   TableHeader: ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -32,7 +32,7 @@ const MockSortIcon = ({ column }: { column: string }) => (
   <span data-testid={`sort-icon-${column}`}>^</span>
 );
 
-describe('StravaTableHeader', () => {
+describe('ImportTableHeader', () => {
   const mockOnToggleSelectAll = vi.fn();
   const mockOnSort = vi.fn();
 
@@ -55,7 +55,7 @@ describe('StravaTableHeader', () => {
   it('renders the table header', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     expect(screen.getByTestId('table-header')).toBeInTheDocument();
@@ -64,7 +64,7 @@ describe('StravaTableHeader', () => {
   it('renders checkbox in create mode', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} mode="create" />
+        <ImportTableHeader {...defaultProps} mode="create" />
       </table>
     );
     expect(screen.getByTestId('select-all-checkbox')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('StravaTableHeader', () => {
   it('renders checkbox in edit mode', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} mode="edit" />
+        <ImportTableHeader {...defaultProps} mode="edit" />
       </table>
     );
     expect(screen.getByTestId('select-all-checkbox')).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('StravaTableHeader', () => {
   it('does not render checkbox in complete mode', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} mode="complete" />
+        <ImportTableHeader {...defaultProps} mode="complete" />
       </table>
     );
     expect(screen.queryByTestId('select-all-checkbox')).not.toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('StravaTableHeader', () => {
   it('calls onToggleSelectAll when checkbox is clicked', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     fireEvent.click(screen.getByTestId('select-all-checkbox'));
@@ -101,7 +101,7 @@ describe('StravaTableHeader', () => {
   it('renders all sortable column headers', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     expect(screen.getByText('Date')).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe('StravaTableHeader', () => {
   it('calls onSort with column name when clicking date header', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     fireEvent.click(screen.getByText('Date'));
@@ -125,7 +125,7 @@ describe('StravaTableHeader', () => {
   it('calls onSort with column name when clicking distance header', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     fireEvent.click(screen.getByText('Dist.'));
@@ -135,7 +135,7 @@ describe('StravaTableHeader', () => {
   it('calls onSort with column name when clicking duration header', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     fireEvent.click(screen.getByText('Durée'));
@@ -145,7 +145,7 @@ describe('StravaTableHeader', () => {
   it('calls onSort with column name when clicking pace header', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     fireEvent.click(screen.getByText('Allure'));
@@ -155,7 +155,7 @@ describe('StravaTableHeader', () => {
   it('calls onSort with column name when clicking heart rate header', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     fireEvent.click(screen.getByText('FC'));
@@ -165,7 +165,7 @@ describe('StravaTableHeader', () => {
   it('renders sort icons for each sortable column', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} />
+        <ImportTableHeader {...defaultProps} />
       </table>
     );
     expect(screen.getByTestId('sort-icon-date')).toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('StravaTableHeader', () => {
   it('shows checkbox as checked when isAllSelected is true', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} isAllSelected={true} />
+        <ImportTableHeader {...defaultProps} isAllSelected={true} />
       </table>
     );
     expect(screen.getByTestId('select-all-checkbox')).toBeChecked();
@@ -187,7 +187,7 @@ describe('StravaTableHeader', () => {
   it('shows checkbox as unchecked when hasActivities is false', () => {
     render(
       <table>
-        <StravaTableHeader {...defaultProps} hasActivities={false} isAllSelected={true} />
+        <ImportTableHeader {...defaultProps} hasActivities={false} isAllSelected={true} />
       </table>
     );
     expect(screen.getByTestId('select-all-checkbox')).not.toBeChecked();

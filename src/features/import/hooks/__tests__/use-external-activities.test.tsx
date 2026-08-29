@@ -1,7 +1,7 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useStravaActivities } from '../use-strava-activities';
+import { useExternalActivities } from '../use-external-activities';
 import * as apiClient from '@/lib/services/api-client';
 
 vi.mock('@/lib/services/api-client', () => ({
@@ -42,7 +42,7 @@ const mockActivity = {
   source: 'strava',
 };
 
-describe('useStravaActivities', () => {
+describe('useExternalActivities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -52,7 +52,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should initialize with default values when closed', () => {
-    const { result } = renderHook(() => useStravaActivities(false), {
+    const { result } = renderHook(() => useExternalActivities(false), {
       wrapper: createWrapper(),
     });
 
@@ -62,7 +62,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should not fetch activities when dialog is closed', () => {
-    renderHook(() => useStravaActivities(false), {
+    renderHook(() => useExternalActivities(false), {
       wrapper: createWrapper(),
     });
 
@@ -76,7 +76,7 @@ describe('useStravaActivities', () => {
       totalCount: 1,
     });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -96,7 +96,7 @@ describe('useStravaActivities', () => {
       new Error('intervals.icu non configuré : connecte ton compte depuis Profil → Compte.')
     );
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -113,7 +113,7 @@ describe('useStravaActivities', () => {
       new Error('500 Server Error')
     );
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -135,7 +135,7 @@ describe('useStravaActivities', () => {
     });
 
     const { result, rerender } = renderHook(
-      ({ open }) => useStravaActivities(open),
+      ({ open }) => useExternalActivities(open),
       { initialProps: { open: true }, wrapper: createWrapper() }
     );
 
@@ -162,7 +162,7 @@ describe('useStravaActivities', () => {
       totalCount: 1,
     });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -188,7 +188,7 @@ describe('useStravaActivities', () => {
       totalCount: 0,
     });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -201,7 +201,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should provide loadMore function', () => {
-    const { result } = renderHook(() => useStravaActivities(false), {
+    const { result } = renderHook(() => useExternalActivities(false), {
       wrapper: createWrapper(),
     });
 
@@ -222,7 +222,7 @@ describe('useStravaActivities', () => {
         totalCount: 2,
       });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -255,7 +255,7 @@ describe('useStravaActivities', () => {
         totalCount: 2,
       });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -275,7 +275,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should provide search loading state', () => {
-    const { result } = renderHook(() => useStravaActivities(false), {
+    const { result } = renderHook(() => useExternalActivities(false), {
       wrapper: createWrapper(),
     });
 
@@ -284,7 +284,7 @@ describe('useStravaActivities', () => {
   });
 
   it('should provide cancelLoading function', () => {
-    const { result } = renderHook(() => useStravaActivities(false), {
+    const { result } = renderHook(() => useExternalActivities(false), {
       wrapper: createWrapper(),
     });
 
@@ -305,7 +305,7 @@ describe('useStravaActivities', () => {
         totalCount: 2,
       });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 
@@ -335,7 +335,7 @@ describe('useStravaActivities', () => {
         nextCursor: 1704000000,
       });
 
-    const { result } = renderHook(() => useStravaActivities(true), {
+    const { result } = renderHook(() => useExternalActivities(true), {
       wrapper: createWrapper(),
     });
 

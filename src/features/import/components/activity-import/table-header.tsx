@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { StravaTableHeaderProps } from './types';
+import type { ImportTableHeaderProps } from './types';
 
 interface SortableHeaderProps {
   column: string;
@@ -34,8 +34,8 @@ function SortableHeader({ column, label, sortColumn, onSort, SortIcon, className
   );
 }
 
-export const StravaTableHeader = React.forwardRef<HTMLTableSectionElement, StravaTableHeaderProps>(
-  function StravaTableHeader(
+export const ImportTableHeader = React.forwardRef<HTMLTableSectionElement, ImportTableHeaderProps>(
+  function ImportTableHeader(
     { mode, hasActivities, isAllSelected, isSomeSelected, importableCount, onToggleSelectAll, sortColumn, onSort, SortIcon },
     ref
   ) {

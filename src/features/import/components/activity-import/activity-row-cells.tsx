@@ -154,7 +154,7 @@ interface AllCellsProps {
   onToggle: () => void;
 }
 
-export function StravaActivityRowCells({ activity, selected, alreadyImported, onToggle }: AllCellsProps) {
+export function ActivityRowCells({ activity, selected, alreadyImported, onToggle }: AllCellsProps) {
   return (
     <>
       <ActivityCheckboxCell selected={selected} alreadyImported={alreadyImported} onToggle={onToggle} />

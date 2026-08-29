@@ -1,16 +1,16 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { TableRow } from '@/components/ui/table';
-import { StravaActivityRowCells } from './strava-activity-row-cells';
-import type { StravaActivityRowProps } from './types';
+import { ActivityRowCells } from './activity-row-cells';
+import type { ActivityRowProps } from './types';
 
-export const StravaActivityRow = React.memo(function StravaActivityRow({
+export const ActivityRow = React.memo(function ActivityRow({
   activity,
   index,
   selected,
   onToggleSelect,
   alreadyImported,
-}: StravaActivityRowProps) {
+}: ActivityRowProps) {
   return (
     <TableRow
       className={cn(
@@ -23,7 +23,7 @@ export const StravaActivityRow = React.memo(function StravaActivityRow({
       )}
       onClick={(e) => onToggleSelect(index, e)}
     >
-      <StravaActivityRowCells
+      <ActivityRowCells
         activity={activity}
         selected={selected}
         alreadyImported={alreadyImported}

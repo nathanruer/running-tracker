@@ -1,14 +1,14 @@
 import { Button } from '@/components/ui/button';
-import type { StravaImportFooterProps } from './types';
+import type { ImportFooterProps } from './types';
 
-export function StravaImportFooter({
+export function ImportFooter({
   selectedCount,
   status,
   progress,
   onCancel,
   onImport,
   onCancelImport,
-}: StravaImportFooterProps) {
+}: ImportFooterProps) {
   const isImporting = status === 'importing';
   const isTerminal = status === 'error' || status === 'cancelled';
   const percentage = progress.total > 0

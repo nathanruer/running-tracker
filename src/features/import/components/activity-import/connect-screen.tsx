@@ -1,9 +1,9 @@
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StravaBadge } from '../strava-badge';
-import type { StravaConnectScreenProps } from './types';
+import { SourceBadge } from '../source-badge';
+import type { ConnectScreenProps } from './types';
 
-export function StravaConnectScreen({ loading, onConnect }: StravaConnectScreenProps) {
+export function ConnectScreen({ loading, onConnect }: ConnectScreenProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-8 animate-in fade-in duration-500">
       <div className="relative">
@@ -39,7 +39,7 @@ export function StravaConnectScreen({ loading, onConnect }: StravaConnectScreenP
           <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-30">
             Sécurisé via OAuth 2.0
           </p>
-          <StravaBadge variant="orange" className="scale-90 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
+          <SourceBadge variant="orange" className="scale-90 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
         </div>
       </div>
     </div>

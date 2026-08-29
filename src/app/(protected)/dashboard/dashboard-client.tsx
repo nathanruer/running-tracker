@@ -31,8 +31,8 @@ const SessionDialog = dynamic(
   () => import('@/features/sessions/components/forms/session-dialog'),
   { ssr: false }
 );
-const StravaImportDialog = dynamic(
-  () => import('@/features/import').then((m) => ({ default: m.StravaImportDialog })),
+const ActivityImportDialog = dynamic(
+  () => import('@/features/import').then((m) => ({ default: m.ActivityImportDialog })),
   { ssr: false }
 );
 
@@ -364,7 +364,7 @@ function DashboardContent() {
         onSessionUpdated={(updated) => setViewingSession(updated)}
       />
 
-      <StravaImportDialog
+      <ActivityImportDialog
         open={isStravaDialogOpen}
         onOpenChange={setIsStravaDialogOpen}
         onImport={handleStravaImport}

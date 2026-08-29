@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { importIntervalsSelection, type FormattedStravaActivity } from '@/lib/services/api-client';
-import { useStravaActivities } from '../../hooks/use-strava-activities';
+import { useExternalActivities } from '../../hooks/use-external-activities';
 import { useChunkedImport } from '../../hooks/use-chunked-import';
 import { useTableSort } from '@/hooks/use-table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
@@ -20,23 +20,23 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/constants/query-keys';
-import { StravaToolbar } from './strava-toolbar';
-import { StravaActivitiesTable } from './strava-activities-table';
-import { StravaImportFooter } from './strava-import-footer';
-import { StravaLoadingSkeleton } from './strava-loading-skeleton';
+import { ImportToolbar } from './import-toolbar';
+import { ActivityTable } from './activity-table';
+import { ImportFooter } from './import-footer';
+import { ImportLoadingSkeleton } from './loading-skeleton';
 import { LoadingBar } from '@/components/ui/loading-bar';
-import type { StravaImportContentProps } from './types';
+import type { ActivityImportContentProps } from './types';
 
 const DEFERRED_ENRICHMENT_REFRESH_MS = 15_000;
 
-export function StravaImportContent({
+export function ActivityImportContent({
   open,
   onOpenChange,
   onImport,
   mode,
   queryClient,
   onBulkImportSuccess,
-}: StravaImportContentProps) {
+}: ActivityImportContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const topRef = useRef<HTMLTableSectionElement>(null);
 
@@ -56,7 +56,7 @@ export function StravaImportContent({
     cancelLoading,
     refresh,
     isRefreshing,
-  } = useStravaActivities(open);
+  } = useExternalActivities(open);
 
   const chunkedImport = useChunkedImport({
     sendBatch: async (_sessions, externalIds) => {
@@ -300,7 +300,7 @@ export function StravaImportContent({
                   : "opacity-0 invisible pointer-events-none"
               )}
             >
-              <StravaLoadingSkeleton />
+              <ImportLoadingSkeleton />
             </div>
 
             <div
@@ -309,7 +309,7 @@ export function StravaImportContent({
                 loading && activities.length === 0 ? "opacity-0" : "opacity-100"
               )}
             >
-              <StravaToolbar
+              <ImportToolbar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 activitiesCount={activities.length}
@@ -326,7 +326,7 @@ export function StravaImportContent({
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
                 <LoadingBar isLoading={loadingMore || isRefreshing} />
-                <StravaActivitiesTable
+                <ActivityTable
                   activities={sortedActivities}
                   filteredActivities={filteredActivities}
                   mode={mode}
@@ -352,7 +352,7 @@ export function StravaImportContent({
                 />
               </div>
 
-              <StravaImportFooter
+              <ImportFooter
                 selectedCount={selectedCount}
                 status={chunkedImport.status}
                 progress={chunkedImport.progress}

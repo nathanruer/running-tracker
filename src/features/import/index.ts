@@ -1,21 +1,21 @@
 export {
-  StravaImportDialog,
-  StravaImportContent,
-  StravaConnectScreen,
-  StravaToolbar,
-  StravaActivitiesTable,
-  StravaActivityRow,
-  StravaTableHeader,
-  StravaImportFooter,
-  StravaLoadingSkeleton,
-  type StravaImportDialogProps,
-  type StravaImportContentProps,
-  type StravaToolbarProps,
-  type StravaActivitiesTableProps,
-} from './components/strava-import';
+  ActivityImportDialog,
+  ActivityImportContent,
+  ConnectScreen,
+  ImportToolbar,
+  ActivityTable,
+  ActivityRow,
+  ImportTableHeader,
+  ImportFooter,
+  ImportLoadingSkeleton,
+  type ActivityImportDialogProps,
+  type ActivityImportContentProps,
+  type ImportToolbarProps,
+  type ActivityTableProps,
+} from './components/activity-import';
 
-export { StravaBadge } from './components/strava-badge';
+export { SourceBadge } from './components/source-badge';
 
-export { useStravaActivities, type FormattedStravaActivity } from './hooks/use-strava-activities';
+export { useExternalActivities, type FormattedStravaActivity } from './hooks/use-external-activities';
 
 export { parseGarminCSV } from './utils/garmin-csv';

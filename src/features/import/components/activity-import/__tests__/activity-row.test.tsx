@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { StravaActivityRow } from '../strava-activity-row';
+import { ActivityRow } from '../activity-row';
 import type { FormattedStravaActivity } from '@/lib/services/api-client';
 
 vi.mock('@/components/ui/table', () => ({
@@ -25,7 +25,7 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-describe('StravaActivityRow', () => {
+describe('ActivityRow', () => {
   const mockActivity: FormattedStravaActivity = {
     externalId: '123456',
     date: '2024-01-15T10:00:00.000Z',
@@ -49,7 +49,7 @@ describe('StravaActivityRow', () => {
     return render(
       <table>
         <tbody>
-          <StravaActivityRow
+          <ActivityRow
             activity={props?.activity ?? mockActivity}
             index={props?.index ?? 0}
             selected={props?.selected ?? false}

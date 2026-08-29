@@ -1,6 +1,6 @@
 'use client';
 
-interface StravaBadgeProps {
+interface SourceBadgeProps {
   variant?: 'orange' | 'white' | 'black';
   className?: string;
 }
@@ -9,7 +9,7 @@ interface StravaBadgeProps {
  * Official "Powered by Strava" badge component
  * Following Strava Brand Guidelines: https://developers.strava.com/guidelines/
  */
-export function StravaBadge({ variant = 'orange', className = '' }: StravaBadgeProps) {
+export function SourceBadge({ variant = 'orange', className = '' }: SourceBadgeProps) {
   const colors = {
     orange: {
       primary: '#FC4C02',
