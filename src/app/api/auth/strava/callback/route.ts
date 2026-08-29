@@ -7,6 +7,7 @@ import {
   STRAVA_URLS,
   STRAVA_ERRORS,
   SESSION_COOKIE_NAME,
+  STRAVA_STATE_COOKIE_NAME,
   COOKIE_CONFIG,
   GRANT_TYPES,
 } from '@/lib/constants';
@@ -22,6 +23,18 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error || !code) {
+      return NextResponse.redirect(
+        new URL(`/error?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
+      );
+    }
+
+    const state = searchParams.get('state');
+    const expectedState = request.cookies.get(STRAVA_STATE_COOKIE_NAME)?.value;
+    if (!state || !expectedState || state !== expectedState) {
+      logger.error(
+        { hasState: !!state, hasCookie: !!expectedState },
+        'Strava OAuth state mismatch'
+      );
       return NextResponse.redirect(
         new URL(`/error?error=${STRAVA_ERRORS.AUTH_FAILED}`, request.url)
       );
@@ -226,6 +239,7 @@ export async function GET(request: NextRequest) {
       path: COOKIE_CONFIG.PATH,
       maxAge: COOKIE_CONFIG.MAX_AGE,
     });
+    response.cookies.delete(STRAVA_STATE_COOKIE_NAME);
 
     return response;
   } catch (error) {

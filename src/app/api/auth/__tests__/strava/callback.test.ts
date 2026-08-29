@@ -38,6 +38,13 @@ vi.mock('@/server/infrastructure/logger', () => ({
   },
 }));
 
+function makeCallbackRequest(query: string): NextRequest {
+  return new NextRequest(
+    `http://localhost/api/auth/strava/callback?${query}&state=test-state`,
+    { headers: { cookie: 'rt_strava_state=test-state' } }
+  );
+}
+
 describe('/api/auth/strava/callback', () => {
   const mockStravaTokenResponse = {
     access_token: 'strava-access-token',
@@ -89,14 +96,40 @@ describe('/api/auth/strava/callback', () => {
     expect(location).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
   });
 
+  it('should reject callback when state does not match the cookie', async () => {
+    const request = new NextRequest(
+      'http://localhost/api/auth/strava/callback?code=test-code&state=forged-state',
+      { headers: { cookie: 'rt_strava_state=test-state' } }
+    );
+
+    const { GET } = await import('../../strava/callback/route');
+    const response = await GET(request);
+
+    expect(response.status).toBe(307);
+    const location = response.headers.get('location');
+    expect(location).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('should reject callback when state cookie is absent', async () => {
+    const request = new NextRequest(
+      'http://localhost/api/auth/strava/callback?code=test-code&state=test-state'
+    );
+
+    const { GET } = await import('../../strava/callback/route');
+    const response = await GET(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toContain(`error=${STRAVA_ERRORS.AUTH_FAILED}`);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('should return 500 when Strava config is missing', async () => {
     delete process.env.STRAVA_CLIENT_ID;
     delete process.env.STRAVA_CLIENT_SECRET;
     delete process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URI;
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -129,9 +162,7 @@ describe('/api/auth/strava/callback', () => {
       json: async () => mockStravaTokenResponse,
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -188,9 +219,7 @@ describe('/api/auth/strava/callback', () => {
       json: async () => mockStravaTokenResponse,
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -221,9 +250,7 @@ describe('/api/auth/strava/callback', () => {
       json: async () => mockStravaTokenResponse,
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -258,9 +285,7 @@ describe('/api/auth/strava/callback', () => {
       json: async () => mockStravaTokenResponse,
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -300,9 +325,7 @@ describe('/api/auth/strava/callback', () => {
       json: async () => mockStravaTokenResponse,
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -338,9 +361,7 @@ describe('/api/auth/strava/callback', () => {
       json: async () => ({ error: 'invalid_grant' }),
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=invalid-code'
-    );
+    const request = makeCallbackRequest('code=invalid-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -362,9 +383,7 @@ describe('/api/auth/strava/callback', () => {
       }),
     } as Response);
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
@@ -378,9 +397,7 @@ describe('/api/auth/strava/callback', () => {
   it('should handle unexpected errors gracefully', async () => {
     vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
 
-    const request = new NextRequest(
-      'http://localhost/api/auth/strava/callback?code=test-code'
-    );
+    const request = makeCallbackRequest('code=test-code');
 
     const { GET } = await import('../../strava/callback/route');
     const response = await GET(request);
