@@ -292,3 +292,68 @@ describe('validateAndFixRecommendations', () => {
     }
   });
 });
+
+describe('agent output repair', () => {
+  it('numbers steps, derives effortDistance and sums distance/duration from steps', () => {
+    const response = validateAndFixRecommendations({
+      responseType: 'recommendations',
+      recommended_sessions: [
+        {
+          session_type: 'Fractionné',
+          duration_min: 35,
+          estimated_distance_km: 8.75,
+          target_pace_min_km: '04:00',
+          interval_details: {
+            workoutType: 'VMA',
+            repetitionCount: 2,
+            steps: [
+              { stepType: 'warmup', duration: '02:00', distance: 0.4, pace: '06:45', hr: 140 },
+              { stepType: 'effort', duration: '00:30', distance: 0.2, pace: '04:00', hr: 175 },
+              { stepType: 'recovery', duration: '01:30', distance: 0.5, pace: '06:45', hr: 150 },
+              { stepType: 'effort', duration: '00:30', distance: 0.2, pace: '04:00', hr: 175 },
+              { stepType: 'cooldown', duration: '02:00', distance: 0.4, pace: '06:45', hr: 140 },
+            ],
+          },
+        },
+      ],
+    });
+
+    if (response.responseType !== 'recommendations') throw new Error('expected recommendations');
+    const session = response.recommended_sessions[0];
+    expect(session.interval_details?.steps?.map((s) => s.stepNumber)).toEqual([1, 2, 3, 4, 5]);
+    expect(session.interval_details?.effortDistance).toBe(0.2);
+    expect(session.estimated_distance_km).toBe(1.7);
+    expect(session.duration_min).toBe(7);
+  });
+
+  it('fills a default target_rpe by session type when missing', () => {
+    const response = validateAndFixRecommendations({
+      responseType: 'recommendations',
+      recommended_sessions: [
+        { session_type: 'Footing', duration_min: 30, estimated_distance_km: 4.5 },
+        { session_type: 'Sortie longue', duration_min: 80, estimated_distance_km: 12 },
+        {
+          session_type: 'Fractionné',
+          duration_min: 35,
+          estimated_distance_km: 5,
+          interval_details: { workoutType: 'VMA', repetitionCount: 6, steps: [] },
+        },
+      ],
+    });
+
+    if (response.responseType !== 'recommendations') throw new Error('expected recommendations');
+    expect(response.recommended_sessions.map((s) => s.target_rpe)).toEqual([3, 5, 8]);
+  });
+
+  it('keeps an explicitly provided target_rpe', () => {
+    const response = validateAndFixRecommendations({
+      responseType: 'recommendations',
+      recommended_sessions: [
+        { session_type: 'Footing', duration_min: 30, estimated_distance_km: 4.5, target_rpe: 2 },
+      ],
+    });
+
+    if (response.responseType !== 'recommendations') throw new Error('expected recommendations');
+    expect(response.recommended_sessions[0].target_rpe).toBe(2);
+  });
+});

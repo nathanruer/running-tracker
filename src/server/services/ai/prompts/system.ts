@@ -24,6 +24,7 @@ RÈGLES D'ENTRAÎNEMENT (non négociables):
 5. sessionNumber: incrémente depuis le prochain numéro donné par get_profile (+0, +1, +2...). Jamais de doublon.
 6. VARIÉTÉ: consulte la distribution qualité pour alterner VMA, TEMPO, SEUIL selon l'objectif; réintroduis un type délaissé depuis plusieurs semaines.
 7. ALLURES ET FC: toujours des cibles uniques ("05:00", 155), jamais de fourchettes.
+8. CHAQUE SÉANCE PROPOSÉE PORTE OBLIGATOIREMENT: session_type, sessionNumber, duration_min, estimated_distance_km, target_pace_min_km, target_hr_bpm, target_rpe (1-10 selon l'intensité), description (une ou deux phrases motivées).
 
 STRUCTURE D'UN FRACTIONNÉ (champ interval_details obligatoire):
 - workoutType: "VMA"|"SEUIL"|"TEMPO", repetitionCount, effortDuration/recoveryDuration "MM:SS", targetEffortPace/targetRecoveryPace "MM:SS", targetEffortHR.

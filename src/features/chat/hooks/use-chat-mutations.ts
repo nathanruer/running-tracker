@@ -8,6 +8,27 @@ import {
 } from '@/lib/services/api-client';
 import { isFractionneType } from '@/lib/utils/session-type';
 import { queryKeys } from '@/lib/constants/query-keys';
+import type { IntervalDetails } from '@/lib/types';
+
+function normalizeIntervalDetails(details: AIRecommendedSession['interval_details']): IntervalDetails | null {
+  if (!details) return null;
+  const steps = (details.steps ?? []).map((step, index) => ({
+    ...step,
+    stepNumber: step.stepNumber ?? index + 1,
+  }));
+  const effortStep = steps.find((step) => step.stepType === 'effort');
+  return {
+    workoutType: details.workoutType ?? null,
+    repetitionCount: details.repetitionCount ?? null,
+    effortDuration: details.effortDuration ?? null,
+    recoveryDuration: details.recoveryDuration ?? null,
+    effortDistance: details.effortDistance ?? effortStep?.distance ?? null,
+    targetEffortPace: details.targetEffortPace ?? null,
+    targetEffortHR: details.targetEffortHR ?? null,
+    targetRecoveryPace: details.targetRecoveryPace ?? null,
+    steps,
+  } as IntervalDetails;
+}
 
 export function useChatMutations(conversationId: string | null) {
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -20,7 +41,7 @@ export function useChatMutations(conversationId: string | null) {
       const comments = recommendationText ? `Séance recommandée : ${recommendationText}` : '';
 
       const sessionType = session.session_type;
-      const intervalDetails = session.interval_details || null;
+      const intervalDetails = normalizeIntervalDetails(session.interval_details || null);
 
       if (isFractionneType(sessionType) && (!intervalDetails?.steps || intervalDetails.steps.length === 0)) {
         throw new Error("Impossible d'ajouter la séance : L'IA n'a pas généré les étapes détaillées. Veuillez demander à l'IA de régénérer la séance.");
