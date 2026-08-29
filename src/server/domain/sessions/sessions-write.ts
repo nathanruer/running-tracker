@@ -227,11 +227,12 @@ async function upsertExternalActivity(tx: Tx, workoutId: string, userId: string,
 
   if (stravaData) {
     const payloadInput = stravaData as Prisma.InputJsonValue;
+    const payloadType = source === 'strava' ? 'strava_activity' : `${source}_activity`;
 
     await tx.external_payloads.upsert({
       where: { externalActivityId: activity.id },
-      update: { payload: payloadInput, payloadType: 'strava_activity' },
-      create: { externalActivityId: activity.id, payload: payloadInput, payloadType: 'strava_activity' },
+      update: { payload: payloadInput, payloadType },
+      create: { externalActivityId: activity.id, payload: payloadInput, payloadType },
     });
   }
 

@@ -106,8 +106,9 @@ export function SessionDetailsSheet({
 
   const isPlannedSession = isPlanned(session);
   const hasStravaData = session.source === 'strava' && stravaData !== null;
+  const hasExternalData = session.source !== null && stravaData !== null;
   const hasRoute = decodedCoordinates.length > 0 && mapPath;
-  const canEnrichWeather = !isPlannedSession && hasStravaData && hasRoute && !session.weather;
+  const canEnrichWeather = !isPlannedSession && hasExternalData && hasRoute && !session.weather;
   const canEnrichStreams = !isPlannedSession
     && hasStravaData
     && !!session.externalId

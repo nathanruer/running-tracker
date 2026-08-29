@@ -82,7 +82,7 @@ export async function bulkEnrichWeatherForIds(
     }
 
     const stravaActivity = workout.external_activities.find(
-      (activity) => activity.source === 'strava' && activity.external_payloads?.payload
+      (activity) => activity.external_payloads?.payload
     );
 
     if (!stravaActivity || !workout.date) {

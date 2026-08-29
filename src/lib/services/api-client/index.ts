@@ -47,3 +47,5 @@ export {
 } from './strava';
 
 export { apiRequest } from './client';
+
+export { importFromIntervals, type IntervalsImportResult } from './intervals';

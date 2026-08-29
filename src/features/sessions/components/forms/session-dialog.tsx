@@ -90,7 +90,7 @@ const SessionDialog = ({
   const watchedSessionType = form.watch('sessionType');
 
   const isStravaImport = useMemo(() => {
-    return initialData?.source === 'strava' || initialData?.externalId;
+    return initialData?.source === 'strava';
   }, [initialData]);
 
   useEffect(() => {

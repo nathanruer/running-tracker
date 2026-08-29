@@ -261,16 +261,16 @@ export function mapWorkoutToSession(
       ? selectExternalActivity(workout.external_activities)
       : null;
     const weather = opts.includeWeather ? mapWeather(workout.weather_observations ?? null) : null;
-    const hasStravaRoute = external?.source === 'strava'
+    const hasStravaRoute = external != null
       && hasStravaRouteInPayload(external.external_payloads?.payload);
-    const weatherNotEnrichable = external?.source === 'strava' && !hasStravaRoute;
+    const weatherNotEnrichable = external != null && !hasStravaRoute;
     const hasWeather = workout.weather_observations !== undefined
       ? Boolean(workout.weather_observations) || weatherNotEnrichable
       : undefined;
     const hasStreamsByCount = workout._count?.workout_streams !== undefined
       ? workout._count.workout_streams > 0
       : undefined;
-    const hasNoStreamsMarker = external?.source === 'strava'
+    const hasNoStreamsMarker = external != null
       && (
         external.sourceStatus === 'no_streams'
         || !external.external_payloads?.payload
@@ -315,7 +315,7 @@ export function mapWorkoutToSession(
   const streams = mapStreams(workout.workout_streams);
   const weather = mapWeather(workout.weather_observations);
   const hasWeather = Boolean(workout.weather_observations);
-  const hasNoStreamsMarker = external?.source === 'strava'
+  const hasNoStreamsMarker = external != null
     && (
       external.sourceStatus === 'no_streams'
       || !external.external_payloads?.payload
