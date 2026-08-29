@@ -160,7 +160,7 @@ export function SessionsTableToolbar({
           <div className="flex items-center gap-1.5 md:gap-3 shrink-0 ml-1">
             <Button
               data-testid="btn-intervals-import"
-              onClick={() => intervalsImport.mutate()}
+              onClick={() => intervalsImport.mutate({})}
               disabled={intervalsImport.isPending}
               variant="outline"
               size="sm"
