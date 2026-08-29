@@ -78,8 +78,16 @@ export const MessageList = memo(function MessageList({
     [plannedSessionIdMap]
   );
 
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  }, []);
+
   const scrollToBottom = useDebouncedCallback(() => {
-    if (containerRef.current) {
+    if (containerRef.current && isNearBottomRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, 100);
@@ -91,7 +99,7 @@ export const MessageList = memo(function MessageList({
   }, [isStreaming, streamingContent, scrollToBottom]);
 
   useEffect(() => {
-    if (!isStreaming && containerRef.current) {
+    if (!isStreaming && containerRef.current && isNearBottomRef.current) {
       containerRef.current.scrollTo({
         top: containerRef.current.scrollHeight,
         behavior: 'smooth',
@@ -102,6 +110,7 @@ export const MessageList = memo(function MessageList({
   return (
     <div
       ref={containerRef}
+      onScroll={handleScroll}
       className="flex-1 overflow-y-auto px-4 pt-6 pb-6 space-y-6 scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20"
     >
       {messages.map((message) => (

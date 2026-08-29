@@ -33,7 +33,14 @@ export const SessionRow = React.memo(function SessionRow({
   const data = useSessionRowData(session);
 
   const handleRowClick = () => {
-    if (data.hasIntervalDetails && !isDeleting) {
+    if (isDeleting) return;
+    onView?.(session);
+  };
+
+  const handleTypeCellClick = (event: React.MouseEvent) => {
+    if (isDeleting) return;
+    if (data.hasIntervalDetails) {
+      event.stopPropagation();
       setIsOpen(!isOpen);
     }
   };
@@ -93,6 +100,7 @@ export const SessionRow = React.memo(function SessionRow({
           isPlanned={data.isPlanned}
           workoutTypeLabel={data.workoutTypeLabel}
           intervalStructure={data.intervalStructure}
+          onClick={handleTypeCellClick}
         />
         
         <MetricCell

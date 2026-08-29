@@ -201,14 +201,20 @@ describe('SessionRow', () => {
       expect(screen.getByText('10x400m')).toBeInTheDocument();
     });
 
-    it('can expand to show interval details when clicked', () => {
+    it('expands interval details when the type cell is clicked, without opening the sheet', () => {
       renderRow(fractionnéSession);
-      
+
+      fireEvent.click(screen.getByText('Fractionné'));
+      expect(screen.getByTestId('interval-details')).toBeInTheDocument();
+      expect(mockOnView).not.toHaveBeenCalled();
+    });
+
+    it('opens the details sheet when the row itself is clicked', () => {
+      renderRow(fractionnéSession);
+
       const row = screen.getByText('Fractionné').closest('tr');
-      if (row) {
-        fireEvent.click(row);
-        expect(screen.getByTestId('interval-details')).toBeInTheDocument();
-      }
+      fireEvent.click(row!.querySelector('td:nth-child(3)')!);
+      expect(mockOnView).toHaveBeenCalledWith(fractionnéSession);
     });
   });
 

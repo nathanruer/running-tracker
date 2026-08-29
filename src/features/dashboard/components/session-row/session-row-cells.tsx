@@ -107,6 +107,7 @@ export function CheckboxCell({
 }
 
 interface SessionTypeCellProps extends CellProps {
+  onClick?: (event: React.MouseEvent) => void;
   sessionType: string | null;
   hasIntervalDetails: boolean;
   isOpen: boolean;
@@ -126,6 +127,7 @@ export function SessionTypeCell({
   workoutTypeLabel,
   intervalStructure,
   className,
+  onClick,
 }: SessionTypeCellProps) {
   const titleColor = isPlanned ? 'text-muted-foreground/30' : 'text-foreground/90';
   const chevronColor = isPlanned 
@@ -142,7 +144,7 @@ export function SessionTypeCell({
   }
 
   return (
-    <TableCell className={cn("text-center whitespace-nowrap px-2 md:px-4", className)}>
+    <TableCell onClick={onClick} className={cn("text-center whitespace-nowrap px-2 md:px-4", className)}>
       <div className="flex flex-col gap-0.5 items-center">
         <div className="flex items-center gap-1.5 group/title">
           <span className={cn(
