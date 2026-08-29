@@ -18,6 +18,7 @@ import {
 export const runtime = 'nodejs';
 
 const DEFAULT_HISTORY_YEARS = 3;
+const RECENT_WINDOW_DAYS = 30;
 
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 19);
@@ -35,8 +36,13 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      const recentOnly = request.nextUrl.searchParams.get('recent') === '1';
       const oldest = new Date();
-      oldest.setFullYear(oldest.getFullYear() - DEFAULT_HISTORY_YEARS);
+      if (recentOnly) {
+        oldest.setDate(oldest.getDate() - RECENT_WINDOW_DAYS);
+      } else {
+        oldest.setFullYear(oldest.getFullYear() - DEFAULT_HISTORY_YEARS);
+      }
       const newest = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const [activities, importedIds, existingWindows] = await Promise.all([

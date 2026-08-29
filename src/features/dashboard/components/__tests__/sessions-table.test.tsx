@@ -5,6 +5,10 @@ import { SessionsTable } from '../sessions-table';
 import type { TrainingSession } from '@/lib/types';
 import type { SortConfig } from '@/lib/domain/sessions';
 
+vi.mock('@/features/import/hooks/use-new-intervals-count', () => ({
+  useNewIntervalsCount: () => 0,
+}));
+
 const originalIO = globalThis.IntersectionObserver;
 
 beforeEach(() => {

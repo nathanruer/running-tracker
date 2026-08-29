@@ -7,7 +7,7 @@ describe('FileImportButtons', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText('Importer Strava')).toBeInTheDocument();
+    expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
   });
 
   it('should render import options label', () => {
@@ -21,14 +21,14 @@ describe('FileImportButtons', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText(/Récupérez automatiquement les données/)).toBeInTheDocument();
+    expect(screen.getByText(/Récupère ta course synchronisée depuis Garmin/)).toBeInTheDocument();
   });
 
   it('should call onStravaClick when strava button is clicked', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    fireEvent.click(screen.getByText('Importer Strava'));
+    fireEvent.click(screen.getByText('Importer depuis intervals.icu'));
 
     expect(onStravaClick).toHaveBeenCalledTimes(1);
   });
@@ -50,21 +50,21 @@ describe('FileImportButtons', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText('Importer Strava')).toBeInTheDocument();
+    expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
   });
 
   it('should render strava button in complete mode', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="complete" onStravaClick={onStravaClick} />);
 
-    expect(screen.getByText('Importer Strava')).toBeInTheDocument();
+    expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
   });
 
   it('should have correct button styling', () => {
     const onStravaClick = vi.fn();
     render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
 
-    const button = screen.getByText('Importer Strava').closest('button');
-    expect(button).toHaveClass('bg-[#FC4C02]');
+    const button = screen.getByText('Importer depuis intervals.icu').closest('button');
+    expect(button).toHaveClass('bg-violet-600');
   });
 });

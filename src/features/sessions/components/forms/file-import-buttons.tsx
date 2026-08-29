@@ -20,7 +20,7 @@ export function FileImportButtons({
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Options de synchronisation</p>
           <p className="text-xs text-muted-foreground/80 font-medium">
-            Récupérez automatiquement les données depuis votre compte.
+            Récupère ta course synchronisée depuis Garmin, prête à personnaliser.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -28,11 +28,11 @@ export function FileImportButtons({
             <Button
               type="button"
               variant="secondary"
-              className="h-9 px-5 font-bold bg-[#FC4C02] hover:bg-[#E54000] text-white active:scale-95 transition-all border-none rounded-xl shadow-lg shadow-orange-500/10"
+              className="h-9 px-5 font-bold bg-violet-600 hover:bg-violet-500 text-white active:scale-95 transition-all border-none rounded-xl shadow-lg shadow-violet-500/10"
               onClick={onStravaClick}
             >
               <Watch className="mr-2 h-4 w-4" />
-              Importer Strava
+              Importer depuis intervals.icu
             </Button>
           )}
         </div>

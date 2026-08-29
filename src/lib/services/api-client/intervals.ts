@@ -9,16 +9,11 @@ export interface IntervalsImportResult {
   total: number;
 }
 
-export async function importFromIntervals(): Promise<IntervalsImportResult> {
-  return apiRequest<IntervalsImportResult>(
-    '/api/intervals/import',
-    { method: 'POST' },
-    IMPORT_TIMEOUT_MS
-  );
-}
-
-export async function getIntervalsActivitiesList(): Promise<StravaActivitiesResponse> {
-  return apiRequest<StravaActivitiesResponse>('/api/intervals/activities');
+export async function getIntervalsActivitiesList(
+  options?: { recent?: boolean }
+): Promise<StravaActivitiesResponse> {
+  const suffix = options?.recent ? '?recent=1' : '';
+  return apiRequest<StravaActivitiesResponse>(`/api/intervals/activities${suffix}`);
 }
 
 export async function importIntervalsSelection(

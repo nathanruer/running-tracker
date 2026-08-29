@@ -13,6 +13,7 @@ import {
 import { SelectionBar } from './selection-bar';
 import { PeriodFilter } from './period-filter';
 import type { Period } from '../hooks/use-dashboard-filters';
+import { useNewIntervalsCount } from '@/features/import/hooks/use-new-intervals-count';
 
 const PERIOD_LABELS: Record<Period, string> = {
   all: 'Tout',
@@ -100,6 +101,7 @@ export function SessionsTableToolbar({
   hasActiveFilters,
   onClearFilters,
 }: SessionsTableToolbarProps) {
+  const newActivitiesCount = useNewIntervalsCount();
   const trimmedSearch = searchQuery.trim();
   const activeFilters = [
     ...(selectedType !== 'all'
@@ -163,11 +165,19 @@ export function SessionsTableToolbar({
                 onClick={actions.onOpenImport}
                 variant="outline"
                 size="sm"
-                className="rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-5 transition-all active:scale-95 flex items-center justify-center shrink-0"
+                className="relative rounded-xl h-9 w-9 md:h-12 md:w-auto md:px-5 transition-all active:scale-95 flex items-center justify-center shrink-0"
                 title="Importer les courses depuis intervals.icu"
               >
                 <RefreshCw className="h-4 w-4" />
                 <span className="hidden md:inline text-[11px] font-bold uppercase tracking-widest leading-none ml-2">Importer</span>
+                {newActivitiesCount > 0 && (
+                  <span
+                    data-testid="intervals-new-badge"
+                    className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-violet-600 text-white text-[10px] font-black flex items-center justify-center"
+                  >
+                    {newActivitiesCount}
+                  </span>
+                )}
               </Button>
             )}
             {actions.onNewSession && (

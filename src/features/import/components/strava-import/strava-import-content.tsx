@@ -17,6 +17,7 @@ import { useTableSelection } from '@/hooks/use-table-selection';
 import { useInfiniteScrollObserver } from '@/hooks/use-infinite-scroll-observer';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { StravaToolbar } from './strava-toolbar';
@@ -51,6 +52,7 @@ export function StravaImportContent({
     loadAllForSearch,
     loadAllActivities,
     cancelLoading,
+    refresh,
     isRefreshing,
   } = useStravaActivities(open);
 
@@ -250,14 +252,14 @@ export function StravaImportContent({
       <DialogHeader className="px-4 md:px-8 pt-6 md:pt-8 relative w-full items-start text-left">
         <div className="flex w-full items-start justify-between gap-4">
           <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight">
-            Importer depuis Strava
+            Importer depuis intervals.icu
           </DialogTitle>
           <CloseButton onClick={handleClose} className="absolute right-4 md:right-8 top-6 md:top-8" />
         </div>
         <DialogDescription className="text-sm md:text-base text-muted-foreground/70 font-medium mt-1">
           {mode === 'complete'
-            ? 'Sélectionnez une activité à importer.'
-            : 'Sélectionnez vos activités Strava.'}
+            ? 'Sélectionne une course à importer.'
+            : 'Sélectionne tes courses synchronisées depuis Garmin.'}
         </DialogDescription>
       </DialogHeader>
 
@@ -271,6 +273,17 @@ export function StravaImportContent({
             <p className="text-xs text-muted-foreground/70 max-w-sm">
               Connecte ton compte depuis Profil → Compte avec ta clé API (Settings → Developer sur intervals.icu).
             </p>
+          </div>
+        ) : !loading && activities.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 px-8 text-center">
+            <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Aucune course sur intervals.icu</p>
+            <p className="text-xs text-muted-foreground/70 max-w-md leading-relaxed">
+              Ta prochaine sortie Garmin apparaîtra ici automatiquement quelques minutes après la synchro de ta montre.
+              Pour ton historique, uploade ton export Garmin sur intervals.icu puis reviens ici.
+            </p>
+            <Button variant="outline" size="sm" onClick={refresh} className="mt-2 rounded-xl">
+              Actualiser
+            </Button>
           </div>
         ) : (
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">

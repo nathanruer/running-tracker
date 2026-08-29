@@ -11,7 +11,6 @@ import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-ske
 import { SessionDetailsSheet } from '@/features/sessions/components/details/session-details-sheet';
 import { useDashboardData } from '@/features/dashboard/hooks/use-dashboard-data';
 import { useDashboardFilters } from '@/features/dashboard/hooks/use-dashboard-filters';
-import { useAutoIntervalsImport } from '@/features/import/hooks/use-intervals-import';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +36,6 @@ const StravaImportDialog = dynamic(
 const SESSION_DETAILS_STALE_TIME = 5 * 60 * 1000;
 
 function DashboardContent() {
-  useAutoIntervalsImport();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
