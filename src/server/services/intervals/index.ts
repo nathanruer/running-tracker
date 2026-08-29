@@ -9,7 +9,7 @@ export {
 export { getIntervalsApiKey } from './account';
 export {
   mapIntervalsActivityToSessionPayload,
-  buildPolylineFromStreams,
+  buildPolylineFromLatLngs,
   encodePolyline,
   mapStreamsToStravaShape,
   IMPORTABLE_TYPES,

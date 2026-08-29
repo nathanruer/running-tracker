@@ -74,6 +74,18 @@ export async function getIntervalsActivities(
   return z.array(intervalsActivitySchema).parse(data);
 }
 
+const intervalsMapSchema = z.object({
+  latlngs: z.array(z.unknown()).nullish(),
+}).loose();
+
+export async function getIntervalsActivityMap(
+  apiKey: string,
+  activityId: string
+): Promise<unknown[]> {
+  const data = await fetchIntervals(apiKey, `/activity/${activityId}/map`);
+  return intervalsMapSchema.parse(data).latlngs ?? [];
+}
+
 export async function getIntervalsActivityStreams(
   apiKey: string,
   activityId: string

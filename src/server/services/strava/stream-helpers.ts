@@ -1,9 +1,9 @@
 import 'server-only';
 import { getActivityStreams } from './client';
 import { getValidAccessToken } from './auth-helpers';
-import { getIntervalsActivityStreams } from '@/server/services/intervals/client';
+import { getIntervalsActivityStreams, getIntervalsActivityMap } from '@/server/services/intervals/client';
 import { getIntervalsApiKey } from '@/server/services/intervals/account';
-import { mapStreamsToStravaShape, buildPolylineFromStreams, INTERVALS_SOURCE } from '@/server/services/intervals/mapper';
+import { mapStreamsToStravaShape, buildPolylineFromLatLngs, INTERVALS_SOURCE } from '@/server/services/intervals/mapper';
 import type { StravaStreamSet } from '@/lib/types';
 import { logger } from '@/server/infrastructure/logger';
 import { prisma } from '@/server/database';
@@ -33,9 +33,12 @@ export async function fetchStreamsForSessionWithStatus(
       if (!apiKey) {
         return { status: 'missing_account', streams: null };
       }
-      const streams = await getIntervalsActivityStreams(apiKey, externalId);
+      const [streams, latlngs] = await Promise.all([
+        getIntervalsActivityStreams(apiKey, externalId),
+        getIntervalsActivityMap(apiKey, externalId).catch(() => []),
+      ]);
       const mapped = mapStreamsToStravaShape(streams);
-      const polyline = buildPolylineFromStreams(streams);
+      const polyline = buildPolylineFromLatLngs(latlngs);
       if (!mapped) {
         return { status: 'no_streams', streams: null, polyline };
       }

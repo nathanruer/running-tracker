@@ -3,7 +3,7 @@ import { sessionSchema } from '@/lib/validation/session';
 import { stravaPayloadSchema, stravaStreamPayloadSchema } from '@/lib/validation/payloads';
 import {
   mapIntervalsActivityToSessionPayload,
-  buildPolylineFromStreams,
+  buildPolylineFromLatLngs,
   encodePolyline,
   mapStreamsToStravaShape,
 } from '../mapper';
@@ -51,7 +51,8 @@ describe('intervals mapper', () => {
   });
 
   it('produces stravaData and streams accepted by the storage payload schemas', () => {
-    const payload = mapIntervalsActivityToSessionPayload(activity, streams);
+    const polyline = buildPolylineFromLatLngs([[48.8566, 2.3522], [48.857, 2.353], [48.8574, 2.3538]]);
+    const payload = mapIntervalsActivityToSessionPayload(activity, streams, polyline);
 
     expect(stravaPayloadSchema.safeParse(payload.stravaData).success).toBe(true);
     expect(payload.stravaData.map?.summary_polyline).toBeTruthy();
@@ -88,8 +89,14 @@ describe('intervals mapper', () => {
     expect(mapped?.time.original_size).toBe(3);
   });
 
-  it('returns null polyline when latlng is missing or too short', () => {
-    expect(buildPolylineFromStreams([{ type: 'heartrate', data: [1] }])).toBeNull();
-    expect(buildPolylineFromStreams([{ type: 'latlng', data: [[48.8, 2.3]] }])).toBeNull();
+  it('returns null polyline when latlngs are missing or too short', () => {
+    expect(buildPolylineFromLatLngs([])).toBeNull();
+    expect(buildPolylineFromLatLngs([[48.8, 2.3]])).toBeNull();
+    expect(buildPolylineFromLatLngs([null, [48.8, 2.3], null])).toBeNull();
+  });
+
+  it('encodes a polyline from valid latlng pairs, skipping nulls', () => {
+    const polyline = buildPolylineFromLatLngs([null, [48.8819, 2.3201], [48.8821, 2.3199], null, [48.8825, 2.3195]]);
+    expect(polyline).toBeTruthy();
   });
 });

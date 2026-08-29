@@ -53,11 +53,8 @@ function isLatLngPair(value: unknown): value is [number, number] {
   );
 }
 
-export function buildPolylineFromStreams(streams: IntervalsStream[]): string | null {
-  const latlng = streams.find((s) => s.type === 'latlng');
-  if (!latlng) return null;
-
-  const pairs = latlng.data.filter(isLatLngPair);
+export function buildPolylineFromLatLngs(latlngs: unknown[]): string | null {
+  const pairs = latlngs.filter(isLatLngPair);
   if (pairs.length < 2) return null;
 
   return encodePolyline(downsample(pairs, MAX_POLYLINE_POINTS));
@@ -104,11 +101,11 @@ function numericId(id: string): number {
 
 export function mapIntervalsActivityToSessionPayload(
   activity: IntervalsActivity,
-  streams: IntervalsStream[]
+  streams: IntervalsStream[],
+  polyline: string | null = null
 ) {
   const distanceKm = (activity.distance ?? 0) / 1000;
   const movingSeconds = activity.moving_time ?? activity.elapsed_time ?? 0;
-  const polyline = buildPolylineFromStreams(streams);
   const mappedStreams = mapStreamsToStravaShape(streams);
 
   const stravaShapedActivity = {
