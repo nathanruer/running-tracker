@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
-import { ProfileForm, SecurityForm, TrainingZonesTable, StravaAccountCard } from '@/features/profile/components/account';
+import { ProfileForm, SecurityForm, TrainingZonesTable, IntervalsAccountCard } from '@/features/profile/components/account';
 import { ProfileContentSkeleton, AnalyticsSkeleton, HistorySkeleton } from '@/features/profile/components/profile-skeleton';
 import { getCurrentUser, getSessions, logoutUser } from '@/lib/services/api-client';
 import { CACHE_STORAGE_KEY } from '@/lib/constants';
@@ -249,7 +249,7 @@ export default function ProfilePageClient({ initialParams }: ProfilePageClientPr
                   maxHeartRate={user.maxHeartRate ?? undefined}
                   vma={user.vma ?? undefined}
                 />
-                <StravaAccountCard stravaId={user.stravaId} />
+                <IntervalsAccountCard intervalsAthleteId={user.intervalsAthleteId} />
               </div>
             </div>
 

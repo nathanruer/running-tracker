@@ -6,7 +6,7 @@ import { logger } from '@/server/infrastructure/logger';
 import {
   getIntervalsActivities,
   getIntervalsActivityStreams,
-  isIntervalsConfigured,
+  getIntervalsApiKey,
   mapIntervalsActivityToSessionPayload,
   IMPORTABLE_TYPES,
   INTERVALS_SOURCE,
@@ -43,9 +43,10 @@ export async function POST(request: NextRequest) {
     request,
     null,
     async (_data, userId) => {
-      if (!isIntervalsConfigured()) {
+      const apiKey = await getIntervalsApiKey(userId);
+      if (!apiKey) {
         return NextResponse.json(
-          { error: 'intervals.icu non configuré (INTERVALS_ICU_API_KEY manquante)' },
+          { error: 'intervals.icu non configuré : connecte ton compte depuis Profil → Compte.' },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const [activities, importedIds, existingWindows] = await Promise.all([
-          getIntervalsActivities(toIsoDate(oldest), toIsoDate(newest)),
+          getIntervalsActivities(apiKey, toIsoDate(oldest), toIsoDate(newest)),
           getImportedExternalIds(userId, INTERVALS_SOURCE),
           findExistingWorkoutWindows(userId, new Date(oldest.getTime() - 24 * 60 * 60 * 1000)),
         ]);
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          const streams = await getIntervalsActivityStreams(activity.id).catch((error) => {
+          const streams = await getIntervalsActivityStreams(apiKey, activity.id).catch((error) => {
             logger.warn({ error, activityId: activity.id }, 'intervals-streams-fetch-failed');
             return [];
           });

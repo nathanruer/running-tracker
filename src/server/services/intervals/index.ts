@@ -2,10 +2,11 @@ import 'server-only';
 export {
   getIntervalsActivities,
   getIntervalsActivityStreams,
-  isIntervalsConfigured,
+  getIntervalsAthlete,
   type IntervalsActivity,
   type IntervalsStream,
 } from './client';
+export { getIntervalsApiKey } from './account';
 export {
   mapIntervalsActivityToSessionPayload,
   buildPolylineFromStreams,

@@ -11,9 +11,7 @@ const USER_WITH_PROFILE_SELECT = {
   email: true,
   createdAt: true,
   externalAccounts: {
-    where: { provider: 'strava' },
-    select: { externalId: true, tokenExpiresAt: true },
-    take: 1,
+    select: { provider: true, externalId: true, tokenExpiresAt: true },
   },
   profile: {
     select: {
@@ -39,7 +37,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: HTTP_STATUS.NOT_FOUND });
       }
 
-      const stravaAccount = user.externalAccounts[0] ?? null;
+      const stravaAccount = user.externalAccounts.find((a) => a.provider === 'strava') ?? null;
+      const intervalsAccount = user.externalAccounts.find((a) => a.provider === 'intervals_icu') ?? null;
       const profile = user.profile ?? null;
 
       return NextResponse.json({
@@ -49,6 +48,7 @@ export async function GET(request: NextRequest) {
           createdAt: user.createdAt,
           stravaId: stravaAccount?.externalId ?? null,
           stravaTokenExpiresAt: stravaAccount?.tokenExpiresAt ?? null,
+          intervalsAthleteId: intervalsAccount?.externalId ?? null,
           weight: profile?.weight ?? null,
           age: profile?.age ?? null,
           maxHeartRate: profile?.maxHeartRate ?? null,
@@ -98,7 +98,8 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: HTTP_STATUS.NOT_FOUND });
       }
 
-      const stravaAccount = user.externalAccounts[0] ?? null;
+      const stravaAccount = user.externalAccounts.find((a) => a.provider === 'strava') ?? null;
+      const intervalsAccount = user.externalAccounts.find((a) => a.provider === 'intervals_icu') ?? null;
       const profile = user.profile ?? null;
 
       return NextResponse.json({
@@ -108,6 +109,7 @@ export async function PUT(request: NextRequest) {
           createdAt: user.createdAt,
           stravaId: stravaAccount?.externalId ?? null,
           stravaTokenExpiresAt: stravaAccount?.tokenExpiresAt ?? null,
+          intervalsAthleteId: intervalsAccount?.externalId ?? null,
           weight: profile?.weight ?? null,
           age: profile?.age ?? null,
           maxHeartRate: profile?.maxHeartRate ?? null,

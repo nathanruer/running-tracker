@@ -3,7 +3,7 @@ export { ProfileSkeleton, ProfileContentSkeleton } from './components/profile-sk
 
 export {
   ProfileForm,
-  StravaAccountCard,
+  IntervalsAccountCard,
   TrainingZonesTable,
 } from './components/account';
 

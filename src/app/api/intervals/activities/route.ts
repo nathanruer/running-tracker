@@ -4,7 +4,7 @@ import { HTTP_STATUS } from '@/lib/constants';
 import { formatStravaActivity } from '@/lib/utils/strava/activity-formatter';
 import {
   getIntervalsActivities,
-  isIntervalsConfigured,
+  getIntervalsApiKey,
   mapIntervalsActivityToSessionPayload,
   IMPORTABLE_TYPES,
   INTERVALS_SOURCE,
@@ -27,9 +27,10 @@ export async function GET(request: NextRequest) {
   return handleGetRequest(
     request,
     async (userId) => {
-      if (!isIntervalsConfigured()) {
+      const apiKey = await getIntervalsApiKey(userId);
+      if (!apiKey) {
         return NextResponse.json(
-          { error: 'intervals.icu non configuré (INTERVALS_ICU_API_KEY manquante)' },
+          { error: 'intervals.icu non configuré : connecte ton compte depuis Profil → Compte.' },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       const newest = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const [activities, importedIds, existingWindows] = await Promise.all([
-        getIntervalsActivities(toIsoDate(oldest), toIsoDate(newest)),
+        getIntervalsActivities(apiKey, toIsoDate(oldest), toIsoDate(newest)),
         getImportedExternalIds(userId, INTERVALS_SOURCE),
         findExistingWorkoutWindows(userId, oldest),
       ]);

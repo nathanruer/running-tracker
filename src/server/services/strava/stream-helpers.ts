@@ -2,6 +2,7 @@ import 'server-only';
 import { getActivityStreams } from './client';
 import { getValidAccessToken } from './auth-helpers';
 import { getIntervalsActivityStreams } from '@/server/services/intervals/client';
+import { getIntervalsApiKey } from '@/server/services/intervals/account';
 import { mapStreamsToStravaShape, buildPolylineFromStreams, INTERVALS_SOURCE } from '@/server/services/intervals/mapper';
 import type { StravaStreamSet } from '@/lib/types';
 import { logger } from '@/server/infrastructure/logger';
@@ -28,7 +29,11 @@ export async function fetchStreamsForSessionWithStatus(
 ): Promise<StreamFetchResult> {
   if (source === INTERVALS_SOURCE && externalId) {
     try {
-      const streams = await getIntervalsActivityStreams(externalId);
+      const apiKey = await getIntervalsApiKey(userId);
+      if (!apiKey) {
+        return { status: 'missing_account', streams: null };
+      }
+      const streams = await getIntervalsActivityStreams(apiKey, externalId);
       const mapped = mapStreamsToStravaShape(streams);
       const polyline = buildPolylineFromStreams(streams);
       if (!mapped) {

@@ -8,6 +8,7 @@ export interface User {
   goal?: string | null;
   stravaId?: string | null;
   stravaTokenExpiresAt?: Date | null;
+  intervalsAthleteId?: string | null;
 }
 
 export interface UserUpdatePayload {

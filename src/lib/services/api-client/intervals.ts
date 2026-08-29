@@ -30,3 +30,18 @@ export async function importIntervalsSelection(
     IMPORT_TIMEOUT_MS
   );
 }
+
+export interface IntervalsConnectResult {
+  athleteId: string;
+}
+
+export async function connectIntervalsAccount(apiKey: string): Promise<IntervalsConnectResult> {
+  return apiRequest<IntervalsConnectResult>('/api/intervals/account', {
+    method: 'POST',
+    body: JSON.stringify({ apiKey }),
+  });
+}
+
+export async function disconnectIntervalsAccount(): Promise<void> {
+  await apiRequest('/api/intervals/account', { method: 'DELETE' });
+}

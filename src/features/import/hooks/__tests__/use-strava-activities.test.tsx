@@ -93,7 +93,7 @@ describe('useStravaActivities', () => {
 
   it('should flag missing configuration as not connected', async () => {
     vi.mocked(apiClient.getIntervalsActivitiesList).mockRejectedValue(
-      new Error('intervals.icu non configuré (INTERVALS_ICU_API_KEY manquante)')
+      new Error('intervals.icu non configuré : connecte ton compte depuis Profil → Compte.')
     );
 
     const { result } = renderHook(() => useStravaActivities(true), {

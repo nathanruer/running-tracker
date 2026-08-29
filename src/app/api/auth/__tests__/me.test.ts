@@ -39,7 +39,7 @@ describe('/api/auth/me', () => {
         email: 'test@example.com',
         createdAt: '2025-12-27T10:00:00.000Z',
         externalAccounts: [
-          { externalId: 'strava-123', tokenExpiresAt: '2025-12-27T10:00:00.000Z' },
+          { provider: 'strava', externalId: 'strava-123', tokenExpiresAt: '2025-12-27T10:00:00.000Z' },
         ],
         profile: {
           weight: 70,
@@ -64,6 +64,7 @@ describe('/api/auth/me', () => {
           email: 'test@example.com',
           createdAt: '2025-12-27T10:00:00.000Z',
           stravaId: 'strava-123',
+          intervalsAthleteId: null,
           stravaTokenExpiresAt: '2025-12-27T10:00:00.000Z',
           weight: 70,
           age: 30,
@@ -79,9 +80,7 @@ describe('/api/auth/me', () => {
           email: true,
           createdAt: true,
           externalAccounts: {
-            where: { provider: 'strava' },
-            select: { externalId: true, tokenExpiresAt: true },
-            take: 1,
+            select: { provider: true, externalId: true, tokenExpiresAt: true },
           },
           profile: {
             select: {
@@ -162,6 +161,7 @@ describe('/api/auth/me', () => {
           email: 'test@example.com',
           createdAt: '2025-12-27T10:00:00.000Z',
           stravaId: null,
+          intervalsAthleteId: null,
           stravaTokenExpiresAt: null,
           weight: 75,
           age: 31,
@@ -240,6 +240,7 @@ describe('/api/auth/me', () => {
           email: 'test@example.com',
           createdAt: '2025-12-27T10:00:00.000Z',
           stravaId: null,
+          intervalsAthleteId: null,
           stravaTokenExpiresAt: null,
           weight: 75,
           age: 30,

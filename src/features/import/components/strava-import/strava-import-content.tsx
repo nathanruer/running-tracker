@@ -269,7 +269,7 @@ export function StravaImportContent({
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
             <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">intervals.icu non configuré</p>
             <p className="text-xs text-muted-foreground/70 max-w-sm">
-              Ajoute ta clé API dans le fichier .env (INTERVALS_ICU_API_KEY) puis redémarre le serveur.
+              Connecte ton compte depuis Profil → Compte avec ta clé API (Settings → Developer sur intervals.icu).
             </p>
           </div>
         ) : (

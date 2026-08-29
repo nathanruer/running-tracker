@@ -32,20 +32,15 @@ const intervalsStreamSchema = z.object({
 
 export type IntervalsStream = z.infer<typeof intervalsStreamSchema>;
 
-function getApiKey(): string {
-  const key = process.env.INTERVALS_ICU_API_KEY;
-  if (!key) {
-    throw new Error('Clé API intervals.icu manquante (INTERVALS_ICU_API_KEY)');
-  }
-  return key;
-}
+const intervalsAthleteSchema = z.object({
+  id: z.string(),
+  name: z.string().nullish(),
+}).loose();
 
-export function isIntervalsConfigured(): boolean {
-  return !!process.env.INTERVALS_ICU_API_KEY;
-}
+export type IntervalsAthlete = z.infer<typeof intervalsAthleteSchema>;
 
-async function fetchIntervals(path: string): Promise<unknown> {
-  const auth = Buffer.from(`API_KEY:${getApiKey()}`).toString('base64');
+async function fetchIntervals(apiKey: string, path: string): Promise<unknown> {
+  const auth = Buffer.from(`API_KEY:${apiKey}`).toString('base64');
 
   const response = await fetch(`${BASE_URL}${path}`, {
     headers: { Authorization: `Basic ${auth}` },
@@ -64,20 +59,27 @@ async function fetchIntervals(path: string): Promise<unknown> {
   return response.json();
 }
 
+export async function getIntervalsAthlete(apiKey: string): Promise<IntervalsAthlete> {
+  const data = await fetchIntervals(apiKey, '/athlete/0');
+  return intervalsAthleteSchema.parse(data);
+}
+
 export async function getIntervalsActivities(
+  apiKey: string,
   oldest: string,
   newest: string
 ): Promise<IntervalsActivity[]> {
   const params = new URLSearchParams({ oldest, newest });
-  const data = await fetchIntervals(`/athlete/0/activities?${params}`);
+  const data = await fetchIntervals(apiKey, `/athlete/0/activities?${params}`);
   return z.array(intervalsActivitySchema).parse(data);
 }
 
 export async function getIntervalsActivityStreams(
+  apiKey: string,
   activityId: string
 ): Promise<IntervalsStream[]> {
   const types = ['time', 'distance', 'velocity_smooth', 'heartrate', 'cadence', 'altitude', 'latlng'];
   const params = new URLSearchParams({ types: types.join(',') });
-  const data = await fetchIntervals(`/activity/${activityId}/streams?${params}`);
+  const data = await fetchIntervals(apiKey, `/activity/${activityId}/streams?${params}`);
   return z.array(intervalsStreamSchema).parse(data);
 }
