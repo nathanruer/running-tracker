@@ -29,7 +29,7 @@ export function ChatView({ conversationId, onConversationCreated }: ChatViewProp
 
   const { data: allSessions = [] } = useQuery({
     queryKey: queryKeys.sessionsHistory(),
-    queryFn: () => getSessions(50, 0, 'all'),
+    queryFn: () => getSessions(50, 0, 'all', undefined, undefined, undefined, undefined, 'table'),
     staleTime: 5 * 60 * 1000,
   });
 

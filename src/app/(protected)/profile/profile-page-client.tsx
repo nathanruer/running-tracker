@@ -108,7 +108,7 @@ export default function ProfilePageClient() {
 
   const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
     queryKey: queryKeys.sessionsAll(user?.id ?? null),
-    queryFn: () => getSessions(undefined, undefined, undefined, undefined, undefined, undefined, 'analytics'),
+    queryFn: () => getSessions(undefined, undefined, undefined, undefined, undefined, undefined, 'analytics', 'table'),
     enabled: !!user && activeView === 'history',
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,
