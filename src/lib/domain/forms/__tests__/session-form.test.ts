@@ -416,4 +416,21 @@ describe('initializeFormForComplete', () => {
     });
   });
 
+  describe('importedComment', () => {
+    it('drops the names Garmin generates on its own', () => {
+      expect(initializeFormForCreate({ comments: 'Paris Course à pied' }).comments).toBe('');
+      expect(initializeFormForCreate({ comments: 'Lunch Run' }).comments).toBe('');
+    });
+
+    it('keeps a name the athlete wrote', () => {
+      expect(initializeFormForCreate({ comments: 'Fractionné avec Paul' }).comments).toBe('Fractionné avec Paul');
+    });
+
+    it('keeps the note of the planned session when completing', () => {
+      const session = { status: 'planned', date: '2024-01-15', sessionType: 'Fractionné', comments: 'Séance seuil du coach' } as unknown as TrainingSession;
+
+      expect(initializeFormForComplete(session, { comments: 'Paris Course à pied' }).comments).toBe('Séance seuil du coach');
+    });
+  });
+
 });

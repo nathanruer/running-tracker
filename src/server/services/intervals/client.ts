@@ -113,6 +113,8 @@ export async function getIntervalsActivityStreams(
 const intervalsIntervalSchema = z.object({
   type: z.string().nullish(),
   group_id: z.string().nullish(),
+  start_time: z.number().nullish(),
+  end_time: z.number().nullish(),
   moving_time: z.number().nullish(),
   distance: z.number().nullish(),
   average_heartrate: z.number().nullish(),

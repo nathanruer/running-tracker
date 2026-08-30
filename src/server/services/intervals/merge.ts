@@ -72,6 +72,8 @@ function lapsOf(part: MergePart): IntervalsInterval[] {
 
   return [{
     type: 'RECOVERY',
+    start_time: 0,
+    end_time: movingSeconds(part.activity),
     moving_time: movingSeconds(part.activity),
     distance: part.activity.distance ?? 0,
     average_heartrate: part.activity.average_heartrate ?? null,

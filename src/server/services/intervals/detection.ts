@@ -26,10 +26,21 @@ interface Lap {
   hr: number | null;
 }
 
+/**
+ * Duration of a lap: the distance between its bounds, which matches the lap the watch closed.
+ * `moving_time` is recomputed by intervals.icu on the samples and drifts by a few seconds.
+ */
+function lapSeconds(interval: IntervalsInterval): number {
+  const start = interval.start_time;
+  const end = interval.end_time;
+  if (start != null && end != null && end > start) return Math.round(end - start);
+  return Math.round(interval.moving_time ?? 0);
+}
+
 function lapOf(interval: IntervalsInterval): Lap {
   return {
     kind: interval.type === 'RECOVERY' ? 'recovery' : 'effort',
-    movingS: Math.round(interval.moving_time ?? 0),
+    movingS: lapSeconds(interval),
     distanceM: interval.distance ?? 0,
     hr: interval.average_heartrate != null ? Math.round(interval.average_heartrate) : null,
   };

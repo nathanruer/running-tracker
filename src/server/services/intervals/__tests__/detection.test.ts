@@ -9,6 +9,16 @@ const lap = (
   average_heartrate?: number
 ): IntervalsInterval => ({ type, moving_time, distance, average_heartrate });
 
+/** Laps as intervals.icu really returns them: bounds from the watch, moving time recomputed. */
+const bounded = (
+  type: 'WORK' | 'RECOVERY',
+  start_time: number,
+  end_time: number,
+  moving_time: number,
+  distance: number,
+  average_heartrate?: number
+): IntervalsInterval => ({ type, start_time, end_time, moving_time, distance, average_heartrate });
+
 describe('detectSessionStructure', () => {
   it('maps a tempo session recorded by the watch (2 x 10 min) and drops the start artifact', () => {
     const detected = detectSessionStructure([
@@ -34,6 +44,18 @@ describe('detectSessionStructure', () => {
       { stepNumber: 2, stepType: 'recovery', duration: '01:56', distance: 0.32, pace: '06:03', hr: 161 },
       { stepNumber: 3, stepType: 'effort', duration: '09:55', distance: 1.94, pace: '05:07', hr: 174 },
     ]);
+  });
+
+  it('times the steps on the lap bounds rather than the recomputed moving time', () => {
+    const detected = detectSessionStructure([
+      bounded('WORK', 0, 14, 16, 37.08, 137),
+      bounded('WORK', 14, 613, 604, 1847.49, 162),
+      bounded('RECOVERY', 613, 735, 116, 318.13, 161),
+      bounded('WORK', 735, 1331, 595, 1944.62, 174),
+    ]);
+
+    expect(detected.intervalDetails?.steps.map((step) => step.duration)).toEqual(['09:59', '02:02', '09:56']);
+    expect(detected.intervalDetails).toMatchObject({ effortDuration: '10:00', recoveryDuration: '02:00' });
   });
 
   it('proposes a plain run when the activity holds a single effort', () => {

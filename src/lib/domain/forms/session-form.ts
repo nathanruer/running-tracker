@@ -5,6 +5,14 @@ import { transformStepsData, getSessionDisplayData } from '@/lib/domain/forms/se
 import { transformIntervalData } from '@/lib/utils/intervals';
 import { normalizeDurationToHHMMSS } from '@/lib/utils/duration';
 
+/** Garmin names every activity "<lieu ou moment> Course à pied" — not worth carrying as a note. */
+const PROVIDER_DEFAULT_NAME = /(course à pied|run|running)$/i;
+
+export function importedComment(comment: string | null | undefined): string {
+  const name = comment?.trim() ?? '';
+  return PROVIDER_DEFAULT_NAME.test(name) ? '' : name;
+}
+
 /** Spreads intervals coming from an import into the flat fields the form edits. */
 export function intervalDetailsToFormFields(
   details: IntervalDetails | null | undefined
@@ -67,8 +75,7 @@ export function initializeFormForComplete(
   const perceivedExertion = session.targetRPE || null;
 
   const sessionComments = session.comments || '';
-  const importedComments = importedFields.comments || '';
-  const comments = sessionComments || importedComments;
+  const comments = sessionComments || importedComment(importedFields.comments);
 
   // Completing a planned session: what the watch recorded wins over what the coach had planned. A
   // full detected set replaces the plan; a partial one (steps only) just fills in what it carries.
@@ -176,8 +183,8 @@ export function initializeFormForCreate(
       avgPace: '',
       avgHeartRate: null,
       perceivedExertion: null,
-      comments: '',
       ...importedFields,
+      comments: importedComment(importedFields.comments),
       sessionType: importedFields.sessionType || 'Footing',
     };
   }
