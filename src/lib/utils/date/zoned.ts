@@ -50,3 +50,13 @@ export function zonedWallTime(value: string, timeZone: string): Date | null {
     timeZone
   );
 }
+
+/** Civil day (`YYYY-MM-DD`) of an instant in the given zone. */
+export function civilDayInZone(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}

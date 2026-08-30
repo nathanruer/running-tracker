@@ -32,7 +32,9 @@ describe('sessions-read', () => {
         id: 'workout-1',
         userId: 'user-1',
         planSessionId: null,
-        date: new Date('2026-01-01T10:00:00Z'),
+        startedAt: new Date('2026-01-01T10:00:00Z'),
+        timezone: 'Europe/Paris',
+        datePrecision: 'instant',
         status: 'completed',
         sessionNumber: 1,
         week: 1,
@@ -40,18 +42,18 @@ describe('sessions-read', () => {
         comments: 'Nice',
         perceivedExertion: 2,
         plan_sessions: null,
-        workout_metrics_raw: {
-          durationSeconds: 3600,
-          distanceMeters: 10000,
-          avgPace: '06:00',
-          avgHeartRate: 140,
-          averageCadence: 80,
-          elevationGain: 120,
-          calories: 500,
-        },
+        durationS: 3600,
+        distanceM: 10000,
+        paceSKm: 360,
+        avgHr: 140,
+        maxHr: null,
+        avgCadence: 80,
+        elevationGainM: 120,
+        calories: 500,
+        routePolyline: null,
         external_activities: [],
         weather_observations: null,
-        workout_streams: [],
+        workout_streams_v3: null,
       },
     ] as never);
 
@@ -87,6 +89,8 @@ describe('sessions-read', () => {
     expect(sessions[0].id).toBe('workout-1');
     expect(sessions[1].id).toBe('plan-1');
     expect(sessions[0].date).toBe('2026-01-01T10:00:00.000Z');
+    expect(sessions[0].localDate).toBe('2026-01-01');
+    expect(sessions[0].avgPace).toBe('06:00');
     expect(sessions[1].plannedDate).toBe('2026-01-02T10:00:00.000Z');
   });
 
@@ -103,7 +107,9 @@ describe('sessions-read', () => {
       id: 'workout-2',
       userId: 'user-1',
       planSessionId: null,
-      date: new Date('2026-01-03T10:00:00Z'),
+      startedAt: new Date('2026-01-03T10:00:00Z'),
+      timezone: 'Europe/Paris',
+      datePrecision: 'instant',
       status: 'completed',
       sessionNumber: 3,
       week: 1,
@@ -111,10 +117,18 @@ describe('sessions-read', () => {
       comments: '',
       perceivedExertion: 4,
       plan_sessions: null,
-      workout_metrics_raw: null,
+      durationS: null,
+      distanceM: null,
+      paceSKm: null,
+      avgHr: null,
+      maxHr: null,
+      avgCadence: null,
+      elevationGainM: null,
+      calories: null,
+      routePolyline: null,
       external_activities: [],
       weather_observations: null,
-      workout_streams: [],
+      workout_streams_v3: null,
     } as never);
 
     const session = await fetchSessionById('user-1', 'workout-2');

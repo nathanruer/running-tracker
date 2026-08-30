@@ -9,7 +9,7 @@ export function initializeFormForComplete(
 ): Partial<FormValues> {
   const { date, ...importedFields } = initialData || {};
   const sessionDate = date ? extractDatePart(date) :
-                      (session.date ? extractDatePart(session.date) : getTodayISO());
+                      (session.localDate ?? (session.date ? extractDatePart(session.date) : getTodayISO()));
 
   const perceivedExertion = session.targetRPE || null;
 
@@ -60,9 +60,9 @@ export function initializeFormForComplete(
  * Initialize the form to edit an existing session
  */
 export function initializeFormForEdit(session: TrainingSession): Partial<FormValues> {
-  const sessionDate = session.date
+  const sessionDate = session.localDate ?? (session.date
     ? extractDatePart(session.date)
-    : (session.plannedDate ? extractDatePart(session.plannedDate) : '');
+    : (session.plannedDate ? extractDatePart(session.plannedDate) : ''));
   const displayData = getSessionDisplayData(session);
 
   return {

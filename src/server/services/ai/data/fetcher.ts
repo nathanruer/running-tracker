@@ -3,6 +3,7 @@ import { prisma } from '@/server/database';
 import type { Session, UserProfile, TrainingSession } from '@/lib/types';
 import type { NormalizedSession } from '@/lib/domain/sessions/types';
 import { fetchSessions as fetchTrainingSessions } from '@/server/domain/sessions/sessions-read';
+import { extractDatePart } from '@/lib/utils/date';
 
 export async function fetchProfile(userId: string): Promise<UserProfile> {
   const user = await prisma.users.findUnique({
@@ -25,6 +26,7 @@ export async function fetchProfile(userId: string): Promise<UserProfile> {
 function normalizeSession(session: TrainingSession): NormalizedSession {
   return {
     date: session.date ?? '',
+    localDate: session.localDate ?? (session.date ? extractDatePart(session.date) : ''),
     sessionType: session.sessionType ?? '',
     avgPace: session.avgPace ?? '',
     duration: session.duration ?? '',
@@ -53,17 +55,15 @@ export async function fetchSessions(userId: string, limit: number): Promise<Sess
 export async function fetchSessionStats(
   userId: string
 ): Promise<{ totalSessions: number; totalDistance: number }> {
-  const [countResult, distanceResult] = await Promise.all([
-    prisma.workouts.count({ where: { userId } }),
-    prisma.workout_metrics_raw.aggregate({
-      where: { workouts: { userId } },
-      _sum: { distanceMeters: true },
-    }),
-  ]);
+  const stats = await prisma.workouts.aggregate({
+    where: { userId },
+    _count: { _all: true },
+    _sum: { distanceM: true },
+  });
 
   return {
-    totalSessions: countResult,
-    totalDistance: (distanceResult._sum.distanceMeters ?? 0) / 1000,
+    totalSessions: stats._count._all,
+    totalDistance: (stats._sum.distanceM ?? 0) / 1000,
   };
 }
 

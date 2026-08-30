@@ -108,9 +108,9 @@ export const stravaActivitySchema = z.object({
 
 export const stravaStreamSchema = z.object({
   data: z.array(z.number()).min(1),
-  series_type: z.enum(['time', 'distance']),
-  original_size: z.number().positive(),
-  resolution: z.enum(['low', 'medium', 'high']),
+  series_type: z.enum(['time', 'distance']).optional(),
+  original_size: z.number().positive().optional(),
+  resolution: z.enum(['low', 'medium', 'high']).optional(),
 });
 
 export const stravaStreamSetSchema = z.record(z.string(), stravaStreamSchema);
@@ -150,6 +150,12 @@ const trainingSessionBaseSchema = z.object({
   weather: weatherDataSchema.nullable().optional(),
   hasWeather: z.boolean().optional(),
   hasStreams: z.boolean().optional(),
+  startedAt: z.string().optional(),
+  timezone: z.string().optional(),
+  datePrecision: z.enum(['instant', 'day']).optional(),
+  localDate: z.string().optional(),
+  routePolyline: z.string().nullable().optional(),
+  maxHeartRate: z.number().nullable().optional(),
 });
 
 export const plannedSessionEntitySchema = trainingSessionBaseSchema.extend({

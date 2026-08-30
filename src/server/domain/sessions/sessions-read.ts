@@ -5,6 +5,22 @@ import type { TrainingSession } from '@/lib/types';
 import { parseSortParam, type SortConfig } from '@/lib/domain/sessions/sorting';
 import { mapWorkoutToSession, mapPlanToSession, type ExternalFlags } from '@/server/domain/sessions/mappers';
 
+const EXTERNAL_ACTIVITY_SELECT = {
+  source: true,
+  externalId: true,
+  sourceStatus: true,
+  rawPayload: true,
+  hasStreams: true,
+  streamsStatus: true,
+} satisfies Prisma.external_activitiesSelect;
+
+const WORKOUT_FULL_INCLUDE = {
+  plan_sessions: true,
+  external_activities: { select: EXTERNAL_ACTIVITY_SELECT },
+  weather_observations: true,
+  workout_streams_v3: true,
+} satisfies Prisma.workoutsInclude;
+
 type SessionFilters = {
   userId: string;
   limit?: number;
@@ -73,7 +89,7 @@ function buildOrderBySql(config: SortConfig, includePlannedDateAsDate: boolean):
       expr: 'CASE WHEN status = \'planned\' THEN target_distance ELSE distance_meters / 1000.0 END',
     },
     avgPace: {
-      expr: buildPaceSecondsSql('CASE WHEN status = \'planned\' THEN target_pace ELSE avg_pace END'),
+      expr: `CASE WHEN status = 'planned' THEN ${buildPaceSecondsSql('target_pace')} ELSE pace_s_km END`,
       invert: true,
     },
     avgHeartRate: {
@@ -138,7 +154,7 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
   }
 
   if (dateFrom) {
-    whereWorkout.push(`w."date" >= $${paramIndex}`);
+    whereWorkout.push(`w.started_at >= $${paramIndex}`);
     params.push(new Date(dateFrom));
     paramIndex += 1;
   }
@@ -151,14 +167,14 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
         w.status,
         w."sessionNumber" AS session_number,
         w.week,
-        w."date" AS date,
+        w.started_at AS date,
         w."sessionType" AS session_type,
         w.comments,
         w."perceivedExertion" AS perceived_exertion,
-        m."durationSeconds" AS duration_seconds,
-        m."distanceMeters" AS distance_meters,
-        m."avgPace" AS avg_pace,
-        m."avgHeartRate" AS avg_heart_rate,
+        w.duration_s AS duration_seconds,
+        w.distance_m AS distance_meters,
+        w.pace_s_km AS pace_s_km,
+        w.avg_hr AS avg_heart_rate,
         NULL::int AS target_duration,
         NULL::double precision AS target_distance,
         NULL::text AS target_pace,
@@ -166,7 +182,6 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
         NULL::int AS target_rpe,
         NULL::timestamptz AS planned_date
       FROM "workouts" w
-      LEFT JOIN "workout_metrics_raw" m ON m."workoutId" = w.id
       WHERE ${whereWorkout.join(' AND ')}
     `
     : '';
@@ -185,7 +200,7 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
         NULL::int AS perceived_exertion,
         NULL::int AS duration_seconds,
         NULL::double precision AS distance_meters,
-        NULL::text AS avg_pace,
+        NULL::int AS pace_s_km,
         NULL::int AS avg_heart_rate,
         p."targetDuration" AS target_duration,
         p."targetDistance" AS target_distance,
@@ -243,6 +258,8 @@ interface ExternalFlagsRow {
   manual: boolean;
   external_id_null: boolean | null;
   upload_id_null: boolean | null;
+  has_streams: boolean;
+  streams_status: string;
 }
 
 async function fetchExternalFlags(
@@ -257,21 +274,22 @@ async function fetchExternalFlags(
       ea.source,
       ea."externalId" AS external_id,
       ea."sourceStatus" AS source_status,
-      (ep.payload IS NOT NULL) AS has_payload,
-      COALESCE(length(trim(ep.payload->'map'->>'summary_polyline')) > 0, false) AS has_polyline,
-      COALESCE(ep.payload->>'manual', '') = 'true' AS manual,
+      (ea.raw_payload IS NOT NULL) AS has_payload,
+      ea.has_route AS has_polyline,
+      COALESCE(ea.raw_payload->>'manual', '') = 'true' AS manual,
       CASE
-        WHEN ep.payload->'external_id' IS NULL THEN NULL
-        WHEN jsonb_typeof(ep.payload->'external_id') = 'null' THEN true
+        WHEN ea.raw_payload->'external_id' IS NULL THEN NULL
+        WHEN jsonb_typeof(ea.raw_payload->'external_id') = 'null' THEN true
         ELSE false
       END AS external_id_null,
       CASE
-        WHEN ep.payload->'upload_id' IS NULL THEN NULL
-        WHEN jsonb_typeof(ep.payload->'upload_id') = 'null' THEN true
+        WHEN ea.raw_payload->'upload_id' IS NULL THEN NULL
+        WHEN jsonb_typeof(ea.raw_payload->'upload_id') = 'null' THEN true
         ELSE false
-      END AS upload_id_null
+      END AS upload_id_null,
+      ea.has_streams,
+      ea.streams_status::text AS streams_status
     FROM external_activities ea
-    LEFT JOIN external_payloads ep ON ep."externalActivityId" = ea.id
     WHERE ea."userId" = ${userId}
       AND ea."workoutId" IN (${Prisma.join(workoutIds)})
     ORDER BY ea."workoutId", CASE WHEN ea.source = 'strava' THEN 0 ELSE 1 END
@@ -289,6 +307,8 @@ async function fetchExternalFlags(
       manual: row.manual,
       externalIdFieldNull: row.external_id_null,
       uploadIdFieldNull: row.upload_id_null,
+      hasStreams: row.has_streams,
+      streamsStatus: row.streams_status,
     });
   }
   return map;
@@ -323,7 +343,9 @@ export async function fetchSessions(
     id: true,
     userId: true,
     planSessionId: true,
-    date: true,
+    startedAt: true,
+    timezone: true,
+    datePrecision: true,
     status: true,
     sessionNumber: true,
     week: true,
@@ -344,28 +366,21 @@ export async function fetchSessions(
         comments: true,
       },
     },
-    workout_metrics_raw: {
-      select: {
-        durationSeconds: true,
-        distanceMeters: true,
-        avgPace: true,
-        avgHeartRate: true,
-        averageCadence: true,
-        elevationGain: true,
-        calories: true,
-      },
-    },
+    durationS: true,
+    distanceM: true,
+    paceSKm: true,
+    avgHr: true,
+    maxHr: true,
+    avgCadence: true,
+    elevationGainM: true,
+    calories: true,
+    routePolyline: true,
   };
 
   if (isTableView) {
     workoutSelect.weather_observations = {
       select: {
         id: true,
-      },
-    };
-    workoutSelect._count = {
-      select: {
-        workout_streams: true,
       },
     };
   }
@@ -412,20 +427,7 @@ export async function fetchSessions(
           })
         : prisma.workouts.findMany({
             where: { userId, id: { in: workoutIds } },
-            include: {
-              plan_sessions: true,
-              workout_metrics_raw: true,
-              external_activities: { include: { external_payloads: true } },
-              weather_observations: true,
-              workout_streams: {
-                include: {
-                  workout_stream_chunks: {
-                    orderBy: { chunkIndex: 'asc' },
-                    take: 1,
-                  },
-                },
-              },
-            },
+            include: WORKOUT_FULL_INCLUDE,
           })
       : Promise.resolve([]),
     planIds.length
@@ -479,7 +481,7 @@ export async function fetchSessionCount(filters: Omit<SessionFilters, 'limit' | 
           userId,
           ...(sessionType && sessionType !== 'all' ? { sessionType } : {}),
           ...(searchFilter ?? {}),
-          ...(dateFrom ? { date: { gte: new Date(dateFrom) } } : {}),
+          ...(dateFrom ? { startedAt: { gte: new Date(dateFrom) } } : {}),
         },
       })
     : 0;
@@ -541,20 +543,7 @@ export async function fetchSessionById(
       userId,
       id,
     },
-    include: {
-      plan_sessions: true,
-      workout_metrics_raw: true,
-      external_activities: { include: { external_payloads: true } },
-      weather_observations: true,
-      workout_streams: {
-        include: {
-          workout_stream_chunks: {
-            orderBy: { chunkIndex: 'asc' },
-            take: 1,
-          },
-        },
-      },
-    },
+    include: WORKOUT_FULL_INCLUDE,
   });
 
   if (workout) {

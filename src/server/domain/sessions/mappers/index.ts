@@ -6,11 +6,10 @@ export {
 
 export type {
   ExternalFlags,
-  WorkoutMetricsRaw,
   PlanSessionData,
   ExternalActivityData,
   WeatherObservationData,
-  WorkoutStreamData,
+  WorkoutStreamsV3Data,
   WorkoutBase,
   WorkoutFull,
   PlanSessionFull,

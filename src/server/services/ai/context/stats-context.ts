@@ -16,6 +16,7 @@ function isIntervalDetails(value: unknown): value is IntervalDetails {
 }
 
 function formatShortDate(isoDate: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate.slice(5);
   const date = new Date(isoDate);
   return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -70,7 +71,7 @@ export function buildWorkoutTypeDistribution(sessions: Session[], weeksBack: num
       }
       const lastDate = typeStats[workoutType].lastDate;
       if (!lastDate || sessionDate > new Date(lastDate)) {
-        typeStats[workoutType].lastDate = session.date;
+        typeStats[workoutType].lastDate = session.localDate ?? session.date;
         typeStats[workoutType].lastStructure = isIntervalDetails(session.intervalDetails)
           ? getCompactStructure(session.intervalDetails)
           : null;
@@ -103,7 +104,8 @@ export function buildCompactQualityHistory(sessions: Session[], count: number = 
 
   let output = 'Historique qualité récent:\n';
   for (const s of qualitySessions) {
-    const date = s.date ? formatShortDate(s.date) : '??-??';
+    const dayValue = s.localDate ?? s.date;
+    const date = dayValue ? formatShortDate(dayValue) : '??-??';
     const workoutType =
       isIntervalDetails(s.intervalDetails) && s.intervalDetails.workoutType
         ? s.intervalDetails.workoutType.toUpperCase()

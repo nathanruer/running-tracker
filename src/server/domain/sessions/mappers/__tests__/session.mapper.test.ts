@@ -15,23 +15,25 @@ const createWorkoutBase = (overrides: Partial<WorkoutBase> = {}): WorkoutBase =>
   id: 'workout-1',
   userId: 'user-1',
   planSessionId: null,
-  date: new Date('2024-01-15T10:00:00Z'),
+  startedAt: new Date('2024-01-15T10:00:00Z'),
+  timezone: 'Europe/Paris',
+  datePrecision: 'instant',
   status: 'completed',
   sessionNumber: 5,
   week: 2,
   sessionType: 'Endurance',
   comments: 'Great run!',
   perceivedExertion: 7,
+  durationS: 3600,
+  distanceM: 10000,
+  paceSKm: 360,
+  avgHr: 145,
+  maxHr: 172,
+  avgCadence: 170,
+  elevationGainM: 120,
+  calories: 650,
+  routePolyline: null,
   plan_sessions: null,
-  workout_metrics_raw: {
-    durationSeconds: 3600,
-    distanceMeters: 10000,
-    avgPace: '06:00',
-    avgHeartRate: 145,
-    averageCadence: 170,
-    elevationGain: 120,
-    calories: 650,
-  },
   ...overrides,
 });
 
@@ -41,9 +43,7 @@ const createWorkoutFull = (overrides: Partial<WorkoutFull> = {}): WorkoutFull =>
     {
       source: 'strava',
       externalId: 'strava-123',
-      external_payloads: {
-        payload: { name: 'Morning Run', type: 'Run' },
-      },
+      rawPayload: { name: 'Morning Run', type: 'Run' },
     },
   ],
   weather_observations: {
@@ -56,12 +56,14 @@ const createWorkoutFull = (overrides: Partial<WorkoutFull> = {}): WorkoutFull =>
     conditionCode: 800,
     payload: null,
   },
-  workout_streams: [
-    {
-      streamType: 'heartrate',
-      workout_stream_chunks: [{ data: [140, 145, 150] }],
-    },
-  ],
+  workout_streams_v3: {
+    time: null,
+    distance: null,
+    velocity: null,
+    altitude: null,
+    heartrate: [140, 145, 150],
+    cadence: null,
+  },
   ...overrides,
 });
 
@@ -100,10 +102,26 @@ describe('session.mapper', () => {
         expect(session.sessionNumber).toBe(5);
         expect(session.week).toBe(2);
         expect(session.date).toBe('2024-01-15T10:00:00.000Z');
+        expect(session.startedAt).toBe('2024-01-15T10:00:00.000Z');
+        expect(session.timezone).toBe('Europe/Paris');
+        expect(session.datePrecision).toBe('instant');
+        expect(session.localDate).toBe('2024-01-15');
         expect(session.sessionType).toBe('Endurance');
         expect(session.comments).toBe('Great run!');
         expect(session.status).toBe('completed');
         expect(session.perceivedExertion).toBe(7);
+      });
+
+      it('should expose the civil day in the workout timezone for day precision', () => {
+        const workout = createWorkoutFull({
+          startedAt: new Date('2024-01-14T23:00:00Z'),
+          datePrecision: 'day',
+        });
+        const session = mapWorkoutToSession(workout);
+
+        expect(session.date).toBe('2024-01-14T23:00:00.000Z');
+        expect(session.datePrecision).toBe('day');
+        expect(session.localDate).toBe('2024-01-15');
       });
 
       it('should map metrics correctly', () => {
@@ -114,9 +132,17 @@ describe('session.mapper', () => {
         expect(session.distance).toBe(10);
         expect(session.avgPace).toBe('06:00');
         expect(session.avgHeartRate).toBe(145);
+        expect(session.maxHeartRate).toBe(172);
         expect(session.averageCadence).toBe(170);
         expect(session.elevationGain).toBe(120);
         expect(session.calories).toBe(650);
+      });
+
+      it('should expose the route polyline column', () => {
+        const workout = createWorkoutFull({ routePolyline: 'abc' });
+        const session = mapWorkoutToSession(workout);
+
+        expect(session.routePolyline).toBe('abc');
       });
 
       it('should map external activity data', () => {
@@ -139,25 +165,36 @@ describe('session.mapper', () => {
         expect(session.averageTemp).toBe(15);
       });
 
-      it('should map streams data', () => {
-        const workout = createWorkoutFull();
+      it('should map streams columns back to the strava-shaped set', () => {
+        const workout = createWorkoutFull({
+          workout_streams_v3: {
+            time: [0, 1, 2],
+            distance: null,
+            velocity: [3, 3.1, 3.2],
+            altitude: null,
+            heartrate: [140, 145, 150],
+            cadence: null,
+          },
+        });
         const session = mapWorkoutToSession(workout);
 
         expect(session.stravaStreams).toEqual({
-          heartrate: [140, 145, 150],
+          time: { data: [0, 1, 2] },
+          velocity_smooth: { data: [3, 3.1, 3.2] },
+          heartrate: { data: [140, 145, 150] },
         });
         expect(session.hasStreams).toBe(true);
       });
 
       it('should flag streams as handled when sourceStatus is no_streams', () => {
         const workout = createWorkoutFull({
-          workout_streams: [],
+          workout_streams_v3: null,
           external_activities: [
             {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'no_streams',
-              external_payloads: null,
+              rawPayload: null,
             },
           ],
         });
@@ -167,19 +204,35 @@ describe('session.mapper', () => {
         expect(session.hasStreams).toBe(true);
       });
 
+      it('should flag streams as handled when the enrichment status is not_applicable', () => {
+        const workout = createWorkoutFull({
+          workout_streams_v3: null,
+          external_activities: [
+            {
+              source: 'intervals_icu',
+              externalId: 'i-1',
+              sourceStatus: 'imported',
+              rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
+              streamsStatus: 'not_applicable',
+            },
+          ],
+        });
+        const session = mapWorkoutToSession(workout);
+
+        expect(session.hasStreams).toBe(true);
+      });
+
       it('should flag streams as handled for manual/streamless Strava payload', () => {
         const workout = createWorkoutFull({
-          workout_streams: [],
+          workout_streams_v3: null,
           external_activities: [
             {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'imported',
-              external_payloads: {
-                payload: {
-                  external_id: null,
-                  upload_id: null,
-                },
+              rawPayload: {
+                external_id: null,
+                upload_id: null,
               },
             },
           ],
@@ -193,8 +246,8 @@ describe('session.mapper', () => {
       it('should prefer strava activity over others', () => {
         const workout = createWorkoutFull({
           external_activities: [
-            { source: 'garmin', externalId: 'garmin-1', external_payloads: null },
-            { source: 'strava', externalId: 'strava-1', external_payloads: null },
+            { source: 'garmin', externalId: 'garmin-1', rawPayload: null },
+            { source: 'strava', externalId: 'strava-1', rawPayload: null },
           ],
         });
         const session = mapWorkoutToSession(workout);
@@ -206,7 +259,7 @@ describe('session.mapper', () => {
       it('should use first activity when no strava', () => {
         const workout = createWorkoutFull({
           external_activities: [
-            { source: 'garmin', externalId: 'garmin-1', external_payloads: null },
+            { source: 'garmin', externalId: 'garmin-1', rawPayload: null },
           ],
         });
         const session = mapWorkoutToSession(workout);
@@ -242,15 +295,14 @@ describe('session.mapper', () => {
       it('should keep hasWeather false when route exists but weather is missing', () => {
         const workout = createWorkoutFull({
           weather_observations: null,
+          routePolyline: 'abc123',
           external_activities: [
             {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'imported',
-              external_payloads: {
-                payload: {
-                  map: { id: 'map-1', summary_polyline: 'abc123' },
-                },
+              rawPayload: {
+                map: { id: 'map-1', summary_polyline: 'abc123' },
               },
             },
           ],
@@ -268,10 +320,8 @@ describe('session.mapper', () => {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'imported',
-              external_payloads: {
-                payload: {
-                  map: { id: 'map-1', summary_polyline: null },
-                },
+              rawPayload: {
+                map: { id: 'map-1', summary_polyline: null },
               },
             },
           ],
@@ -281,25 +331,49 @@ describe('session.mapper', () => {
         expect(session.hasWeather).toBe(false);
       });
 
-      it('should expose hasStreams from lightweight count in table view', () => {
+      it('should expose hasStreams from the external activity flag in table view', () => {
         const workout = createWorkoutFull({
-          _count: { workout_streams: 2 },
+          external_activities: [
+            {
+              source: 'strava',
+              externalId: 'strava-123',
+              sourceStatus: 'imported',
+              rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
+              hasStreams: true,
+            },
+          ],
         });
         const session = mapWorkoutToSession(workout, { includeFullData: false });
 
         expect(session.hasStreams).toBe(true);
       });
 
+      it('should report hasStreams false when nothing is stored nor known unavailable', () => {
+        const workout = createWorkoutFull({
+          external_activities: [
+            {
+              source: 'strava',
+              externalId: 'strava-123',
+              sourceStatus: 'imported',
+              rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
+              hasStreams: false,
+              streamsStatus: 'pending',
+            },
+          ],
+        });
+        const session = mapWorkoutToSession(workout, { includeFullData: false });
+
+        expect(session.hasStreams).toBe(false);
+      });
+
       it('should expose hasStreams when external activity is marked no_streams', () => {
         const workout = createWorkoutFull({
-          workout_streams: [],
-          _count: { workout_streams: 0 },
           external_activities: [
             {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'no_streams',
-              external_payloads: null,
+              rawPayload: null,
             },
           ],
         });
@@ -310,14 +384,12 @@ describe('session.mapper', () => {
 
       it('should expose hasStreams when Strava payload is missing in table view', () => {
         const workout = createWorkoutFull({
-          workout_streams: [],
-          _count: { workout_streams: 0 },
           external_activities: [
             {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'imported',
-              external_payloads: null,
+              rawPayload: null,
             },
           ],
         });
@@ -328,18 +400,14 @@ describe('session.mapper', () => {
 
       it('should expose hasStreams for manual/streamless Strava payload in table view', () => {
         const workout = createWorkoutFull({
-          workout_streams: [],
-          _count: { workout_streams: 0 },
           external_activities: [
             {
               source: 'strava',
               externalId: 'strava-123',
               sourceStatus: 'imported',
-              external_payloads: {
-                payload: {
-                  external_id: null,
-                  upload_id: null,
-                },
+              rawPayload: {
+                external_id: null,
+                upload_id: null,
               },
             },
           ],
@@ -347,6 +415,34 @@ describe('session.mapper', () => {
         const session = mapWorkoutToSession(workout, { includeFullData: false });
 
         expect(session.hasStreams).toBe(true);
+      });
+
+      it('should compute hasStreams from SQL flags when provided', () => {
+        const workout = createWorkoutBase();
+        const flags = {
+          source: 'intervals_icu',
+          externalId: 'i-1',
+          sourceStatus: 'imported',
+          hasPayload: true,
+          hasPolyline: true,
+          manual: false,
+          externalIdFieldNull: false,
+          uploadIdFieldNull: false,
+          hasStreams: false,
+          streamsStatus: 'pending',
+        };
+
+        expect(mapWorkoutToSession(workout, { includeFullData: false, externalFlags: flags }).hasStreams).toBe(false);
+        expect(
+          mapWorkoutToSession(workout, { includeFullData: false, externalFlags: { ...flags, hasStreams: true } }).hasStreams
+        ).toBe(true);
+        expect(
+          mapWorkoutToSession(workout, {
+            includeFullData: false,
+            externalFlags: { ...flags, streamsStatus: 'not_applicable' },
+          }).hasStreams
+        ).toBe(true);
+        expect(mapWorkoutToSession(workout, { includeFullData: false, externalFlags: null }).hasStreams).toBe(false);
       });
     });
 
@@ -375,6 +471,13 @@ describe('session.mapper', () => {
         expect(session.stravaData).toBeNull();
         expect(session.stravaStreams).toBeNull();
         expect(session.weather).toBeNull();
+      });
+
+      it('should leave hasStreams undefined in table view when external data was not loaded', () => {
+        const workout = createWorkoutBase();
+        const session = mapWorkoutToSession(workout, { includeFullData: false });
+
+        expect(session.hasStreams).toBeUndefined();
       });
     });
 
@@ -431,7 +534,10 @@ describe('session.mapper', () => {
     describe('edge cases', () => {
       it('should handle null metrics', () => {
         const workout = createWorkoutFull({
-          workout_metrics_raw: null,
+          durationS: null,
+          distanceM: null,
+          paceSKm: null,
+          avgHr: null,
         });
         const session = mapWorkoutToSession(workout);
 
@@ -443,15 +549,10 @@ describe('session.mapper', () => {
 
       it('should handle partially null metrics', () => {
         const workout = createWorkoutFull({
-          workout_metrics_raw: {
-            durationSeconds: 1800,
-            distanceMeters: null,
-            avgPace: null,
-            avgHeartRate: 130,
-            averageCadence: null,
-            elevationGain: null,
-            calories: null,
-          },
+          durationS: 1800,
+          distanceM: null,
+          paceSKm: null,
+          avgHr: 130,
         });
         const session = mapWorkoutToSession(workout);
 
@@ -472,7 +573,17 @@ describe('session.mapper', () => {
 
       it('should handle empty streams', () => {
         const workout = createWorkoutFull({
-          workout_streams: [],
+          workout_streams_v3: null,
+          external_activities: [
+            {
+              source: 'strava',
+              externalId: 'strava-123',
+              sourceStatus: 'imported',
+              rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
+              hasStreams: false,
+              streamsStatus: 'pending',
+            },
+          ],
         });
         const session = mapWorkoutToSession(workout);
 

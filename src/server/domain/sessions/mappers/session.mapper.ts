@@ -1,14 +1,12 @@
 import 'server-only';
 /**
  * Session Mapper - Unified transformation from database entities to TrainingSession.
- * 
- * This module consolidates the mapping logic that was previously duplicated
- * between mapWorkoutToTrainingSession and mapWorkoutToTrainingSessionTable.
  */
 
 import { Prisma } from '@prisma/client';
 import type { TrainingSession } from '@/lib/types';
 import { formatDuration } from '@/lib/utils/duration/format';
+import { civilDayInZone } from '@/lib/utils/date/zoned';
 import {
   isLikelyStreamlessFromFields,
   isStravaActivityLikelyStreamless,
@@ -17,16 +15,6 @@ import {
 // ============================================================================
 // Types for mapper inputs (database entity shapes)
 // ============================================================================
-
-export interface WorkoutMetricsRaw {
-  durationSeconds: number | null;
-  distanceMeters: number | null;
-  avgPace: string | null;
-  avgHeartRate: number | null;
-  averageCadence: number | null;
-  elevationGain: number | null;
-  calories: number | null;
-}
 
 export interface PlanSessionData {
   plannedDate: Date | null;
@@ -45,7 +33,9 @@ export interface ExternalActivityData {
   source: string;
   externalId: string;
   sourceStatus?: string | null;
-  external_payloads?: { payload: Prisma.JsonValue | null } | null;
+  rawPayload?: Prisma.JsonValue | null;
+  hasStreams?: boolean;
+  streamsStatus?: string | null;
 }
 
 export interface WeatherObservationData {
@@ -59,37 +49,46 @@ export interface WeatherObservationData {
   payload: Prisma.JsonValue | null;
 }
 
-export interface WorkoutStreamData {
-  streamType: string;
-  workout_stream_chunks: { data: Prisma.JsonValue }[];
-}
-
-export interface WorkoutCounts {
-  workout_streams: number;
+export interface WorkoutStreamsV3Data {
+  time: Prisma.JsonValue | null;
+  distance: Prisma.JsonValue | null;
+  velocity: Prisma.JsonValue | null;
+  altitude: Prisma.JsonValue | null;
+  heartrate: Prisma.JsonValue | null;
+  cadence: Prisma.JsonValue | null;
 }
 
 export interface WorkoutBase {
   id: string;
   userId: string;
   planSessionId: string | null;
-  date: Date;
+  startedAt: Date;
+  timezone: string;
+  datePrecision: 'instant' | 'day';
   status: string;
   sessionNumber: number | null;
   week: number | null;
   sessionType: string | null;
   comments: string;
   perceivedExertion: number | null;
-  external_activities?: ExternalActivityData[];
+  durationS: number | null;
+  distanceM: number | null;
+  paceSKm: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  avgCadence: number | null;
+  elevationGainM: number | null;
+  calories: number | null;
+  routePolyline: string | null;
   plan_sessions: PlanSessionData | null;
-  workout_metrics_raw: WorkoutMetricsRaw | null;
+  external_activities?: ExternalActivityData[];
   weather_observations?: WeatherObservationData | null;
-  _count?: WorkoutCounts;
 }
 
 export interface WorkoutFull extends WorkoutBase {
   external_activities: ExternalActivityData[];
   weather_observations: WeatherObservationData | null;
-  workout_streams: WorkoutStreamData[];
+  workout_streams_v3: WorkoutStreamsV3Data | null;
 }
 
 export interface PlanSessionFull {
@@ -110,6 +109,20 @@ export interface PlanSessionFull {
   comments: string;
 }
 
+/** Lightweight external activity flags computed in SQL for the table view. */
+export interface ExternalFlags {
+  source: string;
+  externalId: string;
+  sourceStatus: string | null;
+  hasPayload: boolean;
+  hasPolyline: boolean;
+  manual: boolean;
+  externalIdFieldNull: boolean | null;
+  uploadIdFieldNull: boolean | null;
+  hasStreams: boolean;
+  streamsStatus: string;
+}
+
 // ============================================================================
 // Mapper options
 // ============================================================================
@@ -123,7 +136,7 @@ export interface SessionMapperOptions {
   includeFullData?: boolean;
 
   externalFlags?: ExternalFlags | null;
-  
+
   /**
    * If true, includes weather data even when includeFullData is false.
    * @default false
@@ -147,10 +160,14 @@ const DEFAULT_OPTIONS: SessionMapperOptions = {
 // Helper functions
 // ============================================================================
 
-function formatDurationFromSeconds(durationSeconds: number | null | undefined): string | null {
-  if (durationSeconds == null) return null;
-  return formatDuration(durationSeconds);
-}
+const STREAM_COLUMNS: Array<[keyof WorkoutStreamsV3Data, string]> = [
+  ['time', 'time'],
+  ['distance', 'distance'],
+  ['velocity', 'velocity_smooth'],
+  ['altitude', 'altitude'],
+  ['heartrate', 'heartrate'],
+  ['cadence', 'cadence'],
+];
 
 function selectExternalActivity(activities: ExternalActivityData[]): ExternalActivityData | null {
   if (!activities.length) return null;
@@ -158,18 +175,41 @@ function selectExternalActivity(activities: ExternalActivityData[]): ExternalAct
   return strava ?? activities[0];
 }
 
-function mapStreams(streams: WorkoutStreamData[]): Record<string, Prisma.JsonValue> | null {
-  if (!streams.length) return null;
+function mapStreams(streams: WorkoutStreamsV3Data | null): Record<string, { data: Prisma.JsonValue }> | null {
+  if (!streams) return null;
 
-  const result: Record<string, Prisma.JsonValue> = {};
-  for (const stream of streams) {
-    const chunk = stream.workout_stream_chunks[0];
-    if (chunk) {
-      result[stream.streamType] = chunk.data;
+  const result: Record<string, { data: Prisma.JsonValue }> = {};
+  for (const [column, streamType] of STREAM_COLUMNS) {
+    const data = streams[column];
+    if (Array.isArray(data) && data.length) {
+      result[streamType] = { data };
     }
   }
 
   return Object.keys(result).length ? result : null;
+}
+
+/** True when streams are stored or known to be unavailable, i.e. nothing left to enrich. */
+function isStreamsHandled(external: ExternalActivityData | null): boolean {
+  if (!external) return false;
+  return (
+    external.hasStreams === true
+    || external.streamsStatus === 'not_applicable'
+    || external.sourceStatus === 'no_streams'
+    || !external.rawPayload
+    || isStravaActivityLikelyStreamless(external.rawPayload)
+  );
+}
+
+function isStreamsHandledFromFlags(flags: ExternalFlags | null): boolean {
+  if (!flags) return false;
+  return (
+    flags.hasStreams
+    || flags.streamsStatus === 'not_applicable'
+    || flags.sourceStatus === 'no_streams'
+    || !flags.hasPayload
+    || isLikelyStreamlessFromFields(flags)
+  );
 }
 
 function mapWeather(weather: WeatherObservationData | null): TrainingSession['weather'] {
@@ -202,20 +242,25 @@ function buildBaseSession(workout: WorkoutBase): Omit<
   TrainingSession,
   'externalId' | 'source' | 'stravaData' | 'stravaStreams' | 'averageTemp' | 'weather'
 > {
-  const metrics = workout.workout_metrics_raw;
   const plan = workout.plan_sessions;
+  const startedAt = workout.startedAt.toISOString();
 
   return {
     id: workout.id,
     userId: workout.userId,
     sessionNumber: workout.sessionNumber ?? 0,
     week: workout.week ?? null,
-    date: workout.date.toISOString(),
+    date: startedAt,
+    startedAt,
+    timezone: workout.timezone,
+    datePrecision: workout.datePrecision,
+    localDate: civilDayInZone(workout.startedAt, workout.timezone),
     sessionType: workout.sessionType || plan?.sessionType || null,
-    duration: formatDurationFromSeconds(metrics?.durationSeconds ?? null),
-    distance: metrics?.distanceMeters != null ? metrics.distanceMeters / 1000 : null,
-    avgPace: metrics?.avgPace ?? null,
-    avgHeartRate: metrics?.avgHeartRate ?? null,
+    duration: workout.durationS != null ? formatDuration(workout.durationS) : null,
+    distance: workout.distanceM != null ? workout.distanceM / 1000 : null,
+    avgPace: workout.paceSKm != null ? formatDuration(workout.paceSKm) : null,
+    avgHeartRate: workout.avgHr ?? null,
+    maxHeartRate: workout.maxHr ?? null,
     intervalDetails: plan?.intervalDetails as TrainingSession['intervalDetails'] | null,
     perceivedExertion: workout.perceivedExertion ?? null,
     comments: workout.comments ?? plan?.comments ?? '',
@@ -227,9 +272,10 @@ function buildBaseSession(workout: WorkoutBase): Omit<
     targetHeartRateBpm: plan?.targetHeartRateBpm ?? null,
     targetRPE: plan?.targetRPE ?? null,
     recommendationId: plan?.recommendationId ?? null,
-    elevationGain: metrics?.elevationGain ?? null,
-    averageCadence: metrics?.averageCadence ?? null,
-    calories: metrics?.calories ?? null,
+    elevationGain: workout.elevationGainM ?? null,
+    averageCadence: workout.avgCadence ?? null,
+    calories: workout.calories ?? null,
+    routePolyline: workout.routePolyline ?? null,
   };
 }
 
@@ -239,29 +285,14 @@ function buildBaseSession(workout: WorkoutBase): Omit<
 
 /**
  * Maps a workout entity to a TrainingSession.
- * 
- * @param workout - Database workout entity with relations
- * @param options - Mapping options
- * @returns TrainingSession object
- * 
+ *
  * @example
  * // Full view (default)
  * const session = mapWorkoutToSession(workout);
- * 
+ *
  * // Table view (minimal data)
  * const session = mapWorkoutToSession(workout, { includeFullData: false });
  */
-export interface ExternalFlags {
-  source: string;
-  externalId: string;
-  sourceStatus: string | null;
-  hasPayload: boolean;
-  hasPolyline: boolean;
-  manual: boolean;
-  externalIdFieldNull: boolean | null;
-  uploadIdFieldNull: boolean | null;
-}
-
 export function mapWorkoutToSession(
   workout: WorkoutBase | WorkoutFull,
   options: SessionMapperOptions = {}
@@ -272,41 +303,25 @@ export function mapWorkoutToSession(
   if (!opts.includeFullData) {
     let externalId: string | null;
     let source: string | null;
-    let hasNoStreamsMarker: boolean;
+    let hasStreams: boolean | undefined;
 
     if (opts.externalFlags !== undefined) {
       const flags = opts.externalFlags;
       externalId = flags?.externalId ?? null;
       source = flags?.source ?? null;
-      hasNoStreamsMarker = flags != null
-        && (
-          flags.sourceStatus === 'no_streams'
-          || !flags.hasPayload
-          || isLikelyStreamlessFromFields(flags)
-        );
+      hasStreams = isStreamsHandledFromFlags(flags);
     } else {
       const external = workout.external_activities
         ? selectExternalActivity(workout.external_activities)
         : null;
       externalId = external?.externalId ?? null;
       source = external?.source ?? null;
-      hasNoStreamsMarker = external != null
-        && (
-          external.sourceStatus === 'no_streams'
-          || !external.external_payloads?.payload
-          || isStravaActivityLikelyStreamless(external.external_payloads?.payload)
-        );
+      hasStreams = workout.external_activities !== undefined ? isStreamsHandled(external) : undefined;
     }
 
     const weather = opts.includeWeather ? mapWeather(workout.weather_observations ?? null) : null;
     const hasWeather = workout.weather_observations !== undefined
       ? Boolean(workout.weather_observations)
-      : undefined;
-    const hasStreamsByCount = workout._count?.workout_streams !== undefined
-      ? workout._count.workout_streams > 0
-      : undefined;
-    const hasStreams = hasStreamsByCount !== undefined
-      ? hasStreamsByCount || hasNoStreamsMarker
       : undefined;
 
     return {
@@ -341,22 +356,16 @@ export function mapWorkoutToSession(
   }
 
   const external = selectExternalActivity(workout.external_activities);
-  const streams = mapStreams(workout.workout_streams);
+  const streams = mapStreams(workout.workout_streams_v3);
   const weather = mapWeather(workout.weather_observations);
   const hasWeather = Boolean(workout.weather_observations);
-  const hasNoStreamsMarker = external != null
-    && (
-      external.sourceStatus === 'no_streams'
-      || !external.external_payloads?.payload
-      || isStravaActivityLikelyStreamless(external.external_payloads?.payload)
-    );
-  const hasStreams = streams !== null || hasNoStreamsMarker;
+  const hasStreams = streams !== null || isStreamsHandled(external);
 
   return {
     ...base,
     externalId: external?.externalId ?? null,
     source: external?.source ?? null,
-    stravaData: external?.external_payloads?.payload as TrainingSession['stravaData'] ?? null,
+    stravaData: external?.rawPayload as TrainingSession['stravaData'] ?? null,
     stravaStreams: streams as TrainingSession['stravaStreams'] ?? null,
     averageTemp: weather?.temperature ?? null,
     weather,
@@ -367,10 +376,6 @@ export function mapWorkoutToSession(
 
 /**
  * Maps a plan session entity to a TrainingSession.
- * 
- * @param plan - Database plan_session entity
- * @param options - Mapping options
- * @returns TrainingSession object
  */
 export function mapPlanToSession(
   plan: PlanSessionFull,

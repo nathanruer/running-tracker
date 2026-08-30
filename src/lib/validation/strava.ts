@@ -32,9 +32,9 @@ export function validateStravaMap(data: unknown): StravaMapData | null {
 
 export const stravaStreamSchema = z.object({
   data: z.array(z.number()).min(1),
-  series_type: z.enum(['time', 'distance']),
-  original_size: z.number().positive(),
-  resolution: z.enum(['low', 'medium', 'high']),
+  series_type: z.enum(['time', 'distance']).optional(),
+  original_size: z.number().positive().optional(),
+  resolution: z.enum(['low', 'medium', 'high']).optional(),
 });
 
 export const stravaStreamSetSchema = z.record(z.string(), stravaStreamSchema);

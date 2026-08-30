@@ -27,7 +27,7 @@ export interface SessionData {
 
 export function getSessionData(s: Session): SessionData {
   return {
-    date: s.date,
+    date: s.localDate ?? s.date,
     type: sanitizeForPrompt(s.sessionType, 50),
     duration: s.duration,
     distance: s.distance,

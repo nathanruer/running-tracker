@@ -9,6 +9,7 @@ import type { IntervalDetails } from '@/lib/types/session';
  */
 export interface NormalizedSession {
   date: string;
+  localDate?: string;
   sessionType: string;
   avgPace: string;
   duration: string;
