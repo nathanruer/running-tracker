@@ -43,31 +43,34 @@ describe('bulkEnrichStreamsForIds', () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
-        _count: { workout_streams: 1 },
+        routePolyline: 'abc',
+        workout_streams_v3: { workoutId: 'a' },
         external_activities: [],
       },
       {
         id: 'b',
-        _count: { workout_streams: 0 },
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'no_streams' }],
+        routePolyline: null,
+        workout_streams_v3: null,
+        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'not_applicable' }],
       },
       {
         id: 'c',
-        _count: { workout_streams: 0 },
+        routePolyline: null,
+        workout_streams_v3: null,
         external_activities: [
           {
             source: 'strava',
             externalId: '112',
             sourceStatus: 'imported',
-            external_payloads: {
-              payload: { external_id: null, upload_id: null },
-            },
+            streamsStatus: 'pending',
+            rawPayload: { external_id: null, upload_id: null },
           },
         ],
       },
       {
         id: 'd',
-        _count: { workout_streams: 0 },
+        routePolyline: null,
+        workout_streams_v3: null,
         external_activities: [],
       },
     ] as never);
@@ -89,8 +92,9 @@ describe('bulkEnrichStreamsForIds', () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
-        _count: { workout_streams: 0 },
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported' }],
+        routePolyline: null,
+        workout_streams_v3: null,
+        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -124,8 +128,9 @@ describe('bulkEnrichStreamsForIds', () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
-        _count: { workout_streams: 0 },
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported' }],
+        routePolyline: null,
+        workout_streams_v3: null,
+        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -146,8 +151,9 @@ describe('bulkEnrichStreamsForIds', () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
-        _count: { workout_streams: 0 },
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported' }],
+        routePolyline: null,
+        workout_streams_v3: null,
+        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -166,7 +172,8 @@ describe('bulkEnrichStreamsForIds', () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
-        _count: { workout_streams: 1 },
+        routePolyline: 'abc',
+        workout_streams_v3: { workoutId: 'a' },
         external_activities: [],
       },
     ] as never);

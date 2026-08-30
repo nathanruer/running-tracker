@@ -57,12 +57,12 @@ export async function bulkEnrichWeatherForIds(
     where: { userId, id: { in: requestedIds } },
     select: {
       id: true,
-      date: true,
+      startedAt: true,
       weather_observations: { select: { id: true } },
       external_activities: {
         select: {
           source: true,
-          external_payloads: { select: { payload: true } },
+          rawPayload: true,
         },
       },
     },
@@ -81,19 +81,17 @@ export async function bulkEnrichWeatherForIds(
       continue;
     }
 
-    const stravaActivity = workout.external_activities.find(
-      (activity) => activity.external_payloads?.payload
-    );
+    const stravaActivity = workout.external_activities.find((activity) => activity.rawPayload);
 
-    if (!stravaActivity || !workout.date) {
+    if (!stravaActivity) {
       missingStrava.push(workout.id);
       continue;
     }
 
     tasks.push({
       id: workout.id,
-      stravaData: stravaActivity.external_payloads?.payload,
-      date: workout.date.toISOString(),
+      stravaData: stravaActivity.rawPayload,
+      date: workout.startedAt.toISOString(),
     });
   }
 

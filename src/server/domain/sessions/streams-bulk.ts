@@ -68,21 +68,15 @@ export async function bulkEnrichStreamsForIds(
     where: { userId, id: { in: requestedIds } },
     select: {
       id: true,
-      _count: {
-        select: {
-          workout_streams: true,
-        },
-      },
+      routePolyline: true,
+      workout_streams_v3: { select: { workoutId: true } },
       external_activities: {
         select: {
           source: true,
           externalId: true,
           sourceStatus: true,
-          external_payloads: {
-            select: {
-              payload: true,
-            },
-          },
+          rawPayload: true,
+          streamsStatus: true,
         },
       },
     },
@@ -98,15 +92,11 @@ export async function bulkEnrichStreamsForIds(
   const tasks: StreamsEnrichmentTask[] = [];
 
   for (const workout of workouts) {
-    if (workout._count.workout_streams > 0) {
+    if (workout.workout_streams_v3) {
       const intervalsActivity = workout.external_activities.find(
         (activity) => activity.source === 'intervals_icu' && Boolean(activity.externalId)
       );
-      const payload = intervalsActivity?.external_payloads?.payload;
-      const hasMap =
-        !!payload && typeof payload === 'object' && !Array.isArray(payload) &&
-        Boolean((payload as Record<string, unknown>).map);
-      if (intervalsActivity?.externalId && !hasMap) {
+      if (intervalsActivity?.externalId && !workout.routePolyline) {
         tasks.push({
           id: workout.id,
           source: intervalsActivity.source,
@@ -130,12 +120,12 @@ export async function bulkEnrichStreamsForIds(
       continue;
     }
 
-    const likelyStreamlessFromPayload = isStravaActivityLikelyStreamless(
-      stravaActivity.external_payloads?.payload
-    );
+    const likelyStreamlessFromPayload = isStravaActivityLikelyStreamless(stravaActivity.rawPayload);
+    const knownStreamless =
+      stravaActivity.streamsStatus === 'not_applicable' || stravaActivity.sourceStatus === 'no_streams';
 
-    if (stravaActivity.sourceStatus === 'no_streams' || likelyStreamlessFromPayload) {
-      if (stravaActivity.sourceStatus !== 'no_streams' && likelyStreamlessFromPayload) {
+    if (knownStreamless || likelyStreamlessFromPayload) {
+      if (!knownStreamless) {
         await markSessionNoStreams(workout.id, userId);
       }
       alreadyHasStreams.push(workout.id);

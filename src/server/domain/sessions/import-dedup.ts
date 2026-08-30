@@ -1,28 +1,14 @@
 import 'server-only';
 import { prisma } from '@/server/database';
+import { civilDayInZone } from '@/lib/utils/date/zoned';
 
 const CROSS_SOURCE_TIME_WINDOW_MS = 3 * 60 * 1000;
 const CROSS_SOURCE_DISTANCE_TOLERANCE = 0.05;
-const DAY_MS = 24 * 60 * 60 * 1000;
-// Legacy sessions (v1 Strava-era imports and manual entries) store the civil day at
-// midnight UTC with no time of day; the app's data is Paris-based.
-const LEGACY_DAY_TIMEZONE = 'Europe/Paris';
-
-function isMidnightUtc(time: number): boolean {
-  return time % DAY_MS === 0;
-}
-
-function civilDay(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
 
 export interface WorkoutWindow {
   time: number;
+  precision: 'instant' | 'day';
+  timezone: string;
   distanceMeters: number | null;
 }
 
@@ -31,16 +17,15 @@ export async function findExistingWorkoutWindows(
   oldest: Date
 ): Promise<WorkoutWindow[]> {
   const workouts = await prisma.workouts.findMany({
-    where: { userId, date: { gte: oldest } },
-    select: {
-      date: true,
-      workout_metrics_raw: { select: { distanceMeters: true } },
-    },
+    where: { userId, startedAt: { gte: oldest } },
+    select: { startedAt: true, datePrecision: true, timezone: true, distanceM: true },
   });
 
   return workouts.map((w) => ({
-    time: w.date.getTime(),
-    distanceMeters: w.workout_metrics_raw?.distanceMeters ?? null,
+    time: w.startedAt.getTime(),
+    precision: w.datePrecision,
+    timezone: w.timezone,
+    distanceMeters: w.distanceM,
   }));
 }
 
@@ -56,9 +41,9 @@ export function matchesExistingWorkout(
       Math.abs(w.distanceMeters - activityDistanceMeters) / activityDistanceMeters <=
         CROSS_SOURCE_DISTANCE_TOLERANCE;
 
-    if (isMidnightUtc(w.time)) {
-      const workoutDay = new Date(w.time).toISOString().slice(0, 10);
-      return workoutDay === civilDay(activityDate, LEGACY_DAY_TIMEZONE) && distanceMatches;
+    // Day-precision sessions (manual entries) only know their civil day.
+    if (w.precision === 'day') {
+      return civilDayInZone(new Date(w.time), w.timezone) === civilDayInZone(activityDate, w.timezone) && distanceMatches;
     }
 
     if (Math.abs(w.time - activityDate.getTime()) > CROSS_SOURCE_TIME_WINDOW_MS) return false;
