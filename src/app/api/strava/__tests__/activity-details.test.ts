@@ -81,7 +81,7 @@ describe('/api/strava/activities/[id]', () => {
     const mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      externalAccounts: [
+      connectedAccounts: [
         {
           externalId: '12345',
           accessToken: 'valid-token',
@@ -135,7 +135,7 @@ describe('/api/strava/activities/[id]', () => {
     const userWithoutStrava = {
       id: 'user-123',
       email: 'test@example.com',
-      externalAccounts: [],
+      connectedAccounts: [],
     };
 
     vi.mocked(prisma.users.findUnique).mockResolvedValue(userWithoutStrava as never);
@@ -156,7 +156,7 @@ describe('/api/strava/activities/[id]', () => {
     const mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      externalAccounts: [
+      connectedAccounts: [
         {
           externalId: '12345',
           accessToken: 'valid-token',
@@ -186,7 +186,7 @@ describe('/api/strava/activities/[id]', () => {
     const mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      externalAccounts: [
+      connectedAccounts: [
         {
           externalId: '12345',
           accessToken: 'valid-token',

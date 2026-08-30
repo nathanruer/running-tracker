@@ -42,7 +42,6 @@ describe('SessionRow', () => {
   const mockCompletedSession: TrainingSession = {
     id: '1',
     sessionNumber: 1,
-    week: 2,
     date: '2024-01-15T10:00:00.000Z',
     sessionType: 'Footing',
     duration: '01:00:00',
@@ -59,7 +58,6 @@ describe('SessionRow', () => {
   const mockPlannedSession: TrainingSession = {
     id: '2',
     sessionNumber: 3,
-    week: 2,
     date: null,
     plannedDate: null,
     sessionType: 'Sortie longue',

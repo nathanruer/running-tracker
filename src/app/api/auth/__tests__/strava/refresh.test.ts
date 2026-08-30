@@ -6,7 +6,7 @@ import { refreshAccessToken } from '@/server/services/strava';
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    external_accounts: {
+    connected_accounts: {
       findUnique: vi.fn(),
       update: vi.fn(),
     },
@@ -40,9 +40,9 @@ describe('/api/auth/strava/refresh', () => {
       refreshToken: 'old-refresh-token',
     };
 
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(mockAccount as never);
     vi.mocked(refreshAccessToken).mockResolvedValue(mockTokenData);
-    vi.mocked(prisma.external_accounts.update).mockResolvedValue({
+    vi.mocked(prisma.connected_accounts.update).mockResolvedValue({
       ...mockAccount,
       accessToken: mockTokenData.access_token,
       refreshToken: mockTokenData.refresh_token,
@@ -62,7 +62,7 @@ describe('/api/auth/strava/refresh', () => {
     });
 
     expect(refreshAccessToken).toHaveBeenCalledWith('old-refresh-token');
-    expect(prisma.external_accounts.update).toHaveBeenCalledWith({
+    expect(prisma.connected_accounts.update).toHaveBeenCalledWith({
       where: {
         userId_provider: {
           userId: 'user-123',
@@ -78,7 +78,7 @@ describe('/api/auth/strava/refresh', () => {
   });
 
   it('should return 404 when user is not found', async () => {
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost/api/auth/strava/refresh', {
       method: 'POST',
@@ -99,7 +99,7 @@ describe('/api/auth/strava/refresh', () => {
       refreshToken: null,
     };
 
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(mockAccount as never);
 
     const request = new NextRequest('http://localhost/api/auth/strava/refresh', {
       method: 'POST',
@@ -120,7 +120,7 @@ describe('/api/auth/strava/refresh', () => {
       refreshToken: 'invalid-refresh-token',
     };
 
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(mockAccount as never);
     vi.mocked(refreshAccessToken).mockRejectedValue(new Error('Failed to refresh access token'));
 
     const request = new NextRequest('http://localhost/api/auth/strava/refresh', {
@@ -142,9 +142,9 @@ describe('/api/auth/strava/refresh', () => {
       refreshToken: 'old-refresh-token',
     };
 
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(mockAccount as never);
     vi.mocked(refreshAccessToken).mockResolvedValue(mockTokenData);
-    vi.mocked(prisma.external_accounts.update).mockRejectedValue(new Error('Database error'));
+    vi.mocked(prisma.connected_accounts.update).mockRejectedValue(new Error('Database error'));
 
     const request = new NextRequest('http://localhost/api/auth/strava/refresh', {
       method: 'POST',

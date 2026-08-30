@@ -133,7 +133,6 @@ const trainingSessionBaseSchema = z.object({
   id: z.string(),
   userId: z.string(),
   sessionNumber: z.number(),
-  week: z.number().nullable(),
   sessionType: z.string().nullable(),
   intervalDetails: intervalDetailsEntitySchema.nullable().optional(),
   perceivedExertion: z.number().nullable().optional(),
@@ -221,7 +220,7 @@ export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
  */
 export type TrainingSessionPayload = Omit<
   CompletedSession,
-  'id' | 'userId' | 'sessionNumber' | 'week' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE' | 'hasWeather' | 'hasStreams'
+  'id' | 'userId' | 'sessionNumber' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE' | 'hasWeather' | 'hasStreams'
 >;
 
 /**

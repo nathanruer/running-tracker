@@ -5,7 +5,7 @@ const USER_WITH_PROFILE_SELECT = {
   id: true,
   email: true,
   createdAt: true,
-  externalAccounts: {
+  connectedAccounts: {
     select: { provider: true, externalId: true, tokenExpiresAt: true },
   },
   profile: {
@@ -27,8 +27,8 @@ export async function getUserProfilePayload(userId: string) {
 
   if (!user) return null;
 
-  const stravaAccount = user.externalAccounts.find((a) => a.provider === 'strava') ?? null;
-  const intervalsAccount = user.externalAccounts.find((a) => a.provider === 'intervals_icu') ?? null;
+  const stravaAccount = user.connectedAccounts.find((a) => a.provider === 'strava') ?? null;
+  const intervalsAccount = user.connectedAccounts.find((a) => a.provider === 'intervals_icu') ?? null;
   const profile = user.profile ?? null;
 
   return {

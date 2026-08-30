@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     let user;
 
     if (currentUser) {
-      const existingAccount = await prisma.external_accounts.findUnique({
+      const existingAccount = await prisma.connected_accounts.findUnique({
         where: {
           provider_externalId: {
             provider: 'strava',
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const currentAccount = await prisma.external_accounts.findUnique({
+      const currentAccount = await prisma.connected_accounts.findUnique({
         where: {
           userId_provider: {
             userId: currentUser.id,
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
       }
 
       user = currentUser;
-      await prisma.external_accounts.upsert({
+      await prisma.connected_accounts.upsert({
         where: {
           userId_provider: {
             userId: currentUser.id,
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
       });
       logger.info({ userId: user.id, stravaId: athlete.id }, 'Successfully linked Strava to existing logged-in user');
     } else {
-      const linkedAccount = await prisma.external_accounts.findUnique({
+      const linkedAccount = await prisma.connected_accounts.findUnique({
         where: {
           provider_externalId: {
             provider: 'strava',
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
         }
 
         user = linkedUser;
-        await prisma.external_accounts.update({
+        await prisma.connected_accounts.update({
           where: {
             userId_provider: {
               userId: linkedUser.id,
@@ -211,8 +211,7 @@ export async function GET(request: NextRequest) {
             email: `strava_${athlete.id}@strava.local`,
             password: '',
             profile: { create: {} },
-            preferences: { create: {} },
-            externalAccounts: {
+            connectedAccounts: {
               create: {
                 provider: 'strava',
                 externalId: athlete.id.toString(),

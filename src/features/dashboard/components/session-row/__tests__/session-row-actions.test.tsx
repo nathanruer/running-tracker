@@ -18,7 +18,6 @@ describe('SessionRowActions', () => {
   const mockSession: TrainingSession = {
     id: '1',
     sessionNumber: 1,
-    week: 1,
     date: '2024-01-01',
     sessionType: 'Footing',
     duration: '1:00:00',

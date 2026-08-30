@@ -28,7 +28,6 @@ export async function POST(request: NextRequest) {
           email,
           password: hashedPassword,
           profile: { create: {} },
-          preferences: { create: {} },
         },
       });
 

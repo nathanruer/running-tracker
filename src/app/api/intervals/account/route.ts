@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const existing = await prisma.external_accounts.findUnique({
+      const existing = await prisma.connected_accounts.findUnique({
         where: { provider_externalId: { provider: INTERVALS_SOURCE, externalId: athleteId } },
         select: { userId: true },
       });
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      await prisma.external_accounts.upsert({
+      await prisma.connected_accounts.upsert({
         where: { userId_provider: { userId, provider: INTERVALS_SOURCE } },
         create: {
           userId,
@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest) {
   return handleDeleteRequest(
     request,
     async (userId) => {
-      await prisma.external_accounts.deleteMany({
+      await prisma.connected_accounts.deleteMany({
         where: { userId, provider: INTERVALS_SOURCE },
       });
       return NextResponse.json({ success: true });

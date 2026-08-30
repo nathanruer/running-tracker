@@ -50,7 +50,7 @@ async function createConversationMessage({
   role: string;
   content: string;
   model?: string | null;
-  payload?: { payload: Prisma.InputJsonValue; payloadType: string; payloadVersion?: string | null };
+  payload?: Prisma.InputJsonValue;
 }): Promise<conversation_messages> {
   const message = await prisma.conversation_messages.create({
     data: {
@@ -59,21 +59,10 @@ async function createConversationMessage({
       content,
       model: model ?? undefined,
       kind: payload ? 'recommendation' : 'text',
-      ...(payload ? { payload: payload.payload } : {}),
+      ...(payload ? { payload } : {}),
       ...(model ? { provider: 'groq' } : {}),
     },
   });
-
-  if (payload) {
-    await prisma.conversation_message_payloads.create({
-      data: {
-        messageId: message.id,
-        payloadType: payload.payloadType,
-        payloadVersion: payload.payloadVersion ?? undefined,
-        payload: payload.payload,
-      },
-    });
-  }
 
   return message;
 }
@@ -175,9 +164,7 @@ export async function* processStreamingMessage(
     role: 'assistant',
     content: assistantContent,
     model: GROQ_MODEL,
-    payload: payload
-      ? { payload, payloadType: 'recommendations', payloadVersion: 'v1' }
-      : undefined,
+    payload: payload ?? undefined,
   });
 
   await updateConversationTimestamp(ctx.conversationId);

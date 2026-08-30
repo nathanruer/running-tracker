@@ -17,7 +17,6 @@ const plannedSession = {
   targetHeartRateBpm: '150',
   targetRPE: 5,
   sessionNumber: 2,
-  week: 3,
   date: '2026-01-05',
   sessionType: 'Tempo',
 };
@@ -30,7 +29,6 @@ const completedSession = {
   avgHeartRate: 155,
   perceivedExertion: 7,
   sessionNumber: 1,
-  week: 2,
   date: '2026-01-04',
   sessionType: 'Easy',
 };
@@ -45,14 +43,14 @@ describe('sessions sorting helpers', () => {
 
     it('parses valid columns with default direction', () => {
       expect(parseSortParam('date')).toEqual([{ column: 'date', direction: 'desc' }]);
-      expect(parseSortParam('week:asc')).toEqual([{ column: 'week', direction: 'asc' }]);
+      expect(parseSortParam('distance:asc')).toEqual([{ column: 'distance', direction: 'asc' }]);
     });
 
     it('ignores invalid entries and duplicates', () => {
-      const result = parseSortParam('date:asc,unknown:asc,week:down, date:desc , week:desc');
+      const result = parseSortParam('date:asc,unknown:asc,distance:down, date:desc , distance:desc');
       expect(result).toEqual([
         { column: 'date', direction: 'asc' },
-        { column: 'week', direction: 'desc' },
+        { column: 'distance', direction: 'desc' },
       ]);
     });
 
@@ -92,7 +90,7 @@ describe('sessions sorting helpers', () => {
     });
 
     it('returns null when column is not in config', () => {
-      expect(getColumnSortInfo([{ column: 'date', direction: 'asc' }], 'week')).toBeNull();
+      expect(getColumnSortInfo([{ column: 'date', direction: 'asc' }], 'avgPace')).toBeNull();
     });
   });
 
@@ -120,15 +118,15 @@ describe('sessions sorting helpers', () => {
     });
 
     it('replaces config in single-sort mode', () => {
-      expect(toggleColumnSort([], 'week', false)).toEqual([
-        { column: 'week', direction: 'desc' },
+      expect(toggleColumnSort([], 'sessionNumber', false)).toEqual([
+        { column: 'sessionNumber', direction: 'desc' },
       ]);
 
-      expect(toggleColumnSort([{ column: 'week', direction: 'desc' }], 'week', false)).toEqual([
-        { column: 'week', direction: 'asc' },
+      expect(toggleColumnSort([{ column: 'sessionNumber', direction: 'desc' }], 'sessionNumber', false)).toEqual([
+        { column: 'sessionNumber', direction: 'asc' },
       ]);
 
-      expect(toggleColumnSort([{ column: 'week', direction: 'asc' }], 'week', false)).toEqual([]);
+      expect(toggleColumnSort([{ column: 'sessionNumber', direction: 'asc' }], 'sessionNumber', false)).toEqual([]);
     });
   });
 
@@ -140,7 +138,6 @@ describe('sessions sorting helpers', () => {
       expect(getClientSortValue(plannedSession, 'avgHeartRate')).toBe(150);
       expect(getClientSortValue(plannedSession, 'perceivedExertion')).toBe(5);
       expect(getClientSortValue(plannedSession, 'sessionNumber')).toBe(2);
-      expect(getClientSortValue(plannedSession, 'week')).toBe(3);
       expect(getClientSortValue(plannedSession, 'sessionType')).toBe('tempo');
       expect(getClientSortValue(plannedSession, 'date')).toBe(new Date('2026-01-05').getTime());
     });
@@ -152,7 +149,6 @@ describe('sessions sorting helpers', () => {
       expect(getClientSortValue(completedSession, 'avgHeartRate')).toBe(155);
       expect(getClientSortValue(completedSession, 'perceivedExertion')).toBe(7);
       expect(getClientSortValue(completedSession, 'sessionNumber')).toBe(1);
-      expect(getClientSortValue(completedSession, 'week')).toBe(2);
       expect(getClientSortValue(completedSession, 'sessionType')).toBe('easy');
       expect(getClientSortValue(completedSession, 'date')).toBe(new Date('2026-01-04').getTime());
     });

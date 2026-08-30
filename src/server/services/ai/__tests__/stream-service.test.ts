@@ -20,9 +20,6 @@ vi.mock('@/server/database', () => ({
       create: vi.fn(),
       findMany: vi.fn(),
     },
-    conversation_message_payloads: {
-      create: vi.fn(),
-    },
     conversations: {
       updateMany: vi.fn(),
       findUnique: vi.fn(),
@@ -140,11 +137,6 @@ describe('processStreamingMessage (agent)', () => {
     expect(JSON.parse(jsonEvent!.data)).toEqual(validatedRecommendations);
     expect(events.at(-1)).toEqual({ type: 'done', data: '' });
 
-    expect(prisma.conversation_message_payloads.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ payloadType: 'recommendations', payloadVersion: 'v1' }),
-      })
-    );
     const assistantCall = vi
       .mocked(prisma.conversation_messages.create)
       .mock.calls.find((call) => call[0].data.role === 'assistant');

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         where: { id: userId },
         select: {
           id: true,
-          externalAccounts: {
+          connectedAccounts: {
             where: { provider: 'strava' },
             select: {
               externalId: true,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }
 
-      const stravaAccount = user.externalAccounts[0] ?? null;
+      const stravaAccount = user.connectedAccounts[0] ?? null;
       if (!stravaAccount?.externalId) {
         return NextResponse.json({ error: 'Compte Strava non connecté' }, { status: 400 });
       }

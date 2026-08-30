@@ -8,325 +8,7 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
-model users {
-  id                          String                        @id @default(cuid())
-  email                       String                        @unique
-  password                    String
-  createdAt                   DateTime                      @default(now()) @db.Timestamptz
-  conversations               conversations[]
-  plan_sessions               plan_sessions[]
-  workouts                    workouts[]
-  profile                     user_profiles?
-  preferences                 user_preferences?
-  externalAccounts            external_accounts[]
-  externalActivities          external_activities[]
-  planned_workouts            planned_workouts[]
-  race_goals                  race_goals[]
-  athlete_states              athlete_states[]
-  training_plans              training_plans[]
-  training_weeks              training_weeks[]
-  dismissed_source_activities dismissed_source_activities[]
-}
-
-model user_profiles {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  age           Int?
-  maxHeartRate  Int?
-  weight        Float?
-  vma           Float?
-  goal          String?  @db.Text
-  timezone      String?
-  units         String?
-  availableDays Json?    @map("available_days")
-  restHr        Int?     @map("rest_hr")
-  constraints   Json?
-  goalNote      String?  @map("goal_note")
-  createdAt     DateTime @default(now()) @db.Timestamptz
-  updatedAt     DateTime @updatedAt @db.Timestamptz
-
-  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model user_preferences {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  locale        String?
-  units         String?
-  timezone      String?
-  notifications Json?
-  createdAt     DateTime @default(now()) @db.Timestamptz
-  updatedAt     DateTime @updatedAt @db.Timestamptz
-
-  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model external_accounts {
-  id             String    @id @default(cuid())
-  userId         String
-  provider       String
-  externalId     String
-  accessToken    String?
-  refreshToken   String?
-  tokenExpiresAt DateTime? @db.Timestamptz
-  scopes         String?
-  createdAt      DateTime  @default(now()) @db.Timestamptz
-  updatedAt      DateTime  @updatedAt @db.Timestamptz
-
-  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, provider])
-  @@unique([provider, externalId])
-  @@index([userId])
-}
-
-model conversations {
-  id                  String   @id @default(cuid())
-  title               String
-  userId              String
-  summary             String?
-  summaryMessageCount Int?     @map("summary_message_count")
-  createdAt           DateTime @default(now()) @db.Timestamptz
-  updatedAt           DateTime @updatedAt @db.Timestamptz
-
-  users                 users                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversation_messages conversation_messages[]
-
-  @@index([userId])
-  @@index([updatedAt])
-  @@index([userId, updatedAt])
-}
-
-model conversation_messages {
-  id             String      @id @default(cuid())
-  conversationId String
-  role           String
-  content        String      @db.Text
-  model          String?
-  kind           MessageKind @default(text)
-  payload        Json?
-  provider       String?
-  inputTokens    Int?        @map("input_tokens")
-  outputTokens   Int?        @map("output_tokens")
-  createdAt      DateTime    @default(now()) @db.Timestamptz
-
-  conversations                 conversations                   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  conversation_message_payloads conversation_message_payloads[]
-
-  @@index([conversationId])
-  @@index([conversationId, createdAt])
-}
-
-model conversation_message_payloads {
-  id             String   @id @default(cuid())
-  messageId      String
-  payloadType    String
-  payloadVersion String?
-  payload        Json
-  createdAt      DateTime @default(now()) @db.Timestamptz
-
-  conversation_messages conversation_messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  @@unique([messageId, payloadType])
-  @@index([messageId])
-}
-
-model plan_sessions {
-  id                 String    @id @default(cuid())
-  userId             String
-  sessionNumber      Int?
-  week               Int?
-  plannedDate        DateTime? @db.Timestamptz
-  sessionType        String?
-  status             String    @default("planned")
-  targetDuration     Int?
-  targetDistance     Float?
-  targetPace         String?
-  targetHeartRateBpm String?
-  targetRPE          Int?
-  intervalDetails    Json?
-  recommendationId   String?
-  comments           String    @default("")
-  createdAt          DateTime  @default(now()) @db.Timestamptz
-  updatedAt          DateTime  @updatedAt @db.Timestamptz
-
-  users    users      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workouts workouts[]
-
-  @@index([userId])
-  @@index([userId, plannedDate])
-  @@index([status])
-}
-
-model workouts {
-  id                String         @id @default(cuid())
-  userId            String
-  planSessionId     String?        @unique
-  date              DateTime
-  status            String         @default("completed")
-  sessionNumber     Int?
-  week              Int?
-  sessionType       String?
-  comments          String         @default("")
-  perceivedExertion Int?
-  createdAt         DateTime       @default(now()) @db.Timestamptz
-  updatedAt         DateTime       @updatedAt @db.Timestamptz
-  startedAt         DateTime       @map("started_at") @db.Timestamptz
-  timezone          String
-  datePrecision     DatePrecision  @map("date_precision")
-  durationS         Int?           @map("duration_s")
-  distanceM         Int?           @map("distance_m")
-  paceSKm           Int?           @map("pace_s_km")
-  avgHr             Int?           @map("avg_hr")
-  maxHr             Int?           @map("max_hr")
-  avgCadence        Float?         @map("avg_cadence") @db.Real
-  elevationGainM    Float?         @map("elevation_gain_m") @db.Real
-  calories          Int?
-  routePolyline     String?        @map("route_polyline")
-  family            WorkoutFamily?
-  familySource      DataSource?    @map("family_source")
-  familyConfidence  Float?         @map("family_confidence") @db.Real
-  familyEditedAt    DateTime?      @map("family_edited_at") @db.Timestamptz
-  intervalsSummary  Json?          @map("intervals_summary")
-
-  users                   users                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan_sessions           plan_sessions?           @relation(fields: [planSessionId], references: [id], onDelete: SetNull)
-  workout_metrics_raw     workout_metrics_raw?
-  workout_metrics_derived workout_metrics_derived?
-  workout_streams         workout_streams[]
-  external_activities     external_activities[]
-  weather_observations    weather_observations?
-  workout_streams_v3      workout_streams_v3?
-  workout_intervals       workout_intervals[]
-  planned_workout         planned_workouts?
-
-  @@index([userId])
-  @@index([userId, date])
-  @@index([status])
-  @@index([userId, startedAt(sort: Desc)], map: "workouts_user_started_idx")
-  @@index([userId, family], map: "workouts_user_family_idx")
-}
-
-model workout_metrics_raw {
-  id              String  @id @default(cuid())
-  workoutId       String  @unique
-  durationSeconds Int?
-  distanceMeters  Float?
-  avgPace         String?
-  avgHeartRate    Int?
-  maxHeartRate    Int?
-  averageCadence  Float?
-  elevationGain   Float?
-  calories        Int?
-
-  workouts workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-}
-
-model workout_metrics_derived {
-  id           String  @id @default(cuid())
-  workoutId    String  @unique
-  pace         String?
-  zones        Json?
-  efficiency   Float?
-  trainingLoad Float?
-
-  workouts workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-}
-
-model external_activities {
-  id              String           @id @default(cuid())
-  workoutId       String
-  userId          String
-  source          String
-  externalId      String
-  sourceStatus    String?          @default("imported")
-  startedAt       DateTime?        @db.Timestamptz
-  elapsedSeconds  Int?
-  movingSeconds   Int?
-  createdAt       DateTime         @default(now()) @db.Timestamptz
-  updatedAt       DateTime         @updatedAt @db.Timestamptz
-  provider        SourceProvider?
-  rawPayload      Json?            @map("raw_payload")
-  payloadKind     String?          @map("payload_kind")
-  hasRoute        Boolean          @default(false) @map("has_route")
-  hasStreams      Boolean          @default(false) @map("has_streams")
-  streamsStatus   EnrichmentStatus @default(pending) @map("streams_status")
-  weatherStatus   EnrichmentStatus @default(pending) @map("weather_status")
-  routeStatus     EnrichmentStatus @default(pending) @map("route_status")
-  intervalsStatus EnrichmentStatus @default(pending) @map("intervals_status")
-  lastError       String?          @map("last_error")
-  syncedAt        DateTime?        @map("synced_at") @db.Timestamptz
-
-  workouts          workouts           @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  user              users              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  external_payloads external_payloads?
-
-  @@unique([userId, source, externalId])
-  @@index([workoutId])
-  @@index([userId, source])
-  @@index([userId, provider], map: "external_activities_user_provider_idx")
-}
-
-model external_payloads {
-  id                 String   @id @default(cuid())
-  externalActivityId String   @unique
-  payload            Json
-  payloadType        String?
-  payloadVersion     String?
-  createdAt          DateTime @default(now()) @db.Timestamptz
-
-  external_activities external_activities @relation(fields: [externalActivityId], references: [id], onDelete: Cascade)
-}
-
-model workout_streams {
-  id           String   @id @default(cuid())
-  workoutId    String
-  streamType   String
-  resolution   String?
-  seriesType   String?
-  originalSize Int?
-  createdAt    DateTime @default(now()) @db.Timestamptz
-
-  workouts              workouts                @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  workout_stream_chunks workout_stream_chunks[]
-
-  @@index([workoutId])
-  @@index([workoutId, streamType])
-}
-
-model workout_stream_chunks {
-  id              String   @id @default(cuid())
-  workoutStreamId String
-  chunkIndex      Int
-  data            Json
-  createdAt       DateTime @default(now()) @db.Timestamptz
-
-  workout_streams workout_streams @relation(fields: [workoutStreamId], references: [id], onDelete: Cascade)
-
-  @@index([workoutStreamId, chunkIndex])
-}
-
-model weather_observations {
-  id                  String    @id @default(cuid())
-  workoutId           String    @unique
-  observedAt          DateTime? @db.Timestamptz
-  temperature         Float?
-  apparentTemperature Float?
-  humidity            Float?
-  windSpeed           Float?
-  precipitation       Float?
-  conditionCode       Int?
-  source              String?
-  provider            String?
-  payload             Json?
-  createdAt           DateTime  @default(now()) @db.Timestamptz
-
-  workouts workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-}
+// Unités : durées en secondes, distances en mètres, allures en secondes/km, FC en bpm.
 
 enum DatePrecision {
   instant
@@ -414,39 +96,131 @@ enum IntervalKind {
   @@map("interval_kind")
 }
 
-model planned_workouts {
-  id                  String         @id
-  userId              String         @map("user_id")
-  legacyPlanSessionId String?        @unique @map("legacy_plan_session_id")
-  plannedOn           DateTime?      @map("planned_on") @db.Date
-  timezone            String         @default("Europe/Paris")
-  family              WorkoutFamily?
-  structure           Json
-  schemaVersion       Int            @default(3) @map("schema_version")
-  structureLegacy     Json?          @map("structure_legacy")
-  targetDurationS     Int?           @map("target_duration_s")
-  targetDistanceM     Int?           @map("target_distance_m")
-  targetPaceSKm       Int?           @map("target_pace_s_km")
-  targetHrBpm         Int?           @map("target_hr_bpm")
-  targetRpe           Int?           @map("target_rpe")
-  origin              PlannedOrigin  @default(manual)
-  recommendationId    String?        @map("recommendation_id")
-  trainingWeekId      String?        @map("training_week_id")
-  status              PlanStatus     @default(planned)
-  notes               String         @default("")
-  sessionNumber       Int?           @map("session_number")
-  workoutId           String?        @unique @map("workout_id")
-  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt           DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+model users {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @db.Timestamptz
 
-  user    users     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workout workouts? @relation(fields: [workoutId], references: [id], onDelete: SetNull)
-
-  @@index([userId, plannedOn], map: "planned_workouts_user_planned_idx")
-  @@index([userId, status], map: "planned_workouts_user_status_idx")
+  profile                     athlete_profiles?
+  connectedAccounts           connected_accounts[]
+  workouts                    workouts[]
+  workout_sources             workout_sources[]
+  planned_workouts            planned_workouts[]
+  conversations               conversations[]
+  race_goals                  race_goals[]
+  athlete_states              athlete_states[]
+  training_plans              training_plans[]
+  training_weeks              training_weeks[]
+  dismissed_source_activities dismissed_source_activities[]
 }
 
-model workout_streams_v3 {
+model athlete_profiles {
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  age           Int?
+  weight        Float?   @map("weight_kg")
+  maxHeartRate  Int?     @map("max_hr")
+  vma           Float?   @map("declared_vma_kmh")
+  goal          String?  @map("goal_note") @db.Text
+  timezone      String   @default("Europe/Paris")
+  units         String   @default("metric")
+  availableDays Json?    @map("available_days")
+  restHr        Int?     @map("rest_hr")
+  constraints   Json?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model connected_accounts {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  provider       String
+  externalId     String    @map("external_id")
+  accessToken    String?   @map("access_token")
+  refreshToken   String?   @map("refresh_token")
+  tokenExpiresAt DateTime? @map("token_expires_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@unique([provider, externalId])
+  @@index([userId])
+}
+
+model workouts {
+  id               String         @id @default(cuid())
+  userId           String         @map("user_id")
+  startedAt        DateTime       @map("started_at") @db.Timestamptz
+  timezone         String
+  datePrecision    DatePrecision  @map("date_precision")
+  sessionNumber    Int?           @map("session_number")
+  rpe              Int?
+  notes            String         @default("")
+  durationS        Int?           @map("duration_s")
+  distanceM        Int?           @map("distance_m")
+  paceSKm          Int?           @map("pace_s_km")
+  avgHr            Int?           @map("avg_hr")
+  maxHr            Int?           @map("max_hr")
+  avgCadence       Float?         @map("avg_cadence") @db.Real
+  elevationGainM   Float?         @map("elevation_gain_m") @db.Real
+  calories         Int?
+  routePolyline    String?        @map("route_polyline")
+  family           WorkoutFamily?
+  familySource     DataSource?    @map("family_source")
+  familyConfidence Float?         @map("family_confidence") @db.Real
+  familyEditedAt   DateTime?      @map("family_edited_at") @db.Timestamptz
+  intervalsSummary Json?          @map("intervals_summary")
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  user                 users                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout_sources      workout_sources[]
+  weather_observations weather_observations?
+  workout_streams      workout_streams?
+  workout_intervals    workout_intervals[]
+  planned_workout      planned_workouts?
+
+  @@index([userId])
+  @@index([userId, startedAt(sort: Desc)], map: "workouts_user_started_idx")
+  @@index([userId, family], map: "workouts_user_family_idx")
+}
+
+model workout_sources {
+  id              String           @id @default(cuid())
+  workoutId       String           @map("workout_id")
+  userId          String           @map("user_id")
+  provider        SourceProvider
+  externalId      String           @map("external_id")
+  startedAt       DateTime?        @map("started_at") @db.Timestamptz
+  elapsedS        Int?             @map("elapsed_s")
+  movingS         Int?             @map("moving_s")
+  rawPayload      Json?            @map("raw_payload")
+  payloadKind     String?          @map("payload_kind")
+  hasRoute        Boolean          @default(false) @map("has_route")
+  hasStreams      Boolean          @default(false) @map("has_streams")
+  streamsStatus   EnrichmentStatus @default(pending) @map("streams_status")
+  weatherStatus   EnrichmentStatus @default(pending) @map("weather_status")
+  routeStatus     EnrichmentStatus @default(pending) @map("route_status")
+  intervalsStatus EnrichmentStatus @default(pending) @map("intervals_status")
+  lastError       String?          @map("last_error")
+  syncedAt        DateTime?        @map("synced_at") @db.Timestamptz
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  workouts workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  user     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, externalId])
+  @@index([workoutId])
+  @@index([userId, provider])
+}
+
+model workout_streams {
   id          String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   workoutId   String   @unique @map("workout_id")
   time        Json?
@@ -486,6 +260,52 @@ model workout_intervals {
   workout workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
 
   @@unique([workoutId, position])
+}
+
+model weather_observations {
+  id                  String   @id @default(cuid())
+  workoutId           String   @unique @map("workout_id")
+  observedAt          DateTime @map("observed_at") @db.Timestamptz
+  temperature         Float?   @map("temperature_c")
+  apparentTemperature Float?   @map("apparent_temperature_c")
+  humidity            Float?   @map("humidity_pct")
+  windSpeed           Float?   @map("wind_speed_kmh")
+  precipitation       Float?   @map("precipitation_mm")
+  conditionCode       Int?     @map("condition_code")
+  provider            String   @default("open-meteo")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  workouts workouts @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+}
+
+model planned_workouts {
+  id               String         @id @default(cuid())
+  userId           String         @map("user_id")
+  plannedOn        DateTime?      @map("planned_on") @db.Date
+  timezone         String         @default("Europe/Paris")
+  family           WorkoutFamily?
+  structure        Json
+  schemaVersion    Int            @default(3) @map("schema_version")
+  targetDurationS  Int?           @map("target_duration_s")
+  targetDistanceM  Int?           @map("target_distance_m")
+  targetPaceSKm    Int?           @map("target_pace_s_km")
+  targetHrBpm      Int?           @map("target_hr_bpm")
+  targetRpe        Int?           @map("target_rpe")
+  origin           PlannedOrigin  @default(manual)
+  recommendationId String?        @map("recommendation_id")
+  trainingWeekId   String?        @map("training_week_id")
+  status           PlanStatus     @default(planned)
+  notes            String         @default("")
+  sessionNumber    Int?           @map("session_number")
+  workoutId        String?        @unique @map("workout_id")
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+
+  user    users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout workouts? @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+
+  @@index([userId, plannedOn], map: "planned_workouts_user_planned_idx")
+  @@index([userId, status], map: "planned_workouts_user_status_idx")
 }
 
 model race_goals {
@@ -580,4 +400,40 @@ model dismissed_source_activities {
   user users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, provider, externalId])
+}
+
+model conversations {
+  id                  String   @id @default(cuid())
+  title               String
+  userId              String   @map("user_id")
+  summary             String?
+  summaryMessageCount Int?     @map("summary_message_count")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  users                 users                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation_messages conversation_messages[]
+
+  @@index([userId])
+  @@index([updatedAt])
+  @@index([userId, updatedAt])
+}
+
+model conversation_messages {
+  id             String      @id @default(cuid())
+  conversationId String      @map("conversation_id")
+  role           String
+  content        String      @db.Text
+  model          String?
+  kind           MessageKind @default(text)
+  payload        Json?
+  provider       String?
+  inputTokens    Int?        @map("input_tokens")
+  outputTokens   Int?        @map("output_tokens")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  conversations conversations @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
 }

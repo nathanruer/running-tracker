@@ -33,7 +33,6 @@ describe('AI Context Building', () => {
         comments: 'Easy run',
         intervalDetails: null,
         sessionNumber: 1,
-        week: 1,
         status: 'completed',
       },
       {
@@ -47,7 +46,6 @@ describe('AI Context Building', () => {
         comments: 'Another easy run',
         intervalDetails: null,
         sessionNumber: 2,
-        week: 1,
         status: 'completed',
       },
       {
@@ -78,7 +76,6 @@ describe('AI Context Building', () => {
           ],
         },
         sessionNumber: 3,
-        week: 1,
         status: 'completed',
       },
     ];
@@ -251,7 +248,6 @@ function createQualitySession(
       steps: [],
     },
     sessionNumber: 1,
-    week: 1,
     status: 'completed',
   };
 }
@@ -273,7 +269,6 @@ function createStandardSession(
     comments: '',
     intervalDetails: null,
     sessionNumber: 1,
-    week: 1,
     status: 'completed',
   };
 }

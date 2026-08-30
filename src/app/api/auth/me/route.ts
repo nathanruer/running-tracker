@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest) {
     request,
     updateProfileSchema,
     async (updateData, userId) => {
-      await prisma.user_profiles.upsert({
+      await prisma.athlete_profiles.upsert({
         where: { userId },
         create: { userId, ...updateData },
         update: updateData,

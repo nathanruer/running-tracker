@@ -44,7 +44,6 @@ describe('SessionDetailsSheet', () => {
   const mockSession: TrainingSession = {
     id: '1',
     sessionNumber: 1,
-    week: 1,
     date: '2024-01-01T10:00:00Z',
     sessionType: 'Fractionné',
     duration: '01:00:00',

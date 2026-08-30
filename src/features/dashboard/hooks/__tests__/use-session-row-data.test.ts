@@ -6,7 +6,6 @@ import type { TrainingSession } from '@/lib/types';
 const createCompletedSession = (overrides: Partial<TrainingSession> = {}): TrainingSession => ({
   id: '1',
   sessionNumber: 1,
-  week: 1,
   date: '2024-01-15',
   sessionType: 'Footing',
   duration: '00:45:00',
@@ -23,7 +22,6 @@ const createCompletedSession = (overrides: Partial<TrainingSession> = {}): Train
 const createPlannedSession = (overrides: Partial<TrainingSession> = {}): TrainingSession => ({
   id: '2',
   sessionNumber: 2,
-  week: 1,
   date: null,
   plannedDate: '2024-01-16T00:00:00.000Z',
   sessionType: 'Footing',

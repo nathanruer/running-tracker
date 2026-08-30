@@ -169,7 +169,6 @@ describe('/api/auth/register', () => {
         email: 'test@example.com',
         password: 'super-secure-hash',
         profile: { create: {} },
-        preferences: { create: {} },
       },
     });
   });

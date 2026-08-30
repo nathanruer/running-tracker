@@ -30,7 +30,6 @@ import type { TrainingSession } from '@/lib/types';
 const createSession = (id: string, overrides?: Partial<TrainingSession>): TrainingSession => ({
   id,
   sessionNumber: 1,
-  week: 1,
   date: '2024-01-01',
   sessionType: 'Footing',
   duration: '00:30:00',

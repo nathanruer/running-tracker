@@ -17,7 +17,6 @@ export interface NormalizedSession {
   avgHeartRate: number;
   perceivedExertion: number;
   distance: number;
-  week?: number | null;
   status?: string;
   sessionNumber?: number;
   intervalDetails?: IntervalDetails | null;

@@ -17,7 +17,7 @@ vi.mock('@/server/database', () => ({
     users: {
       findUnique: vi.fn(),
     },
-    user_profiles: {
+    athlete_profiles: {
       upsert: vi.fn(),
     },
   },
@@ -38,7 +38,7 @@ describe('/api/auth/me', () => {
         id: 'user-123',
         email: 'test@example.com',
         createdAt: '2025-12-27T10:00:00.000Z',
-        externalAccounts: [
+        connectedAccounts: [
           { provider: 'strava', externalId: 'strava-123', tokenExpiresAt: '2025-12-27T10:00:00.000Z' },
         ],
         profile: {
@@ -79,7 +79,7 @@ describe('/api/auth/me', () => {
           id: true,
           email: true,
           createdAt: true,
-          externalAccounts: {
+          connectedAccounts: {
             select: { provider: true, externalId: true, tokenExpiresAt: true },
           },
           profile: {
@@ -126,7 +126,7 @@ describe('/api/auth/me', () => {
         id: 'user-123',
         email: 'test@example.com',
         createdAt: '2025-12-27T10:00:00.000Z',
-        externalAccounts: [],
+        connectedAccounts: [],
         profile: {
           weight: 75,
           age: 31,
@@ -137,7 +137,7 @@ describe('/api/auth/me', () => {
       };
 
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-      vi.mocked(prisma.user_profiles.upsert).mockResolvedValue({ userId: 'user-123' } as never);
+      vi.mocked(prisma.athlete_profiles.upsert).mockResolvedValue({ userId: 'user-123' } as never);
       vi.mocked(prisma.users.findUnique).mockResolvedValue(updatedUser as never);
 
       const request = new NextRequest('http://localhost/api/auth/me', {
@@ -170,7 +170,7 @@ describe('/api/auth/me', () => {
           goal: '10K',
         },
       });
-      expect(prisma.user_profiles.upsert).toHaveBeenCalledWith({
+      expect(prisma.athlete_profiles.upsert).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
         create: expect.objectContaining({
           userId: 'user-123',
@@ -203,7 +203,7 @@ describe('/api/auth/me', () => {
 
       expect(response.status).toBe(401);
       expect(data).toEqual({ error: 'Non authentifié' });
-      expect(prisma.user_profiles.upsert).not.toHaveBeenCalled();
+      expect(prisma.athlete_profiles.upsert).not.toHaveBeenCalled();
     });
 
     it('should handle partial updates', async () => {
@@ -211,7 +211,7 @@ describe('/api/auth/me', () => {
         id: 'user-123',
         email: 'test@example.com',
         createdAt: '2025-12-27T10:00:00.000Z',
-        externalAccounts: [],
+        connectedAccounts: [],
         profile: {
           weight: 75,
           age: 30,
@@ -222,7 +222,7 @@ describe('/api/auth/me', () => {
       };
 
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-      vi.mocked(prisma.user_profiles.upsert).mockResolvedValue({ userId: 'user-123' } as never);
+      vi.mocked(prisma.athlete_profiles.upsert).mockResolvedValue({ userId: 'user-123' } as never);
       vi.mocked(prisma.users.findUnique).mockResolvedValue(updatedUser as never);
 
       const request = new NextRequest('http://localhost/api/auth/me', {
@@ -249,7 +249,7 @@ describe('/api/auth/me', () => {
           goal: 'Marathon',
         },
       });
-      expect(prisma.user_profiles.upsert).toHaveBeenCalledWith(
+      expect(prisma.athlete_profiles.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 'user-123' },
           update: expect.objectContaining({
@@ -264,7 +264,7 @@ describe('/api/auth/me', () => {
         id: 'user-123',
         email: 'test@example.com',
         createdAt: '2025-12-27T10:00:00.000Z',
-        externalAccounts: [],
+        connectedAccounts: [],
         profile: {
           weight: 72.5,
           age: 28,
@@ -275,7 +275,7 @@ describe('/api/auth/me', () => {
       };
 
       vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-      vi.mocked(prisma.user_profiles.upsert).mockResolvedValue({ userId: 'user-123' } as never);
+      vi.mocked(prisma.athlete_profiles.upsert).mockResolvedValue({ userId: 'user-123' } as never);
       vi.mocked(prisma.users.findUnique).mockResolvedValue(updatedUser as never);
 
       const request = new NextRequest('http://localhost/api/auth/me', {
@@ -291,7 +291,7 @@ describe('/api/auth/me', () => {
       const response = await PUT(request);
 
       expect(response.status).toBe(200);
-      expect(prisma.user_profiles.upsert).toHaveBeenCalledWith(
+      expect(prisma.athlete_profiles.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: expect.objectContaining({
             weight: 72.5,

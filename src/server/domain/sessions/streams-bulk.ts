@@ -69,12 +69,11 @@ export async function bulkEnrichStreamsForIds(
     select: {
       id: true,
       routePolyline: true,
-      workout_streams_v3: { select: { workoutId: true } },
-      external_activities: {
+      workout_streams: { select: { workoutId: true } },
+      workout_sources: {
         select: {
-          source: true,
+          provider: true,
           externalId: true,
-          sourceStatus: true,
           rawPayload: true,
           streamsStatus: true,
         },
@@ -92,15 +91,15 @@ export async function bulkEnrichStreamsForIds(
   const tasks: StreamsEnrichmentTask[] = [];
 
   for (const workout of workouts) {
-    if (workout.workout_streams_v3) {
-      const intervalsActivity = workout.external_activities.find(
-        (activity) => activity.source === 'intervals_icu' && Boolean(activity.externalId)
+    if (workout.workout_streams) {
+      const intervalsSource = workout.workout_sources.find(
+        (source) => source.provider === 'intervals_icu' && Boolean(source.externalId)
       );
-      if (intervalsActivity?.externalId && !workout.routePolyline) {
+      if (intervalsSource?.externalId && !workout.routePolyline) {
         tasks.push({
           id: workout.id,
-          source: intervalsActivity.source,
-          externalId: intervalsActivity.externalId,
+          source: intervalsSource.provider,
+          externalId: intervalsSource.externalId,
           polylineOnly: true,
         });
         continue;
@@ -109,11 +108,7 @@ export async function bulkEnrichStreamsForIds(
       continue;
     }
 
-    const stravaActivity = workout.external_activities.find(
-      (activity) =>
-        (activity.source === 'strava' || activity.source === 'intervals_icu') &&
-        Boolean(activity.externalId)
-    );
+    const stravaActivity = workout.workout_sources.find((source) => Boolean(source.externalId));
 
     if (!stravaActivity?.externalId) {
       missingStrava.push(workout.id);
@@ -121,8 +116,7 @@ export async function bulkEnrichStreamsForIds(
     }
 
     const likelyStreamlessFromPayload = isStravaActivityLikelyStreamless(stravaActivity.rawPayload);
-    const knownStreamless =
-      stravaActivity.streamsStatus === 'not_applicable' || stravaActivity.sourceStatus === 'no_streams';
+    const knownStreamless = stravaActivity.streamsStatus === 'not_applicable';
 
     if (knownStreamless || likelyStreamlessFromPayload) {
       if (!knownStreamless) {
@@ -134,7 +128,7 @@ export async function bulkEnrichStreamsForIds(
 
     tasks.push({
       id: workout.id,
-      source: stravaActivity.source,
+      source: stravaActivity.provider,
       externalId: stravaActivity.externalId,
     });
   }

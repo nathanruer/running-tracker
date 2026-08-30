@@ -17,7 +17,7 @@ export async function GET(
         where: { id: userId },
         select: {
           id: true,
-          externalAccounts: {
+          connectedAccounts: {
             where: { provider: 'strava' },
             select: {
               externalId: true,
@@ -37,7 +37,7 @@ export async function GET(
         );
       }
 
-      const stravaAccount = user.externalAccounts[0] ?? null;
+      const stravaAccount = user.connectedAccounts[0] ?? null;
       if (!stravaAccount?.externalId) {
         return NextResponse.json(
           { error: 'Compte Strava non connecté' },

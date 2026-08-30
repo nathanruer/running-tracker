@@ -10,7 +10,7 @@ function createSession(
   duration: string | null = null,
   avgHeartRate: number | null = null
 ): Partial<TrainingSession> {
-  return { date: dateStr, distance, status, week: null, duration, avgHeartRate };
+  return { date: dateStr, distance, status, duration, avgHeartRate };
 }
 
 describe('weekly-calculator', () => {

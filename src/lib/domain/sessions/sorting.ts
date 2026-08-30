@@ -5,9 +5,6 @@ export const SORTABLE_COLUMNS = {
   sessionNumber: {
     field: 'sessionNumber',
   },
-  week: {
-    field: 'week',
-  },
   date: {
     field: 'date',
   },
@@ -149,7 +146,6 @@ export function getClientSortValue(
     perceivedExertion?: number | null;
     targetRPE?: number | null;
     sessionNumber?: number | null;
-    week?: number | null;
     date?: string | null;
     plannedDate?: string | null;
     sessionType?: string | null;
@@ -161,8 +157,6 @@ export function getClientSortValue(
   switch (column) {
     case 'sessionNumber':
       return session.sessionNumber ?? null;
-    case 'week':
-      return session.week ?? null;
     case 'date':
       const effectiveDate = isPlannedSession
         ? (session.plannedDate ?? session.date ?? null)

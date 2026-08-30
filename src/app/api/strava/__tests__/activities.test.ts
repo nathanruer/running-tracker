@@ -50,7 +50,7 @@ vi.mock('@/server/infrastructure/logger', () => ({
 const mockUser = {
   id: 'user-123',
   email: 'test@example.com',
-  externalAccounts: [
+  connectedAccounts: [
     {
       externalId: '12345',
       accessToken: 'valid-token',
@@ -209,7 +209,7 @@ describe('/api/strava/activities', () => {
   it('should return 400 when user has no Strava account connected', async () => {
     vi.mocked(prisma.users.findUnique).mockResolvedValue({
       ...mockUser,
-      externalAccounts: [],
+      connectedAccounts: [],
     } as never);
 
     const request = new NextRequest('http://localhost/api/strava/activities');

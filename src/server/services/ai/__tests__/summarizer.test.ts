@@ -6,9 +6,6 @@ vi.mock('@/server/database', () => ({
       findMany: vi.fn(),
       create: vi.fn(),
     },
-    conversation_message_payloads: {
-      create: vi.fn(),
-    },
     conversations: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -33,11 +30,10 @@ vi.mock('../stream-service', () => ({
 
 import { prisma } from '@/server/database';
 import { generateText } from 'ai';
-import { maybeRefreshConversationSummary, SUMMARY_PAYLOAD_TYPE } from '../summarizer';
+import { maybeRefreshConversationSummary } from '../summarizer';
 
 const mockFindMany = prisma.conversation_messages.findMany as ReturnType<typeof vi.fn>;
 const mockCreateMessage = prisma.conversation_messages.create as ReturnType<typeof vi.fn>;
-const mockCreatePayload = prisma.conversation_message_payloads.create as ReturnType<typeof vi.fn>;
 const mockGenerateText = generateText as ReturnType<typeof vi.fn>;
 
 function makeMessages(count: number) {
@@ -53,7 +49,6 @@ describe('maybeRefreshConversationSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCreateMessage.mockResolvedValue({ id: 'summary-msg' });
-    mockCreatePayload.mockResolvedValue({});
     vi.mocked(prisma.conversations.findUnique).mockResolvedValue(null as never);
     vi.mocked(prisma.conversations.update).mockResolvedValue({} as never);
     mockGenerateText.mockResolvedValue({ text: 'Résumé cumulatif de la conversation.' });
@@ -74,20 +69,7 @@ describe('maybeRefreshConversationSummary', () => {
     await maybeRefreshConversationSummary('conv-1');
 
     expect(mockGenerateText).toHaveBeenCalledTimes(1);
-    expect(mockCreateMessage).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        conversationId: 'conv-1',
-        role: 'system',
-        content: 'Résumé cumulatif de la conversation.',
-      }),
-    });
-    expect(mockCreatePayload).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        messageId: 'summary-msg',
-        payloadType: SUMMARY_PAYLOAD_TYPE,
-        payload: { messageCountAtGeneration: 20 },
-      }),
-    });
+    expect(mockCreateMessage).not.toHaveBeenCalled();
     expect(prisma.conversations.update).toHaveBeenCalledWith({
       where: { id: 'conv-1' },
       data: { summary: 'Résumé cumulatif de la conversation.', summaryMessageCount: 20 },
@@ -118,10 +100,9 @@ describe('maybeRefreshConversationSummary', () => {
     expect(mockGenerateText).toHaveBeenCalledTimes(1);
     const call = mockGenerateText.mock.calls[0][0];
     expect(call.prompt).toContain('Ancien résumé.');
-    expect(mockCreatePayload).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        payload: { messageCountAtGeneration: 30 },
-      }),
+    expect(prisma.conversations.update).toHaveBeenCalledWith({
+      where: { id: 'conv-1' },
+      data: { summary: 'Résumé cumulatif de la conversation.', summaryMessageCount: 30 },
     });
   });
 

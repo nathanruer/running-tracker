@@ -25,7 +25,6 @@ const createSession = (overrides: Partial<TrainingSession> = {}): TrainingSessio
   id: Math.random().toString(),
   userId: 'user-1',
   sessionNumber: 1,
-  week: null,
   date: new Date().toISOString().split('T')[0],
   sessionType: 'EF',
   duration: '01:00:00',
@@ -181,8 +180,8 @@ describe('computeAnalytics', () => {
 
     it('should handle sessions with only planned status', () => {
       const sessions: TrainingSession[] = [
-        createSession({ id: '1', status: 'planned', week: 1, date: '2024-01-15' }),
-        createSession({ id: '2', status: 'planned', week: 2, date: '2024-01-22' }),
+        createSession({ id: '1', status: 'planned', date: '2024-01-15' }),
+        createSession({ id: '2', status: 'planned', date: '2024-01-22' }),
       ];
 
       const result = { current: computeAnalytics(sessions, defaultFilters) };

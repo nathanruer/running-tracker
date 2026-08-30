@@ -117,13 +117,17 @@ export function familyLabel(family: WorkoutFamily | null): string | null {
   return family ? FAMILY_LABELS[family] : null;
 }
 
-/** SQL expression giving the legacy session type label of a planned_workouts row aliased `p`. */
-export function familyLabelSql(alias = 'p'): string {
+/**
+ * SQL expression giving the legacy session type label of a row aliased `alias` from its `family`
+ * column; with `label` (planned_workouts) a custom label stored in the structure takes precedence.
+ */
+export function familyLabelSql(alias = 'p', options: { label?: boolean } = {}): string {
   const cases = WORKOUT_FAMILIES
     .filter((family) => FAMILY_LABELS[family] !== null)
     .map((family) => `WHEN '${family}' THEN '${FAMILY_LABELS[family]}'`)
     .join(' ');
-  return `COALESCE(${alias}.structure->>'label', CASE ${alias}.family::text ${cases} ELSE NULL END)`;
+  const byFamily = `CASE ${alias}.family::text ${cases} ELSE NULL END`;
+  return options.label === false ? byFamily : `COALESCE(${alias}.structure->>'label', ${byFamily})`;
 }
 
 export function sessionTypeFromStructure(family: WorkoutFamily | null, structure: unknown): string | null {

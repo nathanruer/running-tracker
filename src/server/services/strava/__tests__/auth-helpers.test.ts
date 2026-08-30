@@ -9,7 +9,7 @@ vi.mock('../client', () => ({
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    external_accounts: {
+    connected_accounts: {
       update: vi.fn(),
     },
   },
@@ -17,7 +17,7 @@ vi.mock('@/server/database', () => ({
 
 describe('auth-helpers', () => {
   const mockRefreshAccessToken = vi.mocked(stravaClient.refreshAccessToken);
-  const mockPrismaUpdate = vi.mocked(prisma.external_accounts.update);
+  const mockPrismaUpdate = vi.mocked(prisma.connected_accounts.update);
 
   beforeEach(() => {
     vi.clearAllMocks();

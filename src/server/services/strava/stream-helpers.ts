@@ -57,7 +57,7 @@ export async function fetchStreamsForSessionWithStatus(
   }
 
   try {
-    const account = await prisma.external_accounts.findUnique({
+    const account = await prisma.connected_accounts.findUnique({
       where: {
         userId_provider: {
           userId,

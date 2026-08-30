@@ -19,7 +19,7 @@ vi.mock('@/server/infrastructure/logger', () => ({
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    external_accounts: {
+    connected_accounts: {
       findUnique: vi.fn(),
     },
   },
@@ -32,7 +32,7 @@ const mockGetValidAccessToken = vi.mocked(
   (await import('../auth-helpers')).getValidAccessToken
 );
 const { prisma } = await import('@/server/database');
-const mockFindUnique = vi.mocked(prisma.external_accounts.findUnique);
+const mockFindUnique = vi.mocked(prisma.connected_accounts.findUnique);
 
 describe('fetchStreamsForSession', () => {
   beforeEach(() => {

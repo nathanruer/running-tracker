@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     request,
     null,
     async (_data, userId) => {
-      const account = await prisma.external_accounts.findUnique({
+      const account = await prisma.connected_accounts.findUnique({
         where: {
           userId_provider: {
             userId,
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
       const tokenData = await refreshAccessToken(account.refreshToken);
 
-      await prisma.external_accounts.update({
+      await prisma.connected_accounts.update({
         where: {
           userId_provider: {
             userId,

@@ -34,7 +34,6 @@ function normalizeSession(session: TrainingSession): NormalizedSession {
     avgHeartRate: session.avgHeartRate ?? 0,
     perceivedExertion: session.perceivedExertion ?? 0,
     distance: session.distance ?? 0,
-    week: session.week ?? null,
     status: session.status ?? undefined,
     sessionNumber: session.sessionNumber ?? undefined,
     intervalDetails: session.intervalDetails ?? null,

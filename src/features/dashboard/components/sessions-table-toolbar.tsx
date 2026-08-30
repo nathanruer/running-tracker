@@ -16,8 +16,8 @@ import type { Period } from '../hooks/use-dashboard-filters';
 import { useNewIntervalsCount } from '@/features/import/hooks/use-new-intervals-count';
 
 const PERIOD_LABELS: Record<Period, string> = {
-  all: 'Tout',
   week: 'Semaine',
+  all: 'Tout',
   month: 'Mois',
   year: 'Année',
 };

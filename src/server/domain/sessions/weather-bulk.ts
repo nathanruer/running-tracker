@@ -59,9 +59,8 @@ export async function bulkEnrichWeatherForIds(
       id: true,
       startedAt: true,
       weather_observations: { select: { id: true } },
-      external_activities: {
+      workout_sources: {
         select: {
-          source: true,
           rawPayload: true,
         },
       },
@@ -81,7 +80,7 @@ export async function bulkEnrichWeatherForIds(
       continue;
     }
 
-    const stravaActivity = workout.external_activities.find((activity) => activity.rawPayload);
+    const stravaActivity = workout.workout_sources.find((source) => source.rawPayload);
 
     if (!stravaActivity) {
       missingStrava.push(workout.id);

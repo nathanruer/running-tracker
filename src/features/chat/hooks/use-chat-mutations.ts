@@ -71,7 +71,6 @@ export function useChatMutations(conversationId: string | null) {
         sessionNumber: 0,
         sessionType: session.session_type || 'Footing',
         status: 'planned',
-        week: null,
         userId: '',
         date: null,
         duration: null,

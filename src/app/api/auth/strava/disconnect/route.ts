@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     request,
     null,
     async (_data, userId) => {
-      const account = await prisma.external_accounts.findUnique({
+      const account = await prisma.connected_accounts.findUnique({
         where: {
           userId_provider: {
             userId,
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      await prisma.external_accounts.deleteMany({
+      await prisma.connected_accounts.deleteMany({
         where: {
           userId,
           provider: 'strava',

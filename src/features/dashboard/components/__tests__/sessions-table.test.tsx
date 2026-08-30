@@ -32,7 +32,6 @@ const mockSessions: TrainingSession[] = [
   {
     id: '1',
     sessionNumber: 1,
-    week: 1,
     date: '2024-01-01',
     sessionType: 'Endurance',
     duration: '00:30:00',
@@ -50,7 +49,6 @@ const mockSessions: TrainingSession[] = [
   {
     id: '2',
     sessionNumber: 2,
-    week: 1,
     date: '2024-01-03',
     sessionType: 'Fractionné',
     duration: '00:45:00',
@@ -68,7 +66,6 @@ const mockSessions: TrainingSession[] = [
   {
     id: '3',
     sessionNumber: 3,
-    week: 2,
     date: '2024-01-05',
     plannedDate: '2024-01-05',
     sessionType: 'Récupération',

@@ -5,7 +5,7 @@ import { prisma } from '@/server/database';
 
 vi.mock('@/server/database', () => ({
   prisma: {
-    external_accounts: {
+    connected_accounts: {
       findUnique: vi.fn(),
       deleteMany: vi.fn(),
     },
@@ -28,8 +28,8 @@ describe('/api/auth/strava/disconnect', () => {
       externalId: '12345',
     };
 
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
-    vi.mocked(prisma.external_accounts.deleteMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.connected_accounts.deleteMany).mockResolvedValue({ count: 1 } as never);
 
     const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
       method: 'POST',
@@ -44,13 +44,13 @@ describe('/api/auth/strava/disconnect', () => {
       message: 'Compte Strava déconnecté avec succès',
     });
 
-    expect(prisma.external_accounts.deleteMany).toHaveBeenCalledWith({
+    expect(prisma.connected_accounts.deleteMany).toHaveBeenCalledWith({
       where: { userId: 'user-123', provider: 'strava' },
     });
   });
 
   it('should return 400 when user has no Strava account linked', async () => {
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
       method: 'POST',
@@ -70,8 +70,8 @@ describe('/api/auth/strava/disconnect', () => {
       externalId: '12345',
     };
 
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(mockAccount as never);
-    vi.mocked(prisma.external_accounts.deleteMany).mockRejectedValue(new Error('Database error'));
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(mockAccount as never);
+    vi.mocked(prisma.connected_accounts.deleteMany).mockRejectedValue(new Error('Database error'));
 
     const request = new NextRequest('http://localhost/api/auth/strava/disconnect', {
       method: 'POST',

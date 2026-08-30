@@ -10,7 +10,6 @@ function makePlannedSession(
     id: 's1',
     userId: 'u1',
     sessionNumber: 1,
-    week: null,
     status: 'planned',
     date: null,
     plannedDate: '2026-09-02T00:00:00.000Z',

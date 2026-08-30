@@ -2,12 +2,10 @@ import 'server-only';
 import { generateText } from 'ai';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
-import { toPrismaJson } from '@/server/utils/prisma-json';
 import { getGroqProvider } from './stream-service';
 import { GROQ_SUMMARY_MODEL } from './groq-client';
 import { OPTIMIZATION_CONFIG } from './optimizer';
 
-export const SUMMARY_PAYLOAD_TYPE = 'summary_meta';
 const SUMMARY_TRIGGER_THRESHOLD = 6;
 const MESSAGE_EXCERPT_LENGTH = 300;
 const MAX_MESSAGES_IN_PROMPT = 20;
@@ -69,26 +67,6 @@ export async function maybeRefreshConversationSummary(conversationId: string): P
     await prisma.conversations.update({
       where: { id: conversationId },
       data: { summary: summaryText, summaryMessageCount: total },
-    });
-
-    // Legacy mirror kept until the contract phase drops summary messages.
-    const message = await prisma.conversation_messages.create({
-      data: {
-        conversationId,
-        role: 'system',
-        content: summaryText,
-        model: GROQ_SUMMARY_MODEL,
-        kind: 'summary',
-        payload: toPrismaJson({ messageCountAtGeneration: total }),
-        provider: 'groq',
-      },
-    });
-    await prisma.conversation_message_payloads.create({
-      data: {
-        messageId: message.id,
-        payloadType: SUMMARY_PAYLOAD_TYPE,
-        payload: toPrismaJson({ messageCountAtGeneration: total }),
-      },
     });
 
     logger.info(

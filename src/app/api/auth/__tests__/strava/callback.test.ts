@@ -10,13 +10,13 @@ vi.mock('@/server/database', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
     },
-    external_accounts: {
+    connected_accounts: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
     },
-    user_profiles: {
+    athlete_profiles: {
       create: vi.fn(),
     },
     user_preferences: {
@@ -148,10 +148,10 @@ describe('/api/auth/strava/callback', () => {
 
     vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
     vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(prisma.external_accounts.findUnique)
+    vi.mocked(prisma.connected_accounts.findUnique)
       .mockResolvedValueOnce(null as never)
       .mockResolvedValueOnce(null as never);
-    vi.mocked(prisma.external_accounts.upsert).mockResolvedValue({
+    vi.mocked(prisma.connected_accounts.upsert).mockResolvedValue({
       userId: 'user-123',
       provider: 'strava',
       externalId: '12345',
@@ -171,7 +171,7 @@ describe('/api/auth/strava/callback', () => {
     const location = response.headers.get('location');
     expect(location).toContain('/dashboard');
 
-    expect(prisma.external_accounts.upsert).toHaveBeenCalledWith({
+    expect(prisma.connected_accounts.upsert).toHaveBeenCalledWith({
       where: {
         userId_provider: {
           userId: 'user-123',
@@ -209,7 +209,7 @@ describe('/api/auth/strava/callback', () => {
 
     vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
     vi.mocked(prisma.users.findUnique).mockResolvedValue(currentUser as never);
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue({
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue({
       userId: 'user-456',
       provider: 'strava',
       externalId: '12345',
@@ -238,7 +238,7 @@ describe('/api/auth/strava/callback', () => {
 
     vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
     vi.mocked(prisma.users.findUnique).mockResolvedValue(currentUser as never);
-    vi.mocked(prisma.external_accounts.findUnique)
+    vi.mocked(prisma.connected_accounts.findUnique)
       .mockResolvedValueOnce(null as never)
       .mockResolvedValueOnce({
         userId: 'user-123',
@@ -268,13 +268,13 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue(null);
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue({
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue({
       userId: 'user-strava',
       provider: 'strava',
       externalId: '12345',
     } as never);
     vi.mocked(prisma.users.findUnique).mockResolvedValue(existingStravaUser as never);
-    vi.mocked(prisma.external_accounts.update).mockResolvedValue({
+    vi.mocked(prisma.connected_accounts.update).mockResolvedValue({
       userId: 'user-strava',
       provider: 'strava',
       externalId: '12345',
@@ -294,7 +294,7 @@ describe('/api/auth/strava/callback', () => {
     const location = response.headers.get('location');
     expect(location).toContain('/dashboard');
 
-    expect(prisma.external_accounts.update).toHaveBeenCalledWith({
+    expect(prisma.connected_accounts.update).toHaveBeenCalledWith({
       where: {
         userId_provider: {
           userId: 'user-strava',
@@ -317,7 +317,7 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue(null);
-    vi.mocked(prisma.external_accounts.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.users.create).mockResolvedValue(newUser as never);
     vi.mocked(createSessionToken).mockReturnValue('session-token');
     vi.mocked(fetch).mockResolvedValue({
@@ -339,8 +339,7 @@ describe('/api/auth/strava/callback', () => {
         email: 'strava_12345@strava.local',
         password: '',
         profile: { create: {} },
-        preferences: { create: {} },
-        externalAccounts: {
+        connectedAccounts: {
           create: {
             provider: 'strava',
             externalId: '12345',

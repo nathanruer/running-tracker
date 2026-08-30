@@ -4,10 +4,11 @@ import 'server-only';
  */
 
 import { Prisma } from '@prisma/client';
-import type { IntervalDetails, TrainingSession } from '@/lib/types';
+import type { TrainingSession } from '@/lib/types';
 import { formatDuration } from '@/lib/utils/duration/format';
 import { civilDayInZone } from '@/lib/utils/date/zoned';
 import {
+  familyLabel,
   intervalDetailsFromV3,
   sessionTypeFromStructure,
   type BlockType,
@@ -29,7 +30,6 @@ export interface PlannedWorkoutData {
   plannedOn: Date | null;
   family: WorkoutFamily | null;
   structure: Prisma.JsonValue;
-  structureLegacy: Prisma.JsonValue | null;
   targetDurationS: number | null;
   targetDistanceM: number | null;
   targetPaceSKm: number | null;
@@ -49,10 +49,9 @@ export interface WorkoutIntervalData {
   avgHr: number | null;
 }
 
-export interface ExternalActivityData {
-  source: string;
+export interface WorkoutSourceData {
+  provider: string;
   externalId: string;
-  sourceStatus?: string | null;
   rawPayload?: Prisma.JsonValue | null;
   hasStreams?: boolean;
   streamsStatus?: string | null;
@@ -66,10 +65,9 @@ export interface WeatherObservationData {
   windSpeed: number | null;
   precipitation: number | null;
   conditionCode: number | null;
-  payload: Prisma.JsonValue | null;
 }
 
-export interface WorkoutStreamsV3Data {
+export interface WorkoutStreamsData {
   time: Prisma.JsonValue | null;
   distance: Prisma.JsonValue | null;
   velocity: Prisma.JsonValue | null;
@@ -81,16 +79,13 @@ export interface WorkoutStreamsV3Data {
 export interface WorkoutBase {
   id: string;
   userId: string;
-  planSessionId: string | null;
   startedAt: Date;
   timezone: string;
   datePrecision: 'instant' | 'day';
-  status: string;
   sessionNumber: number | null;
-  week: number | null;
-  sessionType: string | null;
-  comments: string;
-  perceivedExertion: number | null;
+  rpe: number | null;
+  notes: string;
+  family: WorkoutFamily | null;
   durationS: number | null;
   distanceM: number | null;
   paceSKm: number | null;
@@ -102,21 +97,20 @@ export interface WorkoutBase {
   routePolyline: string | null;
   planned_workout?: PlannedWorkoutData | null;
   workout_intervals?: WorkoutIntervalData[];
-  external_activities?: ExternalActivityData[];
+  workout_sources?: WorkoutSourceData[];
   weather_observations?: WeatherObservationData | null;
 }
 
 export interface WorkoutFull extends WorkoutBase {
-  external_activities: ExternalActivityData[];
+  workout_sources: WorkoutSourceData[];
   weather_observations: WeatherObservationData | null;
-  workout_streams_v3: WorkoutStreamsV3Data | null;
+  workout_streams: WorkoutStreamsData | null;
 }
 
-/** Lightweight external activity flags computed in SQL for the table view. */
+/** Lightweight source flags computed in SQL for the table view. */
 export interface ExternalFlags {
   source: string;
   externalId: string;
-  sourceStatus: string | null;
   hasPayload: boolean;
   hasPolyline: boolean;
   manual: boolean;
@@ -132,7 +126,7 @@ export interface ExternalFlags {
 
 export interface SessionMapperOptions {
   /**
-   * If true, includes external activities, weather, and streams data.
+   * If true, includes sources, weather, and streams data.
    * If false, only includes core workout and metrics data (for table view).
    * @default true
    */
@@ -163,7 +157,7 @@ const DEFAULT_OPTIONS: SessionMapperOptions = {
 // Helper functions
 // ============================================================================
 
-const STREAM_COLUMNS: Array<[keyof WorkoutStreamsV3Data, string]> = [
+const STREAM_COLUMNS: Array<[keyof WorkoutStreamsData, string]> = [
   ['time', 'time'],
   ['distance', 'distance'],
   ['velocity', 'velocity_smooth'],
@@ -172,13 +166,13 @@ const STREAM_COLUMNS: Array<[keyof WorkoutStreamsV3Data, string]> = [
   ['cadence', 'cadence'],
 ];
 
-function selectExternalActivity(activities: ExternalActivityData[]): ExternalActivityData | null {
-  if (!activities.length) return null;
-  const strava = activities.find((activity) => activity.source === 'strava');
-  return strava ?? activities[0];
+function selectSource(sources: WorkoutSourceData[]): WorkoutSourceData | null {
+  if (!sources.length) return null;
+  const strava = sources.find((source) => source.provider === 'strava');
+  return strava ?? sources[0];
 }
 
-function mapStreams(streams: WorkoutStreamsV3Data | null): Record<string, { data: Prisma.JsonValue }> | null {
+function mapStreams(streams: WorkoutStreamsData | null): Record<string, { data: Prisma.JsonValue }> | null {
   if (!streams) return null;
 
   const result: Record<string, { data: Prisma.JsonValue }> = {};
@@ -193,14 +187,13 @@ function mapStreams(streams: WorkoutStreamsV3Data | null): Record<string, { data
 }
 
 /** True when streams are stored or known to be unavailable, i.e. nothing left to enrich. */
-function isStreamsHandled(external: ExternalActivityData | null): boolean {
-  if (!external) return false;
+function isStreamsHandled(source: WorkoutSourceData | null): boolean {
+  if (!source) return false;
   return (
-    external.hasStreams === true
-    || external.streamsStatus === 'not_applicable'
-    || external.sourceStatus === 'no_streams'
-    || !external.rawPayload
-    || isStravaActivityLikelyStreamless(external.rawPayload)
+    source.hasStreams === true
+    || source.streamsStatus === 'not_applicable'
+    || !source.rawPayload
+    || isStravaActivityLikelyStreamless(source.rawPayload)
   );
 }
 
@@ -209,7 +202,6 @@ function isStreamsHandledFromFlags(flags: ExternalFlags | null): boolean {
   return (
     flags.hasStreams
     || flags.streamsStatus === 'not_applicable'
-    || flags.sourceStatus === 'no_streams'
     || !flags.hasPayload
     || isLikelyStreamlessFromFields(flags)
   );
@@ -218,35 +210,15 @@ function isStreamsHandledFromFlags(flags: ExternalFlags | null): boolean {
 function mapWeather(weather: WeatherObservationData | null): TrainingSession['weather'] {
   if (!weather) return null;
 
-  const payload = weather.payload as Record<string, unknown> | null;
-
-  // Required fields must have a number value (use fallback for payload extraction)
-  const conditionCode = weather.conditionCode ?? (typeof payload?.conditionCode === 'number' ? payload.conditionCode : 0);
-  const temperature = weather.temperature ?? (typeof payload?.temperature === 'number' ? payload.temperature : 0);
-  const windSpeed = weather.windSpeed ?? (typeof payload?.windSpeed === 'number' ? payload.windSpeed : 0);
-  const precipitation = weather.precipitation ?? (typeof payload?.precipitation === 'number' ? payload.precipitation : 0);
-
   return {
-    conditionCode,
-    temperature,
-    apparentTemperature: weather.apparentTemperature ?? (typeof payload?.apparentTemperature === 'number' ? payload.apparentTemperature : undefined),
-    humidity: weather.humidity ?? (typeof payload?.humidity === 'number' ? payload.humidity : undefined),
-    windSpeed,
-    precipitation,
+    conditionCode: weather.conditionCode ?? 0,
+    temperature: weather.temperature ?? 0,
+    apparentTemperature: weather.apparentTemperature ?? undefined,
+    humidity: weather.humidity ?? undefined,
+    windSpeed: weather.windSpeed ?? 0,
+    precipitation: weather.precipitation ?? 0,
     timestamp: weather.observedAt ? weather.observedAt.getTime() : undefined,
   };
-}
-
-/**
- * Legacy interval details of a plan. Rows converted from v1 keep their original
- * details until lot 14 moves the executed steps into workout_intervals.
- */
-function intervalDetailsOf(
-  plan: PlannedWorkoutData | null | undefined,
-  intervals: WorkoutIntervalData[] | undefined
-): IntervalDetails | null {
-  if (plan?.structureLegacy) return plan.structureLegacy as unknown as IntervalDetails;
-  return intervalDetailsFromV3(plan?.structure ?? null, intervals ?? []);
 }
 
 function planTargets(plan: PlannedWorkoutData | null | undefined) {
@@ -276,22 +248,21 @@ function buildBaseSession(workout: WorkoutBase): Omit<
     id: workout.id,
     userId: workout.userId,
     sessionNumber: workout.sessionNumber ?? 0,
-    week: workout.week ?? null,
     date: startedAt,
     startedAt,
     timezone: workout.timezone,
     datePrecision: workout.datePrecision,
     localDate: civilDayInZone(workout.startedAt, workout.timezone),
-    sessionType: workout.sessionType || (plan ? sessionTypeFromStructure(plan.family, plan.structure) : null),
+    sessionType: familyLabel(workout.family) ?? (plan ? sessionTypeFromStructure(plan.family, plan.structure) : null),
     duration: workout.durationS != null ? formatDuration(workout.durationS) : null,
     distance: workout.distanceM != null ? workout.distanceM / 1000 : null,
     avgPace: workout.paceSKm != null ? formatDuration(workout.paceSKm) : null,
     avgHeartRate: workout.avgHr ?? null,
     maxHeartRate: workout.maxHr ?? null,
-    intervalDetails: intervalDetailsOf(plan, workout.workout_intervals),
-    perceivedExertion: workout.perceivedExertion ?? null,
-    comments: workout.comments ?? plan?.notes ?? '',
-    status: workout.status as 'planned' | 'completed',
+    intervalDetails: intervalDetailsFromV3(plan?.structure ?? null, workout.workout_intervals ?? []),
+    perceivedExertion: workout.rpe ?? null,
+    comments: workout.notes ?? plan?.notes ?? '',
+    status: 'completed',
     ...planTargets(plan),
     elevationGain: workout.elevationGainM ?? null,
     averageCadence: workout.avgCadence ?? null,
@@ -332,12 +303,10 @@ export function mapWorkoutToSession(
       source = flags?.source ?? null;
       hasStreams = isStreamsHandledFromFlags(flags);
     } else {
-      const external = workout.external_activities
-        ? selectExternalActivity(workout.external_activities)
-        : null;
-      externalId = external?.externalId ?? null;
-      source = external?.source ?? null;
-      hasStreams = workout.external_activities !== undefined ? isStreamsHandled(external) : undefined;
+      const selected = workout.workout_sources ? selectSource(workout.workout_sources) : null;
+      externalId = selected?.externalId ?? null;
+      source = selected?.provider ?? null;
+      hasStreams = workout.workout_sources !== undefined ? isStreamsHandled(selected) : undefined;
     }
 
     const weather = opts.includeWeather ? mapWeather(workout.weather_observations ?? null) : null;
@@ -360,7 +329,7 @@ export function mapWorkoutToSession(
 
   // Type guard to check if workout has full data
   const isFullWorkout = (w: WorkoutBase | WorkoutFull): w is WorkoutFull => {
-    return 'external_activities' in w;
+    return 'workout_sources' in w && 'workout_streams' in w;
   };
 
   if (!isFullWorkout(workout)) {
@@ -376,17 +345,17 @@ export function mapWorkoutToSession(
     } as TrainingSession;
   }
 
-  const external = selectExternalActivity(workout.external_activities);
-  const streams = mapStreams(workout.workout_streams_v3);
+  const selected = selectSource(workout.workout_sources);
+  const streams = mapStreams(workout.workout_streams);
   const weather = mapWeather(workout.weather_observations);
   const hasWeather = Boolean(workout.weather_observations);
-  const hasStreams = streams !== null || isStreamsHandled(external);
+  const hasStreams = streams !== null || isStreamsHandled(selected);
 
   return {
     ...base,
-    externalId: external?.externalId ?? null,
-    source: external?.source ?? null,
-    stravaData: external?.rawPayload as TrainingSession['stravaData'] ?? null,
+    externalId: selected?.externalId ?? null,
+    source: selected?.provider ?? null,
+    stravaData: selected?.rawPayload as TrainingSession['stravaData'] ?? null,
     stravaStreams: streams as TrainingSession['stravaStreams'] ?? null,
     averageTemp: weather?.temperature ?? null,
     weather,
@@ -409,14 +378,13 @@ export function mapPlannedWorkoutToSession(
     id: plan.id,
     userId: plan.userId,
     sessionNumber: plan.sessionNumber ?? 0,
-    week: null,
     date: opts.includePlannedDateAsDate ? plannedDate : null,
     sessionType: sessionTypeFromStructure(plan.family, plan.structure),
     duration: null,
     distance: null,
     avgPace: null,
     avgHeartRate: null,
-    intervalDetails: intervalDetailsOf(plan, undefined),
+    intervalDetails: intervalDetailsFromV3(plan.structure),
     perceivedExertion: null,
     comments: plan.notes ?? '',
     status: plan.status === 'completed' ? 'completed' : 'planned',

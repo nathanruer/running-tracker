@@ -14,16 +14,13 @@ import {
 const createWorkoutBase = (overrides: Partial<WorkoutBase> = {}): WorkoutBase => ({
   id: 'workout-1',
   userId: 'user-1',
-  planSessionId: null,
   startedAt: new Date('2024-01-15T10:00:00Z'),
   timezone: 'Europe/Paris',
   datePrecision: 'instant',
-  status: 'completed',
   sessionNumber: 5,
-  week: 2,
-  sessionType: 'Endurance',
-  comments: 'Great run!',
-  perceivedExertion: 7,
+  family: 'footing',
+  notes: 'Great run!',
+  rpe: 7,
   durationS: 3600,
   distanceM: 10000,
   paceSKm: 360,
@@ -40,9 +37,9 @@ const createWorkoutBase = (overrides: Partial<WorkoutBase> = {}): WorkoutBase =>
 
 const createWorkoutFull = (overrides: Partial<WorkoutFull> = {}): WorkoutFull => ({
   ...createWorkoutBase(),
-  external_activities: [
+  workout_sources: [
     {
-      source: 'strava',
+      provider: 'strava',
       externalId: 'strava-123',
       rawPayload: { name: 'Morning Run', type: 'Run' },
     },
@@ -55,9 +52,8 @@ const createWorkoutFull = (overrides: Partial<WorkoutFull> = {}): WorkoutFull =>
     windSpeed: 10,
     precipitation: 0,
     conditionCode: 800,
-    payload: null,
   },
-  workout_streams_v3: {
+  workout_streams: {
     time: null,
     distance: null,
     velocity: null,
@@ -91,7 +87,6 @@ const createPlannedWorkout = (overrides: Partial<PlannedWorkoutData> = {}): Plan
   plannedOn: new Date('2024-01-20T00:00:00Z'),
   family: 'vma_short',
   structure: vmaStructure,
-  structureLegacy: null,
   targetDurationS: 2700,
   targetDistanceM: 8000,
   targetPaceSKm: 330,
@@ -117,16 +112,21 @@ describe('session.mapper', () => {
         expect(session.id).toBe('workout-1');
         expect(session.userId).toBe('user-1');
         expect(session.sessionNumber).toBe(5);
-        expect(session.week).toBe(2);
         expect(session.date).toBe('2024-01-15T10:00:00.000Z');
         expect(session.startedAt).toBe('2024-01-15T10:00:00.000Z');
         expect(session.timezone).toBe('Europe/Paris');
         expect(session.datePrecision).toBe('instant');
         expect(session.localDate).toBe('2024-01-15');
-        expect(session.sessionType).toBe('Endurance');
+        expect(session.sessionType).toBe('Footing');
         expect(session.comments).toBe('Great run!');
         expect(session.status).toBe('completed');
         expect(session.perceivedExertion).toBe(7);
+      });
+
+      it('should label the session from its family', () => {
+        expect(mapWorkoutToSession(createWorkoutFull({ family: 'tempo' })).sessionType).toBe('Fractionné');
+        expect(mapWorkoutToSession(createWorkoutFull({ family: 'long' })).sessionType).toBe('Sortie longue');
+        expect(mapWorkoutToSession(createWorkoutFull({ family: null })).sessionType).toBeNull();
       });
 
       it('should expose the civil day in the workout timezone for day precision', () => {
@@ -184,7 +184,7 @@ describe('session.mapper', () => {
 
       it('should map streams columns back to the strava-shaped set', () => {
         const workout = createWorkoutFull({
-          workout_streams_v3: {
+          workout_streams: {
             time: [0, 1, 2],
             distance: null,
             velocity: [3, 3.1, 3.2],
@@ -203,14 +203,13 @@ describe('session.mapper', () => {
         expect(session.hasStreams).toBe(true);
       });
 
-      it('should flag streams as handled when sourceStatus is no_streams', () => {
+      it('should flag streams as handled when the source has no payload', () => {
         const workout = createWorkoutFull({
-          workout_streams_v3: null,
-          external_activities: [
+          workout_streams: null,
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'no_streams',
               rawPayload: null,
             },
           ],
@@ -223,12 +222,11 @@ describe('session.mapper', () => {
 
       it('should flag streams as handled when the enrichment status is not_applicable', () => {
         const workout = createWorkoutFull({
-          workout_streams_v3: null,
-          external_activities: [
+          workout_streams: null,
+          workout_sources: [
             {
-              source: 'intervals_icu',
+              provider: 'intervals_icu',
               externalId: 'i-1',
-              sourceStatus: 'imported',
               rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
               streamsStatus: 'not_applicable',
             },
@@ -241,12 +239,11 @@ describe('session.mapper', () => {
 
       it('should flag streams as handled for manual/streamless Strava payload', () => {
         const workout = createWorkoutFull({
-          workout_streams_v3: null,
-          external_activities: [
+          workout_streams: null,
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: {
                 external_id: null,
                 upload_id: null,
@@ -260,11 +257,11 @@ describe('session.mapper', () => {
         expect(session.hasStreams).toBe(true);
       });
 
-      it('should prefer strava activity over others', () => {
+      it('should prefer the strava source over others', () => {
         const workout = createWorkoutFull({
-          external_activities: [
-            { source: 'garmin', externalId: 'garmin-1', rawPayload: null },
-            { source: 'strava', externalId: 'strava-1', rawPayload: null },
+          workout_sources: [
+            { provider: 'intervals_icu', externalId: 'i-1', rawPayload: null },
+            { provider: 'strava', externalId: 'strava-1', rawPayload: null },
           ],
         });
         const session = mapWorkoutToSession(workout);
@@ -273,16 +270,16 @@ describe('session.mapper', () => {
         expect(session.externalId).toBe('strava-1');
       });
 
-      it('should use first activity when no strava', () => {
+      it('should use the first source when there is no strava one', () => {
         const workout = createWorkoutFull({
-          external_activities: [
-            { source: 'garmin', externalId: 'garmin-1', rawPayload: null },
+          workout_sources: [
+            { provider: 'intervals_icu', externalId: 'i-1', rawPayload: null },
           ],
         });
         const session = mapWorkoutToSession(workout);
 
-        expect(session.source).toBe('garmin');
-        expect(session.externalId).toBe('garmin-1');
+        expect(session.source).toBe('intervals_icu');
+        expect(session.externalId).toBe('i-1');
       });
     });
 
@@ -292,7 +289,7 @@ describe('session.mapper', () => {
         const session = mapWorkoutToSession(workout, { includeFullData: false });
 
         expect(session.id).toBe('workout-1');
-        expect(session.sessionType).toBe('Endurance');
+        expect(session.sessionType).toBe('Footing');
         expect(session.duration).toBe('01:00:00');
         expect(session.distance).toBe(10);
       });
@@ -313,11 +310,10 @@ describe('session.mapper', () => {
         const workout = createWorkoutFull({
           weather_observations: null,
           routePolyline: 'abc123',
-          external_activities: [
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: {
                 map: { id: 'map-1', summary_polyline: 'abc123' },
               },
@@ -332,11 +328,10 @@ describe('session.mapper', () => {
       it('should report hasWeather false when no weather is stored, even without a route', () => {
         const workout = createWorkoutFull({
           weather_observations: null,
-          external_activities: [
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: {
                 map: { id: 'map-1', summary_polyline: null },
               },
@@ -350,11 +345,10 @@ describe('session.mapper', () => {
 
       it('should expose hasStreams from the external activity flag in table view', () => {
         const workout = createWorkoutFull({
-          external_activities: [
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
               hasStreams: true,
             },
@@ -367,11 +361,10 @@ describe('session.mapper', () => {
 
       it('should report hasStreams false when nothing is stored nor known unavailable', () => {
         const workout = createWorkoutFull({
-          external_activities: [
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
               hasStreams: false,
               streamsStatus: 'pending',
@@ -383,29 +376,12 @@ describe('session.mapper', () => {
         expect(session.hasStreams).toBe(false);
       });
 
-      it('should expose hasStreams when external activity is marked no_streams', () => {
-        const workout = createWorkoutFull({
-          external_activities: [
-            {
-              source: 'strava',
-              externalId: 'strava-123',
-              sourceStatus: 'no_streams',
-              rawPayload: null,
-            },
-          ],
-        });
-        const session = mapWorkoutToSession(workout, { includeFullData: false });
-
-        expect(session.hasStreams).toBe(true);
-      });
-
       it('should expose hasStreams when Strava payload is missing in table view', () => {
         const workout = createWorkoutFull({
-          external_activities: [
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: null,
             },
           ],
@@ -417,11 +393,10 @@ describe('session.mapper', () => {
 
       it('should expose hasStreams for manual/streamless Strava payload in table view', () => {
         const workout = createWorkoutFull({
-          external_activities: [
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: {
                 external_id: null,
                 upload_id: null,
@@ -439,7 +414,6 @@ describe('session.mapper', () => {
         const flags = {
           source: 'intervals_icu',
           externalId: 'i-1',
-          sourceStatus: 'imported',
           hasPayload: true,
           hasPolyline: true,
           manual: false,
@@ -499,9 +473,9 @@ describe('session.mapper', () => {
     });
 
     describe('with linked planned workout', () => {
-      it('should use the plan label when workout has no session type', () => {
+      it('should use the plan label when the workout has no family', () => {
         const workout = createWorkoutFull({
-          sessionType: null,
+          family: null,
           planned_workout: createPlannedWorkout({
             family: 'other',
             structure: { kind: 'continuous', family: 'other', label: 'Recovery', blocks: [] },
@@ -512,12 +486,11 @@ describe('session.mapper', () => {
         expect(session.sessionType).toBe('Recovery');
       });
 
-      it('should map target fields from the plan and keep legacy details verbatim', () => {
+      it('should map target fields from the plan', () => {
         const workout = createWorkoutFull({
           planned_workout: createPlannedWorkout({
             plannedOn: new Date('2024-01-15T00:00:00Z'),
             family: 'tempo',
-            structureLegacy: { sets: 3 },
             targetDurationS: 2400,
             targetDistanceM: 10000,
             targetPaceSKm: 330,
@@ -533,7 +506,7 @@ describe('session.mapper', () => {
         expect(session.targetPace).toBe('05:30');
         expect(session.targetHeartRateBpm).toBe('155');
         expect(session.targetRPE).toBe(7);
-        expect(session.intervalDetails).toEqual({ sets: 3 });
+        expect(session.intervalDetails).toMatchObject({ workoutType: 'VMA', repetitionCount: 5 });
         expect(session.recommendationId).toBe('rec-123');
         expect(session.plannedDate).toBe('2024-01-15T00:00:00.000Z');
       });
@@ -594,7 +567,7 @@ describe('session.mapper', () => {
 
       it('should handle empty external activities', () => {
         const workout = createWorkoutFull({
-          external_activities: [],
+          workout_sources: [],
         });
         const session = mapWorkoutToSession(workout);
 
@@ -604,12 +577,11 @@ describe('session.mapper', () => {
 
       it('should handle empty streams', () => {
         const workout = createWorkoutFull({
-          workout_streams_v3: null,
-          external_activities: [
+          workout_streams: null,
+          workout_sources: [
             {
-              source: 'strava',
+              provider: 'strava',
               externalId: 'strava-123',
-              sourceStatus: 'imported',
               rawPayload: { id: 1, external_id: 'garmin', upload_id: 12 },
               hasStreams: false,
               streamsStatus: 'pending',
@@ -649,7 +621,6 @@ describe('session.mapper', () => {
       expect(session.id).toBe('plan-1');
       expect(session.userId).toBe('user-1');
       expect(session.sessionNumber).toBe(10);
-      expect(session.week).toBeNull();
       expect(session.sessionType).toBe('Fractionné');
       expect(session.status).toBe('planned');
       expect(session.comments).toBe('Speed work');
@@ -672,13 +643,6 @@ describe('session.mapper', () => {
         targetEffortPace: '03:45',
       });
       expect(session.intervalDetails?.steps).toHaveLength(11);
-    });
-
-    it('should prefer legacy details when the row still carries them', () => {
-      const plan = createPlannedWorkout({ structureLegacy: { warmup: 10, intervals: 5 } });
-      const session = mapPlannedWorkoutToSession(plan);
-
-      expect(session.intervalDetails).toEqual({ warmup: 10, intervals: 5 });
     });
 
     it('should set null date by default', () => {

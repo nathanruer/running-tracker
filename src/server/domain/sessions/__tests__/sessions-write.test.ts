@@ -11,8 +11,7 @@ vi.mock('@/server/database', () => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
-    plan_sessions: {
-      delete: vi.fn(),
+    planned_workouts: {
       deleteMany: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
@@ -21,130 +20,52 @@ vi.mock('@/server/database', () => ({
     weather_observations: {
       upsert: vi.fn(),
     },
-    external_activities: {
+    workout_sources: {
       updateMany: vi.fn(),
-    },
-    planned_workouts: {
-      updateMany: vi.fn(),
-      deleteMany: vi.fn(),
     },
     $transaction: vi.fn(),
   },
 }));
 
 function mockRecalculateData(
-  workouts: Array<{ id: string; date: Date; planSessionId: string | null; sessionNumber: number; week: number | null }> = [],
-  unlinkedPlans: Array<{ id: string; plannedDate: Date | null; sessionNumber: number; week: number | null }> = [],
-  linkedPlans: Array<{ id: string; sessionNumber: number }> = []
+  workouts: Array<{ id: string; sessionNumber: number; planned_workout: { id: string; sessionNumber: number } | null }> = [],
+  plans: Array<{ id: string; sessionNumber: number }> = []
 ) {
-  const findManyWorkouts = vi.mocked(prisma.workouts.findMany);
-  const findManyPlans = vi.mocked(prisma.plan_sessions.findMany);
-
-  findManyWorkouts.mockResolvedValue(workouts as never);
-
-  let callIndex = 0;
-  findManyPlans.mockImplementation((() => {
-    if (callIndex === 0) {
-      callIndex++;
-      return Promise.resolve(unlinkedPlans);
-    }
-    callIndex++;
-    return Promise.resolve(linkedPlans);
-  }) as never);
+  vi.mocked(prisma.workouts.findMany).mockResolvedValue(workouts as never);
+  vi.mocked(prisma.planned_workouts.findMany).mockResolvedValue(plans as never);
 }
 
 describe('sessions-write', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
+      typeof arg === 'function' ? (arg as (tx: unknown) => Promise<unknown>)(prisma) : Promise.all(arg as Promise<unknown>[])) as never);
   });
 
   describe('recalculateSessionNumbers', () => {
-    it('assigns sequential numbers to workouts with stale numbers', async () => {
-      mockRecalculateData([
-        { id: 'w1', date: new Date('2026-01-01'), planSessionId: null, sessionNumber: 0, week: null },
-        { id: 'w2', date: new Date('2026-01-05'), planSessionId: null, sessionNumber: 0, week: null },
-        { id: 'w3', date: new Date('2026-01-10'), planSessionId: null, sessionNumber: 0, week: null },
-      ]);
-      vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-
-      await sessionsWrite.recalculateSessionNumbers('user-1');
-
-      const txCalls = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown as unknown[];
-      expect(txCalls).toHaveLength(3);
-    });
-
-    it('skips updates for workouts already correctly numbered', async () => {
-      mockRecalculateData([
-        { id: 'w1', date: new Date('2026-01-01'), planSessionId: null, sessionNumber: 1, week: 1 },
-        { id: 'w2', date: new Date('2026-01-05'), planSessionId: null, sessionNumber: 2, week: 2 },
-        { id: 'w3', date: new Date('2026-01-10'), planSessionId: null, sessionNumber: 3, week: 2 },
-      ]);
-
-      await sessionsWrite.recalculateSessionNumbers('user-1');
-
-      expect(prisma.$transaction).not.toHaveBeenCalled();
-    });
-
-    it('only updates records that changed after a deletion gap', async () => {
-      mockRecalculateData([
-        { id: 'w1', date: new Date('2026-01-01'), planSessionId: null, sessionNumber: 1, week: 1 },
-        { id: 'w3', date: new Date('2026-01-10'), planSessionId: null, sessionNumber: 3, week: 2 },
-      ]);
-      vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-
-      await sessionsWrite.recalculateSessionNumbers('user-1');
-
-      const txCalls = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown as unknown[];
-      expect(txCalls).toHaveLength(1);
-    });
-
-    it('assigns planned sessions with date after workouts, ordered by plannedDate', async () => {
+    it('numbers workouts in start order, then planned sessions, and skips rows already numbered', async () => {
       mockRecalculateData(
-        [{ id: 'w1', date: new Date('2026-01-01'), planSessionId: null, sessionNumber: 0, week: null }],
         [
-          { id: 'p2', plannedDate: new Date('2026-02-10'), sessionNumber: 0, week: null },
-          { id: 'p1', plannedDate: new Date('2026-02-05'), sessionNumber: 0, week: null },
-        ]
+          { id: 'w1', sessionNumber: 1, planned_workout: null },
+          { id: 'w2', sessionNumber: 0, planned_workout: { id: 'p2', sessionNumber: 0 } },
+        ],
+        [{ id: 'p3', sessionNumber: 3 }, { id: 'p4', sessionNumber: 0 }]
       );
-      vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
 
       await sessionsWrite.recalculateSessionNumbers('user-1');
 
-      expect(prisma.$transaction).toHaveBeenCalled();
-    });
-
-    it('assigns planned sessions without date after those with date', async () => {
-      mockRecalculateData(
-        [{ id: 'w1', date: new Date('2026-01-01'), planSessionId: null, sessionNumber: 0, week: null }],
-        [
-          { id: 'p1', plannedDate: new Date('2026-02-01'), sessionNumber: 0, week: null },
-          { id: 'p2', plannedDate: null, sessionNumber: 0, week: null },
-        ]
+      expect(prisma.workouts.update).toHaveBeenCalledTimes(1);
+      expect(prisma.workouts.update).toHaveBeenCalledWith({ where: { id: 'w2' }, data: { sessionNumber: 2 } });
+      expect(prisma.planned_workouts.update).toHaveBeenCalledWith({ where: { id: 'p2' }, data: { sessionNumber: 2 } });
+      expect(prisma.planned_workouts.update).toHaveBeenCalledWith({ where: { id: 'p4' }, data: { sessionNumber: 4 } });
+      expect(prisma.planned_workouts.update).not.toHaveBeenCalledWith({ where: { id: 'p3' }, data: expect.anything() });
+      expect(prisma.planned_workouts.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1', workoutId: null } })
       );
-      vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-
-      await sessionsWrite.recalculateSessionNumbers('user-1');
-
-      expect(prisma.$transaction).toHaveBeenCalled();
     });
 
-    it('syncs linked plan_sessions with their workout number', async () => {
-      mockRecalculateData(
-        [{ id: 'w1', date: new Date('2026-01-01'), planSessionId: 'p-linked', sessionNumber: 0, week: null }],
-        [],
-        [{ id: 'p-linked', sessionNumber: 0 }]
-      );
-      vi.mocked(prisma.$transaction).mockResolvedValue(undefined as never);
-
-      await sessionsWrite.recalculateSessionNumbers('user-1');
-
-      expect(prisma.$transaction).toHaveBeenCalled();
-      const txCalls = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown as unknown[];
-      expect(txCalls).toHaveLength(3);
-    });
-
-    it('handles empty data without calling transaction', async () => {
-      mockRecalculateData();
+    it('does not open a transaction when nothing changed', async () => {
+      mockRecalculateData([{ id: 'w1', sessionNumber: 1, planned_workout: null }], [{ id: 'p2', sessionNumber: 2 }]);
 
       await sessionsWrite.recalculateSessionNumbers('user-1');
 
@@ -153,42 +74,31 @@ describe('sessions-write', () => {
   });
 
   describe('deleteSessions', () => {
-    it('deletes in batch and triggers synchronous recalculation', async () => {
-      vi.mocked(prisma.workouts.findMany).mockResolvedValueOnce([] as never);
-      vi.mocked(prisma.workouts.deleteMany).mockResolvedValue({ count: 2 } as never);
-      vi.mocked(prisma.plan_sessions.deleteMany).mockResolvedValue({ count: 1 } as never);
+    it('deletes the workouts and their plans in one transaction, then renumbers', async () => {
       mockRecalculateData();
-
-      await sessionsWrite.deleteSessions(['a', 'b', 'c'], 'user-1');
-
-      expect(prisma.workouts.deleteMany).toHaveBeenCalledWith({
-        where: { userId: 'user-1', id: { in: ['a', 'b', 'c'] } },
-      });
-      expect(prisma.plan_sessions.deleteMany).toHaveBeenCalledWith({
-        where: { userId: 'user-1', id: { in: ['a', 'b', 'c'] } },
-      });
-      expect(prisma.workouts.findMany).toHaveBeenCalledTimes(2);
-      expect(prisma.plan_sessions.findMany).toHaveBeenCalledTimes(2);
-    });
-
-    it('also deletes linked plan_sessions when workouts have planSessionId', async () => {
-      vi.mocked(prisma.workouts.findMany).mockResolvedValueOnce([
-        { planSessionId: 'plan-1' },
-        { planSessionId: 'plan-2' },
-      ] as never);
       vi.mocked(prisma.workouts.deleteMany).mockResolvedValue({ count: 2 } as never);
-      vi.mocked(prisma.plan_sessions.deleteMany).mockResolvedValue({ count: 2 } as never);
-      mockRecalculateData();
+      vi.mocked(prisma.planned_workouts.deleteMany).mockResolvedValue({ count: 1 } as never);
 
       await sessionsWrite.deleteSessions(['w1', 'w2'], 'user-1');
 
-      expect(prisma.workouts.findMany).toHaveBeenCalledWith({
-        where: { userId: 'user-1', id: { in: ['w1', 'w2'] }, planSessionId: { not: null } },
-        select: { planSessionId: true },
+      expect(prisma.planned_workouts.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', OR: [{ id: { in: ['w1', 'w2'] } }, { workoutId: { in: ['w1', 'w2'] } }] },
       });
-      expect(prisma.plan_sessions.deleteMany).toHaveBeenCalledWith({
-        where: { userId: 'user-1', id: { in: expect.arrayContaining(['w1', 'w2', 'plan-1', 'plan-2']) } },
-      });
+      expect(prisma.workouts.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1', id: { in: ['w1', 'w2'] } } });
+      expect(prisma.workouts.findMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteSession', () => {
+    it('removes a planned session that has no workout', async () => {
+      mockRecalculateData();
+      vi.mocked(prisma.workouts.findFirst).mockResolvedValue(null as never);
+      vi.mocked(prisma.planned_workouts.deleteMany).mockResolvedValue({ count: 1 } as never);
+
+      await sessionsWrite.deleteSession('p1', 'user-1');
+
+      expect(prisma.planned_workouts.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1', id: 'p1', workoutId: null } });
+      expect(prisma.workouts.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -196,21 +106,27 @@ describe('sessions-write', () => {
     it('returns null when workout not found', async () => {
       vi.mocked(prisma.workouts.findFirst).mockResolvedValue(null);
 
-      const result = await sessionsWrite.updateSessionWeather('missing', 'user-1', { temperature: 10 });
+      const result = await sessionsWrite.updateSessionWeather('missing', 'user-1', { temperature: 12 });
+
       expect(result).toBeNull();
+      expect(prisma.weather_observations.upsert).not.toHaveBeenCalled();
     });
 
-    it('upserts weather when workout exists', async () => {
-      vi.mocked(prisma.workouts.findFirst).mockResolvedValue({
-        id: 'workout-1',
-        date: new Date('2026-01-01T10:00:00Z'),
-      } as never);
-      vi.mocked(prisma.weather_observations.upsert).mockResolvedValue({ id: 'weather-1' } as never);
+    it('upserts weather at the workout start and marks the source enriched', async () => {
+      vi.mocked(prisma.workouts.findFirst).mockResolvedValue({ id: 'w1', startedAt: new Date('2026-05-01T05:00:00Z') } as never);
+      vi.mocked(prisma.weather_observations.upsert).mockResolvedValue({} as never);
+      vi.mocked(prisma.workout_sources.updateMany).mockResolvedValue({ count: 1 } as never);
 
-      const result = await sessionsWrite.updateSessionWeather('workout-1', 'user-1', { temperature: 12 });
+      const result = await sessionsWrite.updateSessionWeather('w1', 'user-1', { temperature: 12, windSpeed: 5 });
 
-      expect(result).toBe('workout-1');
-      expect(prisma.weather_observations.upsert).toHaveBeenCalled();
+      expect(result).toBe('w1');
+      expect(prisma.weather_observations.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workoutId: 'w1' },
+          create: expect.objectContaining({ workoutId: 'w1', observedAt: new Date('2026-05-01T05:00:00Z'), temperature: 12, windSpeed: 5 }),
+        })
+      );
+      expect(prisma.workout_sources.updateMany).toHaveBeenCalledWith({ where: { workoutId: 'w1' }, data: { weatherStatus: 'done' } });
     });
   });
 });

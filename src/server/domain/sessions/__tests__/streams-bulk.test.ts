@@ -44,24 +44,23 @@ describe('bulkEnrichStreamsForIds', () => {
       {
         id: 'a',
         routePolyline: 'abc',
-        workout_streams_v3: { workoutId: 'a' },
-        external_activities: [],
+        workout_streams: { workoutId: 'a' },
+        workout_sources: [],
       },
       {
         id: 'b',
         routePolyline: null,
-        workout_streams_v3: null,
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'not_applicable' }],
+        workout_streams: null,
+        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'not_applicable' }],
       },
       {
         id: 'c',
         routePolyline: null,
-        workout_streams_v3: null,
-        external_activities: [
+        workout_streams: null,
+        workout_sources: [
           {
-            source: 'strava',
+            provider: 'strava',
             externalId: '112',
-            sourceStatus: 'imported',
             streamsStatus: 'pending',
             rawPayload: { external_id: null, upload_id: null },
           },
@@ -70,8 +69,8 @@ describe('bulkEnrichStreamsForIds', () => {
       {
         id: 'd',
         routePolyline: null,
-        workout_streams_v3: null,
-        external_activities: [],
+        workout_streams: null,
+        workout_sources: [],
       },
     ] as never);
 
@@ -93,8 +92,8 @@ describe('bulkEnrichStreamsForIds', () => {
       {
         id: 'a',
         routePolyline: null,
-        workout_streams_v3: null,
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'pending', rawPayload: { id: 111 } }],
+        workout_streams: null,
+        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -129,8 +128,8 @@ describe('bulkEnrichStreamsForIds', () => {
       {
         id: 'a',
         routePolyline: null,
-        workout_streams_v3: null,
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'pending', rawPayload: { id: 111 } }],
+        workout_streams: null,
+        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -152,8 +151,8 @@ describe('bulkEnrichStreamsForIds', () => {
       {
         id: 'a',
         routePolyline: null,
-        workout_streams_v3: null,
-        external_activities: [{ source: 'strava', externalId: '111', sourceStatus: 'imported', streamsStatus: 'pending', rawPayload: { id: 111 } }],
+        workout_streams: null,
+        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -173,8 +172,8 @@ describe('bulkEnrichStreamsForIds', () => {
       {
         id: 'a',
         routePolyline: 'abc',
-        workout_streams_v3: { workoutId: 'a' },
-        external_activities: [],
+        workout_streams: { workoutId: 'a' },
+        workout_sources: [],
       },
     ] as never);
 

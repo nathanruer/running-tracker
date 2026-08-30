@@ -29,7 +29,7 @@ export async function getValidAccessToken(account: StravaAccountTokens): Promise
   if (!expiresAt || expiresAt < fiveMinutesFromNow) {
     const tokenData = await refreshAccessToken(account.refreshToken);
     try {
-      await prisma.external_accounts.update({
+      await prisma.connected_accounts.update({
         where: {
           userId_provider: {
             userId: account.userId,
