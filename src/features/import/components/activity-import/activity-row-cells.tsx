@@ -68,11 +68,13 @@ export function ActivityDateCell({ date }: DateCellProps) {
 
 interface NameCellProps {
   name: string;
+  attached?: boolean;
 }
 
-export function ActivityNameCell({ name }: NameCellProps) {
+export function ActivityNameCell({ name, attached = false }: NameCellProps) {
   return (
     <TableCell className="font-bold text-foreground/90 py-3 md:py-4 px-2 md:px-4 truncate max-w-[120px] md:max-w-[200px] text-xs md:text-sm">
+      {attached && <span className="text-violet-500/70 font-normal mr-1.5">↳</span>}
       {name}
     </TableCell>
   );
@@ -151,15 +153,16 @@ interface AllCellsProps {
   activity: ImportableActivity;
   selected: boolean;
   alreadyImported: boolean;
+  attached?: boolean;
   onToggle: () => void;
 }
 
-export function ActivityRowCells({ activity, selected, alreadyImported, onToggle }: AllCellsProps) {
+export function ActivityRowCells({ activity, selected, alreadyImported, attached, onToggle }: AllCellsProps) {
   return (
     <>
       <ActivityCheckboxCell selected={selected} alreadyImported={alreadyImported} onToggle={onToggle} />
       <ActivityDateCell date={activity.date} />
-      <ActivityNameCell name={activity.comments} />
+      <ActivityNameCell name={activity.comments} attached={attached} />
       <ActivityDurationCell duration={activity.duration} />
       <ActivityDistanceCell distance={activity.distance} />
       <ActivityPaceCell pace={activity.avgPace} />

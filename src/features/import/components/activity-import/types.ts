@@ -62,6 +62,8 @@ export interface ActivityRowProps {
   selected: boolean;
   onToggleSelect: (index: number, e?: React.MouseEvent) => void;
   alreadyImported: boolean;
+  /** Recordings of one outing are shown together: the main row, then the ones attached to it. */
+  grouped?: 'main' | 'member';
 }
 
 export interface ActivityTableProps {

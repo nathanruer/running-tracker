@@ -70,8 +70,26 @@ export function initializeFormForComplete(
   const importedComments = importedFields.comments || '';
   const comments = sessionComments || importedComments;
 
-  const sessionHasIntervals = session.intervalDetails?.steps &&
-    session.intervalDetails.steps.length > 0;
+  // Completing a planned session: what the watch recorded wins over what the coach had planned. A
+  // full detected set replaces the plan; a partial one (steps only) just fills in what it carries.
+  const importedSteps = transformStepsData(importedFields.steps);
+  const sessionHasIntervals = Boolean(session.intervalDetails?.steps?.length);
+  const planned = importedFields.workoutType && importedSteps.length ? null : session.intervalDetails;
+
+  const intervals = {
+    workoutType: importedFields.workoutType || planned?.workoutType || '',
+    repetitionCount: importedFields.repetitionCount ?? planned?.repetitionCount ?? undefined,
+    effortDuration: importedFields.effortDuration || planned?.effortDuration || '',
+    recoveryDuration: importedFields.recoveryDuration || planned?.recoveryDuration || '',
+    effortDistance: importedFields.effortDistance ?? planned?.effortDistance ?? undefined,
+    recoveryDistance: importedFields.recoveryDistance ?? planned?.recoveryDistance ?? undefined,
+    targetEffortPace: importedFields.targetEffortPace || planned?.targetEffortPace || '',
+    targetEffortHR: importedFields.targetEffortHR ?? planned?.targetEffortHR ?? undefined,
+    targetRecoveryPace: importedFields.targetRecoveryPace || planned?.targetRecoveryPace || '',
+    steps: importedSteps.length
+      ? importedSteps
+      : (sessionHasIntervals ? transformStepsData(session.intervalDetails?.steps) : []),
+  };
 
   const sessionTypeIsGeneric = !session.sessionType || session.sessionType === 'Footing';
   const sessionType = sessionTypeIsGeneric && importedFields.sessionType
@@ -98,18 +116,7 @@ export function initializeFormForComplete(
     averageCadence: importedFields.averageCadence ?? session.averageCadence,
     averageTemp: importedFields.averageTemp ?? session.averageTemp,
     calories: importedFields.calories ?? session.calories,
-    workoutType: session.intervalDetails?.workoutType || importedFields.workoutType || '',
-    repetitionCount: session.intervalDetails?.repetitionCount ?? importedFields.repetitionCount ?? undefined,
-    effortDuration: session.intervalDetails?.effortDuration || importedFields.effortDuration || '',
-    recoveryDuration: session.intervalDetails?.recoveryDuration || importedFields.recoveryDuration || '',
-    effortDistance: session.intervalDetails?.effortDistance ?? importedFields.effortDistance ?? undefined,
-    recoveryDistance: session.intervalDetails?.recoveryDistance ?? importedFields.recoveryDistance ?? undefined,
-    targetEffortPace: session.intervalDetails?.targetEffortPace || importedFields.targetEffortPace || '',
-    targetEffortHR: session.intervalDetails?.targetEffortHR ?? importedFields.targetEffortHR ?? undefined,
-    targetRecoveryPace: session.intervalDetails?.targetRecoveryPace || importedFields.targetRecoveryPace || '',
-    steps: sessionHasIntervals
-      ? transformStepsData(session.intervalDetails?.steps)
-      : (importedFields.steps || []),
+    ...intervals,
   };
 }
 

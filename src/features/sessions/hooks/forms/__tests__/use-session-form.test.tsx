@@ -142,7 +142,7 @@ describe('useSessionForm', () => {
     );
   });
 
-  it('should preserve interval target values when completing with imported data', () => {
+  it('should complete with the recorded steps and keep the planned targets it does not carry', () => {
     const plannedIntervalSession = {
       id: 'interval-session-1',
       date: '2024-01-01',
@@ -194,8 +194,8 @@ describe('useSessionForm', () => {
     expect(result.current.form.getValues('recoveryDuration')).toBe('02:00');
 
     expect(result.current.form.getValues('steps')).toHaveLength(2);
-    expect(result.current.form.getValues('steps.0.duration')).toBe('10:00');
-    expect(result.current.form.getValues('steps.1.pace')).toBe('05:07');
+    expect(result.current.form.getValues('steps.0.duration')).toBe('13:00');
+    expect(result.current.form.getValues('steps.1.pace')).toBe('05:01');
 
     expect(result.current.form.getValues('duration')).toBe('00:45:00');
     expect(result.current.form.getValues('distance')).toBe(7.5);

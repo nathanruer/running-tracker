@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { InfiniteScrollTrigger, EndOfList } from '@/components/ui/data-table';
 import { ImportTableHeader } from './table-header';
 import { ActivityRow } from './activity-row';
-import { FragmentHintRow, DismissedHintRow } from './activity-hint-row';
+import { FragmentGroupRow, DismissedHintRow } from './activity-hint-row';
 import { SmartSearchEmptyState } from './smart-search-empty-state';
 import type { ActivityTableProps } from './types';
 
@@ -51,6 +51,10 @@ export function ActivityTable({
       </ScrollArea>
     );
   }
+  const attachedIds = new Set(
+    activities.flatMap((activity) => fragmentsOf(activity).map((fragment) => fragment.externalId))
+  );
+
   return (
     <ScrollArea className="flex-1">
       <div className="min-w-full overflow-x-auto px-4 md:px-8 py-2">
@@ -69,9 +73,14 @@ export function ActivityTable({
           />
           <TableBody>
             {activities.map((activity) => {
+              // Fragments are drawn inside their group, never on their own line.
+              if (attachedIds.has(activity.externalId)) return null;
+
               const index = filteredActivities.findIndex((a) => a.externalId === activity.externalId);
               const isImported = !!(activity.externalId && importedKeys.has(activity.externalId));
               const fragments = isImported ? [] : fragmentsOf(activity);
+              const grouped = fragments.length > 0;
+
               return (
                 <React.Fragment key={activity.externalId}>
                   <ActivityRow
@@ -80,10 +89,25 @@ export function ActivityTable({
                     selected={isSelected(index)}
                     onToggleSelect={(idx, e) => toggleSelectWithEvent(idx, e)}
                     alreadyImported={isImported}
+                    grouped={grouped ? 'main' : undefined}
                   />
-                  {fragments.length > 0 && (
-                    <FragmentHintRow
-                      fragments={fragments}
+                  {fragments.map((fragment) => {
+                    const fragmentIndex = filteredActivities.findIndex((a) => a.externalId === fragment.externalId);
+                    return (
+                      <ActivityRow
+                        key={fragment.externalId}
+                        activity={fragment}
+                        index={fragmentIndex}
+                        selected={isSelected(fragmentIndex)}
+                        onToggleSelect={(idx, e) => toggleSelectWithEvent(idx, e)}
+                        alreadyImported={false}
+                        grouped="member"
+                      />
+                    );
+                  })}
+                  {grouped && (
+                    <FragmentGroupRow
+                      activities={[activity, ...fragments]}
                       merging={mergingId === activity.externalId}
                       onMerge={() => onMerge(activity)}
                       onDismiss={() => fragments.forEach((fragment) => onDismiss(fragment.externalId))}

@@ -245,51 +245,63 @@ describe('initializeFormForComplete', () => {
     expect(result.elevationGain).toBe(150);
   });
 
-  it('preserves session interval steps over imported data', () => {
+  it('fills the form with the intervals actually run, not the planned ones', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
       sessionType: 'Fractionné',
       intervalDetails: {
-        workoutType: '8x400m',
+        workoutType: 'VMA',
+        repetitionCount: 8,
+        effortDuration: '00:01:00',
+        effortDistance: 0.4,
         steps: [
-          {
-            stepNumber: 1,
-            stepType: 'warmup' as const,
-            duration: '00:10:00',
-            distance: 2,
-            pace: null,
-            hr: null,
-          },
+          { stepNumber: 1, stepType: 'effort' as const, duration: '00:01:00', distance: 0.4, pace: null, hr: null },
         ],
       },
     } as unknown as TrainingSession;
 
     const initialData = {
+      workoutType: 'TEMPO',
+      repetitionCount: 2,
+      effortDuration: '10:00',
+      recoveryDuration: '02:00',
       steps: [
-        {
-          stepNumber: 1,
-          stepType: 'warmup' as const,
-          duration: '00:12:00',
-          distance: 2.5,
-          pace: '04:48',
-          hr: 140,
-        },
+        { stepNumber: 1, stepType: 'warmup' as const, duration: '07:33', distance: 1.16, pace: '06:31', hr: 135 },
+        { stepNumber: 2, stepType: 'effort' as const, duration: '10:04', distance: 1.85, pace: '05:26', hr: 162 },
       ],
     };
 
     const result = initializeFormForComplete(session, initialData);
 
-    expect(result.steps).toEqual([
-      {
-        stepNumber: 1,
-        stepType: 'warmup',
-        duration: '00:10:00',
-        distance: 2,
-        pace: null,
-        hr: null,
+    expect(result.workoutType).toBe('TEMPO');
+    expect(result.repetitionCount).toBe(2);
+    expect(result.effortDuration).toBe('10:00');
+    // The plan's 400 m reps must not leak into a session run on duration.
+    expect(result.effortDistance).toBeUndefined();
+    expect(result.steps).toHaveLength(2);
+    expect(result.steps?.[0]).toMatchObject({ stepType: 'warmup', duration: '07:33', hr: 135 });
+  });
+
+  it('keeps the planned intervals when the completion brings none', () => {
+    const session = {
+      status: 'planned',
+      date: '2024-01-15',
+      sessionType: 'Fractionné',
+      intervalDetails: {
+        workoutType: 'VMA',
+        repetitionCount: 8,
+        steps: [
+          { stepNumber: 1, stepType: 'effort' as const, duration: '00:01:00', distance: 0.4, pace: null, hr: null },
+        ],
       },
-    ]);
+    } as unknown as TrainingSession;
+
+    const result = initializeFormForComplete(session, { duration: '00:45:00' });
+
+    expect(result.workoutType).toBe('VMA');
+    expect(result.repetitionCount).toBe(8);
+    expect(result.steps).toHaveLength(1);
   });
 
   it('uses imported steps when session has no intervals', () => {
