@@ -37,15 +37,8 @@ vi.mock('@/server/database', () => {
     },
   };
   return {
-    prisma: {
-      ...tables,
-      $transaction: vi.fn(async (arg: unknown) => {
-        if (typeof arg === 'function') {
-          return (arg as (tx: unknown) => Promise<unknown>)({ ...tables, $transaction: vi.fn() });
-        }
-        return Promise.all(arg as Promise<unknown>[]);
-      }),
-    },
+    prisma: tables,
+    tenantTransaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn(tables)),
   };
 });
 

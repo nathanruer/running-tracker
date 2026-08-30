@@ -6,6 +6,7 @@ import { SESSION_COOKIE_NAME } from '@/lib/constants';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { computeDateFrom, VALID_PERIODS, type Period } from '@/lib/domain/sessions/period';
 import { verifySessionToken } from '@/server/auth';
+import { runAsUser } from '@/server/database/tenant';
 import { getUserProfilePayload } from '@/server/domain/users/user-profile';
 import {
   fetchSessions,
@@ -44,7 +45,7 @@ export default async function DashboardPage({
 
   const sessionTypeFilter = selectedType !== 'all' ? selectedType : undefined;
 
-  const [user, types, count, firstPage, plannedSessions] = await Promise.all([
+  const [user, types, count, firstPage, plannedSessions] = await runAsUser(userId, () => Promise.all([
     getUserProfilePayload(userId),
     fetchSessionTypes(userId),
     fetchSessionCount({ userId, sessionType: sessionTypeFilter, search, dateFrom }),
@@ -65,7 +66,7 @@ export default async function DashboardPage({
       status: 'planned',
       view: 'table',
     }),
-  ]);
+  ]));
 
   if (!user) {
     redirect('/');

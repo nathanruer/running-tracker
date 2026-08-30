@@ -1,2 +1,2 @@
 import 'server-only';
-export { prisma } from './prisma';
+export { prisma, prismaAdmin, tenantTransaction } from './prisma';

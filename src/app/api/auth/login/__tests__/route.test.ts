@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { POST } from '../route';
-import { prisma } from '@/server/database';
+import { prismaAdmin } from '@/server/database';
 import { createSessionToken, persistSessionCookie } from '@/server/auth';
 
 vi.mock('@/server/database', () => ({
-  prisma: {
+  prismaAdmin: {
     users: {
       findUnique: vi.fn(),
     },
@@ -43,7 +43,7 @@ describe('/api/auth/login', () => {
       password: 'hashed-password',
     };
 
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(mockUser as never);
     vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
     vi.mocked(createSessionToken).mockReturnValue('session-token');
     vi.mocked(persistSessionCookie).mockResolvedValue(undefined);
@@ -71,7 +71,7 @@ describe('/api/auth/login', () => {
   });
 
   it('should return 401 when user not found', async () => {
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost/api/auth/login', {
       method: 'POST',
@@ -96,7 +96,7 @@ describe('/api/auth/login', () => {
       password: 'hashed-password',
     };
 
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(mockUser as never);
     vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
     const request = new NextRequest('http://localhost/api/auth/login', {
@@ -147,7 +147,7 @@ describe('/api/auth/login', () => {
   });
 
   it('should return 500 on database error', async () => {
-    vi.mocked(prisma.users.findUnique).mockRejectedValue(new Error('Database error'));
+    vi.mocked(prismaAdmin.users.findUnique).mockRejectedValue(new Error('Database error'));
 
     const request = new NextRequest('http://localhost/api/auth/login', {
       method: 'POST',

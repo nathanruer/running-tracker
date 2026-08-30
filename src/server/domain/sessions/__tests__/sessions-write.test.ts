@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as sessionsWrite from '@/server/domain/sessions/sessions-write';
-import { prisma } from '@/server/database';
+import { prisma, tenantTransaction } from '@/server/database';
 
-vi.mock('@/server/database', () => ({
-  prisma: {
+vi.mock('@/server/database', () => {
+  const tables = {
     workouts: {
       delete: vi.fn(),
       deleteMany: vi.fn(),
@@ -23,9 +23,12 @@ vi.mock('@/server/database', () => ({
     workout_sources: {
       updateMany: vi.fn(),
     },
-    $transaction: vi.fn(),
-  },
-}));
+  };
+  return {
+    prisma: tables,
+    tenantTransaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn(tables)),
+  };
+});
 
 function mockRecalculateData(
   workouts: Array<{ id: string; sessionNumber: number; planned_workout: { id: string; sessionNumber: number } | null }> = [],
@@ -38,8 +41,6 @@ function mockRecalculateData(
 describe('sessions-write', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
-      typeof arg === 'function' ? (arg as (tx: unknown) => Promise<unknown>)(prisma) : Promise.all(arg as Promise<unknown>[])) as never);
   });
 
   describe('recalculateSessionNumbers', () => {
@@ -69,7 +70,7 @@ describe('sessions-write', () => {
 
       await sessionsWrite.recalculateSessionNumbers('user-1');
 
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(tenantTransaction).not.toHaveBeenCalled();
     });
   });
 

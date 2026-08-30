@@ -5,6 +5,7 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { SESSION_COOKIE_NAME } from '@/lib/constants';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { verifySessionToken } from '@/server/auth';
+import { runAsUser } from '@/server/database/tenant';
 import { getUserProfilePayload } from '@/server/domain/users/user-profile';
 import { fetchSessions } from '@/server/domain/sessions/sessions-read';
 import ProfilePageClient from './profile-page-client';
@@ -17,14 +18,14 @@ export default async function ProfilePage() {
   }
   const userId = payload.userId;
 
-  const [user, allSessions] = await Promise.all([
+  const [user, allSessions] = await runAsUser(userId, () => Promise.all([
     getUserProfilePayload(userId),
     fetchSessions({
       userId,
       includePlannedDateAsDate: true,
       view: 'table',
     }),
-  ]);
+  ]));
 
   if (!user) {
     redirect('/');

@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { POST } from '../route';
-import { prisma } from '@/server/database';
+import { prismaAdmin } from '@/server/database';
 import { createSessionToken, persistSessionCookie } from '@/server/auth';
 
 vi.mock('@/server/database', () => ({
-  prisma: {
+  prismaAdmin: {
     users: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -38,9 +38,9 @@ describe('/api/auth/register', () => {
   });
 
   it('should create user and return 201', async () => {
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(null);
     vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as never);
-    vi.mocked(prisma.users.create).mockResolvedValue({
+    vi.mocked(prismaAdmin.users.create).mockResolvedValue({
       id: 'user-123',
       email: 'newuser@example.com',
       password: 'hashed-password',
@@ -73,7 +73,7 @@ describe('/api/auth/register', () => {
   });
 
   it('should return 400 when email already exists', async () => {
-    vi.mocked(prisma.users.findUnique).mockResolvedValue({
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue({
       id: 'existing-user',
       email: 'existing@example.com',
       password: 'hashed',
@@ -92,7 +92,7 @@ describe('/api/auth/register', () => {
 
     expect(response.status).toBe(400);
     expect(data).toEqual({ error: 'Cet email est déjà utilisé.' });
-    expect(prisma.users.create).not.toHaveBeenCalled();
+    expect(prismaAdmin.users.create).not.toHaveBeenCalled();
   });
 
   it('should return 400 when email is invalid', async () => {
@@ -143,9 +143,9 @@ describe('/api/auth/register', () => {
   });
 
   it('should hash password before storing', async () => {
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(null);
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(null);
     vi.mocked(bcrypt.hash).mockResolvedValue('super-secure-hash' as never);
-    vi.mocked(prisma.users.create).mockResolvedValue({
+    vi.mocked(prismaAdmin.users.create).mockResolvedValue({
       id: 'user-123',
       email: 'test@example.com',
       password: 'super-secure-hash',
@@ -164,7 +164,7 @@ describe('/api/auth/register', () => {
     await POST(request);
 
     expect(bcrypt.hash).toHaveBeenCalledWith('plaintext-password', 10);
-    expect(prisma.users.create).toHaveBeenCalledWith({
+    expect(prismaAdmin.users.create).toHaveBeenCalledWith({
       data: {
         email: 'test@example.com',
         password: 'super-secure-hash',
@@ -174,7 +174,7 @@ describe('/api/auth/register', () => {
   });
 
   it('should return 500 on database error', async () => {
-    vi.mocked(prisma.users.findUnique).mockRejectedValue(new Error('Database error'));
+    vi.mocked(prismaAdmin.users.findUnique).mockRejectedValue(new Error('Database error'));
 
     const request = new NextRequest('http://localhost/api/auth/register', {
       method: 'POST',

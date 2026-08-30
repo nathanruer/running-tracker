@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from 'next/server';
+import { runAsUser } from '@/server/database/tenant';
 import { z } from 'zod';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
@@ -113,14 +114,14 @@ export async function POST(request: NextRequest) {
         if (imported > 0) {
           await recalculateSessionNumbers(userId);
 
-          after(async () => {
+          after(() => runAsUser(userId, async () => {
             try {
               await bulkEnrichStreamsForIds(userId, importedWorkoutIds, { concurrency: 2 });
               await bulkEnrichWeatherForIds(userId, importedWorkoutIds, { concurrency: 3 });
             } catch (error) {
               logger.warn({ error, userId }, 'intervals-deferred-enrichment-failed');
             }
-          });
+          }));
         }
 
         return NextResponse.json(

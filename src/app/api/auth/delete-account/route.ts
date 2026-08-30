@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/server/database/prisma';
+import { prisma } from '@/server/database';
+import { runAsUser } from '@/server/database/tenant';
 import { getUserIdFromRequest, clearSessionCookie } from '@/server/auth';
 import { logger } from '@/server/infrastructure/logger';
 
@@ -11,11 +12,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await prisma.users.delete({
-      where: {
-        id: userId,
-      },
-    });
+    await runAsUser(userId, () => prisma.users.delete({ where: { id: userId } }));
 
     clearSessionCookie();
 

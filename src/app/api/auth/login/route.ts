@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { prisma } from '@/server/database';
+import { prismaAdmin } from '@/server/database';
 import { createSessionToken, persistSessionCookie } from '@/server/auth';
 import { loginSchema } from '@/lib/validation';
 import { handleApiRequest } from '@/server/services/api-handlers';
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     request,
     loginSchema,
     async ({ email, password }) => {
-      const user = await prisma.users.findUnique({ where: { email } });
+      const user = await prismaAdmin.users.findUnique({ where: { email } });
       if (!user) {
         return NextResponse.json(
           { error: 'Identifiants invalides' },

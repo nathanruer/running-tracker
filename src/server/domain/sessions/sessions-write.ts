@@ -1,7 +1,7 @@
 import 'server-only';
 import { Prisma, type SourceProvider } from '@prisma/client';
 import { z } from 'zod';
-import { prisma } from '@/server/database';
+import { prisma, tenantTransaction } from '@/server/database';
 import { createLogger } from '@/server/infrastructure/logger';
 import { parseDuration } from '@/lib/utils/duration/parse';
 import { formatDuration } from '@/lib/utils/duration/format';
@@ -140,30 +140,36 @@ export async function recalculateSessionNumbers(userId: string) {
     }),
   ]);
 
-  const updates: Prisma.PrismaPromise<unknown>[] = [];
+  const workoutUpdates: Array<{ id: string; sessionNumber: number }> = [];
+  const planUpdates: Array<{ id: string; sessionNumber: number }> = [];
   let sessionNumber = 1;
 
   for (const workout of workouts) {
     if (workout.sessionNumber !== sessionNumber) {
-      updates.push(prisma.workouts.update({ where: { id: workout.id }, data: { sessionNumber } }));
+      workoutUpdates.push({ id: workout.id, sessionNumber });
     }
     if (workout.planned_workout && workout.planned_workout.sessionNumber !== sessionNumber) {
-      updates.push(
-        prisma.planned_workouts.update({ where: { id: workout.planned_workout.id }, data: { sessionNumber } })
-      );
+      planUpdates.push({ id: workout.planned_workout.id, sessionNumber });
     }
     sessionNumber++;
   }
 
   for (const plan of plans) {
     if (plan.sessionNumber !== sessionNumber) {
-      updates.push(prisma.planned_workouts.update({ where: { id: plan.id }, data: { sessionNumber } }));
+      planUpdates.push({ id: plan.id, sessionNumber });
     }
     sessionNumber++;
   }
 
-  if (updates.length) {
-    await prisma.$transaction(updates);
+  if (workoutUpdates.length || planUpdates.length) {
+    await tenantTransaction(async (tx) => {
+      for (const update of workoutUpdates) {
+        await tx.workouts.update({ where: { id: update.id }, data: { sessionNumber: update.sessionNumber } });
+      }
+      for (const update of planUpdates) {
+        await tx.planned_workouts.update({ where: { id: update.id }, data: { sessionNumber: update.sessionNumber } });
+      }
+    });
   }
 }
 
@@ -291,7 +297,7 @@ export async function updateSessionWeather(
 
   if (!workout) return null;
 
-  await prisma.$transaction((tx) => upsertWeatherObservation(tx, workout.id, sanitizedWeather, workout.startedAt));
+  await tenantTransaction((tx) => upsertWeatherObservation(tx, workout.id, sanitizedWeather, workout.startedAt));
   return workout.id;
 }
 
@@ -310,9 +316,7 @@ export async function updateSessionStreams(
 
   if (!workout) return null;
 
-  await prisma.$transaction((tx) =>
-    replaceStreams(tx, workout.id, sanitizedStreams as Prisma.JsonValue)
-  );
+  await tenantTransaction((tx) => replaceStreams(tx, workout.id, sanitizedStreams as Prisma.JsonValue));
   return workout.id;
 }
 
@@ -328,16 +332,16 @@ export async function attachRoutePolyline(
 
   if (!workout) return null;
 
-  await prisma.$transaction([
-    prisma.workouts.update({
+  await tenantTransaction(async (tx) => {
+    await tx.workouts.update({
       where: { id: workoutId },
       data: { routePolyline: workout.routePolyline ?? polyline },
-    }),
-    prisma.workout_sources.updateMany({
+    });
+    await tx.workout_sources.updateMany({
       where: { workoutId },
       data: { hasRoute: true, routeStatus: 'done' },
-    }),
-  ]);
+    });
+  });
 
   return workoutId;
 }
@@ -390,7 +394,7 @@ export async function createCompletedSession(
   const externalId = (payload.externalId as string | null) ?? null;
   const workoutV3 = buildWorkoutV3(payload, sanitizedStrava, sanitizedStreams, DEFAULT_TIMEZONE);
 
-  const workout = await prisma.$transaction(async (tx) => {
+  const workout = await tenantTransaction(async (tx) => {
     await assertSourceAvailable(tx, userId, provider, externalId);
 
     const workout = await tx.workouts.create({
@@ -470,7 +474,7 @@ export async function completePlannedSession(
     ? ((payload.intervalDetails as IntervalDetails | null) ?? null)
     : intervalDetailsFromV3(plan.structure);
 
-  const workout = await prisma.$transaction(async (tx) => {
+  const workout = await tenantTransaction(async (tx) => {
     await assertSourceAvailable(tx, userId, provider, externalId);
 
     const workout = await tx.workouts.create({
@@ -552,7 +556,7 @@ export async function updateSession(
         ? intervalDetailsFromV3(plan.structure)
         : null;
 
-    await prisma.$transaction(async (tx) => {
+    await tenantTransaction(async (tx) => {
       await tx.workouts.update({
         where: { id: workout.id },
         data: {
@@ -649,10 +653,10 @@ export async function deleteSession(id: string, userId: string) {
   });
 
   if (workout) {
-    await prisma.$transaction([
-      prisma.planned_workouts.deleteMany({ where: { workoutId: workout.id } }),
-      prisma.workouts.delete({ where: { id: workout.id } }),
-    ]);
+    await tenantTransaction(async (tx) => {
+      await tx.planned_workouts.deleteMany({ where: { workoutId: workout.id } });
+      await tx.workouts.delete({ where: { id: workout.id } });
+    });
   } else {
     await prisma.planned_workouts.deleteMany({ where: { userId, id, workoutId: null } });
   }
@@ -663,12 +667,12 @@ export async function deleteSession(id: string, userId: string) {
 export async function deleteSessions(ids: string[], userId: string) {
   if (!ids.length) return;
 
-  await prisma.$transaction([
-    prisma.planned_workouts.deleteMany({
+  await tenantTransaction(async (tx) => {
+    await tx.planned_workouts.deleteMany({
       where: { userId, OR: [{ id: { in: ids } }, { workoutId: { in: ids } }] },
-    }),
-    prisma.workouts.deleteMany({ where: { userId, id: { in: ids } } }),
-  ]);
+    });
+    await tx.workouts.deleteMany({ where: { userId, id: { in: ids } } });
+  });
 
   await recalculateSessionNumbers(userId);
 }

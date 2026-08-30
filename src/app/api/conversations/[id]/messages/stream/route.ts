@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { runAsUser } from '@/server/database/tenant';
 import { prisma } from '@/server/database';
 import { requireAuth } from '@/server/auth/middleware';
 import { logger } from '@/server/infrastructure/logger';
@@ -51,6 +52,7 @@ export async function POST(
   const userMessage = body.content;
   const skipSaveUserMessage = body.skipSaveUserMessage === true;
 
+  return runAsUser(userId, async () => {
   const conversation = await prisma.conversations.findFirst({
     where: { id: params.id, userId },
     select: { id: true },
@@ -104,5 +106,6 @@ export async function POST(
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
     },
+  });
   });
 }

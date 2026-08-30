@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/server/database';
+import { prismaAdmin } from '@/server/database';
 import { getUserIdFromRequest, createSessionToken } from '@/server/auth';
 import { logger } from '@/server/infrastructure/logger';
 import {
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
     let currentUser = null;
     
     if (currentUserId) {
-      currentUser = await prisma.users.findUnique({
+      currentUser = await prismaAdmin.users.findUnique({
         where: { id: currentUserId },
       });
     }
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     let user;
 
     if (currentUser) {
-      const existingAccount = await prisma.connected_accounts.findUnique({
+      const existingAccount = await prismaAdmin.connected_accounts.findUnique({
         where: {
           provider_externalId: {
             provider: 'strava',
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const currentAccount = await prisma.connected_accounts.findUnique({
+      const currentAccount = await prismaAdmin.connected_accounts.findUnique({
         where: {
           userId_provider: {
             userId: currentUser.id,
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
       }
 
       user = currentUser;
-      await prisma.connected_accounts.upsert({
+      await prismaAdmin.connected_accounts.upsert({
         where: {
           userId_provider: {
             userId: currentUser.id,
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
       });
       logger.info({ userId: user.id, stravaId: athlete.id }, 'Successfully linked Strava to existing logged-in user');
     } else {
-      const linkedAccount = await prisma.connected_accounts.findUnique({
+      const linkedAccount = await prismaAdmin.connected_accounts.findUnique({
         where: {
           provider_externalId: {
             provider: 'strava',
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (linkedAccount) {
-        const linkedUser = await prisma.users.findUnique({
+        const linkedUser = await prismaAdmin.users.findUnique({
           where: { id: linkedAccount.userId },
         });
 
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
         }
 
         user = linkedUser;
-        await prisma.connected_accounts.update({
+        await prismaAdmin.connected_accounts.update({
           where: {
             userId_provider: {
               userId: linkedUser.id,
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
         });
         logger.info({ userId: user.id }, 'Updated tokens for existing Strava user');
       } else {
-        user = await prisma.users.create({
+        user = await prismaAdmin.users.create({
           data: {
             email: `strava_${athlete.id}@strava.local`,
             password: '',

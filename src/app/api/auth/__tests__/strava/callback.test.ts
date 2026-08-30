@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { prisma } from '@/server/database';
+import { prismaAdmin } from '@/server/database';
 import { getUserIdFromRequest, createSessionToken } from '@/server/auth';
 import { STRAVA_ERRORS } from '@/lib/constants';
 
 vi.mock('@/server/database', () => ({
-  prisma: {
+  prismaAdmin: {
     users: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -147,11 +147,11 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(mockUser as never);
-    vi.mocked(prisma.connected_accounts.findUnique)
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(mockUser as never);
+    vi.mocked(prismaAdmin.connected_accounts.findUnique)
       .mockResolvedValueOnce(null as never)
       .mockResolvedValueOnce(null as never);
-    vi.mocked(prisma.connected_accounts.upsert).mockResolvedValue({
+    vi.mocked(prismaAdmin.connected_accounts.upsert).mockResolvedValue({
       userId: 'user-123',
       provider: 'strava',
       externalId: '12345',
@@ -171,7 +171,7 @@ describe('/api/auth/strava/callback', () => {
     const location = response.headers.get('location');
     expect(location).toContain('/dashboard');
 
-    expect(prisma.connected_accounts.upsert).toHaveBeenCalledWith({
+    expect(prismaAdmin.connected_accounts.upsert).toHaveBeenCalledWith({
       where: {
         userId_provider: {
           userId: 'user-123',
@@ -208,8 +208,8 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(currentUser as never);
-    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue({
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(currentUser as never);
+    vi.mocked(prismaAdmin.connected_accounts.findUnique).mockResolvedValue({
       userId: 'user-456',
       provider: 'strava',
       externalId: '12345',
@@ -237,8 +237,8 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue('user-123');
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(currentUser as never);
-    vi.mocked(prisma.connected_accounts.findUnique)
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(currentUser as never);
+    vi.mocked(prismaAdmin.connected_accounts.findUnique)
       .mockResolvedValueOnce(null as never)
       .mockResolvedValueOnce({
         userId: 'user-123',
@@ -268,13 +268,13 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue(null);
-    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue({
+    vi.mocked(prismaAdmin.connected_accounts.findUnique).mockResolvedValue({
       userId: 'user-strava',
       provider: 'strava',
       externalId: '12345',
     } as never);
-    vi.mocked(prisma.users.findUnique).mockResolvedValue(existingStravaUser as never);
-    vi.mocked(prisma.connected_accounts.update).mockResolvedValue({
+    vi.mocked(prismaAdmin.users.findUnique).mockResolvedValue(existingStravaUser as never);
+    vi.mocked(prismaAdmin.connected_accounts.update).mockResolvedValue({
       userId: 'user-strava',
       provider: 'strava',
       externalId: '12345',
@@ -294,7 +294,7 @@ describe('/api/auth/strava/callback', () => {
     const location = response.headers.get('location');
     expect(location).toContain('/dashboard');
 
-    expect(prisma.connected_accounts.update).toHaveBeenCalledWith({
+    expect(prismaAdmin.connected_accounts.update).toHaveBeenCalledWith({
       where: {
         userId_provider: {
           userId: 'user-strava',
@@ -317,8 +317,8 @@ describe('/api/auth/strava/callback', () => {
     };
 
     vi.mocked(getUserIdFromRequest).mockReturnValue(null);
-    vi.mocked(prisma.connected_accounts.findUnique).mockResolvedValue(null);
-    vi.mocked(prisma.users.create).mockResolvedValue(newUser as never);
+    vi.mocked(prismaAdmin.connected_accounts.findUnique).mockResolvedValue(null);
+    vi.mocked(prismaAdmin.users.create).mockResolvedValue(newUser as never);
     vi.mocked(createSessionToken).mockReturnValue('session-token');
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -334,7 +334,7 @@ describe('/api/auth/strava/callback', () => {
     const location = response.headers.get('location');
     expect(location).toContain('/dashboard');
 
-    expect(prisma.users.create).toHaveBeenCalledWith({
+    expect(prismaAdmin.users.create).toHaveBeenCalledWith({
       data: {
         email: 'strava_12345@strava.local',
         password: '',

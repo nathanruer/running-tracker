@@ -4,6 +4,7 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { SESSION_COOKIE_NAME } from '@/lib/constants';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { verifySessionToken } from '@/server/auth';
+import { runAsUser } from '@/server/database/tenant';
 import { getUserProfilePayload } from '@/server/domain/users/user-profile';
 import {
   fetchConversationSummaries,
@@ -26,11 +27,11 @@ export default async function ChatPage({
   const { id } = await params;
   const conversationId = id?.[0] ?? null;
 
-  const [user, conversations, conversation] = await Promise.all([
+  const [user, conversations, conversation] = await runAsUser(userId, () => Promise.all([
     getUserProfilePayload(userId),
     fetchConversationSummaries(userId),
     conversationId ? fetchConversationWithMessages(userId, conversationId) : null,
-  ]);
+  ]));
 
   if (!user) {
     redirect('/');

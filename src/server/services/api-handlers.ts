@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, ZodSchema } from 'zod';
 import { logger } from '@/server/infrastructure/logger';
 import { requireAuth } from '@/server/auth/middleware';
+import { runAsUser } from '@/server/database/tenant';
 import { HTTP_STATUS } from '@/lib/constants';
 
 export interface ApiHandlerOptions {
@@ -72,7 +73,7 @@ export async function handleApiRequest<T = unknown>(
       data = {} as T;
     }
 
-    return await handler(data, userId);
+    return needsAuth ? await runAsUser(userId, () => handler(data, userId)) : await handler(data, userId);
   } catch (error) {
     return handleApiError(error, logContext);
   }
@@ -155,7 +156,7 @@ export async function handleGetRequest(
       userId = auth.userId;
     }
 
-    return await handler(userId, request);
+    return needsAuth ? await runAsUser(userId, () => handler(userId, request)) : await handler(userId, request);
   } catch (error) {
     return handleApiError(error, logContext);
   }
@@ -187,7 +188,7 @@ export async function handleDeleteRequest(
       userId = auth.userId;
     }
 
-    return await handler(userId);
+    return needsAuth ? await runAsUser(userId, () => handler(userId)) : await handler(userId);
   } catch (error) {
     return handleApiError(error, logContext);
   }

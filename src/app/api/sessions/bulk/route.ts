@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from 'next/server';
+import { runAsUser } from '@/server/database/tenant';
 import { bulkDeleteSchema, bulkImportSchema } from '@/lib/validation';
 import { enrichBulkWeather } from '@/server/domain/sessions/enrichment';
 import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
           : `${count} séance${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} avec succès`;
 
         if (streamQueueIds.length > 0 || weatherQueue.length > 0) {
-          after(async () => {
+          after(() => runAsUser(userId, async () => {
             if (streamQueueIds.length > 0) {
               try {
                 await bulkEnrichStreamsForIds(userId, streamQueueIds, { concurrency: 2 });
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
                 logger.warn({ error, userId }, 'Failed to enrich bulk weather');
               }
             }
-          });
+          }));
         }
 
         return NextResponse.json(
