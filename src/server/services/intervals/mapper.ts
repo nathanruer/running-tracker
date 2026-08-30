@@ -92,8 +92,10 @@ export function mapIntervalsActivityToSessionPayload(
   streams: IntervalsStream[],
   polyline: string | null = null
 ) {
-  const distanceKm = (activity.distance ?? 0) / 1000;
   const movingSeconds = activity.moving_time ?? activity.elapsed_time ?? 0;
+  // A few uploads reach intervals.icu without their summary distance: rebuild it from the pace.
+  const distanceM = activity.distance ?? (activity.average_speed ? activity.average_speed * movingSeconds : 0);
+  const distanceKm = distanceM / 1000;
 
   return {
     date: activity.start_date_local,

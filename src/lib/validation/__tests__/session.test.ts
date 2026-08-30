@@ -200,4 +200,11 @@ describe('Session Validation Schemas', () => {
       }
     });
   });
+  describe('partialSessionSchema', () => {
+    it('carries only the fields the caller sent', () => {
+      // A partial update that says nothing about the note must not erase it.
+      expect(partialSessionSchema.parse({ sessionType: 'Footing' })).toEqual({ sessionType: 'Footing' });
+    });
+  });
+
 });

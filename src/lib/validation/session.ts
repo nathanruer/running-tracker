@@ -59,7 +59,8 @@ export const sessionSchema = z.object({
   avgHeartRate: optionalHeartRateSchema,
   intervalDetails: intervalDetailsSchema.optional(),
   perceivedExertion: optionalRpeSchema,
-  comments: z.string().optional().default(''),
+  // No default: a partial update must not carry a value its caller did not send.
+  comments: z.string().optional(),
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
   startedAt: z.string().optional().nullable(),

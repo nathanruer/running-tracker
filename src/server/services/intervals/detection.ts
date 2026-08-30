@@ -134,6 +134,21 @@ function alternationCore(laps: Lap[]): { start: number; end: number } | null {
   return efforts.length >= 2 ? { start, end } : null;
 }
 
+/** Reps run barely faster than the rest of the outing: the "recovery" was a pause, not a rest. */
+const REP_PACE_MARGIN = 0.9;
+
+function isRepeatedEffort(laps: Lap[], core: { start: number; end: number }): boolean {
+  const outside = [...laps.slice(0, core.start), ...laps.slice(core.end + 1)];
+  if (!outside.length) return true;
+
+  const paceOf = (list: Lap[]) => list.map(paceSKm).filter((pace): pace is number => pace !== null);
+  const corePaces = paceOf(laps.slice(core.start, core.end + 1).filter((lap) => lap.kind === 'effort'));
+  const outsidePaces = paceOf(outside);
+  if (!corePaces.length || !outsidePaces.length) return true;
+
+  return median(corePaces) <= median(outsidePaces) * REP_PACE_MARGIN;
+}
+
 /** The laps around the repeated part read as a single warm-up or cool-down. */
 function collapse(laps: Lap[], kind: IntervalStep['stepType']): Lap {
   const movingS = laps.reduce((total, lap) => total + lap.movingS, 0);
@@ -170,7 +185,7 @@ export function detectSessionStructure(intervals: IntervalsInterval[]): Detected
   const usable = laps.filter(isUsable);
   const core = alternationCore(usable);
 
-  if (!core) {
+  if (!core || !isRepeatedEffort(usable, core)) {
     return { sessionType: laps.length ? continuousSessionType(laps) : null, intervalDetails: null };
   }
 

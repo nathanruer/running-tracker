@@ -604,7 +604,11 @@ export async function updateSession(
           notes: updates.comments !== undefined ? String(updates.comments) : workout.notes,
           rpe: updates.perceivedExertion !== undefined ? (updates.perceivedExertion == null ? null : Number(updates.perceivedExertion)) : workout.rpe,
           ...(updates.sessionType !== undefined
-            ? familyFields(updates.sessionType ? String(updates.sessionType) : null, details, 'manual')
+            ? familyFields(
+                updates.sessionType ? String(updates.sessionType) : null,
+                details,
+                intervalsSourceOf(updates) === 'detected' ? 'detected' : 'manual'
+              )
             : {}),
           ...(startChange ?? {}),
           ...(updates.routePolyline !== undefined ? { routePolyline: polylineOf(updates.routePolyline) } : {}),
@@ -661,7 +665,7 @@ export async function updateSession(
             data: { userId, sessionNumber: workout.sessionNumber ?? 0, status: 'completed', workoutId: workout.id, ...fields },
           });
         }
-        await replaceWorkoutIntervals(tx, workout.id, details);
+        await replaceWorkoutIntervals(tx, workout.id, details, intervalsSourceOf(updates));
       }
     });
 
