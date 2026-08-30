@@ -3,6 +3,7 @@ import type { ImportFooterProps } from './types';
 
 export function ImportFooter({
   selectedCount,
+  preparing = false,
   status,
   progress,
   onCancel,
@@ -73,10 +74,12 @@ export function ImportFooter({
             variant="action"
             size="xl"
             onClick={onImport}
-            disabled={selectedCount === 0}
+            disabled={selectedCount === 0 || preparing}
             className="w-full sm:flex-[2] font-black text-xs md:text-sm"
           >
-            {`Importer ${selectedCount} activité${selectedCount > 1 ? 's' : ''}`}
+            {preparing
+              ? 'Analyse de la séance…'
+              : `Importer ${selectedCount} activité${selectedCount > 1 ? 's' : ''}`}
           </Button>
         </>
       )}

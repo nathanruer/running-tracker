@@ -23,6 +23,7 @@ import {
   initializeFormForCreate,
   initializeFormForEdit,
   initializeFormForComplete,
+  intervalsProvenance,
 } from '@/lib/domain/forms/session-form';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 
@@ -119,6 +120,10 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
       defaultValues = initializeFormForCreate(initialData);
       form.reset(defaultValues);
       setIsCustomSessionType(false);
+
+      if (initialData?.steps?.length) {
+        setIntervalEntryMode('detailed');
+      }
     }
   }, [session, initialData, mode, form]);
 
@@ -199,6 +204,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
     try {
       const normalizedValues = normalizeFormValues(values);
       const intervalDetails = transformIntervalData(normalizedValues, intervalEntryMode);
+      const intervalsSource = intervalsProvenance(initialData, intervalDetails);
 
       const type = values.sessionType.toLowerCase();
       const dist = values.distance ? ` de ${values.distance}km` : '';
@@ -214,6 +220,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
           avgPace: values.avgPace,
           avgHeartRate: values.avgHeartRate ?? null,
           intervalDetails,
+          intervalsSource,
           perceivedExertion: values.perceivedExertion,
           comments: values.comments,
           externalId: values.externalId,
@@ -247,6 +254,7 @@ export function useSessionForm({ mode, session, initialData, onSuccess, onClose 
           avgPace: values.avgPace ?? '',
           avgHeartRate: values.avgHeartRate ?? null,
           intervalDetails,
+          intervalsSource,
           perceivedExertion: values.perceivedExertion,
           comments: values.comments,
           externalId: values.externalId,

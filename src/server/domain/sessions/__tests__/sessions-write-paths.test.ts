@@ -137,8 +137,25 @@ describe('sessions-write — write paths', () => {
       expect(prisma.workout_intervals.deleteMany).toHaveBeenCalledWith({ where: { workoutId: 'w-new' } });
       expect(prisma.workout_intervals.createMany).toHaveBeenCalledWith({
         data: [
-          { workoutId: 'w-new', position: 1, kind: 'work', movingS: 60, distanceM: 270, paceSKm: 222, avgHr: 176, source: 'manual' },
-          { workoutId: 'w-new', position: 2, kind: 'recovery', movingS: 60, distanceM: 150, paceSKm: 400, avgHr: 165, source: 'manual' },
+          { workoutId: 'w-new', position: 1, kind: 'work', movingS: 60, distanceM: 270, paceSKm: 222, avgHr: 176, source: 'manual', editedAt: expect.any(Date) },
+          { workoutId: 'w-new', position: 2, kind: 'recovery', movingS: 60, distanceM: 150, paceSKm: 400, avgHr: 165, source: 'manual', editedAt: expect.any(Date) },
+        ],
+      });
+    });
+
+    it('keeps the provider provenance on intervals accepted as detected', async () => {
+      await sessionsWrite.createCompletedSession(
+        { date: '2026-05-01', sessionType: 'Fractionné', intervalDetails: vmaDetails, intervalsSource: 'detected' },
+        'user-1'
+      );
+
+      expect(prisma.workouts.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ family: 'vma_short', familySource: 'detected', familyEditedAt: null }),
+      });
+      expect(prisma.workout_intervals.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({ position: 1, source: 'detected', editedAt: null }),
+          expect.objectContaining({ position: 2, source: 'detected', editedAt: null }),
         ],
       });
     });

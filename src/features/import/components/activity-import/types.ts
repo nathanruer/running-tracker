@@ -1,10 +1,16 @@
 import type { QueryClient } from '@tanstack/react-query';
+import type { IntervalDetails } from '@/lib/types';
 import type { ImportableActivity } from '@/lib/services/api-client';
+
+/** An activity handed to the session form, with the intervals detected on it when there are any. */
+export type ImportedActivity = ImportableActivity & {
+  intervalDetails?: IntervalDetails | null;
+};
 
 export interface ActivityImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (data: ImportableActivity) => void;
+  onImport: (data: ImportedActivity) => void;
   mode?: 'create' | 'edit' | 'complete';
   queryClient?: QueryClient;
   onBulkImportSuccess?: () => void;
@@ -13,7 +19,7 @@ export interface ActivityImportDialogProps {
 export interface ActivityImportContentProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (data: ImportableActivity) => void;
+  onImport: (data: ImportedActivity) => void;
   mode: 'create' | 'edit' | 'complete';
   queryClient?: QueryClient;
   onBulkImportSuccess?: () => void;
@@ -92,6 +98,7 @@ import type { ChunkedImportStatus } from '../../hooks/use-chunked-import';
 
 export interface ImportFooterProps {
   selectedCount: number;
+  preparing?: boolean;
   status: ChunkedImportStatus;
   progress: { imported: number; skipped: number; total: number };
   onCancel: () => void;

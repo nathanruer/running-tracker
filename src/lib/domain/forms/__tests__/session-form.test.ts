@@ -3,6 +3,8 @@ import {
   initializeFormForCreate,
   initializeFormForEdit,
   initializeFormForComplete,
+  intervalDetailsToFormFields,
+  intervalsProvenance,
 } from '../session-form';
 import type { TrainingSession } from '@/lib/types';
 
@@ -314,4 +316,92 @@ describe('initializeFormForComplete', () => {
 
     expect(result.steps).toEqual(initialData.steps);
   });
+
+  describe('intervalDetailsToFormFields', () => {
+    it('spreads detected intervals into the flat form fields', () => {
+      const fields = intervalDetailsToFormFields({
+        workoutType: 'TEMPO',
+        repetitionCount: 2,
+        effortDuration: '10:00',
+        recoveryDuration: '02:00',
+        effortDistance: null,
+        recoveryDistance: null,
+        targetEffortPace: '05:16',
+        targetEffortHR: 168,
+        targetRecoveryPace: '06:05',
+        steps: [{ stepNumber: 1, stepType: 'effort', duration: '10:04', distance: 1.85, pace: '05:27', hr: 162 }],
+      });
+
+      expect(fields).toEqual({
+        workoutType: 'TEMPO',
+        repetitionCount: 2,
+        effortDuration: '10:00',
+        recoveryDuration: '02:00',
+        effortDistance: undefined,
+        recoveryDistance: undefined,
+        targetEffortPace: '05:16',
+        targetEffortHR: 168,
+        targetRecoveryPace: '06:05',
+        steps: [{ stepNumber: 1, stepType: 'effort', duration: '10:04', distance: 1.85, pace: '05:27', hr: 162 }],
+      });
+    });
+
+    it('returns nothing without intervals', () => {
+      expect(intervalDetailsToFormFields(null)).toEqual({});
+    });
+  });
+
+  describe('intervalsProvenance', () => {
+    const imported = {
+      source: 'intervals_icu',
+      sessionType: 'Fractionné',
+      workoutType: 'TEMPO',
+      repetitionCount: 2,
+      effortDuration: '10:00',
+      recoveryDuration: '02:00',
+      targetEffortPace: '05:16',
+      targetEffortHR: 168,
+      steps: [{ stepNumber: 1, stepType: 'effort' as const, duration: '10:04', distance: 1.85, pace: '05:27', hr: 162 }],
+    };
+    const submitted = {
+      workoutType: 'TEMPO',
+      repetitionCount: 2,
+      effortDuration: '10:00',
+      recoveryDuration: '02:00',
+      effortDistance: null,
+      recoveryDistance: null,
+      targetEffortPace: '05:16',
+      targetEffortHR: 168,
+      targetRecoveryPace: null,
+      steps: [{ stepNumber: 1, stepType: 'effort' as const, duration: '10:04', distance: 1.85, pace: '05:27', hr: 162 }],
+    };
+
+    it('keeps the detected provenance when the athlete saves the proposal untouched', () => {
+      expect(intervalsProvenance(imported, submitted)).toBe('detected');
+    });
+
+    it('ignores the duration format the form normalizes on submit', () => {
+      expect(intervalsProvenance(imported, {
+        ...submitted,
+        effortDuration: '00:10:00',
+        recoveryDuration: '00:02:00',
+        steps: [{ ...submitted.steps[0], duration: '00:10:04' }],
+      })).toBe('detected');
+    });
+
+    it('switches to manual as soon as a value is changed', () => {
+      expect(intervalsProvenance(imported, { ...submitted, repetitionCount: 3 })).toBe('manual');
+      expect(intervalsProvenance(imported, {
+        ...submitted,
+        steps: [{ ...submitted.steps[0], hr: 170 }],
+      })).toBe('manual');
+    });
+
+    it('is manual for a session typed from scratch', () => {
+      expect(intervalsProvenance({ source: 'manual', sessionType: 'Fractionné' }, submitted)).toBe('manual');
+      expect(intervalsProvenance(null, submitted)).toBe('manual');
+      expect(intervalsProvenance(imported, null)).toBe('manual');
+    });
+  });
+
 });

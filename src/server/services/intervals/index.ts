@@ -2,10 +2,13 @@ import 'server-only';
 export {
   getIntervalsActivities,
   getIntervalsActivityStreams,
+  getIntervalsActivityIntervals,
   getIntervalsAthlete,
   type IntervalsActivity,
   type IntervalsStream,
+  type IntervalsInterval,
 } from './client';
+export { detectSessionStructure, type DetectedSessionStructure } from './detection';
 export { getIntervalsApiKey } from './account';
 export {
   mapIntervalsActivityToSessionPayload,

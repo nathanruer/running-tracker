@@ -177,6 +177,7 @@ export type TrainingSessionPayload = (Omit<
   'id' | 'userId' | 'sessionNumber' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE' | 'hasWeather' | 'hasStreams'
 >) & {
   sourcePayload?: unknown;
+  intervalsSource?: 'detected' | 'manual';
 };
 
 /**

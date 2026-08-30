@@ -109,3 +109,27 @@ export async function getIntervalsActivityStreams(
   const data = await fetchIntervals(apiKey, `/activity/${activityId}/streams`);
   return z.array(intervalsStreamSchema).parse(data);
 }
+
+const intervalsIntervalSchema = z.object({
+  type: z.string().nullish(),
+  group_id: z.string().nullish(),
+  moving_time: z.number().nullish(),
+  distance: z.number().nullish(),
+  average_heartrate: z.number().nullish(),
+  max_heartrate: z.number().nullish(),
+}).loose();
+
+export type IntervalsInterval = z.infer<typeof intervalsIntervalSchema>;
+
+const intervalsIntervalsSchema = z.object({
+  icu_intervals: z.array(intervalsIntervalSchema).nullish(),
+}).loose();
+
+/** Intervals detected by intervals.icu on an activity (empty when it has none). */
+export async function getIntervalsActivityIntervals(
+  apiKey: string,
+  activityId: string
+): Promise<IntervalsInterval[]> {
+  const data = await fetchIntervals(apiKey, `/activity/${activityId}/intervals`);
+  return intervalsIntervalsSchema.parse(data).icu_intervals ?? [];
+}

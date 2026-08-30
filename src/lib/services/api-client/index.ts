@@ -43,8 +43,10 @@ export { apiRequest } from './client';
 
 export {
   getIntervalsActivitiesList,
+  getIntervalsActivityStructure,
   importIntervalsSelection,
   type IntervalsImportResult,
   type ImportableActivity,
   type ActivitiesResponse,
+  type DetectedSessionStructure,
 } from './intervals';

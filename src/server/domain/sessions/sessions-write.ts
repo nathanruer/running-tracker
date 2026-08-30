@@ -26,6 +26,7 @@ import { buildPlannedWorkoutFields, type PlannedInput } from './planned-v3';
 const logger = createLogger({ context: 'session-write' });
 
 type Tx = Prisma.TransactionClient;
+type IntervalsSource = 'detected' | 'manual';
 
 type PlannedRow = {
   family: Prisma.planned_workoutsGetPayload<object>['family'];
@@ -67,7 +68,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 function familyFields(
   sessionType: string | null,
   details: IntervalDetails | null,
-  source: 'manual' | 'plan'
+  source: 'manual' | 'plan' | 'detected'
 ) {
   const family = familyFromSession(sessionType, details);
   return family
@@ -110,14 +111,29 @@ function plannedInputFromRow(row: PlannedRow): PlannedInput {
   };
 }
 
-async function replaceWorkoutIntervals(tx: Tx, workoutId: string, details: IntervalDetails | null) {
+async function replaceWorkoutIntervals(
+  tx: Tx,
+  workoutId: string,
+  details: IntervalDetails | null,
+  source: IntervalsSource = 'manual'
+) {
   await tx.workout_intervals.deleteMany({ where: { workoutId } });
   const rows = actualsFromSteps(details?.steps);
   if (rows.length) {
     await tx.workout_intervals.createMany({
-      data: rows.map((row) => ({ workoutId, ...row, source: 'manual' as const })),
+      data: rows.map((row) => ({
+        workoutId,
+        ...row,
+        source,
+        editedAt: source === 'manual' ? new Date() : null,
+      })),
     });
   }
+}
+
+/** Provenance of the intervals carried by a payload: detected by the provider, or authored. */
+function intervalsSourceOf(payload: Record<string, unknown>): IntervalsSource {
+  return payload.intervalsSource === 'detected' ? 'detected' : 'manual';
 }
 
 export async function recalculateSessionNumbers(userId: string) {
@@ -375,6 +391,7 @@ export async function createCompletedSession(
   const sanitizedStreams = parsePayload(streamPayloadSchema, payload.streams, 'streams');
 
   const intervalDetails = (payload.intervalDetails as IntervalDetails | null | undefined) ?? null;
+  const intervalsSource = intervalsSourceOf(payload);
   const sessionType = payload.sessionType ? String(payload.sessionType) : null;
   const provider = toProvider((payload.source as string | null) ?? null);
   const externalId = (payload.externalId as string | null) ?? null;
@@ -390,7 +407,7 @@ export async function createCompletedSession(
         notes: String(payload.comments ?? ''),
         rpe: (payload.perceivedExertion as number | null) ?? null,
         ...workoutV3,
-        ...familyFields(sessionType, intervalDetails, 'manual'),
+        ...familyFields(sessionType, intervalDetails, intervalsSource === 'detected' ? 'detected' : 'manual'),
       },
     });
 
@@ -404,7 +421,7 @@ export async function createCompletedSession(
           ...buildPlannedWorkoutFields(plannedInput(payload), DEFAULT_TIMEZONE, { completed: true }),
         },
       });
-      await replaceWorkoutIntervals(tx, workout.id, intervalDetails);
+      await replaceWorkoutIntervals(tx, workout.id, intervalDetails, intervalsSource);
     }
 
     await upsertWorkoutSource(tx, workout.id, userId, provider, externalId, payload.sourcePayload, workoutV3.startedAt, workoutV3.routePolyline);
@@ -462,7 +479,11 @@ export async function completePlannedSession(
         notes: String(payload.comments ?? plan.notes ?? ''),
         rpe: (payload.perceivedExertion as number | null) ?? null,
         ...workoutV3,
-        ...familyFields(sessionType, details, payload.sessionType ? 'manual' : 'plan'),
+        ...familyFields(
+          sessionType,
+          details,
+          intervalsSourceOf(payload) === 'detected' ? 'detected' : payload.sessionType ? 'manual' : 'plan'
+        ),
       },
     });
 
@@ -482,7 +503,7 @@ export async function completePlannedSession(
     });
 
     if (payload.intervalDetails !== undefined) {
-      await replaceWorkoutIntervals(tx, workout.id, details);
+      await replaceWorkoutIntervals(tx, workout.id, details, intervalsSourceOf(payload));
     }
 
     await upsertWorkoutSource(tx, workout.id, userId, provider, externalId, payload.sourcePayload, workoutV3.startedAt, workoutV3.routePolyline);

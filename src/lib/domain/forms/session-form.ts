@@ -1,7 +1,60 @@
-import type { TrainingSession } from '@/lib/types';
+import type { IntervalDetails, TrainingSession } from '@/lib/types';
 import type { FormValues } from '@/lib/validation/session-form';
 import { getTodayISO, extractDatePart } from '@/lib/utils/date';
 import { transformStepsData, getSessionDisplayData } from '@/lib/domain/forms/session-helpers';
+import { transformIntervalData } from '@/lib/utils/intervals';
+import { normalizeDurationToHHMMSS } from '@/lib/utils/duration';
+
+/** Spreads intervals coming from an import into the flat fields the form edits. */
+export function intervalDetailsToFormFields(
+  details: IntervalDetails | null | undefined
+): Partial<FormValues> {
+  if (!details) return {};
+
+  return {
+    workoutType: details.workoutType ?? '',
+    repetitionCount: details.repetitionCount ?? undefined,
+    effortDuration: details.effortDuration ?? '',
+    recoveryDuration: details.recoveryDuration ?? '',
+    effortDistance: details.effortDistance ?? undefined,
+    recoveryDistance: details.recoveryDistance ?? undefined,
+    targetEffortPace: details.targetEffortPace ?? '',
+    targetEffortHR: details.targetEffortHR ?? undefined,
+    targetRecoveryPace: details.targetRecoveryPace ?? '',
+    steps: transformStepsData(details.steps ?? undefined),
+  };
+}
+
+/** Same durations written the same way on both sides, so only real edits show up as differences. */
+function comparableIntervals(details: IntervalDetails | null): string {
+  if (!details) return '';
+
+  return JSON.stringify({
+    ...details,
+    effortDuration: normalizeDurationToHHMMSS(details.effortDuration),
+    recoveryDuration: normalizeDurationToHHMMSS(details.recoveryDuration),
+    steps: details.steps?.map((step) => ({ ...step, duration: normalizeDurationToHHMMSS(step.duration) })),
+  });
+}
+
+/**
+ * Provenance of the intervals being saved: `detected` while they are exactly the ones the provider
+ * proposed, `manual` as soon as the athlete changed something (jobs never overwrite manual rows).
+ */
+export function intervalsProvenance(
+  initialData: Partial<FormValues> | null | undefined,
+  submitted: IntervalDetails | null
+): 'detected' | 'manual' {
+  if (!submitted || !initialData?.source || initialData.source === 'manual') return 'manual';
+
+  const detected = transformIntervalData(
+    { ...initialData, sessionType: initialData.sessionType ?? '' },
+    'detailed'
+  );
+  return detected && comparableIntervals(detected) === comparableIntervals(submitted)
+    ? 'detected'
+    : 'manual';
+}
 
 export function initializeFormForComplete(
   session: TrainingSession,

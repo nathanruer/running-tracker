@@ -7,6 +7,7 @@ export {
   ImportTableHeader,
   ImportFooter,
   ImportLoadingSkeleton,
+  type ImportedActivity,
   type ActivityImportDialogProps,
   type ActivityImportContentProps,
   type ImportToolbarProps,

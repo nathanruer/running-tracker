@@ -18,7 +18,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { type ImportableActivity } from '@/features/import';
+import { type ImportedActivity } from '@/features/import';
 import {
   type TrainingSession,
   type TrainingSessionPayload,
@@ -26,6 +26,7 @@ import {
 import { bulkEnrichSessionStreams, bulkEnrichSessionWeather, getSessionById } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
+import { intervalDetailsToFormFields } from '@/lib/domain/forms/session-form';
 
 const SessionDialog = dynamic(
   () => import('@/features/sessions/components/forms/session-dialog'),
@@ -104,12 +105,14 @@ function DashboardContent() {
 
   const sessionDialogInitialData = useMemo(() => {
     if (!importedData) return null;
+    const { intervalDetails, ...fields } = importedData;
     return {
-      ...importedData,
+      ...fields,
       date: importedData.date ?? undefined,
       duration: importedData.duration ?? undefined,
       avgPace: importedData.avgPace ?? undefined,
       sessionType: importedData.sessionType ?? undefined,
+      ...intervalDetailsToFormFields(intervalDetails),
     };
   }, [importedData]);
 
@@ -237,7 +240,7 @@ function DashboardContent() {
     setIsDialogOpen(open);
   };
 
-  const handleActivityImport = (data: ImportableActivity) => {
+  const handleActivityImport = (data: ImportedActivity) => {
     setImportedData(data as TrainingSessionPayload);
     setIsDialogOpen(true);
   };

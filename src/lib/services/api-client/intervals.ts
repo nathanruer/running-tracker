@@ -1,3 +1,4 @@
+import type { IntervalDetails } from '@/lib/types';
 import { apiRequest } from './client';
 
 /** An intervals.icu activity as listed for import (session payload fields + import state). */
@@ -52,6 +53,20 @@ export async function importIntervalsSelection(
     '/api/intervals/import',
     { method: 'POST', body: JSON.stringify({ externalIds }) },
     IMPORT_TIMEOUT_MS
+  );
+}
+
+/** Session type and intervals detected by intervals.icu, proposed in the form before saving. */
+export interface DetectedSessionStructure {
+  sessionType: string | null;
+  intervalDetails: IntervalDetails | null;
+}
+
+export async function getIntervalsActivityStructure(
+  externalId: string
+): Promise<DetectedSessionStructure> {
+  return apiRequest<DetectedSessionStructure>(
+    `/api/intervals/activities/${encodeURIComponent(externalId)}/structure`
   );
 }
 

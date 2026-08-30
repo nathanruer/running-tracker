@@ -9,7 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { importIntervalsSelection, type ImportableActivity } from '@/lib/services/api-client';
+import {
+  importIntervalsSelection,
+  getIntervalsActivityStructure,
+  type ImportableActivity,
+} from '@/lib/services/api-client';
 import { useExternalActivities } from '../../hooks/use-external-activities';
 import { useChunkedImport } from '../../hooks/use-chunked-import';
 import { useTableSort } from '@/hooks/use-table-sort';
@@ -38,6 +42,7 @@ export function ActivityImportContent({
   onBulkImportSuccess,
 }: ActivityImportContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [preparing, setPreparing] = useState(false);
   const topRef = useRef<HTMLTableSectionElement>(null);
 
   const {
@@ -180,6 +185,22 @@ export function ActivityImportContent({
     calories: activity.calories,
   });
 
+  /** Intervals detected by intervals.icu, prefilled in the form; import goes on without them on failure. */
+  const detectStructure = async (activity: ImportableActivity) => {
+    setPreparing(true);
+    try {
+      const detected = await getIntervalsActivityStructure(activity.externalId);
+      return {
+        sessionType: detected.sessionType ?? activity.sessionType,
+        intervalDetails: detected.intervalDetails,
+      };
+    } catch {
+      return {};
+    } finally {
+      setPreparing(false);
+    }
+  };
+
   const handleImportSelected = wrapAsync(async () => {
     const selected = getSelectedItems();
     if (selected.length === 0) {
@@ -192,7 +213,7 @@ export function ActivityImportContent({
 
     if (mode === 'complete' || selected.length === 1) {
       const activity = selected[0];
-      onImport(activity);
+      onImport({ ...activity, ...(await detectStructure(activity)) });
       onOpenChange(false);
       clearSelection();
       return;
@@ -356,6 +377,7 @@ export function ActivityImportContent({
 
               <ImportFooter
                 selectedCount={selectedCount}
+                preparing={preparing}
                 status={chunkedImport.status}
                 progress={chunkedImport.progress}
                 onCancel={handleClose}

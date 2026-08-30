@@ -17,6 +17,7 @@ export {
   ActivityRowCells,
 } from './activity-row-cells';
 export type {
+  ImportedActivity,
   ActivityImportDialogProps,
   ActivityImportContentProps,
   ImportToolbarProps,
