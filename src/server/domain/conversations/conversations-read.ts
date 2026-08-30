@@ -31,30 +31,21 @@ export async function fetchConversationWithMessages(userId: string, conversation
       conversation_messages: {
         where: { role: { not: 'system' } },
         orderBy: { createdAt: 'asc' },
-        include: {
-          conversation_message_payloads: true,
-        },
       },
     },
   });
 
   if (!conversation) return null;
 
-  const chatMessages = conversation.conversation_messages.map((message) => {
-    const payload = message.conversation_message_payloads.find(
-      (item) => item.payloadType === 'recommendations'
-    );
-
-    return {
-      id: message.id,
-      conversationId: message.conversationId,
-      role: message.role,
-      content: message.content,
-      model: message.model ?? null,
-      recommendations: payload?.payload ?? null,
-      createdAt: message.createdAt.toISOString(),
-    };
-  });
+  const chatMessages = conversation.conversation_messages.map((message) => ({
+    id: message.id,
+    conversationId: message.conversationId,
+    role: message.role,
+    content: message.content,
+    model: message.model ?? null,
+    recommendations: message.kind === 'recommendation' ? message.payload ?? null : null,
+    createdAt: message.createdAt.toISOString(),
+  }));
 
   const { conversation_messages: _conversation_messages, createdAt, updatedAt, ...rest } = conversation;
   void _conversation_messages;

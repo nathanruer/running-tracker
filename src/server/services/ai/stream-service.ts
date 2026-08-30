@@ -58,6 +58,9 @@ async function createConversationMessage({
       role,
       content,
       model: model ?? undefined,
+      kind: payload ? 'recommendation' : 'text',
+      ...(payload ? { payload: payload.payload } : {}),
+      ...(model ? { provider: 'groq' } : {}),
     },
   });
 

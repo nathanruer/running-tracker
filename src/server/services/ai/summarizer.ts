@@ -17,44 +17,26 @@ const SUMMARY_SYSTEM_PROMPT = `Tu maintiens la mémoire d'une conversation entre
 Conserve uniquement l'essentiel durable : objectifs, contraintes et blessures, préférences exprimées, séances proposées/acceptées/refusées, décisions prises.
 Réponds avec le résumé seul, sans préambule.`;
 
-interface SummaryMeta {
-  messageCountAtGeneration: number;
-}
-
-export function readSummaryMeta(payload: unknown): SummaryMeta | null {
-  if (
-    payload &&
-    typeof payload === 'object' &&
-    'messageCountAtGeneration' in payload &&
-    typeof (payload as SummaryMeta).messageCountAtGeneration === 'number'
-  ) {
-    return payload as SummaryMeta;
-  }
-  return null;
-}
-
 export async function maybeRefreshConversationSummary(conversationId: string): Promise<void> {
   try {
-    const allMessages = await prisma.conversation_messages.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: 'asc' },
-      include: { conversation_message_payloads: true },
-    });
+    const [conversation, allMessages] = await Promise.all([
+      prisma.conversations.findUnique({
+        where: { id: conversationId },
+        select: { summary: true, summaryMessageCount: true },
+      }),
+      prisma.conversation_messages.findMany({
+        where: { conversationId, role: { not: 'system' } },
+        orderBy: { createdAt: 'asc' },
+        select: { role: true, content: true },
+      }),
+    ]);
 
     const nonSystem = allMessages.filter((m) => m.role !== 'system');
     const total = nonSystem.length;
     if (total <= OPTIMIZATION_CONFIG.RECENT_MESSAGES_COUNT) return;
 
-    const summaries = allMessages.filter((m) => m.role === 'system');
-    const lastSummary = summaries[summaries.length - 1] ?? null;
-    const lastMeta = lastSummary
-      ? readSummaryMeta(
-          lastSummary.conversation_message_payloads.find(
-            (p) => p.payloadType === SUMMARY_PAYLOAD_TYPE
-          )?.payload
-        )
-      : null;
-    const countAtGeneration = lastMeta?.messageCountAtGeneration ?? 0;
+    const lastSummary = conversation?.summary ?? null;
+    const countAtGeneration = conversation?.summaryMessageCount ?? 0;
 
     if (total - countAtGeneration < SUMMARY_TRIGGER_THRESHOLD) return;
 
@@ -68,8 +50,8 @@ export async function maybeRefreshConversationSummary(conversationId: string): P
       .join('\n');
 
     const promptParts: string[] = [];
-    if (lastSummary?.content) {
-      promptParts.push(`Résumé existant:\n${lastSummary.content}`);
+    if (lastSummary) {
+      promptParts.push(`Résumé existant:\n${lastSummary}`);
     }
     promptParts.push(`Nouveaux messages:\n${transcript}`);
 
@@ -84,12 +66,21 @@ export async function maybeRefreshConversationSummary(conversationId: string): P
     const summaryText = result.text.trim();
     if (!summaryText) return;
 
+    await prisma.conversations.update({
+      where: { id: conversationId },
+      data: { summary: summaryText, summaryMessageCount: total },
+    });
+
+    // Legacy mirror kept until the contract phase drops summary messages.
     const message = await prisma.conversation_messages.create({
       data: {
         conversationId,
         role: 'system',
         content: summaryText,
         model: GROQ_SUMMARY_MODEL,
+        kind: 'summary',
+        payload: toPrismaJson({ messageCountAtGeneration: total }),
+        provider: 'groq',
       },
     });
     await prisma.conversation_message_payloads.create({

@@ -1,7 +1,6 @@
 import 'server-only';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
-import { readSummaryMeta, SUMMARY_PAYLOAD_TYPE } from './summarizer';
 import type { Prisma } from '@prisma/client';
 
 type ChatRole = 'user' | 'assistant' | 'system';
@@ -73,35 +72,29 @@ export interface OptimizedHistory {
 export async function getOptimizedConversationHistory(
   conversationId: string
 ): Promise<OptimizedHistory> {
-  const allMessages = await prisma.conversation_messages.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: 'asc' },
-    include: { conversation_message_payloads: true },
-  });
+  const [conversation, allMessages] = await Promise.all([
+    prisma.conversations.findUnique({
+      where: { id: conversationId },
+      select: { summary: true, summaryMessageCount: true },
+    }),
+    prisma.conversation_messages.findMany({
+      where: { conversationId, role: { not: 'system' } },
+      orderBy: { createdAt: 'asc' },
+      select: { role: true, content: true, kind: true, payload: true, createdAt: true },
+    }),
+  ]);
 
-  const summaries = allMessages.filter((message) => message.role === 'system');
-  const lastSummary = summaries[summaries.length - 1] ?? null;
-  const lastSummaryMeta = lastSummary
-    ? readSummaryMeta(
-        lastSummary.conversation_message_payloads.find(
-          (item) => item.payloadType === SUMMARY_PAYLOAD_TYPE
-        )?.payload
-      )
-    : null;
+  const lastSummary = conversation?.summary ?? null;
+  const summaryMessageCount = conversation?.summaryMessageCount ?? 0;
 
   const normalizedMessages: ChatMessageRecord[] = allMessages
     .filter((message) => message.role !== 'system')
-    .map((message) => {
-      const payload = message.conversation_message_payloads.find(
-        (item: { payloadType: string }) => item.payloadType === 'recommendations'
-      );
-      return {
-        role: message.role as ChatRole,
-        content: message.content,
-        recommendations: payload?.payload ?? null,
-        createdAt: message.createdAt,
-      };
-    });
+    .map((message) => ({
+      role: message.role as ChatRole,
+      content: message.content,
+      recommendations: message.kind === 'recommendation' ? message.payload ?? null : null,
+      createdAt: message.createdAt,
+    }));
 
   const totalMessages = normalizedMessages.length;
 
@@ -125,11 +118,11 @@ export async function getOptimizedConversationHistory(
   const recentMessages = normalizedMessages.slice(-recentCount);
   const olderMessages = normalizedMessages.slice(0, -recentCount);
 
-  const coveredCount = Math.max(0, (lastSummaryMeta?.messageCountAtGeneration ?? 0) - recentCount);
+  const coveredCount = Math.max(0, summaryMessageCount - recentCount);
   const uncoveredOlder = olderMessages.slice(Math.min(coveredCount, olderMessages.length));
   const summaryParts: string[] = [];
-  if (lastSummary?.content) {
-    summaryParts.push(`[Mémoire de la conversation]\n${lastSummary.content}`);
+  if (lastSummary) {
+    summaryParts.push(`[Mémoire de la conversation]\n${lastSummary}`);
   }
   const heuristicSummary = summarizeMessages(lastSummary ? uncoveredOlder : olderMessages);
   if (heuristicSummary) {

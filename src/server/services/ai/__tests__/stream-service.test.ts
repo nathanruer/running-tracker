@@ -25,6 +25,7 @@ vi.mock('@/server/database', () => ({
     },
     conversations: {
       updateMany: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }));
@@ -70,7 +71,8 @@ describe('processStreamingMessage (agent)', () => {
         role: 'user',
         content: 'salut coach',
         createdAt: new Date(),
-        conversation_message_payloads: [],
+        kind: 'text',
+        payload: null,
       },
     ] as never);
     vi.mocked(prisma.conversations.updateMany).mockResolvedValue({ count: 1 } as never);
@@ -143,6 +145,14 @@ describe('processStreamingMessage (agent)', () => {
         data: expect.objectContaining({ payloadType: 'recommendations', payloadVersion: 'v1' }),
       })
     );
+    const assistantCall = vi
+      .mocked(prisma.conversation_messages.create)
+      .mock.calls.find((call) => call[0].data.role === 'assistant');
+    expect(assistantCall?.[0].data).toMatchObject({
+      kind: 'recommendation',
+      payload: validatedRecommendations,
+      provider: 'groq',
+    });
   });
 
   it('falls back to the rationale when no text was streamed alongside recommendations', async () => {

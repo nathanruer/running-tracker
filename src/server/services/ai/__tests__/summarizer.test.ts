@@ -9,6 +9,10 @@ vi.mock('@/server/database', () => ({
     conversation_message_payloads: {
       create: vi.fn(),
     },
+    conversations: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }));
 
@@ -42,7 +46,6 @@ function makeMessages(count: number) {
     role: i % 2 === 0 ? 'user' : 'assistant',
     content: `Message ${i}`,
     createdAt: new Date(2026, 0, 1, 0, i),
-    conversation_message_payloads: [],
   }));
 }
 
@@ -51,6 +54,8 @@ describe('maybeRefreshConversationSummary', () => {
     vi.clearAllMocks();
     mockCreateMessage.mockResolvedValue({ id: 'summary-msg' });
     mockCreatePayload.mockResolvedValue({});
+    vi.mocked(prisma.conversations.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.conversations.update).mockResolvedValue({} as never);
     mockGenerateText.mockResolvedValue({ text: 'Résumé cumulatif de la conversation.' });
   });
 
@@ -83,19 +88,17 @@ describe('maybeRefreshConversationSummary', () => {
         payload: { messageCountAtGeneration: 20 },
       }),
     });
+    expect(prisma.conversations.update).toHaveBeenCalledWith({
+      where: { id: 'conv-1' },
+      data: { summary: 'Résumé cumulatif de la conversation.', summaryMessageCount: 20 },
+    });
   });
 
   it('throttles regeneration until enough new messages accumulate', async () => {
     const messages = makeMessages(20);
-    messages.push({
-      id: 'sum1',
-      role: 'system',
-      content: 'Ancien résumé.',
-      createdAt: new Date(2026, 0, 2),
-      conversation_message_payloads: [
-        { payloadType: SUMMARY_PAYLOAD_TYPE, payload: { messageCountAtGeneration: 18 } },
-      ],
-    } as never);
+    vi.mocked(prisma.conversations.findUnique).mockResolvedValue(
+      { summary: 'Ancien résumé.', summaryMessageCount: 18 } as never
+    );
     mockFindMany.mockResolvedValue(messages);
 
     await maybeRefreshConversationSummary('conv-1');
@@ -105,15 +108,9 @@ describe('maybeRefreshConversationSummary', () => {
 
   it('feeds the previous summary into the regeneration prompt', async () => {
     const messages = makeMessages(30);
-    messages.push({
-      id: 'sum1',
-      role: 'system',
-      content: 'Ancien résumé.',
-      createdAt: new Date(2026, 0, 2),
-      conversation_message_payloads: [
-        { payloadType: SUMMARY_PAYLOAD_TYPE, payload: { messageCountAtGeneration: 18 } },
-      ],
-    } as never);
+    vi.mocked(prisma.conversations.findUnique).mockResolvedValue(
+      { summary: 'Ancien résumé.', summaryMessageCount: 18 } as never
+    );
     mockFindMany.mockResolvedValue(messages);
 
     await maybeRefreshConversationSummary('conv-1');

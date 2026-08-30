@@ -46,7 +46,8 @@ describe('/api/conversations/[id]', () => {
             content: 'Bonjour',
             model: null,
             createdAt: new Date(),
-            conversation_message_payloads: [],
+            kind: 'text',
+            payload: null,
           },
           {
             id: 'msg-2',
@@ -55,9 +56,8 @@ describe('/api/conversations/[id]', () => {
             content: 'Bonjour! Comment puis-je vous aider?',
             model: 'gpt',
             createdAt: new Date(),
-            conversation_message_payloads: [
-              { payloadType: 'recommendations', payload: { responseType: 'recommendations' } },
-            ],
+            kind: 'recommendation',
+            payload: { responseType: 'recommendations' },
           },
         ],
       };
@@ -88,9 +88,6 @@ describe('/api/conversations/[id]', () => {
           conversation_messages: {
             where: { role: { not: 'system' } },
             orderBy: { createdAt: 'asc' },
-            include: {
-              conversation_message_payloads: true,
-            },
           },
         },
       });
@@ -149,9 +146,6 @@ describe('/api/conversations/[id]', () => {
             conversation_messages: {
               where: { role: { not: 'system' } },
               orderBy: { createdAt: 'asc' },
-              include: {
-                conversation_message_payloads: true,
-              },
             },
           },
         })
