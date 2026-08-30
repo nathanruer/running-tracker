@@ -58,6 +58,39 @@ describe('detectSessionStructure', () => {
     expect(detected.intervalDetails).toMatchObject({ effortDuration: '10:00', recoveryDuration: '02:00' });
   });
 
+  it('keeps a run cut into kilometre laps by the auto-lap as a plain run', () => {
+    const detected = detectSessionStructure([
+      lap('WORK', 390, 1000, 148),
+      lap('WORK', 385, 1000, 152),
+      lap('WORK', 402, 1000, 150),
+      lap('WORK', 378, 1000, 154),
+      lap('WORK', 395, 1000, 153),
+      lap('WORK', 120, 300, 150),
+    ]);
+
+    expect(detected).toEqual({ sessionType: 'Footing', intervalDetails: null });
+  });
+
+  it('collapses the kilometre laps around the reps into one warm-up and one cool-down', () => {
+    const detected = detectSessionStructure([
+      lap('WORK', 390, 1000, 138),
+      lap('WORK', 380, 1000, 142),
+      lap('WORK', 60, 250, 168),
+      lap('RECOVERY', 60, 180, 150),
+      lap('WORK', 62, 255, 170),
+      lap('WORK', 400, 1000, 140),
+    ]);
+
+    expect(detected.intervalDetails?.steps).toEqual([
+      { stepNumber: 1, stepType: 'warmup', duration: '12:50', distance: 2, pace: '06:25', hr: 140 },
+      { stepNumber: 2, stepType: 'effort', duration: '01:00', distance: 0.25, pace: '04:00', hr: 168 },
+      { stepNumber: 3, stepType: 'recovery', duration: '01:00', distance: 0.18, pace: '05:33', hr: 150 },
+      { stepNumber: 4, stepType: 'effort', duration: '01:02', distance: 0.26, pace: '03:58', hr: 170 },
+      { stepNumber: 5, stepType: 'cooldown', duration: '06:40', distance: 1, pace: '06:40', hr: 140 },
+    ]);
+    expect(detected.intervalDetails?.repetitionCount).toBe(2);
+  });
+
   it('proposes a plain run when the activity holds a single effort', () => {
     const detected = detectSessionStructure([lap('WORK', 454, 1150.25, 134), lap('WORK', 3, 7.9, 149)]);
 

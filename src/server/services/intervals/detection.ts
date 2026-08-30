@@ -19,9 +19,6 @@ const LONG_RUN_M = 14000;
 const REP_DISTANCES_M = [200, 300, 400, 500, 600, 800, 1000, 1200, 1500, 2000, 3000, 5000];
 const DISTANCE_TOLERANCE = 0.05;
 
-/** A first or last lap run at least this much slower than the efforts is a warm-up or a cool-down. */
-const EASY_EDGE_RATIO = 1.15;
-
 interface Lap {
   kind: IntervalStep['stepType'];
   movingS: number;
@@ -104,22 +101,53 @@ function workoutTypeOf(effortDurations: number[]): string {
   return 'TEMPO';
 }
 
-/** True when the lap is markedly slower than the efforts it sits next to (at least two of them). */
-function isEasyEdge(lap: Lap, others: Lap[]): boolean {
-  const pace = paceSKm(lap);
-  const effortPaces = others
-    .filter((other) => other.kind === 'effort')
-    .map(paceSKm)
-    .filter((value): value is number => value !== null);
-
-  if (!pace || effortPaces.length < 2) return false;
-  return pace >= median(effortPaces) * EASY_EDGE_RATIO;
-}
-
 function continuousSessionType(laps: Lap[]): string {
   const movingS = laps.reduce((total, lap) => total + lap.movingS, 0);
   const distanceM = laps.reduce((total, lap) => total + lap.distanceM, 0);
   return movingS >= LONG_RUN_S || distanceM >= LONG_RUN_M ? 'Sortie longue' : 'Footing';
+}
+
+/** Opening and closing reps are only kept when they look like the reps between the recoveries. */
+const REP_DURATION_TOLERANCE = 1.75;
+
+/**
+ * The repeated part of the session: from the effort that opens the first recovery to the one that
+ * closes the last. Everything around is warm-up or cool-down — most often the kilometre laps the
+ * watch cuts on its own, which must never be counted as repetitions.
+ */
+function alternationCore(laps: Lap[]): { start: number; end: number } | null {
+  const first = laps.findIndex((lap) => lap.kind === 'recovery');
+  if (first === -1) return null;
+  const last = laps.findLastIndex((lap) => lap.kind === 'recovery');
+
+  const inner = laps.slice(first, last + 1).filter((lap) => lap.kind === 'effort').map((lap) => lap.movingS);
+  const ceiling = inner.length ? median(inner) * REP_DURATION_TOLERANCE : Infinity;
+  const isRep = (index: number) => laps[index]?.kind === 'effort' && laps[index].movingS <= ceiling;
+
+  // The core opens and closes on a rep: a recovery left outside belongs to the warm-up or cool-down.
+  const start = isRep(first - 1) ? first - 1 : laps.findIndex((lap, index) => index > first && lap.kind === 'effort');
+  const end = isRep(last + 1) ? last + 1 : laps.findLastIndex((lap, index) => index < last && lap.kind === 'effort');
+  if (start === -1 || end === -1 || end <= start) return null;
+
+  // An interval session is at least two efforts separated by a recovery.
+  const efforts = laps.slice(start, end + 1).filter((lap) => lap.kind === 'effort');
+  return efforts.length >= 2 ? { start, end } : null;
+}
+
+/** The laps around the repeated part read as a single warm-up or cool-down. */
+function collapse(laps: Lap[], kind: IntervalStep['stepType']): Lap {
+  const movingS = laps.reduce((total, lap) => total + lap.movingS, 0);
+  const withHr = laps.filter((lap) => lap.hr !== null && lap.movingS > 0);
+  const hrWeight = withHr.reduce((total, lap) => total + lap.movingS, 0);
+
+  return {
+    kind,
+    movingS,
+    distanceM: laps.reduce((total, lap) => total + lap.distanceM, 0),
+    hr: hrWeight
+      ? Math.round(withHr.reduce((total, lap) => total + (lap.hr ?? 0) * lap.movingS, 0) / hrWeight)
+      : null,
+  };
 }
 
 function toStep(lap: Lap, index: number): IntervalStep {
@@ -134,38 +162,28 @@ function toStep(lap: Lap, index: number): IntervalStep {
 }
 
 /**
- * Maps the laps detected by intervals.icu into the session form: an interval workout when efforts
- * and recoveries alternate, a plain run otherwise. Values stay editable — nothing is imposed.
+ * Maps the laps recorded by the watch into the session form: an interval workout when efforts and
+ * recoveries alternate, a plain run otherwise. Values stay editable — nothing is imposed.
  */
 export function detectSessionStructure(intervals: IntervalsInterval[]): DetectedSessionStructure {
   const laps = intervals.map(lapOf);
   const usable = laps.filter(isUsable);
-  const workLaps = usable.filter((lap) => lap.kind === 'effort');
-  const restLapsBefore = usable.filter((lap) => lap.kind === 'recovery');
+  const core = alternationCore(usable);
 
-  if (!workLaps.length || (workLaps.length < 2 && !restLapsBefore.length)) {
+  if (!core) {
     return { sessionType: laps.length ? continuousSessionType(laps) : null, intervalDetails: null };
   }
 
-  // Opening and closing laps: a rest, or an effort run clearly easier than the others, is the
-  // warm-up or the cool-down of the session rather than a rep.
-  const steps = usable.map((lap, index) => {
-    const isFirst = index === 0;
-    const isLast = index === usable.length - 1;
-    if (!isFirst && !isLast) return lap;
-    if (lap.kind !== 'recovery' && !isEasyEdge(lap, isFirst ? usable.slice(1) : usable.slice(0, -1))) {
-      return lap;
-    }
-    return { ...lap, kind: (isFirst ? 'warmup' : 'cooldown') as IntervalStep['stepType'] };
-  });
+  const before = usable.slice(0, core.start);
+  const after = usable.slice(core.end + 1);
+  const steps = [
+    ...(before.length ? [collapse(before, 'warmup')] : []),
+    ...usable.slice(core.start, core.end + 1),
+    ...(after.length ? [collapse(after, 'cooldown')] : []),
+  ];
 
   const efforts = steps.filter((lap) => lap.kind === 'effort');
   const restLaps = steps.filter((lap) => lap.kind === 'recovery');
-
-  if (!efforts.length) {
-    return { sessionType: continuousSessionType(laps), intervalDetails: null };
-  }
-
   const effortDurations = efforts.map((lap) => lap.movingS);
   const effortDistanceKm = repDistanceKm(efforts.map((lap) => lap.distanceM));
   const effortPaces = efforts.map(paceSKm).filter((pace): pace is number => pace !== null);
