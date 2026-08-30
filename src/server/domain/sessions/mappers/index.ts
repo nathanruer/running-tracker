@@ -1,17 +1,17 @@
 import 'server-only';
 export {
   mapWorkoutToSession,
-  mapPlanToSession,
+  mapPlannedWorkoutToSession,
 } from './session.mapper';
 
 export type {
   ExternalFlags,
-  PlanSessionData,
+  PlannedWorkoutData,
+  WorkoutIntervalData,
   ExternalActivityData,
   WeatherObservationData,
   WorkoutStreamsV3Data,
   WorkoutBase,
   WorkoutFull,
-  PlanSessionFull,
   SessionMapperOptions,
 } from './session.mapper';

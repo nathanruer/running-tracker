@@ -33,6 +33,15 @@ vi.mock('@/server/database', () => {
     workout_streams_v3: {
       upsert: vi.fn(),
     },
+    planned_workouts: {
+      upsert: vi.fn(),
+      updateMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    workout_intervals: {
+      deleteMany: vi.fn(),
+      createMany: vi.fn(),
+    },
     external_payloads: {
       upsert: vi.fn(),
     },
@@ -82,6 +91,10 @@ describe('sessions-write — write paths', () => {
     vi.mocked(prisma.workout_stream_chunks.create).mockResolvedValue({} as never);
     vi.mocked(prisma.workout_streams_v3.upsert).mockResolvedValue({} as never);
     vi.mocked(prisma.external_activities.updateMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.planned_workouts.upsert).mockResolvedValue({} as never);
+    vi.mocked(prisma.planned_workouts.updateMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.workout_intervals.deleteMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(prisma.workout_intervals.createMany).mockResolvedValue({ count: 0 } as never);
   });
 
   describe('createCompletedSession', () => {
@@ -221,6 +234,53 @@ describe('sessions-write — write paths', () => {
       );
     });
 
+    it('mirrors the plan into planned_workouts and stores steps as actual intervals', async () => {
+      await sessionsWrite.createCompletedSession(
+        {
+          date: '2026-05-01',
+          sessionType: 'Fractionné',
+          intervalDetails: {
+            workoutType: 'VMA',
+            repetitionCount: 2,
+            effortDuration: '01:00',
+            recoveryDuration: '01:00',
+            targetEffortPace: '03:45',
+            steps: [
+              { stepNumber: 1, stepType: 'effort', duration: '01:00', distance: 0.27, pace: '03:42', hr: 176 },
+              { stepNumber: 2, stepType: 'recovery', duration: '01:00', distance: 0.15, pace: '06:40', hr: 165 },
+            ],
+          },
+        },
+        'user-1'
+      );
+
+      expect(prisma.planned_workouts.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'p-new' },
+          create: expect.objectContaining({
+            id: 'p-new',
+            legacyPlanSessionId: 'p-new',
+            family: 'vma_short',
+            status: 'completed',
+            workoutId: 'w-new',
+            structure: expect.objectContaining({
+              kind: 'interval',
+              blocks: [
+                expect.objectContaining({ type: 'repeat', times: 2 }),
+              ],
+            }),
+          }),
+        })
+      );
+      expect(prisma.workout_intervals.deleteMany).toHaveBeenCalledWith({ where: { workoutId: 'w-new' } });
+      expect(prisma.workout_intervals.createMany).toHaveBeenCalledWith({
+        data: [
+          { workoutId: 'w-new', position: 1, kind: 'work', movingS: 60, distanceM: 270, paceSKm: 222, avgHr: 176, source: 'manual' },
+          { workoutId: 'w-new', position: 2, kind: 'recovery', movingS: 60, distanceM: 150, paceSKm: 400, avgHr: 165, source: 'manual' },
+        ],
+      });
+    });
+
     it('skips renumbering when skipRecalculate is set', async () => {
       await sessionsWrite.createCompletedSession(
         { date: '2026-05-01' },
@@ -244,6 +304,35 @@ describe('sessions-write — write paths', () => {
       ).rejects.toMatchObject({ name: 'DuplicateExternalActivityError' });
 
       expect(prisma.workouts.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createPlannedSession', () => {
+    it('creates the legacy plan and its planned_workouts mirror in one transaction', async () => {
+      vi.mocked(prisma.plan_sessions.create).mockResolvedValue({ id: 'p-9' } as never);
+
+      const plan = await sessionsWrite.createPlannedSession(
+        { plannedDate: '2026-09-02', sessionType: 'Sortie longue', targetDuration: 90, targetDistance: 16, comments: 'long' },
+        'user-1'
+      );
+
+      expect(plan.id).toBe('p-9');
+      expect(prisma.planned_workouts.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'p-9' },
+          create: expect.objectContaining({
+            userId: 'user-1',
+            plannedOn: new Date('2026-09-02T00:00:00Z'),
+            family: 'long',
+            targetDurationS: 5400,
+            targetDistanceM: 16000,
+            origin: 'manual',
+            status: 'planned',
+            workoutId: null,
+            notes: 'long',
+          }),
+        })
+      );
     });
   });
 

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   mapWorkoutToSession,
-  mapPlanToSession,
+  mapPlannedWorkoutToSession,
   type WorkoutBase,
   type WorkoutFull,
-  type PlanSessionFull,
+  type PlannedWorkoutData,
 } from '../session.mapper';
 
 // ============================================================================
@@ -33,7 +33,8 @@ const createWorkoutBase = (overrides: Partial<WorkoutBase> = {}): WorkoutBase =>
   elevationGainM: 120,
   calories: 650,
   routePolyline: null,
-  plan_sessions: null,
+  planned_workout: null,
+  workout_intervals: [],
   ...overrides,
 });
 
@@ -67,22 +68,38 @@ const createWorkoutFull = (overrides: Partial<WorkoutFull> = {}): WorkoutFull =>
   ...overrides,
 });
 
-const createPlanSession = (overrides: Partial<PlanSessionFull> = {}): PlanSessionFull => ({
+const vmaStructure = {
+  kind: 'interval',
+  family: 'vma_short',
+  blocks: [
+    { type: 'warmup', target: { duration_s: 600 } },
+    {
+      type: 'repeat',
+      times: 5,
+      blocks: [
+        { type: 'work', target: { duration_s: 60 }, intensity: { pace_s_km: 225 } },
+        { type: 'recovery', target: { duration_s: 60 } },
+      ],
+    },
+  ],
+};
+
+const createPlannedWorkout = (overrides: Partial<PlannedWorkoutData> = {}): PlannedWorkoutData => ({
   id: 'plan-1',
   userId: 'user-1',
   sessionNumber: 10,
-  week: 3,
-  plannedDate: new Date('2024-01-20T08:00:00Z'),
-  sessionType: 'Interval',
-  status: 'planned',
-  targetDuration: 45,
-  targetDistance: 8,
-  targetPace: '05:30',
-  targetHeartRateBpm: '160',
-  targetRPE: 8,
-  intervalDetails: { warmup: 10, intervals: 5 },
+  plannedOn: new Date('2024-01-20T00:00:00Z'),
+  family: 'vma_short',
+  structure: vmaStructure,
+  structureLegacy: null,
+  targetDurationS: 2700,
+  targetDistanceM: 8000,
+  targetPaceSKm: 330,
+  targetHrBpm: 160,
+  targetRpe: 8,
   recommendationId: 'rec-1',
-  comments: 'Speed work',
+  status: 'planned',
+  notes: 'Speed work',
   ...overrides,
 });
 
@@ -481,42 +498,33 @@ describe('session.mapper', () => {
       });
     });
 
-    describe('with plan session data', () => {
-      it('should use plan session type when workout has none', () => {
+    describe('with linked planned workout', () => {
+      it('should use the plan label when workout has no session type', () => {
         const workout = createWorkoutFull({
           sessionType: null,
-          plan_sessions: {
-            plannedDate: null,
-            sessionType: 'Recovery',
-            targetDuration: 30,
-            targetDistance: null,
-            targetPace: null,
-            targetHeartRateBpm: null,
-            targetRPE: null,
-            intervalDetails: null,
-            recommendationId: null,
-            comments: '',
-          },
+          planned_workout: createPlannedWorkout({
+            family: 'other',
+            structure: { kind: 'continuous', family: 'other', label: 'Recovery', blocks: [] },
+          }),
         });
         const session = mapWorkoutToSession(workout);
 
         expect(session.sessionType).toBe('Recovery');
       });
 
-      it('should map target fields from plan', () => {
+      it('should map target fields from the plan and keep legacy details verbatim', () => {
         const workout = createWorkoutFull({
-          plan_sessions: {
-            plannedDate: new Date('2024-01-15'),
-            sessionType: 'Tempo',
-            targetDuration: 40,
-            targetDistance: 10,
-            targetPace: '05:30',
-            targetHeartRateBpm: '155',
-            targetRPE: 7,
-            intervalDetails: { sets: 3 },
+          planned_workout: createPlannedWorkout({
+            plannedOn: new Date('2024-01-15T00:00:00Z'),
+            family: 'tempo',
+            structureLegacy: { sets: 3 },
+            targetDurationS: 2400,
+            targetDistanceM: 10000,
+            targetPaceSKm: 330,
+            targetHrBpm: 155,
+            targetRpe: 7,
             recommendationId: 'rec-123',
-            comments: 'Plan comment',
-          },
+          }),
         });
         const session = mapWorkoutToSession(workout);
 
@@ -528,6 +536,29 @@ describe('session.mapper', () => {
         expect(session.intervalDetails).toEqual({ sets: 3 });
         expect(session.recommendationId).toBe('rec-123');
         expect(session.plannedDate).toBe('2024-01-15T00:00:00.000Z');
+      });
+
+      it('should derive interval details from the v3 structure and the executed intervals', () => {
+        const workout = createWorkoutFull({
+          planned_workout: createPlannedWorkout(),
+          workout_intervals: [
+            { position: 1, kind: 'warmup', movingS: 610, distanceM: 1500, paceSKm: 407, avgHr: 140 },
+            { position: 2, kind: 'work', movingS: 60, distanceM: 270, paceSKm: 222, avgHr: 176 },
+          ],
+        });
+        const session = mapWorkoutToSession(workout);
+
+        expect(session.intervalDetails).toMatchObject({
+          workoutType: 'VMA',
+          repetitionCount: 5,
+          effortDuration: '01:00',
+          recoveryDuration: '01:00',
+          targetEffortPace: '03:45',
+        });
+        expect(session.intervalDetails?.steps).toEqual([
+          { stepNumber: 1, stepType: 'warmup', duration: '10:10', distance: 1.5, pace: '06:47', hr: 140 },
+          { stepNumber: 2, stepType: 'effort', duration: '01:00', distance: 0.27, pace: '03:42', hr: 176 },
+        ]);
       });
     });
 
@@ -610,51 +641,64 @@ describe('session.mapper', () => {
     });
   });
 
-  describe('mapPlanToSession', () => {
+  describe('mapPlannedWorkoutToSession', () => {
     it('should map basic plan fields', () => {
-      const plan = createPlanSession();
-      const session = mapPlanToSession(plan);
+      const plan = createPlannedWorkout();
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.id).toBe('plan-1');
       expect(session.userId).toBe('user-1');
       expect(session.sessionNumber).toBe(10);
-      expect(session.week).toBe(3);
-      expect(session.sessionType).toBe('Interval');
+      expect(session.week).toBeNull();
+      expect(session.sessionType).toBe('Fractionné');
       expect(session.status).toBe('planned');
       expect(session.comments).toBe('Speed work');
     });
 
-    it('should map target fields', () => {
-      const plan = createPlanSession();
-      const session = mapPlanToSession(plan);
+    it('should map target fields and derive legacy interval details', () => {
+      const plan = createPlannedWorkout();
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.targetDuration).toBe(45);
       expect(session.targetDistance).toBe(8);
       expect(session.targetPace).toBe('05:30');
       expect(session.targetHeartRateBpm).toBe('160');
       expect(session.targetRPE).toBe(8);
-      expect(session.intervalDetails).toEqual({ warmup: 10, intervals: 5 });
       expect(session.recommendationId).toBe('rec-1');
+      expect(session.intervalDetails).toMatchObject({
+        workoutType: 'VMA',
+        repetitionCount: 5,
+        effortDuration: '01:00',
+        targetEffortPace: '03:45',
+      });
+      expect(session.intervalDetails?.steps).toHaveLength(11);
+    });
+
+    it('should prefer legacy details when the row still carries them', () => {
+      const plan = createPlannedWorkout({ structureLegacy: { warmup: 10, intervals: 5 } });
+      const session = mapPlannedWorkoutToSession(plan);
+
+      expect(session.intervalDetails).toEqual({ warmup: 10, intervals: 5 });
     });
 
     it('should set null date by default', () => {
-      const plan = createPlanSession();
-      const session = mapPlanToSession(plan);
+      const plan = createPlannedWorkout();
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.date).toBeNull();
-      expect(session.plannedDate).toBe('2024-01-20T08:00:00.000Z');
+      expect(session.plannedDate).toBe('2024-01-20T00:00:00.000Z');
     });
 
     it('should use plannedDate as date when option is true', () => {
-      const plan = createPlanSession();
-      const session = mapPlanToSession(plan, { includePlannedDateAsDate: true });
+      const plan = createPlannedWorkout();
+      const session = mapPlannedWorkoutToSession(plan, { includePlannedDateAsDate: true });
 
-      expect(session.date).toBe('2024-01-20T08:00:00.000Z');
+      expect(session.date).toBe('2024-01-20T00:00:00.000Z');
     });
 
     it('should set workout-specific fields to null', () => {
-      const plan = createPlanSession();
-      const session = mapPlanToSession(plan);
+      const plan = createPlannedWorkout();
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.duration).toBeNull();
       expect(session.distance).toBeNull();
@@ -668,31 +712,25 @@ describe('session.mapper', () => {
       expect(session.weather).toBeNull();
     });
 
-    it('should handle null plannedDate', () => {
-      const plan = createPlanSession({ plannedDate: null });
-      const session = mapPlanToSession(plan);
+    it('should handle null plannedOn', () => {
+      const plan = createPlannedWorkout({ plannedOn: null });
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.plannedDate).toBeNull();
       expect(session.date).toBeNull();
-    });
-
-    it('should handle null plannedDate with includePlannedDateAsDate', () => {
-      const plan = createPlanSession({ plannedDate: null });
-      const session = mapPlanToSession(plan, { includePlannedDateAsDate: true });
-
-      expect(session.date).toBeNull();
+      expect(mapPlannedWorkoutToSession(plan, { includePlannedDateAsDate: true }).date).toBeNull();
     });
 
     it('should default sessionNumber to 0 when null', () => {
-      const plan = createPlanSession({ sessionNumber: null });
-      const session = mapPlanToSession(plan);
+      const plan = createPlannedWorkout({ sessionNumber: null });
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.sessionNumber).toBe(0);
     });
 
-    it('should handle empty comments', () => {
-      const plan = createPlanSession({ comments: '' });
-      const session = mapPlanToSession(plan);
+    it('should handle empty notes', () => {
+      const plan = createPlannedWorkout({ notes: '' });
+      const session = mapPlannedWorkoutToSession(plan);
 
       expect(session.comments).toBe('');
     });

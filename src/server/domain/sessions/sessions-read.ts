@@ -3,7 +3,12 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/server/database';
 import type { TrainingSession } from '@/lib/types';
 import { parseSortParam, type SortConfig } from '@/lib/domain/sessions/sorting';
-import { mapWorkoutToSession, mapPlanToSession, type ExternalFlags } from '@/server/domain/sessions/mappers';
+import { familyLabelSql, sessionTypeFromStructure } from '@/lib/domain/workouts/structure';
+import {
+  mapWorkoutToSession,
+  mapPlannedWorkoutToSession,
+  type ExternalFlags,
+} from '@/server/domain/sessions/mappers';
 
 const EXTERNAL_ACTIVITY_SELECT = {
   source: true,
@@ -14,12 +19,39 @@ const EXTERNAL_ACTIVITY_SELECT = {
   streamsStatus: true,
 } satisfies Prisma.external_activitiesSelect;
 
+const PLANNED_WORKOUT_SELECT = {
+  id: true,
+  userId: true,
+  sessionNumber: true,
+  plannedOn: true,
+  family: true,
+  structure: true,
+  structureLegacy: true,
+  targetDurationS: true,
+  targetDistanceM: true,
+  targetPaceSKm: true,
+  targetHrBpm: true,
+  targetRpe: true,
+  recommendationId: true,
+  status: true,
+  notes: true,
+} satisfies Prisma.planned_workoutsSelect;
+
+const WORKOUT_INTERVALS_ARGS = {
+  select: { position: true, kind: true, movingS: true, distanceM: true, paceSKm: true, avgHr: true },
+  orderBy: { position: 'asc' },
+} satisfies Prisma.workouts$workout_intervalsArgs;
+
 const WORKOUT_FULL_INCLUDE = {
-  plan_sessions: true,
+  planned_workout: { select: PLANNED_WORKOUT_SELECT },
+  workout_intervals: WORKOUT_INTERVALS_ARGS,
   external_activities: { select: EXTERNAL_ACTIVITY_SELECT },
   weather_observations: true,
   workout_streams_v3: true,
 } satisfies Prisma.workoutsInclude;
+
+/** Legacy session type label of a planned_workouts row aliased `p`. */
+const PLANNED_SESSION_TYPE_SQL = familyLabelSql('p');
 
 type SessionFilters = {
   userId: string;
@@ -48,29 +80,6 @@ function buildSearchFilter(search?: string | null): PrismaSearchFilter | null {
   };
 }
 
-function buildPlanSearchFilter(search?: string | null): Prisma.plan_sessionsWhereInput | null {
-  if (!search || !search.trim()) return null;
-  const searchTerm = search.trim();
-  return {
-    OR: [
-      { comments: { contains: searchTerm, mode: 'insensitive' } },
-      { sessionType: { contains: searchTerm, mode: 'insensitive' } },
-    ],
-  };
-}
-
-function buildPaceSecondsSql(expression: string): string {
-  return `CASE
-    WHEN ${expression} IS NULL THEN NULL
-    WHEN (length(${expression}) - length(replace(${expression}, ':', ''))) = 1 THEN
-      split_part(${expression}, ':', 1)::int * 60 + split_part(${expression}, ':', 2)::int
-    ELSE
-      split_part(${expression}, ':', 1)::int * 3600 +
-      split_part(${expression}, ':', 2)::int * 60 +
-      split_part(${expression}, ':', 3)::int
-  END`;
-}
-
 function buildOrderBySql(config: SortConfig, includePlannedDateAsDate: boolean): string {
   if (!config.length) {
     return 'status DESC NULLS LAST, session_number DESC NULLS LAST';
@@ -83,17 +92,17 @@ function buildOrderBySql(config: SortConfig, includePlannedDateAsDate: boolean):
     date: { expr: dateExpr },
     sessionType: { expr: 'LOWER(session_type)' },
     duration: {
-      expr: 'CASE WHEN status = \'planned\' THEN target_duration * 60 ELSE duration_seconds END',
+      expr: 'CASE WHEN status = \'planned\' THEN target_duration_s ELSE duration_seconds END',
     },
     distance: {
-      expr: 'CASE WHEN status = \'planned\' THEN target_distance ELSE distance_meters / 1000.0 END',
+      expr: 'CASE WHEN status = \'planned\' THEN target_distance_m ELSE distance_meters END / 1000.0',
     },
     avgPace: {
-      expr: `CASE WHEN status = 'planned' THEN ${buildPaceSecondsSql('target_pace')} ELSE pace_s_km END`,
+      expr: 'CASE WHEN status = \'planned\' THEN target_pace_s_km ELSE pace_s_km END',
       invert: true,
     },
     avgHeartRate: {
-      expr: 'CASE WHEN status = \'planned\' THEN NULLIF(target_heart_rate_bpm, \'\')::int ELSE avg_heart_rate END',
+      expr: 'CASE WHEN status = \'planned\' THEN target_hr_bpm ELSE avg_heart_rate END',
     },
     perceivedExertion: {
       expr: 'CASE WHEN status = \'planned\' THEN target_rpe ELSE perceived_exertion END',
@@ -115,6 +124,37 @@ function buildOrderBySql(config: SortConfig, includePlannedDateAsDate: boolean):
     .join(', ');
 }
 
+/** WHERE fragments shared by the union page query and the plan count (params start at $2). */
+function buildWhereFragments(sessionType?: string | null, search?: string | null, dateFrom?: string | null) {
+  const params: Array<string | number | Date> = [];
+  const whereWorkout: string[] = ['w."userId" = $1'];
+  const wherePlan: string[] = ['p.user_id = $1', 'p.workout_id IS NULL'];
+  let paramIndex = 2;
+
+  if (sessionType && sessionType !== 'all') {
+    whereWorkout.push(`w."sessionType" = $${paramIndex}`);
+    wherePlan.push(`${PLANNED_SESSION_TYPE_SQL} = $${paramIndex}`);
+    params.push(sessionType);
+    paramIndex += 1;
+  }
+
+  if (search && search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    whereWorkout.push(`(w."comments" ILIKE $${paramIndex} OR w."sessionType" ILIKE $${paramIndex})`);
+    wherePlan.push(`(p.notes ILIKE $${paramIndex} OR ${PLANNED_SESSION_TYPE_SQL} ILIKE $${paramIndex})`);
+    params.push(searchTerm);
+    paramIndex += 1;
+  }
+
+  if (dateFrom) {
+    whereWorkout.push(`w.started_at >= $${paramIndex}`);
+    params.push(new Date(dateFrom));
+    paramIndex += 1;
+  }
+
+  return { params, whereWorkout, wherePlan, paramIndex };
+}
+
 async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDateAsDate?: boolean }) {
   const {
     userId,
@@ -132,32 +172,9 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
   const includePlanned = !status || status === 'all' || status === 'planned';
   const includeCompleted = !status || status === 'all' || status === 'completed';
 
-  const params: Array<string | number | Date> = [userId];
-  let paramIndex = 2;
-
-  const whereWorkout: string[] = ['w."userId" = $1'];
-  const wherePlan: string[] = ['p."userId" = $1'];
-
-  if (sessionType && sessionType !== 'all') {
-    whereWorkout.push(`w."sessionType" = $${paramIndex}`);
-    wherePlan.push(`p."sessionType" = $${paramIndex}`);
-    params.push(sessionType);
-    paramIndex += 1;
-  }
-
-  if (search && search.trim()) {
-    const searchTerm = `%${search.trim()}%`;
-    whereWorkout.push(`(w."comments" ILIKE $${paramIndex} OR w."sessionType" ILIKE $${paramIndex})`);
-    wherePlan.push(`(p."comments" ILIKE $${paramIndex} OR p."sessionType" ILIKE $${paramIndex})`);
-    params.push(searchTerm);
-    paramIndex += 1;
-  }
-
-  if (dateFrom) {
-    whereWorkout.push(`w.started_at >= $${paramIndex}`);
-    params.push(new Date(dateFrom));
-    paramIndex += 1;
-  }
+  const fragments = buildWhereFragments(sessionType, search, dateFrom);
+  const params: Array<string | number | Date> = [userId, ...fragments.params];
+  let paramIndex = fragments.paramIndex;
 
   const workoutQuery = includeCompleted
     ? `
@@ -175,14 +192,14 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
         w.distance_m AS distance_meters,
         w.pace_s_km AS pace_s_km,
         w.avg_hr AS avg_heart_rate,
-        NULL::int AS target_duration,
-        NULL::double precision AS target_distance,
-        NULL::text AS target_pace,
-        NULL::text AS target_heart_rate_bpm,
+        NULL::int AS target_duration_s,
+        NULL::int AS target_distance_m,
+        NULL::int AS target_pace_s_km,
+        NULL::int AS target_hr_bpm,
         NULL::int AS target_rpe,
         NULL::timestamptz AS planned_date
       FROM "workouts" w
-      WHERE ${whereWorkout.join(' AND ')}
+      WHERE ${fragments.whereWorkout.join(' AND ')}
     `
     : '';
 
@@ -191,28 +208,25 @@ async function fetchSessionPageIds(filters: SessionFilters & { includePlannedDat
       SELECT
         p.id,
         'plan'::text AS kind,
-        p.status,
-        p."sessionNumber" AS session_number,
-        p.week,
+        p.status::text AS status,
+        p.session_number,
+        NULL::int AS week,
         NULL::timestamptz AS date,
-        p."sessionType" AS session_type,
-        p.comments,
+        ${PLANNED_SESSION_TYPE_SQL} AS session_type,
+        p.notes AS comments,
         NULL::int AS perceived_exertion,
         NULL::int AS duration_seconds,
-        NULL::double precision AS distance_meters,
+        NULL::int AS distance_meters,
         NULL::int AS pace_s_km,
         NULL::int AS avg_heart_rate,
-        p."targetDuration" AS target_duration,
-        p."targetDistance" AS target_distance,
-        p."targetPace" AS target_pace,
-        p."targetHeartRateBpm" AS target_heart_rate_bpm,
-        p."targetRPE" AS target_rpe,
-        p."plannedDate" AS planned_date
-      FROM "plan_sessions" p
-      WHERE ${wherePlan.join(' AND ')}
-        AND NOT EXISTS (
-          SELECT 1 FROM "workouts" w2 WHERE w2."planSessionId" = p.id
-        )
+        p.target_duration_s,
+        p.target_distance_m,
+        p.target_pace_s_km,
+        p.target_hr_bpm,
+        p.target_rpe,
+        p.planned_on::timestamptz AS planned_date
+      FROM "planned_workouts" p
+      WHERE ${fragments.wherePlan.join(' AND ')}
     `
     : '';
 
@@ -352,20 +366,8 @@ export async function fetchSessions(
     sessionType: true,
     comments: true,
     perceivedExertion: true,
-    plan_sessions: {
-      select: {
-        plannedDate: true,
-        sessionType: true,
-        targetDuration: true,
-        targetDistance: true,
-        targetPace: true,
-        targetHeartRateBpm: true,
-        targetRPE: true,
-        intervalDetails: true,
-        recommendationId: true,
-        comments: true,
-      },
-    },
+    planned_workout: { select: PLANNED_WORKOUT_SELECT },
+    workout_intervals: WORKOUT_INTERVALS_ARGS,
     durationS: true,
     distanceM: true,
     paceSKm: true,
@@ -400,24 +402,6 @@ export async function fetchSessions(
     };
   }
 
-  const planSelect: Prisma.plan_sessionsSelect = {
-    id: true,
-    userId: true,
-    sessionNumber: true,
-    week: true,
-    plannedDate: true,
-    sessionType: true,
-    status: true,
-    targetDuration: true,
-    targetDistance: true,
-    targetPace: true,
-    targetHeartRateBpm: true,
-    targetRPE: true,
-    intervalDetails: true,
-    recommendationId: true,
-    comments: true,
-  };
-
   const [workouts, plans] = await Promise.all([
     workoutIds.length
       ? isTableView || isExportView
@@ -431,14 +415,10 @@ export async function fetchSessions(
           })
       : Promise.resolve([]),
     planIds.length
-      ? isTableView || isExportView
-        ? prisma.plan_sessions.findMany({
-            where: { userId, id: { in: planIds } },
-            select: planSelect,
-          })
-        : prisma.plan_sessions.findMany({
-            where: { userId, id: { in: planIds } },
-          })
+      ? prisma.planned_workouts.findMany({
+          where: { userId, id: { in: planIds } },
+          select: PLANNED_WORKOUT_SELECT,
+        })
       : Promise.resolve([]),
   ]);
 
@@ -460,7 +440,7 @@ export async function fetchSessions(
     ])
   );
   const planMap = new Map(
-    plans.map((plan) => [plan.id, mapPlanToSession(plan, { includePlannedDateAsDate })])
+    plans.map((plan) => [plan.id, mapPlannedWorkoutToSession(plan, { includePlannedDateAsDate })])
   );
 
   return pageIds
@@ -471,7 +451,6 @@ export async function fetchSessions(
 export async function fetchSessionCount(filters: Omit<SessionFilters, 'limit' | 'offset' | 'sort'>): Promise<number> {
   const { userId, status, sessionType, search, dateFrom } = filters;
   const searchFilter = buildSearchFilter(search);
-  const planSearchFilter = buildPlanSearchFilter(search);
   const includePlanned = !status || status === 'all' || status === 'planned';
   const includeCompleted = !status || status === 'all' || status === 'completed';
 
@@ -486,27 +465,25 @@ export async function fetchSessionCount(filters: Omit<SessionFilters, 'limit' | 
       })
     : 0;
 
-  const planCount = includePlanned
-    ? await prisma.plan_sessions.count({
-        where: {
-          userId,
-          ...(sessionType && sessionType !== 'all' ? { sessionType } : {}),
-          ...(planSearchFilter ?? {}),
-          workouts: { none: {} },
-        },
-      })
-    : 0;
+  let planCount = 0;
+  if (includePlanned) {
+    const fragments = buildWhereFragments(sessionType, search, null);
+    const rows = await prisma.$queryRawUnsafe<Array<{ count: number | bigint }>>(
+      `SELECT count(*)::int AS count FROM "planned_workouts" p WHERE ${fragments.wherePlan.join(' AND ')}`,
+      userId,
+      ...fragments.params
+    );
+    planCount = Number(rows[0]?.count ?? 0);
+  }
 
   return workoutCount + planCount;
 }
 
 export async function fetchSessionTypes(userId: string): Promise<string[]> {
-  const [planTypes, workoutTypes] = await Promise.all([
-    prisma.plan_sessions.findMany({
+  const [plans, workoutTypes] = await Promise.all([
+    prisma.planned_workouts.findMany({
       where: { userId },
-      distinct: ['sessionType'],
-      select: { sessionType: true },
-      orderBy: { sessionType: 'asc' },
+      select: { family: true, structure: true },
     }),
     prisma.workouts.findMany({
       where: { userId },
@@ -517,7 +494,11 @@ export async function fetchSessionTypes(userId: string): Promise<string[]> {
   ]);
 
   const typeSet = new Set<string>();
-  for (const item of [...planTypes, ...workoutTypes]) {
+  for (const plan of plans) {
+    const label = sessionTypeFromStructure(plan.family, plan.structure);
+    if (label) typeSet.add(label);
+  }
+  for (const item of workoutTypes) {
     if (item.sessionType) {
       typeSet.add(item.sessionType);
     }
@@ -550,15 +531,16 @@ export async function fetchSessionById(
     return mapWorkoutToSession(workout);
   }
 
-  const plan = await prisma.plan_sessions.findFirst({
+  const plan = await prisma.planned_workouts.findFirst({
     where: {
       userId,
       id,
-      workouts: { none: {} },
+      workoutId: null,
     },
+    select: PLANNED_WORKOUT_SELECT,
   });
 
   if (!plan) return null;
 
-  return mapPlanToSession(plan);
+  return mapPlannedWorkoutToSession(plan);
 }

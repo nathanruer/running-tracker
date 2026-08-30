@@ -4,9 +4,15 @@ import 'server-only';
  */
 
 import { Prisma } from '@prisma/client';
-import type { TrainingSession } from '@/lib/types';
+import type { IntervalDetails, TrainingSession } from '@/lib/types';
 import { formatDuration } from '@/lib/utils/duration/format';
 import { civilDayInZone } from '@/lib/utils/date/zoned';
+import {
+  intervalDetailsFromV3,
+  sessionTypeFromStructure,
+  type BlockType,
+  type WorkoutFamily,
+} from '@/lib/domain/workouts/structure';
 import {
   isLikelyStreamlessFromFields,
   isStravaActivityLikelyStreamless,
@@ -16,17 +22,31 @@ import {
 // Types for mapper inputs (database entity shapes)
 // ============================================================================
 
-export interface PlanSessionData {
-  plannedDate: Date | null;
-  sessionType: string | null;
-  targetDuration: number | null;
-  targetDistance: number | null;
-  targetPace: string | null;
-  targetHeartRateBpm: string | null;
-  targetRPE: number | null;
-  intervalDetails: Prisma.JsonValue | null;
+export interface PlannedWorkoutData {
+  id: string;
+  userId: string;
+  sessionNumber: number | null;
+  plannedOn: Date | null;
+  family: WorkoutFamily | null;
+  structure: Prisma.JsonValue;
+  structureLegacy: Prisma.JsonValue | null;
+  targetDurationS: number | null;
+  targetDistanceM: number | null;
+  targetPaceSKm: number | null;
+  targetHrBpm: number | null;
+  targetRpe: number | null;
   recommendationId: string | null;
-  comments: string;
+  status: string;
+  notes: string;
+}
+
+export interface WorkoutIntervalData {
+  position: number;
+  kind: BlockType;
+  movingS: number | null;
+  distanceM: number | null;
+  paceSKm: number | null;
+  avgHr: number | null;
 }
 
 export interface ExternalActivityData {
@@ -80,7 +100,8 @@ export interface WorkoutBase {
   elevationGainM: number | null;
   calories: number | null;
   routePolyline: string | null;
-  plan_sessions: PlanSessionData | null;
+  planned_workout?: PlannedWorkoutData | null;
+  workout_intervals?: WorkoutIntervalData[];
   external_activities?: ExternalActivityData[];
   weather_observations?: WeatherObservationData | null;
 }
@@ -89,24 +110,6 @@ export interface WorkoutFull extends WorkoutBase {
   external_activities: ExternalActivityData[];
   weather_observations: WeatherObservationData | null;
   workout_streams_v3: WorkoutStreamsV3Data | null;
-}
-
-export interface PlanSessionFull {
-  id: string;
-  userId: string;
-  sessionNumber: number | null;
-  week: number | null;
-  plannedDate: Date | null;
-  sessionType: string | null;
-  status: string;
-  targetDuration: number | null;
-  targetDistance: number | null;
-  targetPace: string | null;
-  targetHeartRateBpm: string | null;
-  targetRPE: number | null;
-  intervalDetails: Prisma.JsonValue | null;
-  recommendationId: string | null;
-  comments: string;
 }
 
 /** Lightweight external activity flags computed in SQL for the table view. */
@@ -234,6 +237,30 @@ function mapWeather(weather: WeatherObservationData | null): TrainingSession['we
   };
 }
 
+/**
+ * Legacy interval details of a plan. Rows converted from v1 keep their original
+ * details until lot 14 moves the executed steps into workout_intervals.
+ */
+function intervalDetailsOf(
+  plan: PlannedWorkoutData | null | undefined,
+  intervals: WorkoutIntervalData[] | undefined
+): IntervalDetails | null {
+  if (plan?.structureLegacy) return plan.structureLegacy as unknown as IntervalDetails;
+  return intervalDetailsFromV3(plan?.structure ?? null, intervals ?? []);
+}
+
+function planTargets(plan: PlannedWorkoutData | null | undefined) {
+  return {
+    plannedDate: plan?.plannedOn ? plan.plannedOn.toISOString() : null,
+    targetPace: plan?.targetPaceSKm != null ? formatDuration(plan.targetPaceSKm) : null,
+    targetDuration: plan?.targetDurationS != null ? Math.round(plan.targetDurationS / 60) : null,
+    targetDistance: plan?.targetDistanceM != null ? plan.targetDistanceM / 1000 : null,
+    targetHeartRateBpm: plan?.targetHrBpm != null ? String(plan.targetHrBpm) : null,
+    targetRPE: plan?.targetRpe ?? null,
+    recommendationId: plan?.recommendationId ?? null,
+  };
+}
+
 // ============================================================================
 // Core base session data (shared between full and table views)
 // ============================================================================
@@ -242,7 +269,7 @@ function buildBaseSession(workout: WorkoutBase): Omit<
   TrainingSession,
   'externalId' | 'source' | 'stravaData' | 'stravaStreams' | 'averageTemp' | 'weather'
 > {
-  const plan = workout.plan_sessions;
+  const plan = workout.planned_workout;
   const startedAt = workout.startedAt.toISOString();
 
   return {
@@ -255,23 +282,17 @@ function buildBaseSession(workout: WorkoutBase): Omit<
     timezone: workout.timezone,
     datePrecision: workout.datePrecision,
     localDate: civilDayInZone(workout.startedAt, workout.timezone),
-    sessionType: workout.sessionType || plan?.sessionType || null,
+    sessionType: workout.sessionType || (plan ? sessionTypeFromStructure(plan.family, plan.structure) : null),
     duration: workout.durationS != null ? formatDuration(workout.durationS) : null,
     distance: workout.distanceM != null ? workout.distanceM / 1000 : null,
     avgPace: workout.paceSKm != null ? formatDuration(workout.paceSKm) : null,
     avgHeartRate: workout.avgHr ?? null,
     maxHeartRate: workout.maxHr ?? null,
-    intervalDetails: plan?.intervalDetails as TrainingSession['intervalDetails'] | null,
+    intervalDetails: intervalDetailsOf(plan, workout.workout_intervals),
     perceivedExertion: workout.perceivedExertion ?? null,
-    comments: workout.comments ?? plan?.comments ?? '',
+    comments: workout.comments ?? plan?.notes ?? '',
     status: workout.status as 'planned' | 'completed',
-    plannedDate: plan?.plannedDate ? plan.plannedDate.toISOString() : null,
-    targetPace: plan?.targetPace ?? null,
-    targetDuration: plan?.targetDuration ?? null,
-    targetDistance: plan?.targetDistance ?? null,
-    targetHeartRateBpm: plan?.targetHeartRateBpm ?? null,
-    targetRPE: plan?.targetRPE ?? null,
-    recommendationId: plan?.recommendationId ?? null,
+    ...planTargets(plan),
     elevationGain: workout.elevationGainM ?? null,
     averageCadence: workout.avgCadence ?? null,
     calories: workout.calories ?? null,
@@ -375,36 +396,31 @@ export function mapWorkoutToSession(
 }
 
 /**
- * Maps a plan session entity to a TrainingSession.
+ * Maps a planned_workouts entity (not yet linked to a workout) to a TrainingSession.
  */
-export function mapPlanToSession(
-  plan: PlanSessionFull,
+export function mapPlannedWorkoutToSession(
+  plan: PlannedWorkoutData,
   options: SessionMapperOptions = {}
 ): TrainingSession {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const plannedDate = plan.plannedOn ? plan.plannedOn.toISOString() : null;
 
   return {
     id: plan.id,
     userId: plan.userId,
     sessionNumber: plan.sessionNumber ?? 0,
-    week: plan.week ?? null,
-    date: opts.includePlannedDateAsDate && plan.plannedDate ? plan.plannedDate.toISOString() : null,
-    sessionType: plan.sessionType || null,
+    week: null,
+    date: opts.includePlannedDateAsDate ? plannedDate : null,
+    sessionType: sessionTypeFromStructure(plan.family, plan.structure),
     duration: null,
     distance: null,
     avgPace: null,
     avgHeartRate: null,
-    intervalDetails: plan.intervalDetails as TrainingSession['intervalDetails'] | null,
+    intervalDetails: intervalDetailsOf(plan, undefined),
     perceivedExertion: null,
-    comments: plan.comments ?? '',
-    status: plan.status as 'planned' | 'completed',
-    plannedDate: plan.plannedDate ? plan.plannedDate.toISOString() : null,
-    targetPace: plan.targetPace ?? null,
-    targetDuration: plan.targetDuration ?? null,
-    targetDistance: plan.targetDistance ?? null,
-    targetHeartRateBpm: plan.targetHeartRateBpm ?? null,
-    targetRPE: plan.targetRPE ?? null,
-    recommendationId: plan.recommendationId ?? null,
+    comments: plan.notes ?? '',
+    status: plan.status === 'completed' ? 'completed' : 'planned',
+    ...planTargets(plan),
     externalId: null,
     source: null,
     stravaData: null,

@@ -9,7 +9,10 @@ import {
   stravaStreamPayloadSchema,
   weatherPayloadSchema,
 } from '@/lib/validation/payloads';
+import type { IntervalDetails } from '@/lib/types';
+import { actualsFromSteps } from '@/lib/domain/workouts/structure';
 import { isStravaActivityLikelyStreamless } from './stream-eligibility';
+import { buildPlannedWorkoutFields, type PlannedInput } from './planned-v3';
 import {
   DEFAULT_TIMEZONE,
   buildStreamsV3,
@@ -41,6 +44,77 @@ function parsePayload<T>(schema: z.ZodType<T>, value: unknown, label: string): T
     return null;
   }
   return result.data;
+}
+
+function plannedInput(source: Record<string, unknown>, base?: PlannedInput): PlannedInput {
+  const has = (key: string) => source[key] !== undefined;
+  return {
+    sessionType: has('sessionType') ? (source.sessionType ? String(source.sessionType) : null) : base?.sessionType ?? null,
+    intervalDetails: has('intervalDetails') ? ((source.intervalDetails as IntervalDetails | null) ?? null) : base?.intervalDetails ?? null,
+    plannedDate: source.plannedDate ? source.plannedDate : base?.plannedDate ?? null,
+    targetDuration: has('targetDuration') ? ((source.targetDuration as number | null) ?? null) : base?.targetDuration ?? null,
+    targetDistance: has('targetDistance') ? ((source.targetDistance as number | null) ?? null) : base?.targetDistance ?? null,
+    targetPace: has('targetPace') ? ((source.targetPace as string | null) ?? null) : base?.targetPace ?? null,
+    targetHeartRateBpm: has('targetHeartRateBpm')
+      ? ((source.targetHeartRateBpm as string | number | null) ?? null)
+      : base?.targetHeartRateBpm ?? null,
+    targetRPE: has('targetRPE') ? ((source.targetRPE as number | null) ?? null) : base?.targetRPE ?? null,
+    recommendationId: has('recommendationId')
+      ? (source.recommendationId ? String(source.recommendationId) : null)
+      : base?.recommendationId ?? null,
+    comments: has('comments') ? String(source.comments ?? '') : base?.comments ?? '',
+  };
+}
+
+function plannedInputFromPlan(plan: {
+  sessionType: string | null;
+  intervalDetails: Prisma.JsonValue | null;
+  plannedDate: Date | null;
+  targetDuration: number | null;
+  targetDistance: number | null;
+  targetPace: string | null;
+  targetHeartRateBpm: string | null;
+  targetRPE: number | null;
+  recommendationId: string | null;
+  comments: string;
+}): PlannedInput {
+  return {
+    sessionType: plan.sessionType,
+    intervalDetails: plan.intervalDetails as IntervalDetails | null,
+    plannedDate: plan.plannedDate,
+    targetDuration: plan.targetDuration,
+    targetDistance: plan.targetDistance,
+    targetPace: plan.targetPace,
+    targetHeartRateBpm: plan.targetHeartRateBpm,
+    targetRPE: plan.targetRPE,
+    recommendationId: plan.recommendationId,
+    comments: plan.comments,
+  };
+}
+
+async function upsertPlannedWorkout(
+  tx: Tx,
+  planId: string,
+  userId: string,
+  input: PlannedInput,
+  link: { status: 'planned' | 'completed'; workoutId: string | null }
+) {
+  const fields = buildPlannedWorkoutFields(input, DEFAULT_TIMEZONE, { completed: link.status === 'completed' });
+  await tx.planned_workouts.upsert({
+    where: { id: planId },
+    update: { ...fields, ...link },
+    create: { id: planId, userId, legacyPlanSessionId: planId, sessionNumber: 0, ...fields, ...link },
+  });
+}
+
+async function replaceWorkoutIntervals(tx: Tx, workoutId: string, details: IntervalDetails | null) {
+  await tx.workout_intervals.deleteMany({ where: { workoutId } });
+  const rows = actualsFromSteps(details?.steps);
+  if (rows.length) {
+    await tx.workout_intervals.createMany({
+      data: rows.map((row) => ({ workoutId, ...row, source: 'manual' as const })),
+    });
+  }
 }
 
 function getWeekKey(date: Date): string {
@@ -124,7 +198,8 @@ export async function recalculateSessionNumbers(userId: string) {
         prisma.plan_sessions.update({
           where: { id: plan.id },
           data: { sessionNumber, week },
-        })
+        }),
+        prisma.planned_workouts.updateMany({ where: { id: plan.id }, data: { sessionNumber } })
       );
     }
     sessionNumber++;
@@ -136,7 +211,8 @@ export async function recalculateSessionNumbers(userId: string) {
         prisma.plan_sessions.update({
           where: { id: plan.id },
           data: { sessionNumber, week: null },
-        })
+        }),
+        prisma.planned_workouts.updateMany({ where: { id: plan.id }, data: { sessionNumber } })
       );
     }
     sessionNumber++;
@@ -149,7 +225,8 @@ export async function recalculateSessionNumbers(userId: string) {
         prisma.plan_sessions.update({
           where: { id: plan.id },
           data: { sessionNumber: linkedNumber },
-        })
+        }),
+        prisma.planned_workouts.updateMany({ where: { id: plan.id }, data: { sessionNumber: linkedNumber } })
       );
     }
   }
@@ -432,23 +509,27 @@ export async function createPlannedSession(
 ) {
   const plannedDate = payload.plannedDate ? new Date(String(payload.plannedDate)) : null;
 
-  const plan = await prisma.plan_sessions.create({
-    data: {
-      userId,
-      sessionNumber: 0,
-      week: null,
-      plannedDate,
-      sessionType: payload.sessionType ? String(payload.sessionType) : null,
-      status: 'planned',
-      targetDuration: (payload.targetDuration as number | null) ?? null,
-      targetDistance: (payload.targetDistance as number | null) ?? null,
-      targetPace: (payload.targetPace as string | null) ?? null,
-      targetHeartRateBpm: payload.targetHeartRateBpm ? String(payload.targetHeartRateBpm) : null,
-      targetRPE: (payload.targetRPE as number | null) ?? null,
-      intervalDetails: (payload.intervalDetails as Prisma.JsonValue) ?? Prisma.JsonNull,
-      recommendationId: (payload.recommendationId as string | null) ?? null,
-      comments: String(payload.comments ?? ''),
-    },
+  const plan = await prisma.$transaction(async (tx) => {
+    const created = await tx.plan_sessions.create({
+      data: {
+        userId,
+        sessionNumber: 0,
+        week: null,
+        plannedDate,
+        sessionType: payload.sessionType ? String(payload.sessionType) : null,
+        status: 'planned',
+        targetDuration: (payload.targetDuration as number | null) ?? null,
+        targetDistance: (payload.targetDistance as number | null) ?? null,
+        targetPace: (payload.targetPace as string | null) ?? null,
+        targetHeartRateBpm: payload.targetHeartRateBpm ? String(payload.targetHeartRateBpm) : null,
+        targetRPE: (payload.targetRPE as number | null) ?? null,
+        intervalDetails: (payload.intervalDetails as Prisma.JsonValue) ?? Prisma.JsonNull,
+        recommendationId: (payload.recommendationId as string | null) ?? null,
+        comments: String(payload.comments ?? ''),
+      },
+    });
+    await upsertPlannedWorkout(tx, created.id, userId, plannedInput(payload), { status: 'planned', workoutId: null });
+    return created;
   });
 
   if (!options?.skipRecalculate) {
@@ -507,6 +588,11 @@ export async function createCompletedSession(
         ...workoutV3,
       },
     });
+
+    if (plan) {
+      await upsertPlannedWorkout(tx, plan.id, userId, plannedInput(payload), { status: 'completed', workoutId: workout.id });
+      await replaceWorkoutIntervals(tx, workout.id, (intervalDetails as IntervalDetails | null) ?? null);
+    }
 
     await tx.workout_metrics_raw.create({
       data: {
@@ -600,6 +686,17 @@ export async function completePlannedSession(
         }),
       },
     });
+
+    await upsertPlannedWorkout(
+      tx,
+      plan.id,
+      userId,
+      plannedInput({ ...payload, sessionType: undefined, comments: undefined }, plannedInputFromPlan(plan)),
+      { status: 'completed', workoutId: workout.id }
+    );
+    if (payload.intervalDetails !== undefined) {
+      await replaceWorkoutIntervals(tx, workout.id, (payload.intervalDetails as IntervalDetails | null) ?? null);
+    }
 
     await tx.workout_metrics_raw.create({
       data: {
@@ -725,7 +822,7 @@ export async function updateSession(
       }
 
       if (updates.intervalDetails !== undefined && workout.planSessionId) {
-        await tx.plan_sessions.update({
+        const plan = await tx.plan_sessions.update({
           where: { id: workout.planSessionId },
           data: {
             intervalDetails: updates.intervalDetails === null
@@ -733,6 +830,14 @@ export async function updateSession(
               : (updates.intervalDetails as Prisma.InputJsonValue),
           },
         });
+        await upsertPlannedWorkout(
+          tx,
+          plan.id,
+          userId,
+          plannedInput({ intervalDetails: updates.intervalDetails, sessionType: updates.sessionType }, plannedInputFromPlan(plan)),
+          { status: 'completed', workoutId: workout.id }
+        );
+        await replaceWorkoutIntervals(tx, workout.id, (updates.intervalDetails as IntervalDetails | null) ?? null);
       }
     });
 
@@ -773,6 +878,11 @@ export async function updateSession(
     },
   });
 
+  await prisma.planned_workouts.updateMany({
+    where: { id: plan.id },
+    data: buildPlannedWorkoutFields(plannedInput(updates, plannedInputFromPlan(plan)), DEFAULT_TIMEZONE, { completed: false }),
+  });
+
   await recalculateSessionNumbers(userId);
 
   return plan;
@@ -789,6 +899,7 @@ export async function deleteSession(id: string, userId: string) {
       await tx.workouts.delete({ where: { id: workout.id } });
       if (workout.planSessionId) {
         await tx.plan_sessions.deleteMany({ where: { id: workout.planSessionId } });
+        await tx.planned_workouts.deleteMany({ where: { id: workout.planSessionId } });
       }
     });
   }
@@ -799,7 +910,10 @@ export async function deleteSession(id: string, userId: string) {
   });
 
   if (plan) {
-    await prisma.plan_sessions.delete({ where: { id: plan.id } });
+    await prisma.$transaction([
+      prisma.plan_sessions.delete({ where: { id: plan.id } }),
+      prisma.planned_workouts.deleteMany({ where: { id: plan.id } }),
+    ]);
   }
 
   await recalculateSessionNumbers(userId);
@@ -818,6 +932,7 @@ export async function deleteSessions(ids: string[], userId: string) {
   await prisma.$transaction([
     prisma.workouts.deleteMany({ where: { userId, id: { in: ids } } }),
     prisma.plan_sessions.deleteMany({ where: { userId, id: { in: allPlanIds } } }),
+    prisma.planned_workouts.deleteMany({ where: { userId, id: { in: allPlanIds } } }),
   ]);
 
   await recalculateSessionNumbers(userId);

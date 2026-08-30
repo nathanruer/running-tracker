@@ -9,7 +9,7 @@ vi.mock('@/server/database', () => ({
       findMany: vi.fn(),
       findFirst: vi.fn(),
     },
-    plan_sessions: {
+    planned_workouts: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
     },
@@ -41,7 +41,8 @@ describe('sessions-read', () => {
         sessionType: 'Easy',
         comments: 'Nice',
         perceivedExertion: 2,
-        plan_sessions: null,
+        planned_workout: null,
+        workout_intervals: [],
         durationS: 3600,
         distanceM: 10000,
         paceSKm: 360,
@@ -57,23 +58,23 @@ describe('sessions-read', () => {
       },
     ] as never);
 
-    vi.mocked(prisma.plan_sessions.findMany).mockResolvedValue([
+    vi.mocked(prisma.planned_workouts.findMany).mockResolvedValue([
       {
         id: 'plan-1',
         userId: 'user-1',
         sessionNumber: 2,
-        week: 1,
-        plannedDate: new Date('2026-01-02T10:00:00Z'),
-        sessionType: 'Long',
-        status: 'planned',
-        targetDuration: 90,
-        targetDistance: 15,
-        targetPace: '06:15',
-        targetHeartRateBpm: '150',
-        targetRPE: 3,
-        intervalDetails: null,
+        plannedOn: new Date('2026-01-02T00:00:00Z'),
+        family: 'long',
+        structure: { kind: 'continuous', family: 'long', blocks: [] },
+        structureLegacy: null,
+        targetDurationS: 5400,
+        targetDistanceM: 15000,
+        targetPaceSKm: 375,
+        targetHrBpm: 150,
+        targetRpe: 3,
         recommendationId: null,
-        comments: 'Plan',
+        status: 'planned',
+        notes: 'Plan',
       },
     ] as never);
 
@@ -91,12 +92,15 @@ describe('sessions-read', () => {
     expect(sessions[0].date).toBe('2026-01-01T10:00:00.000Z');
     expect(sessions[0].localDate).toBe('2026-01-01');
     expect(sessions[0].avgPace).toBe('06:00');
-    expect(sessions[1].plannedDate).toBe('2026-01-02T10:00:00.000Z');
+    expect(sessions[1].plannedDate).toBe('2026-01-02T00:00:00.000Z');
+    expect(sessions[1].sessionType).toBe('Sortie longue');
+    expect(sessions[1].targetDuration).toBe(90);
+    expect(sessions[1].targetPace).toBe('06:15');
   });
 
   it('returns null when fetchSessionById finds nothing', async () => {
     vi.mocked(prisma.workouts.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.plan_sessions.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.planned_workouts.findFirst).mockResolvedValue(null);
 
     const session = await fetchSessionById('user-1', 'missing');
     expect(session).toBeNull();
@@ -116,7 +120,8 @@ describe('sessions-read', () => {
       sessionType: 'Tempo',
       comments: '',
       perceivedExertion: 4,
-      plan_sessions: null,
+      planned_workout: null,
+      workout_intervals: [],
       durationS: null,
       distanceM: null,
       paceSKm: null,

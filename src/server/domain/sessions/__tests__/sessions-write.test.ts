@@ -24,6 +24,10 @@ vi.mock('@/server/database', () => ({
     external_activities: {
       updateMany: vi.fn(),
     },
+    planned_workouts: {
+      updateMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -136,7 +140,7 @@ describe('sessions-write', () => {
 
       expect(prisma.$transaction).toHaveBeenCalled();
       const txCalls = vi.mocked(prisma.$transaction).mock.calls[0][0] as unknown as unknown[];
-      expect(txCalls).toHaveLength(2);
+      expect(txCalls).toHaveLength(3);
     });
 
     it('handles empty data without calling transaction', async () => {

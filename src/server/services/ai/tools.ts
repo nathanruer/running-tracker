@@ -2,6 +2,8 @@ import 'server-only';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { prisma } from '@/server/database';
+import { formatDuration } from '@/lib/utils/duration/format';
+import { sessionTypeFromStructure } from '@/lib/domain/workouts/structure';
 import type { AIResponseValidated } from '@/lib/validation/schemas/ai-response';
 import { validateAndFixRecommendations } from './validator';
 import { fetchProfile, fetchSessions, fetchSessionStats, fetchNextSessionNumber } from './data/fetcher';
@@ -83,18 +85,18 @@ export function buildAgentTools(userId: string, proposed: ProposedRecommendation
       description: 'Les séances actuellement planifiées (à venir) avec leurs cibles.',
       inputSchema: z.object({}),
       execute: async () => {
-        const plans = await prisma.plan_sessions.findMany({
-          where: { userId, status: 'planned' },
-          orderBy: [{ plannedDate: 'asc' }, { createdAt: 'asc' }],
+        const plans = await prisma.planned_workouts.findMany({
+          where: { userId, status: 'planned', workoutId: null },
+          orderBy: [{ plannedOn: 'asc' }, { createdAt: 'asc' }],
           take: 20,
           select: {
             sessionNumber: true,
-            plannedDate: true,
-            sessionType: true,
-            targetDuration: true,
-            targetDistance: true,
-            targetPace: true,
-            comments: true,
+            plannedOn: true,
+            family: true,
+            structure: true,
+            targetDurationS: true,
+            targetDistanceM: true,
+            targetPaceSKm: true,
           },
         });
 
@@ -102,15 +104,15 @@ export function buildAgentTools(userId: string, proposed: ProposedRecommendation
 
         return plans
           .map((p) => {
-            const date = p.plannedDate ? p.plannedDate.toISOString().slice(0, 10) : 'sans date';
+            const date = p.plannedOn ? p.plannedOn.toISOString().slice(0, 10) : 'sans date';
             const targets = [
-              p.targetDuration ? `${p.targetDuration}min` : null,
-              p.targetDistance ? `${p.targetDistance}km` : null,
-              p.targetPace ? `${p.targetPace}/km` : null,
+              p.targetDurationS ? `${Math.round(p.targetDurationS / 60)}min` : null,
+              p.targetDistanceM ? `${p.targetDistanceM / 1000}km` : null,
+              p.targetPaceSKm ? `${formatDuration(p.targetPaceSKm)}/km` : null,
             ]
               .filter(Boolean)
               .join(', ');
-            return `- #${p.sessionNumber ?? '?'} ${date} ${p.sessionType ?? '?'}${targets ? ` (${targets})` : ''}`;
+            return `- #${p.sessionNumber ?? '?'} ${date} ${sessionTypeFromStructure(p.family, p.structure) ?? '?'}${targets ? ` (${targets})` : ''}`;
           })
           .join('\n');
       },

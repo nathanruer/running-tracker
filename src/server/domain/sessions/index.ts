@@ -23,10 +23,10 @@ export {
 
 export { bulkEnrichStreamsForIds } from './streams-bulk';
 
-export { mapWorkoutToSession, mapPlanToSession } from './mappers';
+export { mapWorkoutToSession, mapPlannedWorkoutToSession } from './mappers';
 export type {
   SessionMapperOptions,
   WorkoutBase,
   WorkoutFull,
-  PlanSessionFull,
+  PlannedWorkoutData,
 } from './mappers';
