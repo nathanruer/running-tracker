@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useDeferredValue } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react';
 import { CloseButton } from '@/components/ui/close-button';
 
 import { cn } from '@/lib/utils';
@@ -12,6 +12,9 @@ import {
 import {
   importIntervalsSelection,
   getIntervalsActivityStructure,
+  mergeIntervalsActivities,
+  dismissIntervalsActivity,
+  restoreIntervalsActivity,
   type ImportableActivity,
 } from '@/lib/services/api-client';
 import { useExternalActivities } from '../../hooks/use-external-activities';
@@ -43,6 +46,8 @@ export function ActivityImportContent({
 }: ActivityImportContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [preparing, setPreparing] = useState(false);
+  const [mergingId, setMergingId] = useState<string | null>(null);
+  const [showDismissed, setShowDismissed] = useState(false);
   const topRef = useRef<HTMLTableSectionElement>(null);
 
   const {
@@ -80,11 +85,34 @@ export function ActivityImportContent({
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
+  const visibleActivities = useMemo(
+    () => (showDismissed ? activities : activities.filter((a) => !a.dismissed)),
+    [activities, showDismissed]
+  );
+
+  const dismissedCount = useMemo(() => activities.filter((a) => a.dismissed).length, [activities]);
+
   const filteredActivities = useMemo(() => {
-    if (!deferredSearchQuery.trim()) return activities;
+    if (!deferredSearchQuery.trim()) return visibleActivities;
     const lowerQuery = deferredSearchQuery.toLowerCase();
-    return activities.filter((a) => a.comments.toLowerCase().includes(lowerQuery));
-  }, [activities, deferredSearchQuery]);
+    return visibleActivities.filter((a) => a.comments.toLowerCase().includes(lowerQuery));
+  }, [visibleActivities, deferredSearchQuery]);
+
+  const activitiesById = useMemo(
+    () => new Map(activities.map((activity) => [activity.externalId, activity])),
+    [activities]
+  );
+
+  /** The other recordings of the same outing, still importable. */
+  const fragmentsOf = useCallback(
+    (activity: ImportableActivity) =>
+      activity.fragmentIds
+        .map((id) => activitiesById.get(id))
+        .filter((fragment): fragment is ImportableActivity =>
+          Boolean(fragment) && !fragment!.alreadyImported && !fragment!.dismissed
+        ),
+    [activitiesById]
+  );
 
   useEffect(() => {
     if (!deferredSearchQuery.trim()) return;
@@ -200,6 +228,29 @@ export function ActivityImportContent({
       setPreparing(false);
     }
   };
+
+  const handleMerge = wrapAsync(async (activity: ImportableActivity) => {
+    const externalIds = [activity.externalId, ...fragmentsOf(activity).map((fragment) => fragment.externalId)];
+    setMergingId(activity.externalId);
+    try {
+      const merged = await mergeIntervalsActivities(externalIds);
+      onImport(merged);
+      onOpenChange(false);
+      clearSelection();
+    } finally {
+      setMergingId(null);
+    }
+  });
+
+  const handleDismiss = wrapAsync(async (externalId: string) => {
+    await dismissIntervalsActivity(externalId);
+    await refresh();
+  });
+
+  const handleRestore = wrapAsync(async (externalId: string) => {
+    await restoreIntervalsActivity(externalId);
+    await refresh();
+  });
 
   const handleImportSelected = wrapAsync(async () => {
     const selected = getSelectedItems();
@@ -333,6 +384,9 @@ export function ActivityImportContent({
               )}
             >
               <ImportToolbar
+                dismissedCount={dismissedCount}
+                showDismissed={showDismissed}
+                onToggleDismissed={() => setShowDismissed((shown) => !shown)}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 activitiesCount={activities.length}
@@ -372,6 +426,11 @@ export function ActivityImportContent({
                   totalLoadedCount={activities.length}
                   onSearchAll={() => loadAllForSearch(deferredSearchQuery)}
                   importedKeys={importedKeys}
+                  fragmentsOf={fragmentsOf}
+                  mergingId={mergingId}
+                  onMerge={handleMerge}
+                  onDismiss={handleDismiss}
+                  onRestore={handleRestore}
                 />
               </div>
 

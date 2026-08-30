@@ -22,6 +22,11 @@ export interface ImportableActivity {
   averageCadence: number | null;
   calories: number | null;
   alreadyImported: boolean;
+  dismissed: boolean;
+  /** Other recordings of the same outing, when this activity is the main one. */
+  fragmentIds: string[];
+  /** Main activity this recording belongs to, when it is itself a fragment. */
+  partOf: string | null;
 }
 
 export interface ActivitiesResponse {
@@ -68,6 +73,34 @@ export async function getIntervalsActivityStructure(
   return apiRequest<DetectedSessionStructure>(
     `/api/intervals/activities/${encodeURIComponent(externalId)}/structure`
   );
+}
+
+/** One session rebuilt from several recordings, for review in the form before saving. */
+export interface MergedActivity extends Omit<ImportableActivity, 'dismissed' | 'fragmentIds' | 'partOf'> {
+  sources: Array<{ externalId: string; startedAt: string | null; sourcePayload: unknown }>;
+  intervalDetails: IntervalDetails | null;
+}
+
+export async function mergeIntervalsActivities(externalIds: string[]): Promise<MergedActivity> {
+  const { activity } = await apiRequest<{ activity: MergedActivity }>('/api/intervals/merge', {
+    method: 'POST',
+    body: JSON.stringify({ externalIds }),
+  });
+  return activity;
+}
+
+export async function dismissIntervalsActivity(externalId: string, reason?: string): Promise<void> {
+  await apiRequest('/api/intervals/dismissed', {
+    method: 'POST',
+    body: JSON.stringify({ externalId, reason: reason ?? null }),
+  });
+}
+
+export async function restoreIntervalsActivity(externalId: string): Promise<void> {
+  await apiRequest('/api/intervals/dismissed', {
+    method: 'DELETE',
+    body: JSON.stringify({ externalId }),
+  });
 }
 
 export interface IntervalsConnectResult {

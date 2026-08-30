@@ -2,9 +2,10 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { IntervalDetails } from '@/lib/types';
 import type { ImportableActivity } from '@/lib/services/api-client';
 
-/** An activity handed to the session form, with the intervals detected on it when there are any. */
-export type ImportedActivity = ImportableActivity & {
+/** An activity handed to the session form: intervals detected on it, and every recording behind it. */
+export type ImportedActivity = Omit<ImportableActivity, 'dismissed' | 'fragmentIds' | 'partOf'> & {
   intervalDetails?: IntervalDetails | null;
+  sources?: Array<{ externalId: string; startedAt: string | null; sourcePayload: unknown }>;
 };
 
 export interface ActivityImportDialogProps {
@@ -26,6 +27,9 @@ export interface ActivityImportContentProps {
 }
 
 export interface ImportToolbarProps {
+  dismissedCount: number;
+  showDismissed: boolean;
+  onToggleDismissed: () => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   activitiesCount: number;
@@ -62,6 +66,11 @@ export interface ActivityRowProps {
 
 export interface ActivityTableProps {
   activities: ImportableActivity[];
+  fragmentsOf: (activity: ImportableActivity) => ImportableActivity[];
+  mergingId: string | null;
+  onMerge: (activity: ImportableActivity) => void;
+  onDismiss: (externalId: string) => void;
+  onRestore: (externalId: string) => void;
   filteredActivities: ImportableActivity[];
   mode: 'create' | 'edit' | 'complete';
   isSelected: (index: number) => boolean;

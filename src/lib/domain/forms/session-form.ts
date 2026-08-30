@@ -92,6 +92,7 @@ export function initializeFormForComplete(
     routePolyline: importedFields.routePolyline ?? session.routePolyline ?? null,
     maxHeartRate: importedFields.maxHeartRate ?? session.maxHeartRate ?? null,
     sourcePayload: importedFields.sourcePayload ?? null,
+    sources: importedFields.sources,
     externalId: importedFields.externalId ?? session.externalId,
     elevationGain: importedFields.elevationGain ?? session.elevationGain,
     averageCadence: importedFields.averageCadence ?? session.averageCadence,

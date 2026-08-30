@@ -178,6 +178,7 @@ export type TrainingSessionPayload = (Omit<
 >) & {
   sourcePayload?: unknown;
   intervalsSource?: 'detected' | 'manual';
+  sources?: Array<{ externalId: string; startedAt?: string | null; sourcePayload?: unknown }>;
 };
 
 /**

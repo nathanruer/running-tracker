@@ -143,6 +143,41 @@ describe('sessions-write — write paths', () => {
       });
     });
 
+    it('records one source row per recording when merged activities are saved', async () => {
+      await sessionsWrite.createCompletedSession(
+        {
+          date: '2026-08-30T11:15:43',
+          startedAt: '2026-08-30T09:15:43Z',
+          source: 'intervals_icu',
+          externalId: 'i181266970',
+          routePolyline: 'poly',
+          sources: [
+            { externalId: 'i181258108', startedAt: '2026-08-30T09:15:43Z', sourcePayload: { id: 'i181258108' } },
+            { externalId: 'i181266970', startedAt: '2026-08-30T09:26:12Z', sourcePayload: { id: 'i181266970' } },
+          ],
+        },
+        'user-1'
+      );
+
+      expect(prisma.workout_sources.create).toHaveBeenCalledTimes(2);
+      // The main recording comes first: the session links to it and carries the route (weather once).
+      expect(prisma.workout_sources.create).toHaveBeenNthCalledWith(1, {
+        data: expect.objectContaining({
+          externalId: 'i181266970',
+          startedAt: new Date('2026-08-30T09:26:12Z'),
+          hasRoute: true,
+          weatherStatus: 'pending',
+        }),
+      });
+      expect(prisma.workout_sources.create).toHaveBeenNthCalledWith(2, {
+        data: expect.objectContaining({
+          externalId: 'i181258108',
+          startedAt: new Date('2026-08-30T09:15:43Z'),
+          weatherStatus: 'not_applicable',
+        }),
+      });
+    });
+
     it('keeps the provider provenance on intervals accepted as detected', async () => {
       await sessionsWrite.createCompletedSession(
         { date: '2026-05-01', sessionType: 'Fractionné', intervalDetails: vmaDetails, intervalsSource: 'detected' },

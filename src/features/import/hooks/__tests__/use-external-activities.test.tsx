@@ -50,6 +50,9 @@ const mockActivity = {
   averageCadence: null,
   calories: null,
   alreadyImported: false,
+  dismissed: false,
+  fragmentIds: [],
+  partOf: null,
 };
 
 describe('useExternalActivities', () => {

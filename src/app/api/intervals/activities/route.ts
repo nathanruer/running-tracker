@@ -4,11 +4,13 @@ import { HTTP_STATUS } from '@/lib/constants';
 import {
   getIntervalsActivities,
   getIntervalsApiKey,
+  groupFragmentActivities,
   mapIntervalsActivityToSessionPayload,
   IMPORTABLE_TYPES,
   INTERVALS_SOURCE,
 } from '@/server/services/intervals';
 import { getImportedExternalIds } from '@/server/domain/sessions/sessions-read';
+import { getDismissedExternalIds } from '@/server/domain/sessions/dismissed-activities';
 import {
   findExistingWorkoutWindows,
   matchesExistingWorkout,
@@ -44,15 +46,24 @@ export async function GET(request: NextRequest) {
       }
       const newest = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      const [activities, importedIds, existingWindows] = await Promise.all([
+      const [activities, importedIds, existingWindows, dismissedIds] = await Promise.all([
         getIntervalsActivities(apiKey, toIsoDate(oldest), toIsoDate(newest)),
         getImportedExternalIds(userId, INTERVALS_SOURCE),
         findExistingWorkoutWindows(userId, oldest),
+        getDismissedExternalIds(userId, INTERVALS_SOURCE),
       ]);
 
       const runs = activities
         .filter((a) => IMPORTABLE_TYPES.has(a.type ?? ''))
         .sort((a, b) => b.start_date_local.localeCompare(a.start_date_local));
+
+      // Split recordings of one outing: the main activity carries the others as fragments.
+      const fragmentsOfMain = new Map<string, string[]>();
+      const mainOfFragment = new Map<string, string>();
+      for (const group of groupFragmentActivities(runs)) {
+        fragmentsOfMain.set(group.mainId, group.fragmentIds);
+        for (const fragmentId of group.fragmentIds) mainOfFragment.set(fragmentId, group.mainId);
+      }
 
       const formatted = runs.map((activity) => {
         const payload = mapIntervalsActivityToSessionPayload(activity, []);
@@ -64,7 +75,13 @@ export async function GET(request: NextRequest) {
             activity.distance ?? 0
           );
 
-        return { ...payload, alreadyImported };
+        return {
+          ...payload,
+          alreadyImported,
+          dismissed: dismissedIds.has(activity.id),
+          fragmentIds: fragmentsOfMain.get(activity.id) ?? [],
+          partOf: mainOfFragment.get(activity.id) ?? null,
+        };
       });
 
       return NextResponse.json({

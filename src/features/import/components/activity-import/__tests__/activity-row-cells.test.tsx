@@ -202,6 +202,9 @@ describe('ActivityRowCells', () => {
     streams: null,
     sourcePayload: null,
     alreadyImported: false,
+    dismissed: false,
+    fragmentIds: [],
+    partOf: null,
   };
 
   it('renders all cells with activity data', () => {

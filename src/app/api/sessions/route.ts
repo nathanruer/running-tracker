@@ -3,7 +3,10 @@ import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { sessionSchema } from '@/lib/validation';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
+import {
+  fetchStreamsForSessionWithStatus,
+  fetchMergedStreamsForActivities,
+} from '@/server/services/intervals';
 import { toPrismaJson } from '@/server/utils/prisma-json';
 import { fetchSessions } from '@/server/domain/sessions/sessions-read';
 import { createCompletedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
@@ -57,12 +60,16 @@ export async function POST(request: NextRequest) {
     sessionSchema,
     async (payload, userId) => {
       try {
-        const streamResult = await fetchStreamsForSessionWithStatus(
-          payload.source ?? null,
-          payload.externalId ?? null,
-          userId,
-          'session-import'
-        );
+        // Merged recordings: the series of every piece are glued back together.
+        const mergedIds = (payload.sources ?? []).map((source) => source.externalId);
+        const streamResult = mergedIds.length > 1
+          ? await fetchMergedStreamsForActivities(mergedIds, userId, 'session-import')
+          : await fetchStreamsForSessionWithStatus(
+              payload.source ?? null,
+              payload.externalId ?? null,
+              userId,
+              'session-import'
+            );
         const routePolyline = payload.routePolyline ?? streamResult.polyline ?? null;
         const weather = routePolyline
           ? await enrichSessionWithWeather({ routePolyline, startedAt: payload.startedAt ?? payload.date })

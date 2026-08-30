@@ -43,7 +43,8 @@ const WORKOUT_INTERVALS_ARGS = {
 const WORKOUT_FULL_INCLUDE = {
   planned_workout: { select: PLANNED_WORKOUT_SELECT },
   workout_intervals: WORKOUT_INTERVALS_ARGS,
-  workout_sources: { select: WORKOUT_SOURCE_SELECT },
+  // Insertion order: the main recording of a merged session comes first, like the SQL flags query.
+  workout_sources: { select: WORKOUT_SOURCE_SELECT, orderBy: { createdAt: 'asc' } },
   weather_observations: true,
   workout_streams: true,
 } satisfies Prisma.workoutsInclude;

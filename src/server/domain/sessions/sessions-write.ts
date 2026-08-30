@@ -136,6 +136,53 @@ function intervalsSourceOf(payload: Record<string, unknown>): IntervalsSource {
   return payload.intervalsSource === 'detected' ? 'detected' : 'manual';
 }
 
+interface PayloadSource {
+  externalId: string;
+  startedAt?: string | null;
+  sourcePayload?: unknown;
+}
+
+/**
+ * Provider activities behind a workout: several when the athlete merged split recordings. The main
+ * one comes first — it is the activity the session links to and the one carrying its route.
+ */
+function sourcesOf(payload: Record<string, unknown>): PayloadSource[] {
+  const externalId = (payload.externalId as string | null) ?? null;
+  const merged = payload.sources as PayloadSource[] | undefined;
+
+  if (merged?.length) {
+    const main = merged.filter((source) => source.externalId === externalId);
+    return [...main, ...merged.filter((source) => source.externalId !== externalId)];
+  }
+
+  return externalId ? [{ externalId, sourcePayload: payload.sourcePayload }] : [];
+}
+
+async function upsertWorkoutSources(
+  tx: Tx,
+  workoutId: string,
+  userId: string,
+  provider: SourceProvider | null,
+  sources: PayloadSource[],
+  startedAt: Date,
+  routePolyline: string | null
+) {
+  for (const [index, source] of sources.entries()) {
+    const sourceStart = source.startedAt ? new Date(source.startedAt) : startedAt;
+    await upsertWorkoutSource(
+      tx,
+      workoutId,
+      userId,
+      provider,
+      source.externalId,
+      source.sourcePayload,
+      Number.isNaN(sourceStart.getTime()) ? startedAt : sourceStart,
+      // The route and its weather belong to the session, not to each recording.
+      index === 0 ? routePolyline : null
+    );
+  }
+}
+
 export async function recalculateSessionNumbers(userId: string) {
   const [workouts, plans] = await Promise.all([
     prisma.workouts.findMany({
@@ -394,11 +441,13 @@ export async function createCompletedSession(
   const intervalsSource = intervalsSourceOf(payload);
   const sessionType = payload.sessionType ? String(payload.sessionType) : null;
   const provider = toProvider((payload.source as string | null) ?? null);
-  const externalId = (payload.externalId as string | null) ?? null;
+  const sources = sourcesOf(payload);
   const workoutV3 = buildWorkoutV3(payload, sanitizedStreams, DEFAULT_TIMEZONE);
 
   const workout = await tenantTransaction(async (tx) => {
-    await assertSourceAvailable(tx, userId, provider, externalId);
+    for (const source of sources) {
+      await assertSourceAvailable(tx, userId, provider, source.externalId);
+    }
 
     const workout = await tx.workouts.create({
       data: {
@@ -424,7 +473,7 @@ export async function createCompletedSession(
       await replaceWorkoutIntervals(tx, workout.id, intervalDetails, intervalsSource);
     }
 
-    await upsertWorkoutSource(tx, workout.id, userId, provider, externalId, payload.sourcePayload, workoutV3.startedAt, workoutV3.routePolyline);
+    await upsertWorkoutSources(tx, workout.id, userId, provider, sources, workoutV3.startedAt, workoutV3.routePolyline);
 
     await upsertWeatherObservation(
       tx,
@@ -459,7 +508,7 @@ export async function completePlannedSession(
   const sanitizedWeather = parsePayload(weatherPayloadSchema, payload.weather, 'weather');
   const sanitizedStreams = parsePayload(streamPayloadSchema, payload.streams, 'streams');
   const provider = toProvider((payload.source as string | null) ?? null);
-  const externalId = (payload.externalId as string | null) ?? null;
+  const sources = sourcesOf(payload);
   const workoutV3 = buildWorkoutV3(payload, sanitizedStreams, plan.timezone);
 
   const planLabel = sessionTypeFromStructure(plan.family, plan.structure);
@@ -469,7 +518,9 @@ export async function completePlannedSession(
     : intervalDetailsFromV3(plan.structure);
 
   const workout = await tenantTransaction(async (tx) => {
-    await assertSourceAvailable(tx, userId, provider, externalId);
+    for (const source of sources) {
+      await assertSourceAvailable(tx, userId, provider, source.externalId);
+    }
 
     const workout = await tx.workouts.create({
       data: {
@@ -506,7 +557,7 @@ export async function completePlannedSession(
       await replaceWorkoutIntervals(tx, workout.id, details, intervalsSourceOf(payload));
     }
 
-    await upsertWorkoutSource(tx, workout.id, userId, provider, externalId, payload.sourcePayload, workoutV3.startedAt, workoutV3.routePolyline);
+    await upsertWorkoutSources(tx, workout.id, userId, provider, sources, workoutV3.startedAt, workoutV3.routePolyline);
 
     await upsertWeatherObservation(
       tx,

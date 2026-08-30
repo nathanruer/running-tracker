@@ -133,3 +133,12 @@ export async function getIntervalsActivityIntervals(
   const data = await fetchIntervals(apiKey, `/activity/${activityId}/intervals`);
   return intervalsIntervalsSchema.parse(data).icu_intervals ?? [];
 }
+
+/** A single activity, used when importing outside the listing window. */
+export async function getIntervalsActivity(
+  apiKey: string,
+  activityId: string
+): Promise<IntervalsActivity> {
+  const data = await fetchIntervals(apiKey, `/activity/${activityId}`);
+  return intervalsActivitySchema.parse(data);
+}

@@ -1,13 +1,20 @@
+import React from 'react';
 import { Table, TableBody } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { InfiniteScrollTrigger, EndOfList } from '@/components/ui/data-table';
 import { ImportTableHeader } from './table-header';
 import { ActivityRow } from './activity-row';
+import { FragmentHintRow, DismissedHintRow } from './activity-hint-row';
 import { SmartSearchEmptyState } from './smart-search-empty-state';
 import type { ActivityTableProps } from './types';
 
 export function ActivityTable({
   activities,
+  fragmentsOf,
+  mergingId,
+  onMerge,
+  onDismiss,
+  onRestore,
   filteredActivities,
   mode,
   isSelected,
@@ -64,15 +71,26 @@ export function ActivityTable({
             {activities.map((activity) => {
               const index = filteredActivities.findIndex((a) => a.externalId === activity.externalId);
               const isImported = !!(activity.externalId && importedKeys.has(activity.externalId));
+              const fragments = isImported ? [] : fragmentsOf(activity);
               return (
-                <ActivityRow
-                  key={activity.externalId}
-                  activity={activity}
-                  index={index}
-                  selected={isSelected(index)}
-                  onToggleSelect={(idx, e) => toggleSelectWithEvent(idx, e)}
-                  alreadyImported={isImported}
-                />
+                <React.Fragment key={activity.externalId}>
+                  <ActivityRow
+                    activity={activity}
+                    index={index}
+                    selected={isSelected(index)}
+                    onToggleSelect={(idx, e) => toggleSelectWithEvent(idx, e)}
+                    alreadyImported={isImported}
+                  />
+                  {fragments.length > 0 && (
+                    <FragmentHintRow
+                      fragments={fragments}
+                      merging={mergingId === activity.externalId}
+                      onMerge={() => onMerge(activity)}
+                      onDismiss={() => fragments.forEach((fragment) => onDismiss(fragment.externalId))}
+                    />
+                  )}
+                  {activity.dismissed && <DismissedHintRow onRestore={() => onRestore(activity.externalId)} />}
+                </React.Fragment>
               );
             })}
           </TableBody>

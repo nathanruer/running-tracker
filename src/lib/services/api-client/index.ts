@@ -44,9 +44,13 @@ export { apiRequest } from './client';
 export {
   getIntervalsActivitiesList,
   getIntervalsActivityStructure,
+  mergeIntervalsActivities,
+  dismissIntervalsActivity,
+  restoreIntervalsActivity,
   importIntervalsSelection,
   type IntervalsImportResult,
   type ImportableActivity,
   type ActivitiesResponse,
   type DetectedSessionStructure,
+  type MergedActivity,
 } from './intervals';

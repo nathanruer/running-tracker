@@ -64,6 +64,15 @@ const formSchema = z.object({
   routePolyline: z.string().optional().nullable(),
   maxHeartRate: z.number().optional().nullable(),
   sourcePayload: z.unknown().optional().nullable(),
+  sources: z
+    .array(
+      z.object({
+        externalId: z.string(),
+        startedAt: z.string().nullable().optional(),
+        sourcePayload: z.unknown().optional(),
+      })
+    )
+    .optional(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),

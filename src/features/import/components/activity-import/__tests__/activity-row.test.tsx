@@ -46,6 +46,9 @@ describe('ActivityRow', () => {
     streams: null,
     sourcePayload: null,
     alreadyImported: false,
+    dismissed: false,
+    fragmentIds: [],
+    partOf: null,
   };
 
   const mockToggleSelect = vi.fn();

@@ -3,7 +3,10 @@ import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { completeSessionSchema } from '@/lib/validation';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
+import {
+  fetchStreamsForSessionWithStatus,
+  fetchMergedStreamsForActivities,
+} from '@/server/services/intervals';
 import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { completePlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
@@ -18,12 +21,15 @@ export async function PATCH(
     completeSessionSchema,
     async (body, userId) => {
       try {
-        const streamResult = await fetchStreamsForSessionWithStatus(
-          body.source ?? null,
-          body.externalId ?? null,
-          userId,
-          'session-completion'
-        );
+        const mergedIds = (body.sources ?? []).map((source) => source.externalId);
+        const streamResult = mergedIds.length > 1
+          ? await fetchMergedStreamsForActivities(mergedIds, userId, 'session-completion')
+          : await fetchStreamsForSessionWithStatus(
+              body.source ?? null,
+              body.externalId ?? null,
+              userId,
+              'session-completion'
+            );
 
         const routePolyline = body.routePolyline ?? streamResult.polyline ?? null;
         let weather = body.weather ?? null;

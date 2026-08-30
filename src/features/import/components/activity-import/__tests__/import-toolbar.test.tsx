@@ -26,7 +26,12 @@ describe('ImportToolbar', () => {
   const mockOnLoadAll = vi.fn();
   const mockOnCancelLoadAll = vi.fn();
 
+  const mockOnToggleDismissed = vi.fn();
+
   const defaultProps = {
+    dismissedCount: 0,
+    showDismissed: false,
+    onToggleDismissed: mockOnToggleDismissed,
     searchQuery: '',
     onSearchChange: mockOnSearchChange,
     activitiesCount: 20,
@@ -95,4 +100,16 @@ describe('ImportToolbar', () => {
     const actionWrapper = document.querySelector('[class*="max-w-0"]');
     expect(actionWrapper).toBeInTheDocument();
   });
+  it('offers to show the ignored activities only when there are some', () => {
+    const { rerender } = render(<ImportToolbar {...defaultProps} />);
+    expect(screen.queryByRole('button', { name: /ignorées/i })).toBeNull();
+
+    rerender(<ImportToolbar {...defaultProps} dismissedCount={2} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ignorées (2)' }));
+    expect(mockOnToggleDismissed).toHaveBeenCalledTimes(1);
+
+    rerender(<ImportToolbar {...defaultProps} dismissedCount={2} showDismissed />);
+    expect(screen.getByRole('button', { name: 'Masquer les ignorées' })).toBeInTheDocument();
+  });
+
 });

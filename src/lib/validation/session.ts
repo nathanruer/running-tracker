@@ -67,6 +67,16 @@ export const sessionSchema = z.object({
   maxHeartRate: z.number().optional().nullable(),
   sourcePayload: z.unknown().optional().nullable(),
   intervalsSource: z.enum(['detected', 'manual']).optional(),
+  sources: z
+    .array(
+      z.object({
+        externalId: z.string().min(1),
+        startedAt: z.string().nullable().optional(),
+        sourcePayload: z.unknown().optional(),
+      })
+    )
+    .max(5)
+    .optional(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),

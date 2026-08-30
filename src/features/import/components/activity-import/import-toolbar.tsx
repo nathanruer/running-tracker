@@ -1,8 +1,12 @@
 import { SearchInput } from '@/components/ui/search-input';
+import { Button } from '@/components/ui/button';
 import { ScopeIndicator } from '@/components/ui/data-table';
 import type { ImportToolbarProps } from './types';
 
 export function ImportToolbar({
+  dismissedCount,
+  showDismissed,
+  onToggleDismissed,
   searchQuery,
   onSearchChange,
   activitiesCount,
@@ -25,6 +29,16 @@ export function ImportToolbar({
         className="md:w-[320px]"
       />
       <div className="flex items-center gap-2 ml-auto">
+        {dismissedCount > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onToggleDismissed}
+            className="h-7 px-3 text-[11px] font-bold rounded-full text-muted-foreground hover:text-foreground"
+          >
+            {showDismissed ? 'Masquer les ignorées' : `Ignorées (${dismissedCount})`}
+          </Button>
+        )}
         {loading ? (
           <div className="h-7 w-[180px] bg-muted/5 animate-pulse rounded-full border border-border/10" />
         ) : (

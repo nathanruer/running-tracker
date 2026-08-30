@@ -13,5 +13,6 @@ export function useNewIntervalsCount() {
     meta: { silentError: true },
   });
 
-  return data?.activities.filter((a) => !a.alreadyImported).length ?? 0;
+  // One outing counts once: fragments hang off their main activity, ignored ones do not count.
+  return data?.activities.filter((a) => !a.alreadyImported && !a.dismissed && !a.partOf).length ?? 0;
 }
