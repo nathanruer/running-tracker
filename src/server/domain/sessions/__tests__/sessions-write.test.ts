@@ -21,6 +21,9 @@ vi.mock('@/server/database', () => ({
     weather_observations: {
       upsert: vi.fn(),
     },
+    external_activities: {
+      updateMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));

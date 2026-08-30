@@ -28,6 +28,10 @@ vi.mock('@/server/database', () => {
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    workout_streams_v3: {
+      upsert: vi.fn(),
     },
     external_payloads: {
       upsert: vi.fn(),
@@ -76,6 +80,8 @@ describe('sessions-write — write paths', () => {
     vi.mocked(prisma.workout_streams.deleteMany).mockResolvedValue({ count: 0 } as never);
     vi.mocked(prisma.workout_streams.create).mockResolvedValue({ id: 'stream-1' } as never);
     vi.mocked(prisma.workout_stream_chunks.create).mockResolvedValue({} as never);
+    vi.mocked(prisma.workout_streams_v3.upsert).mockResolvedValue({} as never);
+    vi.mocked(prisma.external_activities.updateMany).mockResolvedValue({ count: 1 } as never);
   });
 
   describe('createCompletedSession', () => {
@@ -95,6 +101,28 @@ describe('sessions-write — write paths', () => {
       expect(prisma.workout_metrics_raw.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ workoutId: 'w-new', durationSeconds: 2700, distanceMeters: 8000 }),
+        })
+      );
+    });
+
+    it('writes v3 columns: day precision at Paris midnight and numeric metrics', async () => {
+      await sessionsWrite.createCompletedSession(
+        { date: '2026-05-01', duration: '45:00', distance: 8, avgPace: '05:37', avgHeartRate: 148 },
+        'user-1'
+      );
+
+      expect(prisma.workouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            startedAt: new Date('2026-04-30T22:00:00Z'),
+            timezone: 'Europe/Paris',
+            datePrecision: 'day',
+            durationS: 2700,
+            distanceM: 8000,
+            paceSKm: 337,
+            avgHr: 148,
+            routePolyline: null,
+          }),
         })
       );
     });
@@ -136,6 +164,61 @@ describe('sessions-write — write paths', () => {
         expect.objectContaining({ data: expect.objectContaining({ streamType: 'heartrate' }) })
       );
       expect(prisma.workout_stream_chunks.create).toHaveBeenCalled();
+    });
+
+    it('writes v3 external fields, streams table and enrichment statuses for an imported activity', async () => {
+      await sessionsWrite.createCompletedSession(
+        {
+          date: '2026-05-01T07:00:00',
+          source: 'intervals_icu',
+          externalId: 'i42',
+          stravaData: {
+            id: 42,
+            start_date: '2026-05-01T05:00:00Z',
+            start_latlng: [48.8, 2.3],
+            max_heartrate: 182,
+            map: { id: 'intervals_i42', summary_polyline: 'poly' },
+          },
+          weather: { temperature: 12 },
+          stravaStreams: { time: { data: [0, 1] }, velocity_smooth: { data: [3, 3.2] }, heartrate: { data: [120, 130] } },
+        },
+        'user-1'
+      );
+
+      expect(prisma.workouts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            startedAt: new Date('2026-05-01T05:00:00Z'),
+            datePrecision: 'instant',
+            maxHr: 182,
+            routePolyline: 'poly',
+          }),
+        })
+      );
+      expect(prisma.external_activities.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            provider: 'intervals_icu',
+            payloadKind: 'detail',
+            hasRoute: true,
+            routeStatus: 'done',
+            streamsStatus: 'pending',
+            weatherStatus: 'pending',
+          }),
+        })
+      );
+      expect(prisma.workout_streams_v3.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workoutId: 'w-new' },
+          create: expect.objectContaining({ workoutId: 'w-new', time: [0, 1], velocity: [3, 3.2], sampleCount: 2 }),
+        })
+      );
+      expect(prisma.external_activities.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { hasStreams: true, streamsStatus: 'done' } })
+      );
+      expect(prisma.external_activities.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { weatherStatus: 'done' } })
+      );
     });
 
     it('skips renumbering when skipRecalculate is set', async () => {
@@ -198,6 +281,7 @@ describe('sessions-write — write paths', () => {
       id: 'w-1',
       userId: 'user-1',
       date: new Date('2026-04-01'),
+      timezone: 'Europe/Paris',
       sessionType: 'Footing',
       comments: 'ancien commentaire',
       perceivedExertion: 5,
@@ -211,10 +295,27 @@ describe('sessions-write — write paths', () => {
       await sessionsWrite.updateSession('w-1', { comments: 'nouveau', avgPace: '05:30' }, 'user-1');
 
       expect(prisma.workouts.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ comments: 'nouveau' }) })
+        expect.objectContaining({ data: expect.objectContaining({ comments: 'nouveau', paceSKm: 330 }) })
       );
       expect(prisma.workout_metrics_raw.upsert).toHaveBeenCalledWith(
         expect.objectContaining({ update: expect.objectContaining({ avgPace: '05:30' }) })
+      );
+    });
+
+    it('re-resolves the v3 start instant when the date changes', async () => {
+      vi.mocked(prisma.workouts.findFirst).mockResolvedValue(existingWorkout as never);
+      vi.mocked(prisma.workouts.update).mockResolvedValue({} as never);
+
+      await sessionsWrite.updateSession('w-1', { date: '2026-04-02' }, 'user-1');
+
+      expect(prisma.workouts.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            date: new Date('2026-04-02'),
+            startedAt: new Date('2026-04-01T22:00:00Z'),
+            datePrecision: 'day',
+          }),
+        })
       );
     });
 
