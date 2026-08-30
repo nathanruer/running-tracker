@@ -19,6 +19,9 @@ const LONG_RUN_M = 14000;
 const REP_DISTANCES_M = [200, 300, 400, 500, 600, 800, 1000, 1200, 1500, 2000, 3000, 5000];
 const DISTANCE_TOLERANCE = 0.05;
 
+/** A first or last lap run at least this much slower than the efforts is a warm-up or a cool-down. */
+const EASY_EDGE_RATIO = 1.15;
+
 interface Lap {
   kind: IntervalStep['stepType'];
   movingS: number;
@@ -101,6 +104,18 @@ function workoutTypeOf(effortDurations: number[]): string {
   return 'TEMPO';
 }
 
+/** True when the lap is markedly slower than the efforts it sits next to (at least two of them). */
+function isEasyEdge(lap: Lap, others: Lap[]): boolean {
+  const pace = paceSKm(lap);
+  const effortPaces = others
+    .filter((other) => other.kind === 'effort')
+    .map(paceSKm)
+    .filter((value): value is number => value !== null);
+
+  if (!pace || effortPaces.length < 2) return false;
+  return pace >= median(effortPaces) * EASY_EDGE_RATIO;
+}
+
 function continuousSessionType(laps: Lap[]): string {
   const movingS = laps.reduce((total, lap) => total + lap.movingS, 0);
   const distanceM = laps.reduce((total, lap) => total + lap.distanceM, 0);
@@ -125,21 +140,32 @@ function toStep(lap: Lap, index: number): IntervalStep {
 export function detectSessionStructure(intervals: IntervalsInterval[]): DetectedSessionStructure {
   const laps = intervals.map(lapOf);
   const usable = laps.filter(isUsable);
-  const efforts = usable.filter((lap) => lap.kind === 'effort');
-  const recoveries = usable.filter((lap) => lap.kind === 'recovery');
+  const workLaps = usable.filter((lap) => lap.kind === 'effort');
+  const restLapsBefore = usable.filter((lap) => lap.kind === 'recovery');
 
-  if (!efforts.length || (efforts.length < 2 && !recoveries.length)) {
+  if (!workLaps.length || (workLaps.length < 2 && !restLapsBefore.length)) {
     return { sessionType: laps.length ? continuousSessionType(laps) : null, intervalDetails: null };
   }
 
-  // A recovery lap opening or closing the session is a warm-up / cool-down, not a rest between reps.
+  // Opening and closing laps: a rest, or an effort run clearly easier than the others, is the
+  // warm-up or the cool-down of the session rather than a rep.
   const steps = usable.map((lap, index) => {
-    const isEdge = index === 0 || index === usable.length - 1;
-    if (lap.kind !== 'recovery' || !isEdge) return lap;
-    return { ...lap, kind: (index === 0 ? 'warmup' : 'cooldown') as IntervalStep['stepType'] };
+    const isFirst = index === 0;
+    const isLast = index === usable.length - 1;
+    if (!isFirst && !isLast) return lap;
+    if (lap.kind !== 'recovery' && !isEasyEdge(lap, isFirst ? usable.slice(1) : usable.slice(0, -1))) {
+      return lap;
+    }
+    return { ...lap, kind: (isFirst ? 'warmup' : 'cooldown') as IntervalStep['stepType'] };
   });
 
+  const efforts = steps.filter((lap) => lap.kind === 'effort');
   const restLaps = steps.filter((lap) => lap.kind === 'recovery');
+
+  if (!efforts.length) {
+    return { sessionType: continuousSessionType(laps), intervalDetails: null };
+  }
+
   const effortDurations = efforts.map((lap) => lap.movingS);
   const effortDistanceKm = repDistanceKm(efforts.map((lap) => lap.distanceM));
   const effortPaces = efforts.map(paceSKm).filter((pace): pace is number => pace !== null);

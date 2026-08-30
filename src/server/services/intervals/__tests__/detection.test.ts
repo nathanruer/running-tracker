@@ -89,6 +89,36 @@ describe('detectSessionStructure', () => {
     });
   });
 
+  it('reads a slow closing lap as the cool-down, even when the watch calls it an effort', () => {
+    const detected = detectSessionStructure([
+      lap('WORK', 900, 2400, 138),      // échauffement 15' à 6:15
+      lap('WORK', 600, 2000, 165),      // 10' à 5:00
+      lap('RECOVERY', 120, 320, 150),
+      lap('WORK', 600, 2010, 170),      // 10' à 4:58
+      lap('WORK', 300, 850, 140),       // retour au calme 5' à 5:53
+    ]);
+
+    expect(detected.intervalDetails?.steps.map((step) => step.stepType)).toEqual([
+      'warmup', 'effort', 'recovery', 'effort', 'cooldown',
+    ]);
+    expect(detected.intervalDetails?.repetitionCount).toBe(2);
+  });
+
+  it('keeps a fast closing lap as an effort', () => {
+    const detected = detectSessionStructure([
+      lap('WORK', 600, 2000, 165),
+      lap('RECOVERY', 120, 320, 150),
+      lap('WORK', 600, 2010, 170),
+      lap('RECOVERY', 120, 320, 152),
+      lap('WORK', 590, 2000, 172),
+    ]);
+
+    expect(detected.intervalDetails?.steps.map((step) => step.stepType)).toEqual([
+      'effort', 'recovery', 'effort', 'recovery', 'effort',
+    ]);
+    expect(detected.intervalDetails?.repetitionCount).toBe(3);
+  });
+
   it('reads uneven efforts as a fartlek', () => {
     const detected = detectSessionStructure([
       lap('WORK', 60, 250, 168),
