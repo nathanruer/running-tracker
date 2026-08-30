@@ -1,4 +1,4 @@
-// Lot 6 — conversion typée plan_sessions (v1) → planned_workouts (v3). Idempotent. Usage: DATABASE_URL=... node scripts/db-v3/convert-planned.mjs
+// Lot 6 — conversion typée plan_sessions (v1) → planned_workouts (v3). Idempotent. Usage: DATABASE_URL=... node prisma/migrations/v3/lot06_convert-planned.mjs
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

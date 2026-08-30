@@ -1,7 +1,7 @@
 // Lot 14 — completed sessions converted from v1: the plan structure is rebuilt from the
 // quick fields (what was planned) and the legacy steps become executed intervals.
 // Raw SQL on purpose: runs against the pre-contract schema (structure_legacy still present).
-// Dry-run by default. Usage: DATABASE_URL=... npx tsx scripts/db-v3/lot14-intervals-from-legacy.ts [--apply]
+// Dry-run by default. Usage: DATABASE_URL=... npx tsx prisma/migrations/v3/lot14_intervals-from-legacy.ts [--apply]
 import { PrismaClient } from '@prisma/client';
 import type { IntervalDetails } from '@/lib/types';
 import {
