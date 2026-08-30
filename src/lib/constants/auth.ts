@@ -26,16 +26,6 @@ export const COOKIE_CONFIG = {
   },
 } as const;
 
-/**
- * Name of the short-lived cookie carrying the Strava OAuth state
- */
-export const STRAVA_STATE_COOKIE_NAME = 'rt_strava_state';
-
-/**
- * Lifetime of the Strava OAuth state cookie (seconds)
- */
-export const STRAVA_STATE_MAX_AGE = 10 * 60;
-
 // ============================================================================
 // OAUTH GRANT TYPES
 // ============================================================================

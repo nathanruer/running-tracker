@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { sessionSchema } from '@/lib/validation/session';
-import { stravaPayloadSchema, stravaStreamPayloadSchema } from '@/lib/validation/payloads';
+import { streamPayloadSchema } from '@/lib/validation/payloads';
 import {
   mapIntervalsActivityToSessionPayload,
   buildPolylineFromLatLngs,
   encodePolyline,
-  mapStreamsToStravaShape,
+  mapStreams,
 } from '../mapper';
 import type { IntervalsActivity, IntervalsStream } from '../client';
 
@@ -50,15 +50,17 @@ describe('intervals mapper', () => {
     expect(parsed.calories).toBe(513);
   });
 
-  it('produces stravaData and streams accepted by the storage payload schemas', () => {
+  it('carries the provider instant, route, max HR, raw payload and streams', () => {
     const polyline = buildPolylineFromLatLngs([[48.8566, 2.3522], [48.857, 2.353], [48.8574, 2.3538]]);
     const payload = mapIntervalsActivityToSessionPayload(activity, streams, polyline);
 
-    expect(stravaPayloadSchema.safeParse(payload.stravaData).success).toBe(true);
-    expect(payload.stravaData.map?.summary_polyline).toBeTruthy();
-    expect(stravaStreamPayloadSchema.safeParse(payload.stravaStreams).success).toBe(true);
-    expect(payload.stravaStreams?.heartrate.data).toEqual([120, 130, 140]);
-    expect(payload.stravaStreams?.latlng).toBeUndefined();
+    expect(payload.startedAt).toBe('2026-08-28T16:30:00Z');
+    expect(payload.routePolyline).toBe(polyline);
+    expect(payload.maxHeartRate).toBe(171);
+    expect(payload.sourcePayload).toBe(activity);
+    expect(streamPayloadSchema.safeParse(payload.streams).success).toBe(true);
+    expect(payload.streams?.heartrate.data).toEqual([120, 130, 140]);
+    expect(payload.streams?.latlng).toBeUndefined();
   });
 
   it('handles an activity without streams or optional fields', () => {
@@ -75,8 +77,9 @@ describe('intervals mapper', () => {
 
     expect(parsed.avgPace).toBe('05:00');
     expect(parsed.avgHeartRate).toBeNull();
-    expect(payload.stravaData.map).toBeUndefined();
-    expect(payload.stravaStreams).toBeNull();
+    expect(payload.routePolyline).toBeNull();
+    expect(payload.startedAt).toBeNull();
+    expect(payload.streams).toBeNull();
   });
 
   it('encodes a Google polyline round-trippable prefix', () => {
@@ -84,9 +87,9 @@ describe('intervals mapper', () => {
   });
 
   it('drops latlng from mapped streams but keeps numeric ones', () => {
-    const mapped = mapStreamsToStravaShape(streams);
+    const mapped = mapStreams(streams);
     expect(Object.keys(mapped ?? {})).toEqual(['time', 'heartrate', 'velocity_smooth']);
-    expect(mapped?.time.original_size).toBe(3);
+    expect(mapped?.time.data).toHaveLength(3);
   });
 
   it('returns null polyline when latlngs are missing or too short', () => {

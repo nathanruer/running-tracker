@@ -12,7 +12,7 @@ function getErrorCodeFromStatus(status: number): ErrorCode {
     case HTTP_STATUS.NOT_FOUND:
       return ErrorCode.SESSION_NOT_FOUND;
     case HTTP_STATUS.TOO_MANY_REQUESTS:
-      return ErrorCode.STRAVA_RATE_LIMITED;
+      return ErrorCode.EXTERNAL_RATE_LIMITED;
     case HTTP_STATUS.UNPROCESSABLE_ENTITY:
       return ErrorCode.VALIDATION_FAILED;
     case HTTP_STATUS.GATEWAY_TIMEOUT:

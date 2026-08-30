@@ -93,7 +93,7 @@ export function SessionsTable({
     .filter((session) =>
       selectedSessions.has(session.id)
       && session.status === 'completed'
-      && (session.source === 'strava' || Boolean(session.externalId))
+      && Boolean(session.externalId)
       && session.hasWeather !== true
     )
     .map((session) => session.id);
@@ -102,7 +102,7 @@ export function SessionsTable({
     .filter((session) =>
       selectedSessions.has(session.id)
       && session.status === 'completed'
-      && (session.source === 'strava' || Boolean(session.externalId))
+      && Boolean(session.externalId)
       && session.hasStreams !== true
     )
     .map((session) => session.id);

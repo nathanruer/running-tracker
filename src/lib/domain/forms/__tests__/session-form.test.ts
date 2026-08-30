@@ -18,7 +18,7 @@ describe('initializeFormForCreate', () => {
     expect(result.perceivedExertion).toBeNull();
     expect(result.comments).toBe('');
     expect(result.source).toBe('manual');
-    expect(result.stravaData).toBeNull();
+    expect(result.sourcePayload).toBeNull();
   });
 
   it('pre-fills with initialData if provided', () => {
@@ -104,7 +104,7 @@ describe('initializeFormForEdit', () => {
       avgHeartRate: 150,
       perceivedExertion: 5,
       comments: 'Session complétée',
-      stravaData: null,
+      streams: null,
     } as TrainingSession;
 
     const result = initializeFormForEdit(session);
@@ -219,38 +219,27 @@ describe('initializeFormForComplete', () => {
     expect(result.avgHeartRate).toBeNull();
   });
 
-  it('pre-fills Strava data from initialData', () => {
+  it('pre-fills imported activity data from initialData', () => {
     const session = {
       status: 'planned',
       date: '2024-01-15',
       sessionType: 'Footing',
       source: 'manual',
-      stravaData: null,
+      streams: null,
       elevationGain: null,
     } as TrainingSession;
 
     const initialData = {
-      source: 'strava',
-      stravaData: {
-        id: 123,
-        name: 'Morning Run',
-        distance: 10000,
-        moving_time: 2700,
-        elapsed_time: 2700,
-        total_elevation_gain: 150,
-        type: 'Run',
-        start_date: '2024-01-15T08:00:00Z',
-        start_date_local: '2024-01-15T09:00:00',
-        average_speed: 3.7,
-        max_speed: 4.5,
-      },
+      source: 'intervals_icu',
+      sourcePayload: { id: 12345 },
+      routePolyline: 'abc',
       elevationGain: 150,
     };
 
     const result = initializeFormForComplete(session, initialData);
 
-    expect(result.source).toBe('strava');
-    expect(result.stravaData).toEqual(initialData.stravaData);
+    expect(result.source).toBe('intervals_icu');
+    expect(result.sourcePayload).toEqual(initialData.sourcePayload);
     expect(result.elevationGain).toBe(150);
   });
 

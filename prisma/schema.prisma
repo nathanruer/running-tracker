@@ -18,7 +18,6 @@ enum DatePrecision {
 }
 
 enum SourceProvider {
-  strava
   intervals_icu
 
   @@map("source_provider")
@@ -135,9 +134,9 @@ model athlete_profiles {
 }
 
 model connected_accounts {
-  id             String    @id @default(cuid())
-  userId         String    @map("user_id")
-  provider       String
+  id             String         @id @default(cuid())
+  userId         String         @map("user_id")
+  provider       SourceProvider
   externalId     String    @map("external_id")
   accessToken    String?   @map("access_token")
   refreshToken   String?   @map("refresh_token")

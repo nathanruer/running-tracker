@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleGetRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { formatStravaActivity } from '@/lib/utils/strava/activity-formatter';
 import {
   getIntervalsActivities,
   getIntervalsApiKey,
@@ -65,12 +64,7 @@ export async function GET(request: NextRequest) {
             activity.distance ?? 0
           );
 
-        return {
-          ...formatStravaActivity(payload.stravaData),
-          externalId: activity.id,
-          source: INTERVALS_SOURCE,
-          alreadyImported,
-        };
+        return { ...payload, alreadyImported };
       });
 
       return NextResponse.json({

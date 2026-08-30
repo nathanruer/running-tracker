@@ -10,7 +10,7 @@ import {
   ActivityHeartRateCell,
   ActivityRowCells,
 } from '../activity-row-cells';
-import type { FormattedStravaActivity } from '@/lib/services/api-client';
+import type { ImportableActivity } from '@/lib/services/api-client';
 
 vi.mock('@/components/ui/table', () => ({
   TableCell: ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
@@ -182,7 +182,7 @@ describe('ActivityHeartRateCell', () => {
 });
 
 describe('ActivityRowCells', () => {
-  const mockActivity: FormattedStravaActivity = {
+  const mockActivity: ImportableActivity = {
     externalId: '123456',
     date: '2024-01-15T10:00:00.000Z',
     comments: 'Course matinale',
@@ -191,12 +191,17 @@ describe('ActivityRowCells', () => {
     avgPace: '05:21',
     avgHeartRate: 155,
     sessionType: 'Run',
-    source: 'strava',
-    stravaData: null,
+    source: 'intervals_icu',
     elevationGain: null,
     averageCadence: null,
-    averageTemp: null,
     calories: null,
+    startedAt: null,
+    maxHeartRate: null,
+    perceivedExertion: null,
+    routePolyline: null,
+    streams: null,
+    sourcePayload: null,
+    alreadyImported: false,
   };
 
   it('renders all cells with activity data', () => {

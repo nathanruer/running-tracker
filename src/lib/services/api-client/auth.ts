@@ -40,20 +40,6 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-export async function disconnectStrava(): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  const data = await apiRequest<{
-    success: boolean;
-    message: string;
-  }>('/api/auth/strava/disconnect', {
-    method: 'POST',
-  });
-
-  return data;
-}
-
 export async function changePassword(
   currentPassword: string,
   newPassword: string,

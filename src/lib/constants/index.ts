@@ -5,5 +5,4 @@ export * from './session';
 export * from './messages';
 export * from './query-keys';
 export * from './auth';
-export * from './strava';
 export * from './map';

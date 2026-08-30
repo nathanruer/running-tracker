@@ -27,7 +27,6 @@ export async function getUserProfilePayload(userId: string) {
 
   if (!user) return null;
 
-  const stravaAccount = user.connectedAccounts.find((a) => a.provider === 'strava') ?? null;
   const intervalsAccount = user.connectedAccounts.find((a) => a.provider === 'intervals_icu') ?? null;
   const profile = user.profile ?? null;
 
@@ -35,8 +34,6 @@ export async function getUserProfilePayload(userId: string) {
     id: user.id,
     email: user.email,
     createdAt: user.createdAt,
-    stravaId: stravaAccount?.externalId ?? null,
-    stravaTokenExpiresAt: stravaAccount?.tokenExpiresAt ?? null,
     intervalsAthleteId: intervalsAccount?.externalId ?? null,
     weight: profile?.weight ?? null,
     age: profile?.age ?? null,

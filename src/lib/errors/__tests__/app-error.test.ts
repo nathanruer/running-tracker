@@ -30,7 +30,7 @@ describe('AppError', () => {
     });
 
     it('should set correct severity for warning errors', () => {
-      const error = new AppError({ code: ErrorCode.STRAVA_RATE_LIMITED });
+      const error = new AppError({ code: ErrorCode.EXTERNAL_RATE_LIMITED });
 
       expect(error.severity).toBe('warning');
       expect(error.isRecoverable).toBe(true);
@@ -105,7 +105,7 @@ describe('AppError', () => {
     });
 
     it('should return false for warning errors', () => {
-      const error = new AppError({ code: ErrorCode.STRAVA_RATE_LIMITED });
+      const error = new AppError({ code: ErrorCode.EXTERNAL_RATE_LIMITED });
       expect(AppError.isBlockingError(error)).toBe(false);
     });
   });

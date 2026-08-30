@@ -135,11 +135,11 @@ describe('/api/auth/delete-account', () => {
     expect(data).toEqual({ error: 'Internal server error' });
   });
 
-  it('should delete user with Strava account linked', async () => {
-    vi.mocked(getUserIdFromRequest).mockResolvedValue('user-strava-123');
+  it('should delete a user with a connected account', async () => {
+    vi.mocked(getUserIdFromRequest).mockResolvedValue('user-connected-123');
     vi.mocked(clearSessionCookie).mockResolvedValue(undefined);
     vi.mocked(prisma.users.delete).mockResolvedValue({
-      id: 'user-strava-123',
+      id: 'user-connected-123',
     } as never);
 
     const request = new NextRequest('http://localhost/api/auth/delete-account', {

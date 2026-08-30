@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { PATCH } from '../route';
 import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 import { markSessionNoStreams, updateSessionStreams } from '@/server/domain/sessions/sessions-write';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
 
 vi.mock('@/server/domain/sessions/sessions-read', () => ({
   fetchSessionById: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('@/server/domain/sessions/sessions-write', () => ({
   logSessionWriteError: vi.fn(),
 }));
 
-vi.mock('@/server/services/strava', () => ({
+vi.mock('@/server/services/intervals', () => ({
   fetchStreamsForSessionWithStatus: vi.fn(),
 }));
 
@@ -44,15 +44,12 @@ describe('/api/sessions/[id]/streams', () => {
   it('returns already_has_streams when stream payload already exists', async () => {
     vi.mocked(fetchSessionById).mockResolvedValue({
       id: 'session-1',
-      source: 'strava',
+      source: 'intervals_icu',
       externalId: '123',
       hasStreams: true,
-      stravaStreams: {
+      streams: {
         velocity_smooth: {
           data: [2.5, 2.6],
-          series_type: 'distance',
-          original_size: 2,
-          resolution: 'high',
         },
       },
     } as never);
@@ -65,64 +62,55 @@ describe('/api/sessions/[id]/streams', () => {
     expect(fetchStreamsForSessionWithStatus).not.toHaveBeenCalled();
   });
 
-  it('returns no_streams when session is flagged as non-fetchable without payload', async () => {
-    vi.mocked(fetchSessionById)
-      .mockResolvedValueOnce({
-        id: 'session-1',
-        source: 'strava',
-        externalId: '123',
-        hasStreams: true,
-        stravaStreams: null,
-        stravaData: null,
-      } as never)
-      .mockResolvedValueOnce({
-        id: 'session-1',
-        source: 'strava',
-        externalId: '123',
-        hasStreams: true,
-        stravaStreams: null,
-      } as never);
+  it('returns no_streams when the source is already flagged as non-fetchable', async () => {
+    vi.mocked(fetchSessionById).mockResolvedValue({
+      id: 'session-1',
+      source: 'intervals_icu',
+      externalId: '123',
+      hasStreams: true,
+      streams: null,
+    } as never);
 
     const response = await PATCH(makeRequest(), { params: Promise.resolve({ id: 'session-1' }) });
     const data = await response.json();
 
     expect(response.status).toBe(200);
     expect(data.status).toBe('no_streams');
-    expect(markSessionNoStreams).toHaveBeenCalledWith('session-1', 'user-123');
+    expect(markSessionNoStreams).not.toHaveBeenCalled();
     expect(fetchStreamsForSessionWithStatus).not.toHaveBeenCalled();
   });
 
-  it('returns missing_strava when no external strava reference exists', async () => {
+  it('returns missing_source when no external reference exists', async () => {
     vi.mocked(fetchSessionById).mockResolvedValue({
       id: 'session-1',
       source: null,
       externalId: null,
       hasStreams: false,
-      stravaStreams: null,
+      streams: null,
     } as never);
 
     const response = await PATCH(makeRequest(), { params: Promise.resolve({ id: 'session-1' }) });
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.status).toBe('missing_strava');
+    expect(data.status).toBe('missing_source');
   });
 
-  it('returns no_streams when Strava has no exploitable streams', async () => {
+  it('returns no_streams when the provider has no exploitable streams', async () => {
     vi.mocked(fetchSessionById)
       .mockResolvedValueOnce({
         id: 'session-1',
-        source: 'strava',
+        source: 'intervals_icu',
         externalId: '123',
         hasStreams: false,
-        stravaStreams: null,
+        streams: null,
       } as never)
       .mockResolvedValueOnce({
         id: 'session-1',
-        source: 'strava',
+        source: 'intervals_icu',
         externalId: '123',
         hasStreams: true,
-        stravaStreams: null,
+        streams: null,
       } as never);
 
     vi.mocked(fetchStreamsForSessionWithStatus).mockResolvedValue({
@@ -142,22 +130,19 @@ describe('/api/sessions/[id]/streams', () => {
     vi.mocked(fetchSessionById)
       .mockResolvedValueOnce({
         id: 'session-1',
-        source: 'strava',
+        source: 'intervals_icu',
         externalId: '123',
         hasStreams: false,
-        stravaStreams: null,
+        streams: null,
       } as never)
       .mockResolvedValueOnce({
         id: 'session-1',
-        source: 'strava',
+        source: 'intervals_icu',
         externalId: '123',
         hasStreams: true,
-        stravaStreams: {
+        streams: {
           velocity_smooth: {
             data: [2.5, 2.6],
-            series_type: 'distance',
-            original_size: 2,
-            resolution: 'high',
           },
         },
       } as never);
@@ -167,9 +152,6 @@ describe('/api/sessions/[id]/streams', () => {
       streams: {
         velocity_smooth: {
           data: [2.5, 2.6],
-          series_type: 'distance',
-          original_size: 2,
-          resolution: 'high',
         },
       },
     });
@@ -181,7 +163,7 @@ describe('/api/sessions/[id]/streams', () => {
     expect(response.status).toBe(200);
     expect(data.status).toBe('enriched');
     expect(fetchStreamsForSessionWithStatus).toHaveBeenCalledWith(
-      'strava',
+      'intervals_icu',
       '123',
       'user-123',
       'enrich-session-streams'

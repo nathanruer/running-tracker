@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { importIntervalsSelection, type FormattedStravaActivity } from '@/lib/services/api-client';
+import { importIntervalsSelection, type ImportableActivity } from '@/lib/services/api-client';
 import { useExternalActivities } from '../../hooks/use-external-activities';
 import { useChunkedImport } from '../../hooks/use-chunked-import';
 import { useTableSort } from '@/hooks/use-table-sort';
@@ -99,14 +99,14 @@ export function ActivityImportContent({
     }
   }, [deferredSearchQuery, activities, hasMore, searchLoading, loadAllForSearch]);
 
-  const { handleSort, SortIcon, defaultComparator, sortColumn } = useTableSort<FormattedStravaActivity>(
+  const { handleSort, SortIcon, defaultComparator, sortColumn } = useTableSort<ImportableActivity>(
     filteredActivities,
     null,
     null
   );
 
   const sortedActivities = useMemo(() => {
-    return defaultComparator((activity: FormattedStravaActivity, column: string) => {
+    return defaultComparator((activity: ImportableActivity, column: string) => {
       switch (column) {
         case 'date':
           return new Date(activity.date);
@@ -160,7 +160,7 @@ export function ActivityImportContent({
     clearSelection();
   }, [deferredSearchQuery, clearSelection]);
 
-  const buildSessionPayload = (activity: FormattedStravaActivity) => ({
+  const buildSessionPayload = (activity: ImportableActivity) => ({
     date: activity.date,
     sessionType: null,
     duration: activity.duration,
@@ -171,10 +171,12 @@ export function ActivityImportContent({
     comments: activity.comments || '',
     externalId: activity.externalId,
     source: activity.source,
-    stravaData: activity.stravaData,
+    startedAt: activity.startedAt,
+    routePolyline: activity.routePolyline,
+    maxHeartRate: activity.maxHeartRate,
+    sourcePayload: activity.sourcePayload,
     elevationGain: activity.elevationGain,
     averageCadence: activity.averageCadence,
-    averageTemp: activity.averageTemp,
     calories: activity.calories,
   });
 

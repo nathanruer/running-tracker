@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ActivityRow } from '../activity-row';
-import type { FormattedStravaActivity } from '@/lib/services/api-client';
+import type { ImportableActivity } from '@/lib/services/api-client';
 
 vi.mock('@/components/ui/table', () => ({
   TableRow: ({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
@@ -26,7 +26,7 @@ vi.mock('@/components/ui/tooltip', () => ({
 }));
 
 describe('ActivityRow', () => {
-  const mockActivity: FormattedStravaActivity = {
+  const mockActivity: ImportableActivity = {
     externalId: '123456',
     date: '2024-01-15T10:00:00.000Z',
     comments: 'Course matinale',
@@ -35,17 +35,22 @@ describe('ActivityRow', () => {
     avgPace: '05:21',
     avgHeartRate: 155,
     sessionType: 'Run',
-    source: 'strava',
-    stravaData: null,
+    source: 'intervals_icu',
     elevationGain: null,
     averageCadence: null,
-    averageTemp: null,
     calories: null,
+    startedAt: null,
+    maxHeartRate: null,
+    perceivedExertion: null,
+    routePolyline: null,
+    streams: null,
+    sourcePayload: null,
+    alreadyImported: false,
   };
 
   const mockToggleSelect = vi.fn();
 
-  const renderRow = (props?: Partial<{ activity: FormattedStravaActivity; index: number; selected: boolean; alreadyImported: boolean }>) => {
+  const renderRow = (props?: Partial<{ activity: ImportableActivity; index: number; selected: boolean; alreadyImported: boolean }>) => {
     return render(
       <table>
         <tbody>

@@ -69,21 +69,14 @@ const MAPPED_STREAM_TYPES = new Set([
   'altitude',
 ]);
 
-export function mapStreamsToStravaShape(
-  streams: IntervalsStream[]
-): Record<string, { data: number[]; series_type: 'distance'; original_size: number; resolution: 'high' }> | null {
-  const result: Record<string, { data: number[]; series_type: 'distance'; original_size: number; resolution: 'high' }> = {};
+export function mapStreams(streams: IntervalsStream[]): Record<string, { data: number[] }> | null {
+  const result: Record<string, { data: number[] }> = {};
 
   for (const stream of streams) {
     if (!MAPPED_STREAM_TYPES.has(stream.type)) continue;
     const data = stream.data.filter((v): v is number => typeof v === 'number');
     if (data.length === 0) continue;
-    result[stream.type] = {
-      data,
-      series_type: 'distance',
-      original_size: data.length,
-      resolution: 'high',
-    };
+    result[stream.type] = { data };
   }
 
   return Object.keys(result).length ? result : null;
@@ -94,11 +87,6 @@ function formatPace(distanceKm: number, durationSeconds: number): string {
   return formatDuration(Math.round(durationSeconds / distanceKm));
 }
 
-function numericId(id: string): number {
-  const digits = Number(id.replace(/\D/g, ''));
-  return Number.isFinite(digits) && digits > 0 ? digits : 0;
-}
-
 export function mapIntervalsActivityToSessionPayload(
   activity: IntervalsActivity,
   streams: IntervalsStream[],
@@ -106,41 +94,23 @@ export function mapIntervalsActivityToSessionPayload(
 ) {
   const distanceKm = (activity.distance ?? 0) / 1000;
   const movingSeconds = activity.moving_time ?? activity.elapsed_time ?? 0;
-  const mappedStreams = mapStreamsToStravaShape(streams);
-
-  const stravaShapedActivity = {
-    id: numericId(activity.id),
-    name: activity.name ?? 'Course',
-    distance: activity.distance ?? 0,
-    moving_time: movingSeconds,
-    elapsed_time: activity.elapsed_time ?? movingSeconds,
-    total_elevation_gain: activity.total_elevation_gain ?? 0,
-    type: 'Run',
-    start_date: activity.start_date ?? activity.start_date_local,
-    start_date_local: activity.start_date_local,
-    average_speed: activity.average_speed ?? (movingSeconds > 0 ? (activity.distance ?? 0) / movingSeconds : 0),
-    max_speed: activity.max_speed ?? activity.average_speed ?? 0,
-    ...(activity.average_heartrate != null ? { average_heartrate: activity.average_heartrate } : {}),
-    ...(activity.max_heartrate != null ? { max_heartrate: activity.max_heartrate } : {}),
-    ...(activity.average_cadence != null ? { average_cadence: activity.average_cadence } : {}),
-    ...(activity.calories != null ? { calories: activity.calories } : {}),
-    ...(polyline ? { map: { id: `intervals_${activity.id}`, summary_polyline: polyline } } : {}),
-    external_id: activity.external_id ?? null,
-  };
 
   return {
     date: activity.start_date_local,
+    startedAt: activity.start_date ?? null,
     sessionType: null,
     duration: formatDuration(movingSeconds),
     distance: Math.round(distanceKm * 100) / 100,
     avgPace: formatPace(distanceKm, movingSeconds),
     avgHeartRate: activity.average_heartrate != null ? Math.round(activity.average_heartrate) : null,
+    maxHeartRate: activity.max_heartrate != null ? Math.round(activity.max_heartrate) : null,
     perceivedExertion: null,
     comments: activity.name ?? '',
     externalId: activity.id,
     source: INTERVALS_SOURCE,
-    stravaData: stravaShapedActivity,
-    stravaStreams: mappedStreams,
+    routePolyline: polyline,
+    streams: mapStreams(streams),
+    sourcePayload: activity,
     elevationGain: activity.total_elevation_gain ?? null,
     averageCadence: activity.average_cadence ?? null,
     calories: activity.calories != null ? Math.round(activity.calories) : null,

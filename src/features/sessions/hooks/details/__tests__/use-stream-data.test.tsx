@@ -2,8 +2,8 @@ import { renderHook } from '@testing-library/react';
 import { useStreamData } from '../use-stream-data';
 import { vi, describe, it, expect } from 'vitest';
 
-vi.mock('@/lib/validation/strava', () => ({
-  validateStravaStreams: vi.fn((streams) => streams),
+vi.mock('@/lib/validation/streams', () => ({
+  validateStreams: vi.fn((streams) => streams),
 }));
 
 vi.mock('@/lib/utils/geo/stream-charts', () => ({

@@ -4,8 +4,7 @@ import {
   intervalStepEntitySchema,
   intervalDetailsEntitySchema,
   weatherDataSchema,
-  stravaActivitySchema,
-  stravaStreamSchema,
+  streamSchema,
   trainingSessionEntitySchema,
 } from '@/lib/validation/schemas/entities';
 
@@ -128,86 +127,15 @@ describe('Entity Schemas', () => {
     });
   });
 
-  describe('stravaActivitySchema', () => {
-    it('validates minimal Strava activity', () => {
-      const activity = {
-        id: 123456,
-        name: 'Morning Run',
-        distance: 10000,
-        moving_time: 3600,
-        elapsed_time: 3700,
-        total_elevation_gain: 50,
-        type: 'Run',
-        start_date: '2024-01-15T07:00:00Z',
-        start_date_local: '2024-01-15T08:00:00',
-        average_speed: 2.78,
-        max_speed: 3.5,
-      };
-      const result = stravaActivitySchema.safeParse(activity);
-      expect(result.success).toBe(true);
-    });
-
-    it('accepts null external_id and upload_id (manual/non-GPS activities)', () => {
-      const activity = {
-        id: 123456,
-        name: 'Ski de fond',
-        distance: 15000,
-        moving_time: 7200,
-        elapsed_time: 7500,
-        total_elevation_gain: 200,
-        type: 'NordicSki',
-        start_date: '2024-02-10T09:00:00Z',
-        start_date_local: '2024-02-10T10:00:00',
-        average_speed: 2.08,
-        max_speed: 3.0,
-        external_id: null,
-        upload_id: null,
-      };
-      const result = stravaActivitySchema.safeParse(activity);
-      expect(result.success).toBe(true);
-    });
-
-    it('validates Strava activity with all optional fields', () => {
-      const activity = {
-        id: 123456,
-        name: 'Morning Run',
-        distance: 10000,
-        moving_time: 3600,
-        elapsed_time: 3700,
-        total_elevation_gain: 50,
-        type: 'Run',
-        start_date: '2024-01-15T07:00:00Z',
-        start_date_local: '2024-01-15T08:00:00',
-        average_speed: 2.78,
-        max_speed: 3.5,
-        average_heartrate: 145,
-        max_heartrate: 175,
-        average_cadence: 85,
-        average_temp: 18,
-        elev_high: 120,
-        elev_low: 80,
-        calories: 650,
-        map: {
-          id: 'map123',
-          summary_polyline: 'abc123',
-        },
-        external_id: 'ext123',
-        upload_id: 789,
-      };
-      const result = stravaActivitySchema.safeParse(activity);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('stravaStreamSchema', () => {
-    it('validates Strava stream', () => {
+  describe('streamSchema', () => {
+    it('validates a stream', () => {
       const stream = {
         data: [0, 10, 20, 30],
         series_type: 'time',
         original_size: 4,
         resolution: 'high',
       };
-      const result = stravaStreamSchema.safeParse(stream);
+      const result = streamSchema.safeParse(stream);
       expect(result.success).toBe(true);
     });
 
@@ -218,7 +146,7 @@ describe('Entity Schemas', () => {
         original_size: 0,
         resolution: 'high',
       };
-      const result = stravaStreamSchema.safeParse(stream);
+      const result = streamSchema.safeParse(stream);
       expect(result.success).toBe(false);
     });
   });
@@ -300,38 +228,5 @@ describe('Entity Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('validates session with Strava data', () => {
-      const session = {
-        id: 'session-4',
-        userId: 'user-1',
-        sessionNumber: 4,
-        week: 1,
-        date: '2024-01-18',
-        sessionType: 'Footing',
-        duration: '0:50:00',
-        distance: 9,
-        avgPace: '5:33',
-        avgHeartRate: 140,
-        comments: '',
-        status: 'completed',
-        externalId: 'strava-123',
-        source: 'strava',
-        stravaData: {
-          id: 123456,
-          name: 'Morning Run',
-          distance: 9000,
-          moving_time: 3000,
-          elapsed_time: 3100,
-          total_elevation_gain: 30,
-          type: 'Run',
-          start_date: '2024-01-18T07:00:00Z',
-          start_date_local: '2024-01-18T08:00:00',
-          average_speed: 3.0,
-          max_speed: 4.0,
-        },
-      };
-      const result = trainingSessionEntitySchema.safeParse(session);
-      expect(result.success).toBe(true);
-    });
   });
 });

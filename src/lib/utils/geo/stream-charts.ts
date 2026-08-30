@@ -1,4 +1,4 @@
-import type { StravaStreamSet } from '@/lib/types';
+import type { StreamSet } from '@/lib/types';
 import type { StreamDataPoint, StreamChartConfig } from '@/lib/types/stream-charts';
 import { mpsToSecondsPerKm, formatPace } from '@/lib/utils/pace';
 
@@ -42,7 +42,7 @@ export const STREAM_CONFIGS: Record<string, StreamChartConfig> = {
     unit: 'ppm',
     color: '#f97316',
     gradientId: 'cadenceGradient',
-    formatValue: (v) => `${Math.round(v * 2)}`, // Strava gives half cadence (one leg)
+    formatValue: (v) => `${Math.round(v * 2)}`, // cadence is stored per leg (rpm)
     formatTooltip: (v) => `${Math.round(v * 2)} ppm`,
   },
 };
@@ -269,7 +269,7 @@ function normalizeEdgePaceOutliers(paces: number[]): number[] {
 /**
  * Prepares altitude data for charting
  */
-export function prepareAltitudeData(streams: StravaStreamSet): StreamDataPoint[] {
+export function prepareAltitudeData(streams: StreamSet): StreamDataPoint[] {
   const altitude = streams.altitude?.data || [];
   const distance = streams.distance?.data || [];
   const time = streams.time?.data || [];
@@ -305,18 +305,13 @@ function applyRollingAverage(values: number[], windowSize: number): number[] {
   });
 }
 
-function getPaceSmoothingWindowSize(
-  time: number[],
-  resolution: 'low' | 'medium' | 'high' | undefined
-): number {
-  const targetWindowSeconds = resolution === 'high' ? 10 : resolution === 'medium' ? 4 : 0;
-  if (targetWindowSeconds === 0) return 1;
-
-  const maxWindowSize = resolution === 'high' ? 11 : 5;
+function getPaceSmoothingWindowSize(time: number[]): number {
+  const targetWindowSeconds = 10;
+  const maxWindowSize = 11;
   const medianDeltaSeconds = getMedianPositiveDelta(time);
 
   if (!medianDeltaSeconds || medianDeltaSeconds <= 0) {
-    return resolution === 'high' ? 5 : 3;
+    return 5;
   }
 
   const samples = Math.round(targetWindowSeconds / medianDeltaSeconds);
@@ -329,7 +324,7 @@ function getPaceSmoothingWindowSize(
  * Prepares pace data for charting
  * Applies smoothing for better visualization while maintaining data integrity
  */
-export function preparePaceData(streams: StravaStreamSet): StreamDataPoint[] {
+export function preparePaceData(streams: StreamSet): StreamDataPoint[] {
   const velocityStream = streams.velocity_smooth;
   const velocity = velocityStream?.data || [];
   const distance = streams.distance?.data || [];
@@ -350,8 +345,8 @@ export function preparePaceData(streams: StravaStreamSet): StreamDataPoint[] {
   );
   const cleanedVelocities = smoothIsolatedPauseArtifacts(clampedVelocities);
 
-  // Strava's velocity stream is already smoothed. Use only a light adaptive pass.
-  const smoothingWindow = getPaceSmoothingWindowSize(time, velocityStream?.resolution);
+  // The velocity stream is already smoothed by the provider. Use only a light adaptive pass.
+  const smoothingWindow = getPaceSmoothingWindowSize(time);
   const preparedVelocities = smoothingWindow > 1
     ? applyRollingAverage(cleanedVelocities, smoothingWindow)
     : cleanedVelocities;
@@ -372,7 +367,7 @@ export function preparePaceData(streams: StravaStreamSet): StreamDataPoint[] {
  * Prepares heart rate data for charting
  * Applies light smoothing to reduce sensor noise
  */
-export function prepareHeartrateData(streams: StravaStreamSet): StreamDataPoint[] {
+export function prepareHeartrateData(streams: StreamSet): StreamDataPoint[] {
   const heartrate = streams.heartrate?.data || [];
   const distance = streams.distance?.data || [];
   const time = streams.time?.data || [];
@@ -393,7 +388,7 @@ export function prepareHeartrateData(streams: StravaStreamSet): StreamDataPoint[
  * Prepares cadence data for charting
  * Applies smoothing for better visualization
  */
-export function prepareCadenceData(streams: StravaStreamSet): StreamDataPoint[] {
+export function prepareCadenceData(streams: StreamSet): StreamDataPoint[] {
   const cadence = streams.cadence?.data || [];
   const distance = streams.distance?.data || [];
   const time = streams.time?.data || [];
@@ -417,7 +412,7 @@ export function prepareCadenceData(streams: StravaStreamSet): StreamDataPoint[] 
 /**
  * Gets available streams from a stream set
  */
-export function getAvailableStreams(streams: StravaStreamSet): string[] {
+export function getAvailableStreams(streams: StreamSet): string[] {
   const available: string[] = [];
   
   if (streams.altitude?.data?.length) available.push('altitude');

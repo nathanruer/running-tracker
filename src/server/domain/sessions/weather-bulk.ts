@@ -6,7 +6,7 @@ export interface BulkWeatherEnrichmentSummary {
   requested: number;
   enriched: number;
   alreadyHasWeather: number;
-  missingStrava: number;
+  missingSource: number;
   failed: number;
   notFound: number;
 }
@@ -16,7 +16,7 @@ export interface BulkWeatherEnrichmentResult {
   ids: {
     enriched: string[];
     alreadyHasWeather: string[];
-    missingStrava: string[];
+    missingSource: string[];
     failed: string[];
     notFound: string[];
   };
@@ -39,14 +39,14 @@ export async function bulkEnrichWeatherForIds(
         requested: 0,
         enriched: 0,
         alreadyHasWeather: 0,
-        missingStrava: 0,
+        missingSource: 0,
         failed: 0,
         notFound: 0,
       },
       ids: {
         enriched: [],
         alreadyHasWeather: [],
-        missingStrava: [],
+        missingSource: [],
         failed: [],
         notFound: [],
       },
@@ -58,12 +58,8 @@ export async function bulkEnrichWeatherForIds(
     select: {
       id: true,
       startedAt: true,
+      routePolyline: true,
       weather_observations: { select: { id: true } },
-      workout_sources: {
-        select: {
-          rawPayload: true,
-        },
-      },
     },
   });
 
@@ -71,7 +67,7 @@ export async function bulkEnrichWeatherForIds(
   const notFound = requestedIds.filter((id) => !foundIds.has(id));
 
   const alreadyHasWeather: string[] = [];
-  const missingStrava: string[] = [];
+  const missingSource: string[] = [];
   const tasks: WeatherEnrichmentTask[] = [];
 
   for (const workout of workouts) {
@@ -80,37 +76,35 @@ export async function bulkEnrichWeatherForIds(
       continue;
     }
 
-    const stravaActivity = workout.workout_sources.find((source) => source.rawPayload);
-
-    if (!stravaActivity) {
-      missingStrava.push(workout.id);
+    if (!workout.routePolyline) {
+      missingSource.push(workout.id);
       continue;
     }
 
     tasks.push({
       id: workout.id,
-      stravaData: stravaActivity.rawPayload,
-      date: workout.startedAt.toISOString(),
+      routePolyline: workout.routePolyline,
+      startedAt: workout.startedAt,
     });
   }
 
   const enrichmentResult = await enrichBulkWeather(tasks, userId, options);
 
-  const missingStravaCombined = [...missingStrava, ...enrichmentResult.missingStravaIds];
+  const missingSourceCombined = [...missingSource, ...enrichmentResult.missingRouteIds];
 
   return {
     summary: {
       requested: requestedIds.length,
       enriched: enrichmentResult.enrichedIds.length,
       alreadyHasWeather: alreadyHasWeather.length,
-      missingStrava: missingStravaCombined.length,
+      missingSource: missingSourceCombined.length,
       failed: enrichmentResult.failedIds.length,
       notFound: notFound.length,
     },
     ids: {
       enriched: enrichmentResult.enrichedIds,
       alreadyHasWeather,
-      missingStrava: missingStravaCombined,
+      missingSource: missingSourceCombined,
       failed: enrichmentResult.failedIds,
       notFound,
     },

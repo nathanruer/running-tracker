@@ -1,10 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { FormattedStravaActivity } from '@/lib/services/api-client';
+import type { ImportableActivity } from '@/lib/services/api-client';
 
 export interface ActivityImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (data: FormattedStravaActivity) => void;
+  onImport: (data: ImportableActivity) => void;
   mode?: 'create' | 'edit' | 'complete';
   queryClient?: QueryClient;
   onBulkImportSuccess?: () => void;
@@ -13,15 +13,10 @@ export interface ActivityImportDialogProps {
 export interface ActivityImportContentProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (data: FormattedStravaActivity) => void;
+  onImport: (data: ImportableActivity) => void;
   mode: 'create' | 'edit' | 'complete';
   queryClient?: QueryClient;
   onBulkImportSuccess?: () => void;
-}
-
-export interface ConnectScreenProps {
-  loading: boolean;
-  onConnect: () => void;
 }
 
 export interface ImportToolbarProps {
@@ -52,7 +47,7 @@ export interface ImportTableHeaderProps {
 }
 
 export interface ActivityRowProps {
-  activity: FormattedStravaActivity;
+  activity: ImportableActivity;
   index: number;
   selected: boolean;
   onToggleSelect: (index: number, e?: React.MouseEvent) => void;
@@ -60,8 +55,8 @@ export interface ActivityRowProps {
 }
 
 export interface ActivityTableProps {
-  activities: FormattedStravaActivity[];
-  filteredActivities: FormattedStravaActivity[];
+  activities: ImportableActivity[];
+  filteredActivities: ImportableActivity[];
   mode: 'create' | 'edit' | 'complete';
   isSelected: (index: number) => boolean;
   isAllSelected: () => boolean;

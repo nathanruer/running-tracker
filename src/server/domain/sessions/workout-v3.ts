@@ -20,14 +20,17 @@ function roundedInt(value: unknown): number | null {
   return n == null ? null : Math.round(n);
 }
 
+/**
+ * Real start instant of a session. A provider instant (`startedAt` with offset) wins; a bare day
+ * means day precision at local midnight; a wall-clock date is read in the athlete timezone.
+ */
 export function resolveStartedAt(
   payloadDate: unknown,
-  activity: JsonRecord | null,
+  providerStartedAt: unknown,
   timezone: string
 ): { startedAt: Date; datePrecision: 'instant' | 'day' } {
-  const externalStart = typeof activity?.start_date === 'string' ? activity.start_date : null;
-  if (externalStart && hasExplicitOffset(externalStart)) {
-    const instant = new Date(externalStart);
+  if (typeof providerStartedAt === 'string' && hasExplicitOffset(providerStartedAt)) {
+    const instant = new Date(providerStartedAt);
     if (!Number.isNaN(instant.getTime())) return { startedAt: instant, datePrecision: 'instant' };
   }
 
@@ -39,22 +42,17 @@ export function resolveStartedAt(
   return { startedAt: instant, datePrecision: 'instant' };
 }
 
-export function routePolylineFromActivity(activity: JsonRecord | null): string | null {
-  const polyline = asRecord(activity?.map)?.summary_polyline;
-  return typeof polyline === 'string' && polyline.trim() ? polyline : null;
+export function toProvider(source: string | null): 'intervals_icu' | null {
+  return source === 'intervals_icu' ? source : null;
 }
 
-export function payloadKindOf(activity: JsonRecord | null): 'detail' | 'summary' {
-  return activity && 'start_latlng' in activity ? 'detail' : 'summary';
+export function polylineOf(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
-export function toProvider(source: string | null): 'strava' | 'intervals_icu' | null {
-  return source === 'strava' || source === 'intervals_icu' ? source : null;
-}
-
-function maxHeartRate(activity: JsonRecord | null, streams: JsonRecord | null): number | null {
-  const fromActivity = roundedInt(activity?.max_heartrate);
-  if (fromActivity != null) return fromActivity;
+function maxHeartRate(payload: JsonRecord, streams: JsonRecord | null): number | null {
+  const fromPayload = roundedInt(payload.maxHeartRate);
+  if (fromPayload != null) return fromPayload;
 
   const data = asRecord(streams?.heartrate)?.data;
   if (!Array.isArray(data)) return null;
@@ -65,22 +63,21 @@ function maxHeartRate(activity: JsonRecord | null, streams: JsonRecord | null): 
   return max == null ? null : Math.round(max);
 }
 
-export function buildWorkoutV3(payload: JsonRecord, activity: unknown, streams: unknown, timezone: string) {
-  const activityRecord = asRecord(activity);
+export function buildWorkoutV3(payload: JsonRecord, streams: unknown, timezone: string) {
   const distanceKm = payload.distance != null ? Number(payload.distance) : NaN;
 
   return {
-    ...resolveStartedAt(payload.date, activityRecord, timezone),
+    ...resolveStartedAt(payload.date, payload.startedAt, timezone),
     timezone,
     durationS: payload.duration ? parseDuration(String(payload.duration)) : null,
     distanceM: Number.isFinite(distanceKm) ? Math.round(distanceKm * 1000) : null,
     paceSKm: payload.avgPace ? parseDuration(String(payload.avgPace)) : null,
     avgHr: roundedInt(payload.avgHeartRate),
-    maxHr: maxHeartRate(activityRecord, asRecord(streams)),
+    maxHr: maxHeartRate(payload, asRecord(streams)),
     avgCadence: finiteNumber(payload.averageCadence),
     elevationGainM: finiteNumber(payload.elevationGain),
     calories: roundedInt(payload.calories),
-    routePolyline: routePolylineFromActivity(activityRecord),
+    routePolyline: polylineOf(payload.routePolyline),
   };
 }
 

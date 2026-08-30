@@ -3,7 +3,7 @@ import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { sessionSchema } from '@/lib/validation';
 import { handleGetRequest, handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
 import { toPrismaJson } from '@/server/utils/prisma-json';
 import { fetchSessions } from '@/server/domain/sessions/sessions-read';
 import { createCompletedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
@@ -57,33 +57,23 @@ export async function POST(request: NextRequest) {
     sessionSchema,
     async (payload, userId) => {
       try {
-        const sessionDate = new Date(payload.date);
-
         const streamResult = await fetchStreamsForSessionWithStatus(
           payload.source ?? null,
           payload.externalId ?? null,
           userId,
           'session-import'
         );
-        const stravaStreams = streamResult.streams;
-
-        if (payload.stravaData && streamResult.polyline && !payload.stravaData.map) {
-          payload.stravaData.map = {
-            id: `${payload.source}_${payload.externalId}`,
-            summary_polyline: streamResult.polyline,
-          };
-        }
-
-        let weather = null;
-        if (payload.stravaData) {
-          weather = await enrichSessionWithWeather(payload.stravaData, sessionDate);
-        }
+        const routePolyline = payload.routePolyline ?? streamResult.polyline ?? null;
+        const weather = routePolyline
+          ? await enrichSessionWithWeather({ routePolyline, startedAt: payload.startedAt ?? payload.date })
+          : null;
 
         const workout = await createCompletedSession(
           {
             ...payload,
+            routePolyline,
             weather: weather ?? null,
-            stravaStreams: stravaStreams ? toPrismaJson(stravaStreams) : null,
+            streams: streamResult.streams ? toPrismaJson(streamResult.streams) : null,
           },
           userId
         );

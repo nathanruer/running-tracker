@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
 import { prisma } from '@/server/database';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
 import { markSessionNoStreams, updateSessionStreams } from '@/server/domain/sessions/sessions-write';
 
 vi.mock('@/server/database', () => ({
@@ -12,7 +12,7 @@ vi.mock('@/server/database', () => ({
   },
 }));
 
-vi.mock('@/server/services/strava', () => ({
+vi.mock('@/server/services/intervals', () => ({
   fetchStreamsForSessionWithStatus: vi.fn(),
 }));
 
@@ -39,7 +39,7 @@ describe('bulkEnrichStreamsForIds', () => {
     expect(prisma.workouts.findMany).not.toHaveBeenCalled();
   });
 
-  it('classifies not found, already enriched, no_streams marker and missing strava', async () => {
+  it('classifies not found, already enriched and missing source', async () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
@@ -51,20 +51,7 @@ describe('bulkEnrichStreamsForIds', () => {
         id: 'b',
         routePolyline: null,
         workout_streams: null,
-        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'not_applicable' }],
-      },
-      {
-        id: 'c',
-        routePolyline: null,
-        workout_streams: null,
-        workout_sources: [
-          {
-            provider: 'strava',
-            externalId: '112',
-            streamsStatus: 'pending',
-            rawPayload: { external_id: null, upload_id: null },
-          },
-        ],
+        workout_sources: [{ provider: 'intervals_icu', externalId: '111', streamsStatus: 'not_applicable' }],
       },
       {
         id: 'd',
@@ -74,26 +61,25 @@ describe('bulkEnrichStreamsForIds', () => {
       },
     ] as never);
 
-    const result = await bulkEnrichStreamsForIds('user-1', ['a', 'b', 'c', 'd', 'e']);
+    const result = await bulkEnrichStreamsForIds('user-1', ['a', 'b', 'd', 'e']);
 
-    expect(result.summary.requested).toBe(5);
-    expect(result.summary.alreadyHasStreams).toBe(3);
-    expect(result.summary.missingStrava).toBe(1);
+    expect(result.summary.requested).toBe(4);
+    expect(result.summary.alreadyHasStreams).toBe(2);
+    expect(result.summary.missingSource).toBe(1);
     expect(result.summary.notFound).toBe(1);
-    expect(result.ids.alreadyHasStreams.sort()).toEqual(['a', 'b', 'c']);
-    expect(result.ids.missingStrava).toEqual(['d']);
+    expect(result.ids.alreadyHasStreams.sort()).toEqual(['a', 'b']);
+    expect(result.ids.missingSource).toEqual(['d']);
     expect(result.ids.notFound).toEqual(['e']);
-    expect(markSessionNoStreams).toHaveBeenCalledWith('c', 'user-1');
     expect(fetchStreamsForSessionWithStatus).not.toHaveBeenCalled();
   });
 
-  it('enriches eligible strava workouts', async () => {
+  it('enriches eligible workouts', async () => {
     vi.mocked(prisma.workouts.findMany).mockResolvedValue([
       {
         id: 'a',
         routePolyline: null,
         workout_streams: null,
-        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
+        workout_sources: [{ provider: 'intervals_icu', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -102,9 +88,6 @@ describe('bulkEnrichStreamsForIds', () => {
       streams: {
         velocity_smooth: {
           data: [1, 2],
-          series_type: 'distance',
-          original_size: 2,
-          resolution: 'high',
         },
       },
     });
@@ -115,7 +98,7 @@ describe('bulkEnrichStreamsForIds', () => {
     expect(result.summary.enriched).toBe(1);
     expect(result.summary.failed).toBe(0);
     expect(fetchStreamsForSessionWithStatus).toHaveBeenCalledWith(
-      'strava',
+      'intervals_icu',
       '111',
       'user-1',
       'bulk-enrich-streams'
@@ -129,7 +112,7 @@ describe('bulkEnrichStreamsForIds', () => {
         id: 'a',
         routePolyline: null,
         workout_streams: null,
-        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
+        workout_sources: [{ provider: 'intervals_icu', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 
@@ -152,7 +135,7 @@ describe('bulkEnrichStreamsForIds', () => {
         id: 'a',
         routePolyline: null,
         workout_streams: null,
-        workout_sources: [{ provider: 'strava', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
+        workout_sources: [{ provider: 'intervals_icu', externalId: '111', streamsStatus: 'pending', rawPayload: { id: 111 } }],
       },
     ] as never);
 

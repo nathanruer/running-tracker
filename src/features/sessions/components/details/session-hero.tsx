@@ -17,10 +17,8 @@ interface SessionHeroProps {
   onExpandMap: () => void;
 }
 
-function externalActivityLink(source: string, externalId: string): { href: string; label: string } {
-  return source === 'strava'
-    ? { href: `https://www.strava.com/activities/${externalId}`, label: 'Voir sur Strava' }
-    : { href: `https://intervals.icu/activities/${externalId}`, label: 'Voir sur intervals.icu' };
+function externalActivityLink(externalId: string): { href: string; label: string } {
+  return { href: `https://intervals.icu/activities/${externalId}`, label: 'Voir sur intervals.icu' };
 }
 
 function formatLongDate(value: string): string {
@@ -47,7 +45,7 @@ export function SessionHero({
 }: SessionHeroProps) {
   const externalLink =
     externalSource && session.externalId
-      ? externalActivityLink(externalSource, session.externalId)
+      ? externalActivityLink(session.externalId)
       : null;
   return (
     <div className="relative isolate overflow-hidden">

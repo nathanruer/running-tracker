@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { getIntervalsActivitiesList, type FormattedStravaActivity } from '@/lib/services/api-client';
+import { getIntervalsActivitiesList, type ImportableActivity } from '@/lib/services/api-client';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { CACHE_TIME } from '@/lib/constants/time';
 
-export type { FormattedStravaActivity };
+export type { ImportableActivity };
 
 export interface SearchProgress {
   loaded: number;
@@ -41,13 +41,13 @@ export function useExternalActivities(open: boolean) {
     queryFn: async () => {
       return await getIntervalsActivitiesList();
     },
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
       return lastPage.nextCursor ?? undefined;
     },
     enabled: open,
     staleTime: 0, // SWR: always refetch in background, show cache instantly
-    gcTime: CACHE_TIME.STRAVA_ACTIVITIES, // Keep cache for instant display
+    gcTime: CACHE_TIME.EXTERNAL_ACTIVITIES, // Keep cache for instant display
     retry: (failureCount, err) => {
       if (isNotConfiguredError(err)) return false;
       return failureCount < 1;

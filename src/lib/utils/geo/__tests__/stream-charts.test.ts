@@ -9,7 +9,7 @@ import {
   calculatePaceDomain,
   STREAM_CONFIGS,
 } from '../stream-charts';
-import type { StravaStreamSet } from '@/lib/types';
+import type { StreamSet } from '@/lib/types';
 
 describe('streams utilities', () => {
   const createMockStream = (data: number[], resolution: 'low' | 'medium' | 'high' = 'high') => ({
@@ -21,7 +21,7 @@ describe('streams utilities', () => {
 
   describe('prepareAltitudeData', () => {
     it('should prepare altitude data correctly', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         altitude: createMockStream([100, 110, 120]),
         distance: createMockStream([0, 500, 1000]),
         time: createMockStream([0, 60, 120]),
@@ -36,7 +36,7 @@ describe('streams utilities', () => {
     });
 
     it('should return empty array when no altitude data', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         distance: createMockStream([0, 500, 1000]),
       };
 
@@ -46,7 +46,7 @@ describe('streams utilities', () => {
 
   describe('preparePaceData', () => {
     it('should prepare pace data correctly', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         velocity_smooth: createMockStream([2.78, 3.0, 2.5]),
         distance: createMockStream([0, 500, 1000]),
         time: createMockStream([0, 60, 120]),
@@ -60,7 +60,7 @@ describe('streams utilities', () => {
     });
 
     it('should return empty array when no velocity data', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         distance: createMockStream([0, 500, 1000]),
       };
 
@@ -68,7 +68,7 @@ describe('streams utilities', () => {
     });
 
     it('should avoid flattening sparse low-resolution pace streams', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         velocity_smooth: createMockStream([3.5, 2.0, 3.5], 'low'),
         distance: createMockStream([0, 500, 1000], 'low'),
         time: createMockStream([0, 30, 60], 'low'),
@@ -82,7 +82,7 @@ describe('streams utilities', () => {
     });
 
     it('should smooth isolated pause spike at start', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         velocity_smooth: createMockStream([0.2, 2.8, 2.9, 2.8], 'high'),
         distance: createMockStream([0, 100, 200, 300], 'high'),
         time: createMockStream([0, 5, 10, 15], 'high'),
@@ -96,7 +96,7 @@ describe('streams utilities', () => {
     });
 
     it('should normalize leading zero velocities instead of displaying start artifact', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         velocity_smooth: createMockStream([0, 0, 2.5, 2.6, 2.7], 'high'),
         distance: createMockStream([0, 5, 10, 15, 20], 'high'),
         time: createMockStream([0, 1, 2, 3, 4], 'high'),
@@ -111,7 +111,7 @@ describe('streams utilities', () => {
     });
 
     it('should repair short pause segments in the middle of activity', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         velocity_smooth: createMockStream([2.9, 2.8, 0, 0, 2.8, 2.9], 'high'),
         distance: createMockStream([0, 10, 20, 30, 40, 50], 'high'),
         time: createMockStream([0, 5, 10, 15, 20, 25], 'high'),
@@ -128,7 +128,7 @@ describe('streams utilities', () => {
 
   describe('prepareHeartrateData', () => {
     it('should prepare heart rate data correctly with smoothing', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         heartrate: createMockStream([140, 150, 160]),
         distance: createMockStream([0, 500, 1000]),
         time: createMockStream([0, 60, 120]),
@@ -143,7 +143,7 @@ describe('streams utilities', () => {
     });
 
     it('should return empty array when no heart rate data', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         distance: createMockStream([0, 500, 1000]),
       };
 
@@ -153,8 +153,8 @@ describe('streams utilities', () => {
 
   describe('prepareCadenceData', () => {
     it('should prepare cadence data with smoothing and doubled values (both legs)', () => {
-      const streams: StravaStreamSet = {
-        cadence: createMockStream([75, 80, 85]), // Strava gives single leg
+      const streams: StreamSet = {
+        cadence: createMockStream([75, 80, 85]), // providers give single-leg cadence
         distance: createMockStream([0, 500, 1000]),
         time: createMockStream([0, 60, 120]),
       };
@@ -169,7 +169,7 @@ describe('streams utilities', () => {
     });
 
     it('should return empty array when no cadence data', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         distance: createMockStream([0, 500, 1000]),
       };
 
@@ -179,7 +179,7 @@ describe('streams utilities', () => {
 
   describe('getAvailableStreams', () => {
     it('should return all available streams', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         altitude: createMockStream([100, 110]),
         velocity_smooth: createMockStream([2.5, 3.0]),
         heartrate: createMockStream([140, 150]),
@@ -197,7 +197,7 @@ describe('streams utilities', () => {
     });
 
     it('should return only available streams', () => {
-      const streams: StravaStreamSet = {
+      const streams: StreamSet = {
         velocity_smooth: createMockStream([2.5, 3.0]),
         distance: createMockStream([0, 500]),
       };
@@ -277,7 +277,7 @@ describe('streams utilities', () => {
     });
 
     it('should format cadence value correctly (doubled)', () => {
-      // Strava gives single leg, so value is doubled
+      // providers give single-leg cadence, so value is doubled
       expect(STREAM_CONFIGS.cadence.formatValue(85)).toBe('170');
     });
   });

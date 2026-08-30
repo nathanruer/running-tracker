@@ -21,7 +21,7 @@ export const CACHE_TIME = {
   SESSION_TYPES: 5 * MS_PER_MINUTE,
   SESSIONS: 2 * MS_PER_MINUTE,
   CONVERSATIONS: 30 * MS_PER_SECOND,
-  STRAVA_ACTIVITIES: 10 * MS_PER_MINUTE,
+  EXTERNAL_ACTIVITIES: 10 * MS_PER_MINUTE,
 } as const;
 
 /**
@@ -52,7 +52,7 @@ export const DATE_RANGES = {
 } as const;
 
 // ============================================================================
-// API & STRAVA TIMEOUTS
+// API TIMEOUTS
 // ============================================================================
 
 export const API_TIME_BUFFER = 5 * MS_PER_MINUTE;

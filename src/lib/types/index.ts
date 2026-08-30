@@ -11,12 +11,10 @@ export type {
 } from './session';
 
 export type {
-  StravaActivity,
-  StravaStream,
-  StravaStreamSet,
-  StravaTokens,
-  StravaStreamType,
-} from './strava';
+  Stream,
+  StreamSet,
+  StreamType,
+} from './streams';
 
 export type { WeatherData } from './weather';
 
@@ -41,10 +39,9 @@ export {
 } from './session';
 
 export {
-  stravaActivitySchema,
-  stravaStreamSchema,
-  stravaStreamSetSchema,
-} from './strava';
+  streamSchema,
+  streamSetSchema,
+} from './streams';
 
 export { weatherDataSchema } from './weather';
 

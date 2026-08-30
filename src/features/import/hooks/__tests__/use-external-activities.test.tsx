@@ -39,7 +39,17 @@ const mockActivity = {
   avgHeartRate: 145,
   comments: 'Morning Run',
   externalId: '1',
-  source: 'strava',
+  source: 'intervals_icu',
+  startedAt: null,
+  maxHeartRate: null,
+  perceivedExertion: null,
+  routePolyline: null,
+  streams: null,
+  sourcePayload: null,
+  elevationGain: null,
+  averageCadence: null,
+  calories: null,
+  alreadyImported: false,
 };
 
 describe('useExternalActivities', () => {
@@ -74,6 +84,7 @@ describe('useExternalActivities', () => {
       activities: [mockActivity],
       hasMore: false,
       totalCount: 1,
+        nextCursor: null,
     });
 
     const { result } = renderHook(() => useExternalActivities(true), {
@@ -132,6 +143,7 @@ describe('useExternalActivities', () => {
       activities: [mockActivity],
       hasMore: false,
       totalCount: 1,
+        nextCursor: null,
     });
 
     const { result, rerender } = renderHook(
@@ -160,6 +172,7 @@ describe('useExternalActivities', () => {
       activities: [mockActivity],
       hasMore: false,
       totalCount: 1,
+        nextCursor: null,
     });
 
     const { result } = renderHook(() => useExternalActivities(true), {
@@ -186,6 +199,7 @@ describe('useExternalActivities', () => {
       activities: [],
       hasMore: false,
       totalCount: 0,
+        nextCursor: null,
     });
 
     const { result } = renderHook(() => useExternalActivities(true), {
@@ -214,12 +228,13 @@ describe('useExternalActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
-        nextCursor: 1704067200,
+        nextCursor: '1704067200',
       })
       .mockResolvedValueOnce({
         activities: [{ ...mockActivity, externalId: '2' }],
         hasMore: false,
         totalCount: 2,
+        nextCursor: null,
       });
 
     const { result } = renderHook(() => useExternalActivities(true), {
@@ -247,12 +262,13 @@ describe('useExternalActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
-        nextCursor: 1704067200,
+        nextCursor: '1704067200',
       })
       .mockResolvedValueOnce({
         activities: [mockActivity],
         hasMore: false,
         totalCount: 2,
+        nextCursor: null,
       });
 
     const { result } = renderHook(() => useExternalActivities(true), {
@@ -297,12 +313,13 @@ describe('useExternalActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
-        nextCursor: 1704067200,
+        nextCursor: '1704067200',
       })
       .mockResolvedValueOnce({
         activities: [{ ...mockActivity, externalId: '2' }],
         hasMore: false,
         totalCount: 2,
+        nextCursor: null,
       });
 
     const { result } = renderHook(() => useExternalActivities(true), {
@@ -326,13 +343,13 @@ describe('useExternalActivities', () => {
         activities: [mockActivity],
         hasMore: true,
         totalCount: 2,
-        nextCursor: 1704067200,
+        nextCursor: '1704067200',
       })
       .mockResolvedValueOnce({
         activities: [{ ...mockActivity, externalId: '2', comments: 'match here' }],
         hasMore: true,
         totalCount: 2,
-        nextCursor: 1704000000,
+        nextCursor: '1704000000',
       });
 
     const { result } = renderHook(() => useExternalActivities(true), {

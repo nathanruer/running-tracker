@@ -51,7 +51,7 @@ interface SessionDialogProps {
   session?: TrainingSession | null;
   initialData?: Partial<FormValues> | null;
   mode?: 'create' | 'edit' | 'complete';
-  onRequestStravaImport?: () => void;
+  onRequestImport?: () => void;
   onSuccess?: (session: TrainingSession) => void;
 }
 
@@ -62,7 +62,7 @@ const SessionDialog = ({
   session,
   initialData,
   mode = 'create',
-  onRequestStravaImport,
+  onRequestImport,
   onSuccess,
 }: SessionDialogProps) => {
   const { toast } = useToast();
@@ -196,19 +196,18 @@ const SessionDialog = ({
           {((mode === 'complete' && sessionStep === 'done') || (mode === 'create' && sessionStep === 'done')) && !isExternalImport && (
             <FileImportButtons
               mode={mode}
-              onStravaClick={onRequestStravaImport}
+              onImportClick={onRequestImport}
             />
           )}
 
           {isExternalImport && (mode === 'complete' || mode === 'create') && (
             <ImportedActivitySummary
-              source={initialData?.source ?? ''}
               externalId={initialData?.externalId || session?.externalId}
               date={form.watch('date') as string | null}
               distance={form.watch('distance')}
               duration={form.watch('duration')}
               avgPace={form.watch('avgPace')}
-              onModify={onRequestStravaImport}
+              onModify={onRequestImport}
             />
           )}
 

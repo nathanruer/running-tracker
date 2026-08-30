@@ -5,13 +5,13 @@ import { buildStreamsV3, buildWorkoutV3, resolveStartedAt } from '../workout-v3'
 const TZ = 'Europe/Paris';
 
 describe('resolveStartedAt', () => {
-  it('uses the external start instant when it carries an offset', () => {
-    const result = resolveStartedAt('2026-08-27T07:12:34', { start_date: '2026-08-27T05:12:34Z' }, TZ);
+  it('uses the provider start instant when it carries an offset', () => {
+    const result = resolveStartedAt('2026-08-27T07:12:34', '2026-08-27T05:12:34Z', TZ);
     expect(result).toEqual({ startedAt: new Date('2026-08-27T05:12:34Z'), datePrecision: 'instant' });
   });
 
-  it('ignores an external start without offset and falls back to the wall-clock date in zone', () => {
-    const result = resolveStartedAt('2026-08-27T07:12:34', { start_date: '2026-08-27T07:12:34' }, TZ);
+  it('ignores a provider start without offset and falls back to the wall-clock date in zone', () => {
+    const result = resolveStartedAt('2026-08-27T07:12:34', '2026-08-27T07:12:34', TZ);
     expect(result).toEqual({ startedAt: new Date('2026-08-27T05:12:34Z'), datePrecision: 'instant' });
   });
 
@@ -35,7 +35,6 @@ describe('buildWorkoutV3', () => {
     const fields = buildWorkoutV3(
       { date: '2026-05-01', duration: '45:00', distance: 8.25, avgPace: '05:30', avgHeartRate: 150.4, calories: 512.6, elevationGain: 42.5 },
       null,
-      null,
       TZ
     );
 
@@ -54,22 +53,21 @@ describe('buildWorkoutV3', () => {
     });
   });
 
-  it('takes max HR and polyline from the activity, falling back to the HR stream', () => {
-    const withActivity = buildWorkoutV3(
-      { date: '2026-05-01' },
-      { start_date: '2026-05-01T06:00:00Z', max_heartrate: 181.2, map: { summary_polyline: 'abc' } },
+  it('takes max HR and polyline from the payload, falling back to the HR stream', () => {
+    const withProvider = buildWorkoutV3(
+      { date: '2026-05-01', startedAt: '2026-05-01T06:00:00Z', maxHeartRate: 181.2, routePolyline: 'abc' },
       { heartrate: { data: [120, 175, 160] } },
       TZ
     );
-    expect(withActivity).toMatchObject({ datePrecision: 'instant', maxHr: 181, routePolyline: 'abc' });
+    expect(withProvider).toMatchObject({ datePrecision: 'instant', maxHr: 181, routePolyline: 'abc' });
 
-    const fromStream = buildWorkoutV3({ date: '2026-05-01' }, { map: { summary_polyline: '  ' } }, { heartrate: { data: [120, 175, 160] } }, TZ);
+    const fromStream = buildWorkoutV3({ date: '2026-05-01', routePolyline: '  ' }, { heartrate: { data: [120, 175, 160] } }, TZ);
     expect(fromStream).toMatchObject({ maxHr: 175, routePolyline: null });
   });
 });
 
 describe('buildStreamsV3', () => {
-  it('pivots strava-shaped streams into columns with velocity_smooth mapped to velocity', () => {
+  it('pivots the provider stream set into columns with velocity_smooth mapped to velocity', () => {
     const result = buildStreamsV3({
       time: { data: [0, 1, 2] },
       velocity_smooth: { data: [3, 3.1, 3.2] },

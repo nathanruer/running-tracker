@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
     bulkImportSchema,
     async ({ sessions: validatedSessions }, userId) => {
       try {
-        const importedIds = await getImportedExternalIds(userId, 'strava');
+        const importedIds = await getImportedExternalIds(userId, 'intervals_icu');
         let count = 0;
         let skipped = 0;
-        const weatherQueue: Array<{ id: string; stravaData: unknown; date: string }> = [];
+        const weatherQueue: Array<{ id: string; routePolyline: string; startedAt: string }> = [];
         const streamQueueIds: string[] = [];
 
         for (const session of validatedSessions) {
@@ -29,14 +29,13 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          const { intervalDetails, stravaData, weather: importedWeather, averageTemp, ...sessionData } = session;
+          const { intervalDetails, weather: importedWeather, averageTemp, ...sessionData } = session;
           let workout;
           try {
             workout = await createCompletedSession(
               {
                 ...sessionData,
                 intervalDetails,
-                stravaData,
                 weather: importedWeather ?? null,
                 averageTemp: averageTemp ?? null,
               },
@@ -56,11 +55,11 @@ export async function POST(request: NextRequest) {
             importedIds.add(session.externalId);
           }
 
-          if (!importedWeather && stravaData) {
-            weatherQueue.push({ id: workout.id, stravaData, date: session.date });
+          if (!importedWeather && session.routePolyline) {
+            weatherQueue.push({ id: workout.id, routePolyline: session.routePolyline, startedAt: session.startedAt ?? session.date });
           }
 
-          if (session.source === 'strava' && session.externalId) {
+          if (session.source === 'intervals_icu' && session.externalId) {
             streamQueueIds.push(workout.id);
           }
         }

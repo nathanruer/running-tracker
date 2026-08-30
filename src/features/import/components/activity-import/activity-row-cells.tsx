@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { FormattedStravaActivity } from '@/lib/services/api-client';
+import type { ImportableActivity } from '@/lib/services/api-client';
 
 interface CheckboxCellProps {
   selected: boolean;
@@ -148,7 +148,7 @@ export function ActivityHeartRateCell({ heartRate }: HeartRateCellProps) {
 }
 
 interface AllCellsProps {
-  activity: FormattedStravaActivity;
+  activity: ImportableActivity;
   selected: boolean;
   alreadyImported: boolean;
   onToggle: () => void;

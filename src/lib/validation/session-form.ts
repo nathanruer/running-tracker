@@ -10,7 +10,6 @@ import {
   isValidNullableNumber,
   nullablePositiveNumberSchema,
 } from './schemas/primitives';
-import { stravaActivitySchema } from './schemas/entities';
 import { RPE } from '@/lib/constants/validation';
 
 // ============================================================================
@@ -58,10 +57,13 @@ const formSchema = z.object({
   targetRecoveryPace: optionalPaceSchema,
   steps: z.array(intervalStepSchema).optional(),
 
-  // External/Strava fields
+  // External source fields
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
-  stravaData: stravaActivitySchema.optional().nullable(),
+  startedAt: z.string().optional().nullable(),
+  routePolyline: z.string().optional().nullable(),
+  maxHeartRate: z.number().optional().nullable(),
+  sourcePayload: z.unknown().optional().nullable(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),

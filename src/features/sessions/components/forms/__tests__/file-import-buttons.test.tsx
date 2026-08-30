@@ -7,66 +7,66 @@ vi.mock('@/features/import/hooks/use-new-intervals-count', () => ({
 }));
 
 describe('FileImportButtons', () => {
-  it('should render strava button in create mode with onStravaClick', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
+  it('should render the import button in create mode with onImportClick', () => {
+    const onImportClick = vi.fn();
+    render(<FileImportButtons mode="create" onImportClick={onImportClick} />);
 
     expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
   });
 
   it('should render import options label', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
+    const onImportClick = vi.fn();
+    render(<FileImportButtons mode="create" onImportClick={onImportClick} />);
 
     expect(screen.getByText('Options de synchronisation')).toBeInTheDocument();
   });
 
   it('should render description text', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
+    const onImportClick = vi.fn();
+    render(<FileImportButtons mode="create" onImportClick={onImportClick} />);
 
     expect(screen.getByText(/Récupère ta course synchronisée depuis Garmin/)).toBeInTheDocument();
   });
 
-  it('should call onStravaClick when strava button is clicked', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
+  it('should call onImportClick when the import button is clicked', () => {
+    const onImportClick = vi.fn();
+    render(<FileImportButtons mode="create" onImportClick={onImportClick} />);
 
     fireEvent.click(screen.getByText('Importer depuis intervals.icu'));
 
-    expect(onStravaClick).toHaveBeenCalledTimes(1);
+    expect(onImportClick).toHaveBeenCalledTimes(1);
   });
 
   it('should return null in edit mode', () => {
-    const onStravaClick = vi.fn();
-    const { container } = render(<FileImportButtons mode="edit" onStravaClick={onStravaClick} />);
+    const onImportClick = vi.fn();
+    const { container } = render(<FileImportButtons mode="edit" onImportClick={onImportClick} />);
 
     expect(container.firstChild).toBeNull();
   });
 
-  it('should return null when onStravaClick is not provided', () => {
+  it('should return null when onImportClick is not provided', () => {
     const { container } = render(<FileImportButtons mode="create" />);
 
     expect(container.firstChild).toBeNull();
   });
 
   it('should render with default create mode', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons onStravaClick={onStravaClick} />);
+    const onImportClick = vi.fn();
+    render(<FileImportButtons onImportClick={onImportClick} />);
 
     expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
   });
 
-  it('should render strava button in complete mode', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons mode="complete" onStravaClick={onStravaClick} />);
+  it('should render the import button in complete mode', () => {
+    const onImportClick = vi.fn();
+    render(<FileImportButtons mode="complete" onImportClick={onImportClick} />);
 
     expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
   });
 
   it('should have correct button styling', () => {
-    const onStravaClick = vi.fn();
-    render(<FileImportButtons mode="create" onStravaClick={onStravaClick} />);
+    const onImportClick = vi.fn();
+    render(<FileImportButtons mode="create" onImportClick={onImportClick} />);
 
     const button = screen.getByText('Importer depuis intervals.icu').closest('button');
     expect(button).toHaveClass('bg-violet-600');

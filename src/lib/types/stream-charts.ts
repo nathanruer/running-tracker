@@ -1,7 +1,7 @@
 /**
  * Stream chart types
  * 
- * Types for Strava stream data visualization
+ * Types for stream data visualization
  */
 
 /**

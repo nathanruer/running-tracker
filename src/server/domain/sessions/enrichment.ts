@@ -4,49 +4,40 @@ import { getHistoricalWeather } from '@/server/services/weather';
 import type { WeatherData } from '@/lib/types/weather';
 import { logger } from '@/server/infrastructure/logger';
 import { updateSessionWeather } from './sessions-write';
-import { validateStravaMap } from '@/lib/validation/strava';
 import { pMap } from '@/lib/utils/async';
 
-export async function enrichSessionWithWeather(
-  stravaData: unknown,
-  fallbackDate: Date
-): Promise<WeatherData | null> {
-  if (!stravaData) return null;
+export interface WeatherEnrichmentInput {
+  routePolyline: string | null | undefined;
+  startedAt: Date | string;
+}
+
+/** Weather at the midpoint of the route, at the session start. Null without a route. */
+export async function enrichSessionWithWeather({ routePolyline, startedAt }: WeatherEnrichmentInput): Promise<WeatherData | null> {
+  if (!routePolyline) return null;
 
   try {
-    const validatedData = validateStravaMap(stravaData);
-    if (!validatedData) return null;
-
-    const polyline = validatedData.map?.summary_polyline;
-    if (!polyline) return null;
-
-    const coordinates = decodePolyline(polyline);
+    const coordinates = decodePolyline(routePolyline);
     if (coordinates.length === 0) return null;
 
     const midpointIndex = Math.floor(coordinates.length / 2);
     const [lat, lng] = coordinates[midpointIndex];
-    
-    const activityDate = validatedData.start_date 
-      ? new Date(validatedData.start_date) 
-      : fallbackDate;
-    
+    const activityDate = startedAt instanceof Date ? startedAt : new Date(startedAt);
+
     return await getHistoricalWeather(lat, lng, activityDate.toISOString());
   } catch (error) {
-    logger.warn({ error, fallbackDate }, 'Failed to enrich session with weather');
+    logger.warn({ error, startedAt }, 'Failed to enrich session with weather');
     return null;
   }
 }
 
-export interface WeatherEnrichmentTask {
+export interface WeatherEnrichmentTask extends WeatherEnrichmentInput {
   id: string;
-  stravaData: unknown;
-  date: string;
 }
 
 export interface BulkWeatherEnrichmentResult {
   enrichedIds: string[];
   failedIds: string[];
-  missingStravaIds: string[];
+  missingRouteIds: string[];
 }
 
 export async function enrichBulkWeather(
@@ -56,20 +47,19 @@ export async function enrichBulkWeather(
 ): Promise<BulkWeatherEnrichmentResult> {
   const enrichedIds: string[] = [];
   const failedIds: string[] = [];
-  const missingStravaIds: string[] = [];
+  const missingRouteIds: string[] = [];
   const concurrency = options?.concurrency ?? 3;
 
   await pMap(
     workouts,
     async (workout) => {
       try {
-        const validated = validateStravaMap(workout.stravaData);
-        if (!validated?.map?.summary_polyline) {
-          missingStravaIds.push(workout.id);
+        if (!workout.routePolyline) {
+          missingRouteIds.push(workout.id);
           return;
         }
 
-        const weather = await enrichSessionWithWeather(workout.stravaData, new Date(workout.date));
+        const weather = await enrichSessionWithWeather(workout);
         if (!weather) {
           failedIds.push(workout.id);
           return;
@@ -90,5 +80,5 @@ export async function enrichBulkWeather(
     concurrency
   );
 
-  return { enrichedIds, failedIds, missingStravaIds };
+  return { enrichedIds, failedIds, missingRouteIds };
 }

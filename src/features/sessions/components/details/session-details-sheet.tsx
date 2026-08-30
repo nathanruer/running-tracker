@@ -5,11 +5,10 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatCard } from '@/components/ui/stat-card';
 import { MessageSquare } from 'lucide-react';
-import { formatCadence } from '@/lib/utils/strava/cadence';
+import { formatCadence } from '@/lib/utils/cadence';
 import type { TrainingSession } from '@/lib/types';
 import { decodePolyline, coordinatesToSVG } from '@/lib/utils/geo/polyline';
 import { cn } from '@/lib/utils/cn';
-import { validateStravaData } from '@/lib/validation/strava';
 import { MAP_DIMENSIONS } from '@/lib/constants/map';
 import { isPlanned } from '@/lib/domain/sessions/session-selectors';
 import { IntervalDetailsView } from '@/features/dashboard/components/interval-details-view';
@@ -41,15 +40,14 @@ export function SessionDetailsSheet({
 
   if (!session) return null;
 
-  const stravaData = validateStravaData(session.stravaData);
-  const polyline = stravaData?.map?.summary_polyline;
+  const polyline = session.routePolyline ?? null;
   const decodedCoordinates = polyline ? decodePolyline(polyline) : [];
   const mapPath = polyline
     ? coordinatesToSVG(decodedCoordinates, MAP_DIMENSIONS.WIDTH, MAP_DIMENSIONS.HEIGHT).path
     : null;
 
   const isPlannedSession = isPlanned(session);
-  const hasExternalData = session.source !== null && stravaData !== null;
+  const hasExternalData = session.source !== null;
   const hasRoute = decodedCoordinates.length > 0 && !!mapPath;
   const canEnrichWeather = !isPlannedSession && hasExternalData && hasRoute && !session.weather;
   const canEnrichStreams =
@@ -133,7 +131,7 @@ export function SessionDetailsSheet({
                     <EnrichmentPrompt
                       sectionTitle="Analyse de la séance"
                       title="Streams manquants"
-                      description="Ajoutez les streams Strava disponibles (allure, altitude, FC, cadence) pour afficher les graphiques détaillés."
+                      description="Récupérez les streams de l'activité (allure, altitude, FC, cadence) pour afficher les graphiques détaillés."
                       loadingLabel="Analyse…"
                       isLoading={isEnrichingStreams}
                       onEnrich={enrichStreams}
@@ -143,10 +141,10 @@ export function SessionDetailsSheet({
                 </div>
               )}
 
-              {hasExternalData && session.stravaStreams && (
+              {hasExternalData && session.streams && (
                 <div className="space-y-6">
                   <SectionTitle>Analyse de la séance</SectionTitle>
-                  <StreamsSection streams={session.stravaStreams} />
+                  <StreamsSection streams={session.streams} />
                 </div>
               )}
 

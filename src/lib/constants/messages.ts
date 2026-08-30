@@ -17,14 +17,6 @@ export const ERROR_MESSAGES = {
   AI_JSON_NOT_FOUND: 'JSON non trouvé dans la réponse IA',
   GROQ_API_KEY_MISSING: 'Clé API Groq manquante',
 
-  STRAVA_FETCH_FAILED: 'Échec de la récupération',
-  STRAVA_NO_ACTIVITIES: "Aucune activité n'a pu être récupérée depuis Strava",
-  STRAVA_IMPORT_ERROR: "Impossible d'importer les activités",
-  STRAVA_TOKEN_EXCHANGE_FAILED: 'Failed to exchange code for tokens',
-  STRAVA_REFRESH_FAILED: 'Failed to refresh access token',
-  STRAVA_ACTIVITIES_FAILED: 'Failed to fetch activities',
-  STRAVA_ACTIVITY_DETAILS_FAILED: 'Failed to fetch activity details',
-  STRAVA_CONFIG_MISSING: 'Configuration Strava manquante',
 
   SESSIONS_ARRAY_REQUIRED: 'Le tableau de séances est requis',
   IDS_ARRAY_REQUIRED: "Le tableau d'identifiants est requis",
@@ -72,8 +64,6 @@ export const VALIDATION_MESSAGES = {
 // ============================================================================
 
 export const SUCCESS_MESSAGES = {
-  STRAVA_CONNECTED: 'Votre compte Strava a été connecté avec succès!',
-  STRAVA_DISCONNECTED: 'Votre compte Strava a été déconnecté avec succès',
 
   SESSION_CREATED: 'Séance créée',
   SESSION_CREATED_DESC: 'La séance a été créée avec succès.',

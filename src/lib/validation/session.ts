@@ -11,7 +11,7 @@ import {
   optionalRpeSchema,
   nullablePositiveNumberSchema,
 } from './schemas/primitives';
-import { stravaActivitySchema, weatherDataSchema } from './schemas/entities';
+import { weatherDataSchema } from './schemas/entities';
 
 // ============================================================================
 // INTERVAL STEP SCHEMA
@@ -62,7 +62,10 @@ export const sessionSchema = z.object({
   comments: z.string().optional().default(''),
   externalId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
-  stravaData: stravaActivitySchema.optional().nullable(),
+  startedAt: z.string().optional().nullable(),
+  routePolyline: z.string().optional().nullable(),
+  maxHeartRate: z.number().optional().nullable(),
+  sourcePayload: z.unknown().optional().nullable(),
   elevationGain: z.number().optional().nullable(),
   averageCadence: z.number().optional().nullable(),
   averageTemp: z.number().optional().nullable(),
@@ -91,7 +94,7 @@ const validDateString = z.string().refine(
 
 export const completeSessionSchema = partialSessionSchema.extend({
   date: validDateString,
-  stravaStreams: z.record(z.string(), z.unknown()).nullable().optional(),
+  streams: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const bulkImportSchema = z.object({

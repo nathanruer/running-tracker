@@ -32,12 +32,9 @@ vi.mock('../activity-import-content', () => ({
   ActivityImportContent: ({ onOpenChange }: { onOpenChange: (open: boolean) => void }) => (
     <div data-testid="activity-import-content">
       <button onClick={() => onOpenChange(false)} className="rounded-xl">Close</button>
-      <span>Importer depuis Strava</span>
-      <span>Sélectionnez vos activités Strava.</span>
+      <span>Importer depuis intervals.icu</span>
+      <span>Sélectionnez vos activités à importer.</span>
       <span>Sélectionnez une activité à importer.</span>
-      <div data-testid="connect-screen">
-        <button>Se connecter à Strava</button>
-      </div>
     </div>
   ),
 }));
@@ -83,7 +80,7 @@ describe('ActivityImportDialog', () => {
       />
     );
     await waitFor(() => {
-      expect(screen.getByText('Importer depuis Strava')).toBeInTheDocument();
+      expect(screen.getByText('Importer depuis intervals.icu')).toBeInTheDocument();
     });
   });
 
@@ -97,7 +94,7 @@ describe('ActivityImportDialog', () => {
       />
     );
     await waitFor(() => {
-      expect(screen.getByText('Sélectionnez vos activités Strava.')).toBeInTheDocument();
+      expect(screen.getByText('Sélectionnez vos activités à importer.')).toBeInTheDocument();
     });
   });
 
@@ -112,19 +109,6 @@ describe('ActivityImportDialog', () => {
     );
     await waitFor(() => {
       expect(screen.getByText('Sélectionnez une activité à importer.')).toBeInTheDocument();
-    });
-  });
-
-  it('shows connect screen when not connected', async () => {
-    render(
-      <ActivityImportDialog
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        onImport={mockOnImport}
-      />
-    );
-    await waitFor(() => {
-      expect(screen.getByTestId('connect-screen')).toBeInTheDocument();
     });
   });
 

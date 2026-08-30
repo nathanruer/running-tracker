@@ -1,6 +1,5 @@
 export { ActivityImportDialog } from './activity-import-dialog';
 export { ActivityImportContent } from './activity-import-content';
-export { ConnectScreen } from './connect-screen';
 export { ImportToolbar } from './import-toolbar';
 export { ActivityTable } from './activity-table';
 export { ActivityRow } from './activity-row';
@@ -20,7 +19,6 @@ export {
 export type {
   ActivityImportDialogProps,
   ActivityImportContentProps,
-  ConnectScreenProps,
   ImportToolbarProps,
   ImportTableHeaderProps,
   ActivityRowProps,

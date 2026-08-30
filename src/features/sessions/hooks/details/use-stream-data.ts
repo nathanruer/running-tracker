@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import type { StravaStreamSet } from '@/lib/types';
-import { validateStravaStreams } from '@/lib/validation/strava';
+import { validateStreams } from '@/lib/validation/streams';
 import {
   prepareAltitudeData,
   preparePaceData,
@@ -13,7 +12,7 @@ import {
 export function useStreamData(streams: unknown) {
   const validatedStreams = useMemo(() => {
     if (!streams) return null;
-    return validateStravaStreams(streams) as StravaStreamSet | null;
+    return validateStreams(streams);
   }, [streams]);
 
   const availableStreams = useMemo(() => {

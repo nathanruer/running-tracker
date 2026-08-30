@@ -8,8 +8,6 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "Le secret JWT doit faire au moins 32 caractères pour être sécurisé"),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
-  STRAVA_CLIENT_ID: z.string().optional(),
-  STRAVA_CLIENT_SECRET: z.string().optional(),
 
   GROQ_API_KEY: z.string().optional(),
 });

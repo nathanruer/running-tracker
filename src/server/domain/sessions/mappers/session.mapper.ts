@@ -14,10 +14,6 @@ import {
   type BlockType,
   type WorkoutFamily,
 } from '@/lib/domain/workouts/structure';
-import {
-  isLikelyStreamlessFromFields,
-  isStravaActivityLikelyStreamless,
-} from '@/server/domain/sessions/stream-eligibility';
 
 // ============================================================================
 // Types for mapper inputs (database entity shapes)
@@ -52,7 +48,6 @@ export interface WorkoutIntervalData {
 export interface WorkoutSourceData {
   provider: string;
   externalId: string;
-  rawPayload?: Prisma.JsonValue | null;
   hasStreams?: boolean;
   streamsStatus?: string | null;
 }
@@ -111,11 +106,6 @@ export interface WorkoutFull extends WorkoutBase {
 export interface ExternalFlags {
   source: string;
   externalId: string;
-  hasPayload: boolean;
-  hasPolyline: boolean;
-  manual: boolean;
-  externalIdFieldNull: boolean | null;
-  uploadIdFieldNull: boolean | null;
   hasStreams: boolean;
   streamsStatus: string;
 }
@@ -167,9 +157,7 @@ const STREAM_COLUMNS: Array<[keyof WorkoutStreamsData, string]> = [
 ];
 
 function selectSource(sources: WorkoutSourceData[]): WorkoutSourceData | null {
-  if (!sources.length) return null;
-  const strava = sources.find((source) => source.provider === 'strava');
-  return strava ?? sources[0];
+  return sources[0] ?? null;
 }
 
 function mapStreams(streams: WorkoutStreamsData | null): Record<string, { data: Prisma.JsonValue }> | null {
@@ -187,24 +175,9 @@ function mapStreams(streams: WorkoutStreamsData | null): Record<string, { data: 
 }
 
 /** True when streams are stored or known to be unavailable, i.e. nothing left to enrich. */
-function isStreamsHandled(source: WorkoutSourceData | null): boolean {
+function isStreamsHandled(source: { hasStreams?: boolean; streamsStatus?: string | null } | null): boolean {
   if (!source) return false;
-  return (
-    source.hasStreams === true
-    || source.streamsStatus === 'not_applicable'
-    || !source.rawPayload
-    || isStravaActivityLikelyStreamless(source.rawPayload)
-  );
-}
-
-function isStreamsHandledFromFlags(flags: ExternalFlags | null): boolean {
-  if (!flags) return false;
-  return (
-    flags.hasStreams
-    || flags.streamsStatus === 'not_applicable'
-    || !flags.hasPayload
-    || isLikelyStreamlessFromFields(flags)
-  );
+  return source.hasStreams === true || source.streamsStatus === 'not_applicable';
 }
 
 function mapWeather(weather: WeatherObservationData | null): TrainingSession['weather'] {
@@ -239,7 +212,7 @@ function planTargets(plan: PlannedWorkoutData | null | undefined) {
 
 function buildBaseSession(workout: WorkoutBase): Omit<
   TrainingSession,
-  'externalId' | 'source' | 'stravaData' | 'stravaStreams' | 'averageTemp' | 'weather'
+  'externalId' | 'source' | 'streams' | 'averageTemp' | 'weather'
 > {
   const plan = workout.planned_workout;
   const startedAt = workout.startedAt.toISOString();
@@ -301,7 +274,7 @@ export function mapWorkoutToSession(
       const flags = opts.externalFlags;
       externalId = flags?.externalId ?? null;
       source = flags?.source ?? null;
-      hasStreams = isStreamsHandledFromFlags(flags);
+      hasStreams = isStreamsHandled(flags);
     } else {
       const selected = workout.workout_sources ? selectSource(workout.workout_sources) : null;
       externalId = selected?.externalId ?? null;
@@ -318,8 +291,7 @@ export function mapWorkoutToSession(
       ...base,
       externalId,
       source,
-      stravaData: null,
-      stravaStreams: null,
+      streams: null,
       averageTemp: weather?.temperature ?? null,
       weather,
       hasWeather,
@@ -337,8 +309,7 @@ export function mapWorkoutToSession(
       ...base,
       externalId: null,
       source: null,
-      stravaData: null,
-      stravaStreams: null,
+      streams: null,
       averageTemp: null,
       weather: null,
       hasStreams: undefined,
@@ -355,8 +326,7 @@ export function mapWorkoutToSession(
     ...base,
     externalId: selected?.externalId ?? null,
     source: selected?.provider ?? null,
-    stravaData: selected?.rawPayload as TrainingSession['stravaData'] ?? null,
-    stravaStreams: streams as TrainingSession['stravaStreams'] ?? null,
+    streams: streams as TrainingSession['streams'] ?? null,
     averageTemp: weather?.temperature ?? null,
     weather,
     hasWeather,
@@ -391,8 +361,7 @@ export function mapPlannedWorkoutToSession(
     ...planTargets(plan),
     externalId: null,
     source: null,
-    stravaData: null,
-    stravaStreams: null,
+    streams: null,
     elevationGain: null,
     averageCadence: null,
     averageTemp: null,

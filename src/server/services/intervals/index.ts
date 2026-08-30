@@ -11,7 +11,8 @@ export {
   mapIntervalsActivityToSessionPayload,
   buildPolylineFromLatLngs,
   encodePolyline,
-  mapStreamsToStravaShape,
+  mapStreams,
   IMPORTABLE_TYPES,
   INTERVALS_SOURCE,
 } from './mapper';
+export { fetchStreamsForSessionWithStatus, type StreamFetchResult, type StreamFetchStatus } from './streams';

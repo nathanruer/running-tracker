@@ -7,7 +7,7 @@ export type WeatherEnrichmentStatus =
   | 'updated'
   | 'enriched'
   | 'already_has_weather'
-  | 'missing_strava'
+  | 'missing_route'
   | 'missing_date'
   | 'failed'
   | 'not_found';
@@ -23,7 +23,7 @@ export interface BulkWeatherEnrichmentSummary {
   requested: number;
   enriched: number;
   alreadyHasWeather: number;
-  missingStrava: number;
+  missingSource: number;
   failed: number;
   notFound: number;
 }
@@ -33,7 +33,7 @@ export interface BulkWeatherEnrichmentResponse {
   ids: {
     enriched: string[];
     alreadyHasWeather: string[];
-    missingStrava: string[];
+    missingSource: string[];
     failed: string[];
     notFound: string[];
   };
@@ -43,7 +43,7 @@ export type StreamEnrichmentStatus =
   | 'enriched'
   | 'already_has_streams'
   | 'no_streams'
-  | 'missing_strava'
+  | 'missing_source'
   | 'failed'
   | 'not_found';
 
@@ -57,7 +57,7 @@ export interface BulkStreamsEnrichmentSummary {
   requested: number;
   enriched: number;
   alreadyHasStreams: number;
-  missingStrava: number;
+  missingSource: number;
   failed: number;
   notFound: number;
 }
@@ -67,7 +67,7 @@ export interface BulkStreamsEnrichmentResponse {
   ids: {
     enriched: string[];
     alreadyHasStreams: string[];
-    missingStrava: string[];
+    missingSource: string[];
     failed: string[];
     notFound: string[];
   };

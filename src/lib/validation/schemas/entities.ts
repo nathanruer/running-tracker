@@ -72,58 +72,14 @@ export const weatherDataSchema = z.object({
 });
 
 // ============================================================================
-// STRAVA ACTIVITY SCHEMA (for stored data)
+// STREAM SCHEMA (one series per type: time, distance, velocity_smooth, heartrate, cadence, altitude)
 // ============================================================================
 
-export const stravaActivitySchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  distance: z.number(),
-  moving_time: z.number(),
-  elapsed_time: z.number(),
-  total_elevation_gain: z.number(),
-  type: z.string(),
-  start_date: z.string(),
-  start_date_local: z.string(),
-  average_speed: z.number(),
-  max_speed: z.number(),
-  average_heartrate: z.number().optional(),
-  max_heartrate: z.number().optional(),
-  average_cadence: z.number().optional(),
-  average_temp: z.number().optional(),
-  elev_high: z.number().optional(),
-  elev_low: z.number().optional(),
-  calories: z.number().optional(),
-  map: z.object({
-    id: z.string(),
-    summary_polyline: z.string(),
-  }).optional(),
-  external_id: z.string().nullish(),
-  upload_id: z.number().nullish(),
-});
-
-// ============================================================================
-// STRAVA STREAM SCHEMA
-// ============================================================================
-
-export const stravaStreamSchema = z.object({
+export const streamSchema = z.object({
   data: z.array(z.number()).min(1),
-  series_type: z.enum(['time', 'distance']).optional(),
-  original_size: z.number().positive().optional(),
-  resolution: z.enum(['low', 'medium', 'high']).optional(),
 });
 
-export const stravaStreamSetSchema = z.record(z.string(), stravaStreamSchema);
-
-// ============================================================================
-// STRAVA TOKENS SCHEMA (OAuth)
-// ============================================================================
-
-export const stravaTokensSchema = z.object({
-  access_token: z.string(),
-  refresh_token: z.string(),
-  expires_at: z.number(),
-});
+export const streamSetSchema = z.record(z.string(), streamSchema);
 
 // ============================================================================
 // TRAINING SESSION ENTITY SCHEMA
@@ -140,8 +96,7 @@ const trainingSessionBaseSchema = z.object({
   recommendationId: z.string().nullable().optional(),
   externalId: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
-  stravaData: stravaActivitySchema.nullable().optional(),
-  stravaStreams: stravaStreamSetSchema.nullable().optional(),
+  streams: streamSetSchema.nullable().optional(),
   elevationGain: z.number().nullable().optional(),
   averageCadence: z.number().nullable().optional(),
   averageTemp: z.number().nullable().optional(),
@@ -149,7 +104,7 @@ const trainingSessionBaseSchema = z.object({
   weather: weatherDataSchema.nullable().optional(),
   hasWeather: z.boolean().optional(),
   hasStreams: z.boolean().optional(),
-  startedAt: z.string().optional(),
+  startedAt: z.string().nullable().optional(),
   timezone: z.string().optional(),
   datePrecision: z.enum(['instant', 'day']).optional(),
   localDate: z.string().optional(),
@@ -204,9 +159,8 @@ export type StepType = z.infer<typeof stepTypeEnum>;
 export type IntervalStep = z.infer<typeof intervalStepEntitySchema>;
 export type IntervalDetails = z.infer<typeof intervalDetailsEntitySchema>;
 export type WeatherData = z.infer<typeof weatherDataSchema>;
-export type StravaActivity = z.infer<typeof stravaActivitySchema>;
-export type StravaStream = z.infer<typeof stravaStreamSchema>;
-export type StravaStreamSet = z.infer<typeof stravaStreamSetSchema>;
+export type Stream = z.infer<typeof streamSchema>;
+export type StreamSet = z.infer<typeof streamSetSchema>;
 export type PlannedSession = z.infer<typeof plannedSessionEntitySchema>;
 export type CompletedSession = z.infer<typeof completedSessionEntitySchema>;
 export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
@@ -218,10 +172,12 @@ export type TrainingSession = z.infer<typeof trainingSessionEntitySchema>;
 /**
  * Payload for creating/updating a completed session
  */
-export type TrainingSessionPayload = Omit<
+export type TrainingSessionPayload = (Omit<
   CompletedSession,
   'id' | 'userId' | 'sessionNumber' | 'status' | 'plannedDate' | 'targetPace' | 'targetDuration' | 'targetDistance' | 'targetRPE' | 'hasWeather' | 'hasStreams'
->;
+>) & {
+  sourcePayload?: unknown;
+};
 
 /**
  * Payload for updating a completed session

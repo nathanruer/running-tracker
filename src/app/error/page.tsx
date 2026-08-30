@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, Home, Ghost, AlertTriangle, Loader2 } from 'lucide-react';
+import { Home, AlertTriangle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 function ErrorPageContent() {
@@ -13,33 +13,12 @@ function ErrorPageContent() {
   
   const getErrorDetails = () => {
     switch (errorType) {
-      case 'strava_already_linked':
-        return {
-          title: 'Compte déjà connecté',
-          description: 'Ce compte Strava est déjà associé à un autre utilisateur.',
-          icon: <AlertTriangle className="h-10 w-10" />,
-          action: { label: 'Gérer mon profil', href: '/profile' }
-        };
-      case 'strava_api_limit':
-        return {
-          title: 'Limite Strava atteinte',
-          description: 'Nous avons atteint la limite de connexions Strava autorisée pour aujourd\'hui.',
-          icon: <Ghost className="h-10 w-10 text-violet-400" />,
-          action: { label: 'Retour au tableau de bord', href: '/dashboard' }
-        };
-      case 'strava_auth_failed':
-        return {
-          title: 'Échec de connexion',
-          description: 'L\'autorisation avec Strava a échoué ou a été annulée.',
-          icon: <RefreshCcw className="h-10 w-10" />,
-          action: { label: 'Réessayer Strava', href: '/api/auth/strava/authorize', external: true }
-        };
       default:
         return {
           title: 'Une erreur est survenue',
           description: 'Nous avons rencontré un obstacle imprévu. Vos données sont en sécurité.',
           icon: <AlertTriangle className="h-10 w-10 text-violet-500" />,
-          action: { label: 'Retour au tableau de bord', href: '/dashboard' }
+          action: { label: 'Retour au tableau de bord', href: '/dashboard', external: false }
         };
     }
   };

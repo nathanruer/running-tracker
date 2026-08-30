@@ -4,16 +4,16 @@ import { useNewIntervalsCount } from '@/features/import/hooks/use-new-intervals-
 
 interface FileImportButtonsProps {
   mode?: 'create' | 'edit' | 'complete';
-  onStravaClick?: () => void;
+  onImportClick?: () => void;
 }
 
 export function FileImportButtons({
   mode = 'create',
-  onStravaClick,
+  onImportClick,
 }: FileImportButtonsProps) {
   const newActivitiesCount = useNewIntervalsCount();
 
-  if (mode === 'edit' || !onStravaClick) {
+  if (mode === 'edit' || !onImportClick) {
     return null;
   }
 
@@ -27,12 +27,12 @@ export function FileImportButtons({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {onStravaClick && (
+          {onImportClick && (
             <Button
               type="button"
               variant="secondary"
               className="h-9 px-5 font-bold bg-violet-600 hover:bg-violet-500 text-white active:scale-95 transition-all border-none rounded-xl shadow-lg shadow-violet-500/10"
-              onClick={onStravaClick}
+              onClick={onImportClick}
             >
               <Watch className="mr-2 h-4 w-4" />
               Importer depuis intervals.icu

@@ -73,9 +73,9 @@ export async function PATCH(
         );
       }
 
-      if (!session.stravaData) {
+      if (!session.routePolyline) {
         return NextResponse.json(
-          { error: 'Cette séance n\'a pas de données Strava pour l\'enrichissement', status: 'missing_strava' },
+          { error: 'Cette séance n\'a pas de trace GPS pour la météo', status: 'missing_route' },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
       }
@@ -87,10 +87,10 @@ export async function PATCH(
         );
       }
 
-      const weather = await enrichSessionWithWeather(
-        session.stravaData,
-        new Date(session.date)
-      );
+      const weather = await enrichSessionWithWeather({
+        routePolyline: session.routePolyline,
+        startedAt: session.startedAt ?? session.date,
+      });
 
       if (!weather) {
         return NextResponse.json(

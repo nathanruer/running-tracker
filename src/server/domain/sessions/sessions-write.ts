@@ -6,25 +6,19 @@ import { createLogger } from '@/server/infrastructure/logger';
 import { parseDuration } from '@/lib/utils/duration/parse';
 import { formatDuration } from '@/lib/utils/duration/format';
 import type { IntervalDetails } from '@/lib/types';
-import {
-  stravaPayloadSchema,
-  stravaStreamPayloadSchema,
-  weatherPayloadSchema,
-} from '@/lib/validation/payloads';
+import { streamPayloadSchema, weatherPayloadSchema } from '@/lib/validation/payloads';
 import {
   actualsFromSteps,
   familyFromSession,
   intervalDetailsFromV3,
   sessionTypeFromStructure,
 } from '@/lib/domain/workouts/structure';
-import { isStravaActivityLikelyStreamless } from './stream-eligibility';
 import {
   DEFAULT_TIMEZONE,
   buildStreamsV3,
   buildWorkoutV3,
-  payloadKindOf,
+  polylineOf,
   resolveStartedAt,
-  routePolylineFromActivity,
   toProvider,
 } from './workout-v3';
 import { buildPlannedWorkoutFields, type PlannedInput } from './planned-v3';
@@ -223,15 +217,11 @@ async function upsertWorkoutSource(
   userId: string,
   provider: SourceProvider | null,
   externalId: string | null,
-  rawPayload: Prisma.JsonValue | null,
-  startedAt: Date
+  sourcePayload: unknown,
+  startedAt: Date,
+  routePolyline: string | null
 ) {
   if (!provider || !externalId) return null;
-
-  const activityPayload = asRecord(rawPayload);
-  const polyline = routePolylineFromActivity(activityPayload);
-  const hasCoordinates = Boolean(polyline || activityPayload?.start_latlng);
-  const likelyStreamless = provider === 'strava' && isStravaActivityLikelyStreamless(rawPayload);
 
   const existing = await tx.workout_sources.findFirst({
     where: { userId, provider, externalId },
@@ -241,14 +231,12 @@ async function upsertWorkoutSource(
     throw new DuplicateExternalActivityError(externalId);
   }
 
+  const payload = asRecord(sourcePayload);
   const fields = {
     startedAt,
     syncedAt: new Date(),
-    ...(rawPayload
-      ? { rawPayload: rawPayload as Prisma.InputJsonValue, payloadKind: payloadKindOf(activityPayload) }
-      : {}),
-    ...(polyline ? { hasRoute: true, routeStatus: 'done' as const } : {}),
-    ...(likelyStreamless ? { streamsStatus: 'not_applicable' as const } : {}),
+    ...(payload ? { rawPayload: payload as Prisma.InputJsonValue, payloadKind: 'activity' } : {}),
+    ...(routePolyline ? { hasRoute: true, routeStatus: 'done' as const } : {}),
   };
 
   return existing
@@ -259,15 +247,14 @@ async function upsertWorkoutSource(
           userId,
           provider,
           externalId,
-          streamsStatus: likelyStreamless ? 'not_applicable' : 'pending',
-          weatherStatus: hasCoordinates ? 'pending' : 'not_applicable',
+          weatherStatus: routePolyline ? 'pending' : 'not_applicable',
           ...fields,
         },
       });
 }
 
-async function replaceStreams(tx: Tx, workoutId: string, stravaStreams: Prisma.JsonValue | null) {
-  const streams = asRecord(stravaStreams);
+async function replaceStreams(tx: Tx, workoutId: string, streamsPayload: Prisma.JsonValue | null) {
+  const streams = asRecord(streamsPayload);
   const streamsV3 = buildStreamsV3(streams);
   if (!streamsV3) return;
 
@@ -306,7 +293,7 @@ export async function updateSessionStreams(
   userId: string,
   streams: Record<string, unknown>
 ) {
-  const sanitizedStreams = parsePayload(stravaStreamPayloadSchema, streams, 'streams');
+  const sanitizedStreams = parsePayload(streamPayloadSchema, streams, 'streams');
   if (!sanitizedStreams) return null;
 
   const workout = await prisma.workouts.findFirst({
@@ -385,14 +372,13 @@ export async function createCompletedSession(
   options?: { skipRecalculate?: boolean }
 ) {
   const sanitizedWeather = parsePayload(weatherPayloadSchema, payload.weather, 'weather');
-  const sanitizedStrava = parsePayload(stravaPayloadSchema, payload.stravaData, 'strava');
-  const sanitizedStreams = parsePayload(stravaStreamPayloadSchema, payload.stravaStreams, 'streams');
+  const sanitizedStreams = parsePayload(streamPayloadSchema, payload.streams, 'streams');
 
   const intervalDetails = (payload.intervalDetails as IntervalDetails | null | undefined) ?? null;
   const sessionType = payload.sessionType ? String(payload.sessionType) : null;
   const provider = toProvider((payload.source as string | null) ?? null);
   const externalId = (payload.externalId as string | null) ?? null;
-  const workoutV3 = buildWorkoutV3(payload, sanitizedStrava, sanitizedStreams, DEFAULT_TIMEZONE);
+  const workoutV3 = buildWorkoutV3(payload, sanitizedStreams, DEFAULT_TIMEZONE);
 
   const workout = await tenantTransaction(async (tx) => {
     await assertSourceAvailable(tx, userId, provider, externalId);
@@ -421,15 +407,7 @@ export async function createCompletedSession(
       await replaceWorkoutIntervals(tx, workout.id, intervalDetails);
     }
 
-    await upsertWorkoutSource(
-      tx,
-      workout.id,
-      userId,
-      provider,
-      externalId,
-      (sanitizedStrava as Prisma.JsonValue | null) ?? null,
-      workoutV3.startedAt
-    );
+    await upsertWorkoutSource(tx, workout.id, userId, provider, externalId, payload.sourcePayload, workoutV3.startedAt, workoutV3.routePolyline);
 
     await upsertWeatherObservation(
       tx,
@@ -462,11 +440,10 @@ export async function completePlannedSession(
   if (!plan) return null;
 
   const sanitizedWeather = parsePayload(weatherPayloadSchema, payload.weather, 'weather');
-  const sanitizedStrava = parsePayload(stravaPayloadSchema, payload.stravaData, 'strava');
-  const sanitizedStreams = parsePayload(stravaStreamPayloadSchema, payload.stravaStreams, 'streams');
+  const sanitizedStreams = parsePayload(streamPayloadSchema, payload.streams, 'streams');
   const provider = toProvider((payload.source as string | null) ?? null);
   const externalId = (payload.externalId as string | null) ?? null;
-  const workoutV3 = buildWorkoutV3(payload, sanitizedStrava, sanitizedStreams, plan.timezone);
+  const workoutV3 = buildWorkoutV3(payload, sanitizedStreams, plan.timezone);
 
   const planLabel = sessionTypeFromStructure(plan.family, plan.structure);
   const sessionType = payload.sessionType ? String(payload.sessionType) : planLabel;
@@ -508,15 +485,7 @@ export async function completePlannedSession(
       await replaceWorkoutIntervals(tx, workout.id, details);
     }
 
-    await upsertWorkoutSource(
-      tx,
-      workout.id,
-      userId,
-      provider,
-      externalId,
-      (sanitizedStrava as Prisma.JsonValue | null) ?? null,
-      workoutV3.startedAt
-    );
+    await upsertWorkoutSource(tx, workout.id, userId, provider, externalId, payload.sourcePayload, workoutV3.startedAt, workoutV3.routePolyline);
 
     await upsertWeatherObservation(
       tx,
@@ -549,7 +518,7 @@ export async function updateSession(
     const plan = workout.planned_workout;
     const provider = toProvider((updates.source as string | null) ?? null);
     const externalId = (updates.externalId as string | null) ?? null;
-    const startChange = updates.date ? resolveStartedAt(updates.date, null, workout.timezone) : null;
+    const startChange = updates.date ? resolveStartedAt(updates.date, updates.startedAt, workout.timezone) : null;
     const details = updates.intervalDetails !== undefined
       ? ((updates.intervalDetails as IntervalDetails | null) ?? null)
       : plan
@@ -566,6 +535,7 @@ export async function updateSession(
             ? familyFields(updates.sessionType ? String(updates.sessionType) : null, details, 'manual')
             : {}),
           ...(startChange ?? {}),
+          ...(updates.routePolyline !== undefined ? { routePolyline: polylineOf(updates.routePolyline) } : {}),
           ...(updates.duration !== undefined ? { durationS: updates.duration ? parseDuration(String(updates.duration)) : null } : {}),
           ...(updates.distance !== undefined ? { distanceM: updates.distance == null ? null : Math.round(Number(updates.distance) * 1000) } : {}),
           ...(updates.avgPace !== undefined ? { paceSKm: updates.avgPace ? parseDuration(String(updates.avgPace)) : null } : {}),
@@ -585,22 +555,22 @@ export async function updateSession(
         }
       }
 
-      if (updates.stravaData || updates.externalId || updates.source) {
+      if (updates.externalId || updates.source) {
         await assertSourceAvailable(tx, userId, provider, externalId, workout.id);
-        const sanitizedStrava = parsePayload(stravaPayloadSchema, updates.stravaData, 'strava');
         await upsertWorkoutSource(
           tx,
           workout.id,
           userId,
           provider,
           externalId,
-          (sanitizedStrava as Prisma.JsonValue | null) ?? null,
-          startChange?.startedAt ?? workout.startedAt
+          updates.sourcePayload,
+          startChange?.startedAt ?? workout.startedAt,
+          polylineOf(updates.routePolyline) ?? workout.routePolyline
         );
       }
 
-      if (updates.stravaStreams) {
-        const sanitizedStreams = parsePayload(stravaStreamPayloadSchema, updates.stravaStreams, 'streams');
+      if (updates.streams) {
+        const sanitizedStreams = parsePayload(streamPayloadSchema, updates.streams, 'streams');
         if (sanitizedStreams) {
           await replaceStreams(tx, workout.id, sanitizedStreams as Prisma.JsonValue);
         }

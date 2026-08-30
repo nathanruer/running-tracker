@@ -149,15 +149,12 @@ describe('sessions-write — write paths', () => {
           date: '2026-05-01T07:00:00',
           source: 'intervals_icu',
           externalId: 'i42',
-          stravaData: {
-            id: 42,
-            start_date: '2026-05-01T05:00:00Z',
-            start_latlng: [48.8, 2.3],
-            max_heartrate: 182,
-            map: { id: 'intervals_i42', summary_polyline: 'poly' },
-          },
+          startedAt: '2026-05-01T05:00:00Z',
+          maxHeartRate: 182,
+          routePolyline: 'poly',
+          sourcePayload: { id: 'i42', start_date: '2026-05-01T05:00:00Z' },
           weather: { temperature: 12 },
-          stravaStreams: { time: { data: [0, 1] }, velocity_smooth: { data: [3, 3.2] }, heartrate: { data: [120, 130] } },
+          streams: { time: { data: [0, 1] }, velocity_smooth: { data: [3, 3.2] }, heartrate: { data: [120, 130] } },
         },
         'user-1'
       );
@@ -175,10 +172,10 @@ describe('sessions-write — write paths', () => {
           workoutId: 'w-new',
           provider: 'intervals_icu',
           externalId: 'i42',
-          payloadKind: 'detail',
+          payloadKind: 'activity',
           hasRoute: true,
           routeStatus: 'done',
-          streamsStatus: 'pending',
+          rawPayload: { id: 'i42', start_date: '2026-05-01T05:00:00Z' },
           weatherStatus: 'pending',
         }),
       });
@@ -213,7 +210,7 @@ describe('sessions-write — write paths', () => {
 
       await expect(
         sessionsWrite.createCompletedSession(
-          { date: '2026-05-01', source: 'strava', externalId: '123', stravaData: { id: 123 } },
+          { date: '2026-05-01', source: 'intervals_icu', externalId: '123', sourcePayload: { id: 'i123' } },
           'user-1'
         )
       ).rejects.toMatchObject({ name: 'DuplicateExternalActivityError' });

@@ -14,7 +14,6 @@ import { toProvider } from './workout-v3';
 const WORKOUT_SOURCE_SELECT = {
   provider: true,
   externalId: true,
-  rawPayload: true,
   hasStreams: true,
   streamsStatus: true,
 } satisfies Prisma.workout_sourcesSelect;
@@ -246,11 +245,6 @@ interface ExternalFlagsRow {
   workout_id: string;
   source: string;
   external_id: string;
-  has_payload: boolean;
-  has_polyline: boolean;
-  manual: boolean;
-  external_id_null: boolean | null;
-  upload_id_null: boolean | null;
   has_streams: boolean;
   streams_status: string;
 }
@@ -266,25 +260,12 @@ async function fetchExternalFlags(
       s.workout_id,
       s.provider::text AS source,
       s.external_id,
-      (s.raw_payload IS NOT NULL) AS has_payload,
-      s.has_route AS has_polyline,
-      COALESCE(s.raw_payload->>'manual', '') = 'true' AS manual,
-      CASE
-        WHEN s.raw_payload->'external_id' IS NULL THEN NULL
-        WHEN jsonb_typeof(s.raw_payload->'external_id') = 'null' THEN true
-        ELSE false
-      END AS external_id_null,
-      CASE
-        WHEN s.raw_payload->'upload_id' IS NULL THEN NULL
-        WHEN jsonb_typeof(s.raw_payload->'upload_id') = 'null' THEN true
-        ELSE false
-      END AS upload_id_null,
       s.has_streams,
       s.streams_status::text AS streams_status
     FROM workout_sources s
     WHERE s.user_id = ${userId}
       AND s.workout_id IN (${Prisma.join(workoutIds)})
-    ORDER BY s.workout_id, CASE WHEN s.provider = 'strava' THEN 0 ELSE 1 END
+    ORDER BY s.workout_id, s.created_at
   `;
 
   const map = new Map<string, ExternalFlags>();
@@ -293,11 +274,6 @@ async function fetchExternalFlags(
     map.set(row.workout_id, {
       source: row.source,
       externalId: row.external_id,
-      hasPayload: row.has_payload,
-      hasPolyline: row.has_polyline,
-      manual: row.manual,
-      externalIdFieldNull: row.external_id_null,
-      uploadIdFieldNull: row.upload_id_null,
       hasStreams: row.has_streams,
       streamsStatus: row.streams_status,
     });

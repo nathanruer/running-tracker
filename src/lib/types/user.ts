@@ -6,8 +6,6 @@ export interface User {
   maxHeartRate?: number | null;
   vma?: number | null;
   goal?: string | null;
-  stravaId?: string | null;
-  stravaTokenExpiresAt?: Date | null;
   intervalsAthleteId?: string | null;
 }
 

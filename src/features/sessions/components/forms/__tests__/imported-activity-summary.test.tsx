@@ -3,11 +3,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { ImportedActivitySummary } from '../imported-activity-summary';
 
 describe('ImportedActivitySummary', () => {
-  it('renders Strava branding and activity link for strava source', () => {
+  it('renders the intervals.icu branding, the activity link and the metrics', () => {
     render(
       <ImportedActivitySummary
-        source="strava"
-        externalId="12345"
+        externalId="i12345"
         date="2026-05-08"
         distance={5.26}
         duration="30:59"
@@ -15,50 +14,25 @@ describe('ImportedActivitySummary', () => {
       />
     );
 
-    expect(screen.getByText('Synchronisation Strava')).toBeInTheDocument();
-    expect(screen.getByRole('link')).toHaveAttribute(
-      'href',
-      'https://www.strava.com/activities/12345'
-    );
-  });
-
-  it('renders intervals.icu branding and activity link for intervals source', () => {
-    render(
-      <ImportedActivitySummary
-        source="intervals_icu"
-        externalId="i9876"
-        date="2026-05-08"
-        distance={9}
-        duration="50:00"
-        avgPace="06:00"
-      />
-    );
-
     expect(screen.getByText('Synchronisation intervals.icu')).toBeInTheDocument();
-    expect(screen.getByRole('link')).toHaveAttribute(
-      'href',
-      'https://intervals.icu/activities/i9876'
-    );
+    expect(screen.getByRole('link')).toHaveAttribute('href', 'https://intervals.icu/activities/i12345');
+    expect(screen.getByText('5.26')).toBeInTheDocument();
+    expect(screen.getByText('30:59')).toBeInTheDocument();
+    expect(screen.getByText('05:53')).toBeInTheDocument();
   });
 
-  it('shows summary values and Modifier button when onModify is provided', () => {
-    const onModify = vi.fn();
-    render(
-      <ImportedActivitySummary
-        source="intervals_icu"
-        externalId={null}
-        date={null}
-        distance={9}
-        duration="50:00"
-        avgPace="06:00"
-        onModify={onModify}
-      />
-    );
+  it('omits the link without an external id and shows placeholders', () => {
+    render(<ImportedActivitySummary externalId={null} date={null} distance={null} duration={null} avgPace={null} />);
 
-    expect(screen.getByText('9')).toBeInTheDocument();
-    expect(screen.getByText('50:00')).toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0);
+  });
+
+  it('calls onModify from the Modifier button', () => {
+    const onModify = vi.fn();
+    render(<ImportedActivitySummary externalId="i1" distance={5} duration="30:00" avgPace="06:00" onModify={onModify} />);
+
     screen.getByRole('button', { name: 'Modifier' }).click();
-    expect(onModify).toHaveBeenCalled();
+    expect(onModify).toHaveBeenCalledTimes(1);
   });
 });

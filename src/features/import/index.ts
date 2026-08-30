@@ -1,7 +1,6 @@
 export {
   ActivityImportDialog,
   ActivityImportContent,
-  ConnectScreen,
   ImportToolbar,
   ActivityTable,
   ActivityRow,
@@ -16,6 +15,6 @@ export {
 
 export { SourceBadge } from './components/source-badge';
 
-export { useExternalActivities, type FormattedStravaActivity } from './hooks/use-external-activities';
+export { useExternalActivities, type ImportableActivity } from './hooks/use-external-activities';
 
 export { parseGarminCSV } from './utils/garmin-csv';

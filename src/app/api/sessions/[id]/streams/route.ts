@@ -7,8 +7,7 @@ import {
   markSessionNoStreams,
   logSessionWriteError,
 } from '@/server/domain/sessions/sessions-write';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
-import { isStravaActivityLikelyStreamless } from '@/server/domain/sessions/stream-eligibility';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
 
 export async function PATCH(
   request: NextRequest,
@@ -29,36 +28,33 @@ export async function PATCH(
         );
       }
 
-      if (session.stravaStreams) {
+      if (session.streams) {
         return NextResponse.json(
           {
             status: 'already_has_streams',
-            message: 'Cette séance a déjà été traitée pour les streams Strava',
+            message: 'Cette séance a déjà ses streams',
             session,
           },
           { status: HTTP_STATUS.OK }
         );
       }
 
-      const likelyStreamlessFromPayload = isStravaActivityLikelyStreamless(session.stravaData);
-      if ((session.hasStreams === true && !session.stravaStreams) || likelyStreamlessFromPayload) {
-        await markSessionNoStreams(id, userId);
-        const updated = await fetchSessionById(userId, id);
+      if (session.hasStreams === true) {
         return NextResponse.json(
           {
             status: 'no_streams',
-            message: 'Aucun stream Strava exploitable pour cette activité',
-            session: updated ?? session,
+            message: 'Aucun stream exploitable pour cette activité',
+            session,
           },
           { status: HTTP_STATUS.OK }
         );
       }
 
-      if (!session.source || !session.externalId || session.source !== 'strava') {
+      if (!session.source || !session.externalId) {
         return NextResponse.json(
           {
-            error: "Cette séance n'a pas de référence Strava pour l'enrichissement",
-            status: 'missing_strava',
+            error: "Cette séance n'est liée à aucune activité externe",
+            status: 'missing_source',
           },
           { status: HTTP_STATUS.BAD_REQUEST }
         );
@@ -77,7 +73,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             status: 'no_streams',
-            message: 'Aucun stream Strava exploitable pour cette activité',
+            message: 'Aucun stream exploitable pour cette activité',
             session: updated ?? session,
           },
           { status: HTTP_STATUS.OK }
@@ -87,7 +83,7 @@ export async function PATCH(
       if (streamResult.status !== 'ok' || !streamResult.streams) {
         return NextResponse.json(
           {
-            error: 'Impossible de récupérer les streams Strava pour cette séance',
+            error: 'Impossible de récupérer les streams de cette séance',
             status: 'failed',
           },
           { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
@@ -111,7 +107,7 @@ export async function PATCH(
         const updated = await fetchSessionById(userId, id);
         return NextResponse.json({
           status: 'enriched',
-          session: updated ?? { id: workoutId, stravaStreams: streamResult.streams },
+          session: updated ?? { id: workoutId, streams: streamResult.streams },
         });
       } catch (error) {
         await logSessionWriteError(error, { userId, action: 'streams', id });

@@ -22,13 +22,4 @@ export {
   type IntervalFormValues,
 } from './session-form';
 
-export {
-  stravaMapSchema,
-  stravaStreamSchema as stravaApiStreamSchema,
-  stravaStreamSetSchema as stravaApiStreamSetSchema,
-  validateStravaData,
-  validateStravaMap,
-  validateStravaStreams,
-  type StravaActivityValidated,
-  type StravaMapData,
-} from './strava';
+export { validateStreams } from './streams';

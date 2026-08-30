@@ -69,33 +69,15 @@ describe('SessionDetailsSheet', () => {
       targetEffortHR: 170,
       targetRecoveryPace: '6:00',
     },
-    // Strava simulated data
-    source: 'strava',
+    // External source
+    source: 'intervals_icu',
     externalId: '12345',
     elevationGain: 150,
     averageCadence: 180,
     averageTemp: 20,
     calories: 800,
-    stravaData: {
-      id: 12345,
-      name: 'Test Run',
-      distance: 10000,
-      moving_time: 3600,
-      elapsed_time: 3600,
-      total_elevation_gain: 150,
-      type: 'Run',
-      start_date: '2024-01-01T10:00:00Z',
-      start_date_local: '2024-01-01T10:00:00',
-      average_speed: 2.78,
-      max_speed: 3.5,
-      average_heartrate: 150,
-      average_cadence: 180,
-      average_temp: 20,
-      elev_high: 300,
-      elev_low: 150,
-      calories: 800,
-      map: { id: 'map1', summary_polyline: 'encoded_polyline' }
-    }
+    routePolyline: 'encoded_polyline',
+    streams: null,
   };
 
   it('should not render when not open', () => {
@@ -113,7 +95,7 @@ describe('SessionDetailsSheet', () => {
     expect(screen.getByText('01:00:00')).toBeInTheDocument();
   });
 
-  it('should render Strava metrics section when available', () => {
+  it('should render the sensor metrics section when available', () => {
     renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
 
     expect(screen.getByText('Données Capteurs')).toBeInTheDocument();
@@ -197,7 +179,7 @@ describe('SessionDetailsSheet', () => {
     expect(screen.getByTestId('enrich-weather-button')).toBeInTheDocument();
   });
 
-  it('should show enrich streams button when streams are missing on strava session', () => {
+  it('should show enrich streams button when streams are missing on an external session', () => {
     renderWithProviders(<SessionDetailsSheet open={true} onOpenChange={mockOnOpenChange} session={mockSession} />);
     expect(screen.getByTestId('enrich-streams-button')).toBeInTheDocument();
   });

@@ -18,7 +18,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageContainer } from '@/components/layout/page-container';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/use-error-handler';
-import { type FormattedStravaActivity } from '@/features/import';
+import { type ImportableActivity } from '@/features/import';
 import {
   type TrainingSession,
   type TrainingSessionPayload,
@@ -44,7 +44,7 @@ function DashboardContent() {
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
-  const [isStravaDialogOpen, setIsStravaDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importedData, setImportedData] = useState<TrainingSessionPayload | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isEnriching, setIsEnriching] = useState(false);
@@ -95,18 +95,6 @@ function DashboardContent() {
     }
   }, [isDetailsSheetOpen]);
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-    const success = searchParams.get('success');
-
-    if (success === 'strava_connected') {
-      toast({
-        title: 'Succès',
-        description: 'Votre compte Strava a été connecté avec succès!',
-      });
-      router.replace('/dashboard', { scroll: false });
-    }
-  }, [toast, router]);
 
   useEffect(() => {
     if (!userLoading && user === null) {
@@ -249,13 +237,13 @@ function DashboardContent() {
     setIsDialogOpen(open);
   };
 
-  const handleStravaImport = (data: FormattedStravaActivity) => {
+  const handleActivityImport = (data: ImportableActivity) => {
     setImportedData(data as TrainingSessionPayload);
     setIsDialogOpen(true);
   };
 
-  const handleRequestStravaImport = () => {
-    setIsStravaDialogOpen(true);
+  const handleRequestImport = () => {
+    setIsImportDialogOpen(true);
   };
 
   const prefetchSessionDetails = useCallback(
@@ -354,7 +342,7 @@ function DashboardContent() {
         session={editingSession}
         initialData={sessionDialogInitialData}
         mode={getDialogMode()}
-        onRequestStravaImport={handleRequestStravaImport}
+        onRequestImport={handleRequestImport}
       />
 
       <SessionDetailsSheet
@@ -365,9 +353,9 @@ function DashboardContent() {
       />
 
       <ActivityImportDialog
-        open={isStravaDialogOpen}
-        onOpenChange={setIsStravaDialogOpen}
-        onImport={handleStravaImport}
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImport={handleActivityImport}
         mode={getDialogMode()}
         queryClient={queryClient}
         onBulkImportSuccess={() => {

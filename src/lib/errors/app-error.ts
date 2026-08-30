@@ -45,7 +45,7 @@ function getSeverityFromCode(code: ErrorCode): ErrorSeverity {
   ];
 
   const warningCodes: ErrorCode[] = [
-    ErrorCode.STRAVA_RATE_LIMITED,
+    ErrorCode.EXTERNAL_RATE_LIMITED,
     ErrorCode.NETWORK_TIMEOUT,
   ];
 

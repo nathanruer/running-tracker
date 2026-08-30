@@ -2,15 +2,14 @@ import 'server-only';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
 import { pMap } from '@/lib/utils/async';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
 import { attachRoutePolyline, markSessionNoStreams, updateSessionStreams } from './sessions-write';
-import { isStravaActivityLikelyStreamless } from './stream-eligibility';
 
 export interface BulkStreamsEnrichmentSummary {
   requested: number;
   enriched: number;
   alreadyHasStreams: number;
-  missingStrava: number;
+  missingSource: number;
   failed: number;
   notFound: number;
 }
@@ -20,7 +19,7 @@ export interface BulkStreamsEnrichmentResult {
   ids: {
     enriched: string[];
     alreadyHasStreams: string[];
-    missingStrava: string[];
+    missingSource: string[];
     failed: string[];
     notFound: string[];
   };
@@ -50,14 +49,14 @@ export async function bulkEnrichStreamsForIds(
         requested: 0,
         enriched: 0,
         alreadyHasStreams: 0,
-        missingStrava: 0,
+        missingSource: 0,
         failed: 0,
         notFound: 0,
       },
       ids: {
         enriched: [],
         alreadyHasStreams: [],
-        missingStrava: [],
+        missingSource: [],
         failed: [],
         notFound: [],
       },
@@ -74,7 +73,6 @@ export async function bulkEnrichStreamsForIds(
         select: {
           provider: true,
           externalId: true,
-          rawPayload: true,
           streamsStatus: true,
         },
       },
@@ -85,7 +83,7 @@ export async function bulkEnrichStreamsForIds(
   const notFound = requestedIds.filter((id) => !foundIds.has(id));
 
   const alreadyHasStreams: string[] = [];
-  const missingStrava: string[] = [];
+  const missingSource: string[] = [];
   const failed: string[] = [];
   const enriched: string[] = [];
   const tasks: StreamsEnrichmentTask[] = [];
@@ -108,28 +106,22 @@ export async function bulkEnrichStreamsForIds(
       continue;
     }
 
-    const stravaActivity = workout.workout_sources.find((source) => Boolean(source.externalId));
+    const source = workout.workout_sources.find((item) => Boolean(item.externalId));
 
-    if (!stravaActivity?.externalId) {
-      missingStrava.push(workout.id);
+    if (!source?.externalId) {
+      missingSource.push(workout.id);
       continue;
     }
 
-    const likelyStreamlessFromPayload = isStravaActivityLikelyStreamless(stravaActivity.rawPayload);
-    const knownStreamless = stravaActivity.streamsStatus === 'not_applicable';
-
-    if (knownStreamless || likelyStreamlessFromPayload) {
-      if (!knownStreamless) {
-        await markSessionNoStreams(workout.id, userId);
-      }
+    if (source.streamsStatus === 'not_applicable') {
       alreadyHasStreams.push(workout.id);
       continue;
     }
 
     tasks.push({
       id: workout.id,
-      source: stravaActivity.provider,
-      externalId: stravaActivity.externalId,
+      source: source.provider,
+      externalId: source.externalId,
     });
   }
 
@@ -196,14 +188,14 @@ export async function bulkEnrichStreamsForIds(
       requested: requestedIds.length,
       enriched: enriched.length,
       alreadyHasStreams: alreadyHasStreams.length,
-      missingStrava: missingStrava.length,
+      missingSource: missingSource.length,
       failed: failed.length,
       notFound: notFound.length,
     },
     ids: {
       enriched,
       alreadyHasStreams,
-      missingStrava,
+      missingSource,
       failed,
       notFound,
     },

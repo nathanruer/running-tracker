@@ -3,7 +3,7 @@ import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { completeSessionSchema } from '@/lib/validation';
 import { HTTP_STATUS } from '@/lib/constants';
-import { fetchStreamsForSessionWithStatus } from '@/server/services/strava';
+import { fetchStreamsForSessionWithStatus } from '@/server/services/intervals';
 import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { completePlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
@@ -25,23 +25,18 @@ export async function PATCH(
           'session-completion'
         );
 
-        if (body.stravaData && streamResult.polyline && !body.stravaData.map) {
-          body.stravaData.map = {
-            id: `${body.source}_${body.externalId}`,
-            summary_polyline: streamResult.polyline,
-          };
-        }
-
+        const routePolyline = body.routePolyline ?? streamResult.polyline ?? null;
         let weather = body.weather ?? null;
-        if (!weather && body.stravaData) {
-          weather = await enrichSessionWithWeather(body.stravaData, new Date(body.date));
+        if (!weather && routePolyline) {
+          weather = await enrichSessionWithWeather({ routePolyline, startedAt: body.startedAt ?? body.date });
         }
 
         const workout = await completePlannedSession(
           id,
           {
             ...body,
-            stravaStreams: streamResult.streams ?? body.stravaStreams ?? null,
+            routePolyline,
+            streams: streamResult.streams ?? body.streams ?? null,
             weather,
           },
           userId

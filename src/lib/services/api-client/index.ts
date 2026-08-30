@@ -3,7 +3,6 @@ export {
   loginUser,
   logoutUser,
   getCurrentUser,
-  disconnectStrava,
 } from './auth';
 
 export {
@@ -40,16 +39,12 @@ export {
 
 export { updateUser } from './users';
 
-export {
-  getStravaActivities,
-  getStravaActivityDetails,
-  type FormattedStravaActivity,
-} from './strava';
-
 export { apiRequest } from './client';
 
 export {
   getIntervalsActivitiesList,
   importIntervalsSelection,
   type IntervalsImportResult,
+  type ImportableActivity,
+  type ActivitiesResponse,
 } from './intervals';

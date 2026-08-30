@@ -7,7 +7,7 @@ import { queryKeys } from '@/lib/constants/query-keys';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import type { TrainingSession } from '@/lib/types';
 
-function formatStreamSuccessMessage(streams: TrainingSession['stravaStreams'] | null | undefined): string {
+function formatStreamSuccessMessage(streams: TrainingSession['streams'] | null | undefined): string {
   if (!streams || typeof streams !== 'object') {
     return 'Les streams disponibles ont été ajoutés à votre séance.';
   }
@@ -88,22 +88,22 @@ export function useSessionEnrichment({ session, onSessionUpdated }: UseSessionEn
     try {
       const result = await enrichSessionStreams(session.id);
       if (result.status === 'already_has_streams') {
-        handleInfo('Streams déjà à jour', 'Cette séance dispose déjà de ses streams Strava.');
+        handleInfo('Streams déjà à jour', 'Cette séance dispose déjà de ses streams.');
         return;
       }
       if (result.status === 'no_streams') {
         await syncUpdatedSession(session.id, result.session);
-        handleInfo('Aucun stream disponible', 'Strava ne fournit pas de streams exploitables pour cette activité.');
+        handleInfo('Aucun stream disponible', 'Aucun stream exploitable pour cette activité.');
         return;
       }
       if (result.status === 'enriched') {
         const updatedSession = await syncUpdatedSession(session.id, result.session);
-        handleSuccess('Streams récupérés !', formatStreamSuccessMessage(updatedSession?.stravaStreams ?? null));
+        handleSuccess('Streams récupérés !', formatStreamSuccessMessage(updatedSession?.streams ?? null));
         return;
       }
-      handleInfo('Streams non disponibles', 'Nous n’avons pas pu récupérer les streams Strava pour cette séance.');
+      handleInfo('Streams non disponibles', 'Nous n’avons pas pu récupérer les streams de cette séance.');
     } catch (error) {
-      handleError(error, 'Impossible de récupérer les streams Strava.');
+      handleError(error, 'Impossible de récupérer les streams.');
     } finally {
       setIsEnrichingStreams(false);
     }
