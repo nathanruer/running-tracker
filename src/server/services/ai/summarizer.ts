@@ -2,7 +2,7 @@ import 'server-only';
 import { generateText } from 'ai';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
-import { getModel, modelName, primaryProvider } from './provider';
+import { getModel, primaryProvider } from './provider';
 import { OPTIMIZATION_CONFIG } from './optimizer';
 
 const SUMMARY_TRIGGER_THRESHOLD = 6;
