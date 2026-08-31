@@ -1,4 +1,6 @@
 import 'server-only';
+import { applyFormLimits } from './safety';
+import type { AthleteForm } from './context/form-context';
 import { randomUUID } from 'crypto';
 import { logger } from '@/server/infrastructure/logger';
 import { validatePaceInput } from '@/lib/utils/pace';
@@ -151,11 +153,14 @@ export function enrichRecommendations(response: AIResponseValidated): AIResponse
   };
 }
 
-export function validateAndFixRecommendations(response: unknown): AIResponseValidated {
+export function validateAndFixRecommendations(
+  response: unknown,
+  form: AthleteForm | null = null
+): AIResponseValidated {
   const validationResult = validateAIResponse(response);
   const validatedResponse = validationResult.success
     ? validationResult.data
     : validationResult.fallback;
 
-  return enrichRecommendations(validatedResponse);
+  return applyFormLimits(enrichRecommendations(validatedResponse), form);
 }

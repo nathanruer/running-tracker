@@ -14,6 +14,10 @@ vi.mock('../tools', () => ({
   buildAgentTools: buildAgentToolsMock,
 }));
 
+vi.mock('../data/fetcher', () => ({
+  fetchSessions: vi.fn(async () => []),
+}));
+
 vi.mock('@/server/database', () => ({
   prisma: {
     conversation_messages: {

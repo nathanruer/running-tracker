@@ -6,6 +6,7 @@ import { formatDuration } from '@/lib/utils/duration/format';
 import { sessionTypeFromStructure } from '@/lib/domain/workouts/structure';
 import type { AIResponseValidated } from '@/lib/validation/schemas/ai-response';
 import { validateAndFixRecommendations } from './validator';
+import type { AthleteForm } from './context/form-context';
 import { fetchProfile, fetchSessions, fetchSessionStats, fetchNextSessionNumber } from './data/fetcher';
 import { buildProfileContext } from './context/profile-context';
 import { buildRecentSessionsContext } from './context/session-context';
@@ -34,7 +35,11 @@ const proposedSessionSchema = z
     interval_details: z.looseObject({}).nullish(),
   });
 
-export function buildAgentTools(userId: string, proposed: ProposedRecommendations[]) {
+export function buildAgentTools(
+  userId: string,
+  proposed: ProposedRecommendations[],
+  form: AthleteForm | null = null
+) {
   return {
     get_profile: tool({
       description: "Profil de l'athlète (âge, FC max, VMA, objectif) et prochain numéro de séance.",
@@ -127,10 +132,10 @@ export function buildAgentTools(userId: string, proposed: ProposedRecommendation
         recommended_sessions: z.array(proposedSessionSchema).min(1).max(7),
       }),
       execute: async (input) => {
-        const validated = validateAndFixRecommendations({
-          responseType: 'recommendations',
-          ...input,
-        });
+        const validated = validateAndFixRecommendations(
+          { responseType: 'recommendations', ...input },
+          form
+        );
         proposed.push({ validated });
         const count =
           validated.responseType === 'recommendations' ? validated.recommended_sessions.length : 0;

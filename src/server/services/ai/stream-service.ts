@@ -7,6 +7,8 @@ import { getHttpStatus } from '@/lib/utils/error';
 import { getOptimizedConversationHistory } from './optimizer';
 import { AGENT_SYSTEM_PROMPT } from './prompts/system';
 import { buildAgentTools, type ProposedRecommendations } from './tools';
+import { buildAthleteForm, formatAthleteForm, type AthleteForm } from './context/form-context';
+import { fetchSessions } from './data/fetcher';
 import {
   getModel,
   modelName,
@@ -101,14 +103,24 @@ export async function* processStreamingMessage(
     content: m.content,
   }));
 
+  // The measured form is computed here, never asked to the model: it frames every proposal.
+  // If the log cannot be read the coach still answers, simply without its limits.
+  let form: AthleteForm | null = null;
+  try {
+    form = buildAthleteForm(await fetchSessions(ctx.userId, 40));
+  } catch (err) {
+    logger.warn({ err, userId: ctx.userId }, 'athlete-form-unavailable');
+  }
+  const system = form ? `${AGENT_SYSTEM_PROMPT}\n\n${formatAthleteForm(form)}` : AGENT_SYSTEM_PROMPT;
+
   const proposed: ProposedRecommendations[] = [];
   let accumulatedText = '';
 
-  const tools = buildAgentTools(ctx.userId, proposed);
+  const tools = buildAgentTools(ctx.userId, proposed, form);
   const runAgent = (provider: AiProvider) =>
     streamText({
       model: getModel(provider),
-      system: AGENT_SYSTEM_PROMPT,
+      system,
       messages,
       tools,
       stopWhen: stepCountIs(MAX_AGENT_STEPS),
