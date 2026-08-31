@@ -24,8 +24,10 @@ vi.mock('ai', () => ({
   generateText: vi.fn(),
 }));
 
-vi.mock('../stream-service', () => ({
-  getGroqProvider: vi.fn(() => vi.fn(() => 'mock-model')),
+vi.mock('../provider', () => ({
+  getModel: vi.fn(() => 'mock-model'),
+  modelName: vi.fn(() => 'mock-model'),
+  primaryProvider: vi.fn(() => 'google'),
 }));
 
 import { prisma } from '@/server/database';

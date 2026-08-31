@@ -10,6 +10,8 @@ const envSchema = z.object({
 
 
   GROQ_API_KEY: z.string().optional(),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+  AI_PROVIDER: z.enum(['google', 'groq']).optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

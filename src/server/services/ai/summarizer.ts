@@ -2,8 +2,7 @@ import 'server-only';
 import { generateText } from 'ai';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
-import { getGroqProvider } from './stream-service';
-import { GROQ_SUMMARY_MODEL } from './groq-client';
+import { getModel, modelName, primaryProvider } from './provider';
 import { OPTIMIZATION_CONFIG } from './optimizer';
 
 const SUMMARY_TRIGGER_THRESHOLD = 6;
@@ -54,7 +53,7 @@ export async function maybeRefreshConversationSummary(conversationId: string): P
     promptParts.push(`Nouveaux messages:\n${transcript}`);
 
     const result = await generateText({
-      model: getGroqProvider()(GROQ_SUMMARY_MODEL),
+      model: getModel(primaryProvider(), 'summary'),
       system: SUMMARY_SYSTEM_PROMPT,
       prompt: promptParts.join('\n\n'),
       temperature: 0.3,

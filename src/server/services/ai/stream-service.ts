@@ -1,5 +1,4 @@
 import 'server-only';
-import { createGroq } from '@ai-sdk/groq';
 import { streamText, stepCountIs, type ModelMessage } from 'ai';
 import { prisma } from '@/server/database';
 import { logger } from '@/server/infrastructure/logger';
@@ -8,7 +7,15 @@ import { getHttpStatus } from '@/lib/utils/error';
 import { getOptimizedConversationHistory } from './optimizer';
 import { AGENT_SYSTEM_PROMPT } from './prompts/system';
 import { buildAgentTools, type ProposedRecommendations } from './tools';
-import { GROQ_MODEL, GROQ_MAX_TOKENS, GROQ_TEMPERATURE } from './groq-client';
+import {
+  getModel,
+  modelName,
+  primaryProvider,
+  fallbackProvider,
+  AI_MAX_TOKENS,
+  AI_TEMPERATURE,
+  type AiProvider,
+} from './provider';
 import type { AIResponseValidated } from '@/lib/validation/schemas/ai-response';
 import type { Prisma, conversation_messages } from '@prisma/client';
 
@@ -23,21 +30,7 @@ export interface StreamContext {
   skipSaveUserMessage?: boolean;
 }
 
-let groqProvider: ReturnType<typeof createGroq> | null = null;
 
-export function getGroqProvider() {
-  if (!process.env.GROQ_API_KEY) {
-    throw new Error('Clé API Groq manquante');
-  }
-  if (!groqProvider) {
-    groqProvider = createGroq({ apiKey: process.env.GROQ_API_KEY });
-  }
-  return groqProvider;
-}
-
-export function resetAgentProvider(): void {
-  groqProvider = null;
-}
 
 async function createConversationMessage({
   conversationId,
@@ -111,29 +104,49 @@ export async function* processStreamingMessage(
   const proposed: ProposedRecommendations[] = [];
   let accumulatedText = '';
 
-  try {
-    const result = streamText({
-      model: getGroqProvider()(GROQ_MODEL),
+  const tools = buildAgentTools(ctx.userId, proposed);
+  const runAgent = (provider: AiProvider) =>
+    streamText({
+      model: getModel(provider),
       system: AGENT_SYSTEM_PROMPT,
       messages,
-      tools: buildAgentTools(ctx.userId, proposed),
+      tools,
       stopWhen: stepCountIs(MAX_AGENT_STEPS),
-      temperature: GROQ_TEMPERATURE,
-      maxOutputTokens: GROQ_MAX_TOKENS,
+      temperature: AI_TEMPERATURE,
+      maxOutputTokens: AI_MAX_TOKENS,
     });
 
+  let provider = primaryProvider();
+
+  async function* readAgent(current: AiProvider) {
+    const result = runAgent(current);
     for await (const part of result.fullStream) {
       if (part.type === 'text-delta') {
         accumulatedText += part.text;
-        yield { type: 'chunk', data: part.text };
+        yield { type: 'chunk' as const, data: part.text };
       } else if (part.type === 'tool-result' && part.toolName === 'propose_sessions') {
         const latest = proposed[proposed.length - 1];
         if (latest) {
-          yield { type: 'json', data: JSON.stringify(latest.validated) };
+          yield { type: 'json' as const, data: JSON.stringify(latest.validated) };
         }
       } else if (part.type === 'error') {
         throw part.error;
       }
+    }
+  }
+
+  try {
+    try {
+      yield* readAgent(provider);
+    } catch (err: unknown) {
+      const backup = fallbackProvider();
+      // Nothing streamed yet: the answer can be restarted on the other provider without repeating.
+      if (!isQuotaError(err) || !backup || accumulatedText.trim() || proposed.length) throw err;
+
+      logger.warn({ err, from: provider, to: backup }, 'agent-provider-fallback');
+      provider = backup;
+      proposed.length = 0;
+      yield* readAgent(provider);
     }
   } catch (err: unknown) {
     if (isQuotaError(err)) {
@@ -142,7 +155,7 @@ export async function* processStreamingMessage(
         conversationId: ctx.conversationId,
         role: 'assistant',
         content,
-        model: GROQ_MODEL,
+        model: modelName(provider),
       });
       if (!accumulatedText.trim()) {
         yield { type: 'chunk', data: QUOTA_MESSAGE };
@@ -163,7 +176,7 @@ export async function* processStreamingMessage(
     conversationId: ctx.conversationId,
     role: 'assistant',
     content: assistantContent,
-    model: GROQ_MODEL,
+    model: modelName(provider),
     payload: payload ?? undefined,
   });
 
