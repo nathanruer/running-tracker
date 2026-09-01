@@ -26,6 +26,9 @@ import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
 import { bulkEnrichWeatherForIds } from '@/server/domain/sessions/weather-bulk';
 
 export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
+
 
 const DEFAULT_LOOKBACK_DAYS = 30;
 const SELECTION_HISTORY_YEARS = 3;

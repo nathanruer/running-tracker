@@ -7,6 +7,9 @@ import { processStreamingMessage } from '@/server/services/ai/stream-service';
 import { maybeRefreshConversationSummary } from '@/server/services/ai/summarizer';
 
 export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
+
 export const dynamic = 'force-dynamic';
 
 const GENERATION_LOCK_TTL_MS = 2 * 60 * 1000;

@@ -3,6 +3,10 @@ import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
 import { handleApiRequest } from '@/server/services/api-handlers';
 import { HTTP_STATUS } from '@/lib/constants';
 import { updateSessionWeather, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
+
+export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
 import { fetchSessionById } from '@/server/domain/sessions/sessions-read';
 
 /**

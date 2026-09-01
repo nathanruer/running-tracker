@@ -12,6 +12,9 @@ import {
 } from '@/server/services/intervals';
 
 export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
+
 
 const MAX_PARTS = 5;
 

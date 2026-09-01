@@ -10,6 +10,9 @@ import { getImportedExternalIds } from '@/server/domain/sessions/sessions-read';
 import { logger } from '@/server/infrastructure/logger';
 
 export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
+
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(

@@ -8,6 +8,10 @@ import {
   fetchMergedStreamsForActivities,
 } from '@/server/services/intervals';
 import { enrichSessionWithWeather } from '@/server/domain/sessions/enrichment';
+
+export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
 import { completePlannedSession, logSessionWriteError } from '@/server/domain/sessions/sessions-write';
 
 export async function PATCH(

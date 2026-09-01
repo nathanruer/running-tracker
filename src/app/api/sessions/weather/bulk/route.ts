@@ -4,6 +4,9 @@ import { HTTP_STATUS } from '@/lib/constants';
 import { bulkEnrichWeatherForIds } from '@/server/domain/sessions/weather-bulk';
 
 export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
+
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(

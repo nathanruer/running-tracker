@@ -4,6 +4,9 @@ import { HTTP_STATUS } from '@/lib/constants';
 import { bulkEnrichStreamsForIds } from '@/server/domain/sessions/streams-bulk';
 
 export const runtime = 'nodejs';
+// The provider round-trips (intervals.icu, Open-Meteo, the coach) outlive the default budget.
+export const maxDuration = 60;
+
 
 export async function POST(request: NextRequest) {
   return handleApiRequest(
