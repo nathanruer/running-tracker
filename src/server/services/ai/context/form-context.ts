@@ -121,7 +121,8 @@ export function formatAthleteForm(form: AthleteForm): string {
   if (form.breakDays) {
     lines.push(
       `- REPRISE : ${form.breakDays} jours sans courir, retour il y a ${form.weeksSinceReturn} semaine(s). ` +
-        'Volume prudent, pas de VMA avant 6 semaines de reprise, pas de séance au seuil avant 8 semaines.'
+        'Une seule séance qualité par semaine, et elle reste courte : tempo, lignes droites ou fartlek ' +
+        "plutôt que VMA tant que la reprise n'a pas six semaines."
     );
   }
 
@@ -129,7 +130,8 @@ export function formatAthleteForm(form: AthleteForm): string {
     '',
     'LIMITES POUR CETTE SEMAINE (impératives) :',
     `- aucune séance au-delà de ${Math.round(form.longestRunKm * 1.5 * 10) / 10} km`,
-    `- volume total des séances proposées ≤ ${Math.round(form.weeklyKm * 1.2 * 10) / 10} km`,
+    `- volume total des séances proposées entre ${Math.round(form.weeklyKm * 0.9 * 10) / 10} et ${Math.round(form.weeklyKm * 1.2 * 10) / 10} km : ` +
+      'ni moins que la semaine passée, ni plus de 20 % au-dessus',
     form.easyPaceSKm
       ? `- allure des footings entre ${pace(form.easyPaceSKm)} et ${pace(form.easyPaceSKm + 40)}, jamais plus rapide`
       : '- allures de footing prudentes',

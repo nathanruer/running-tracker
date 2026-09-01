@@ -21,30 +21,29 @@ describe('ai provider', () => {
     }
   });
 
-  it('answers with Google as soon as its key is configured', () => {
+  it('answers with Groq and keeps Google behind it', () => {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key';
     process.env.GROQ_API_KEY = 'groq-key';
 
-    expect(primaryProvider()).toBe('google');
-    expect(modelName('google')).toBe('gemini-3-flash-preview');
+    expect(primaryProvider()).toBe('groq');
+    expect(fallbackProvider()).toBe('google');
+    expect(modelName('google')).toBe('gemini-3.5-flash-lite');
   });
 
-  it('falls back to Groq when Google is not configured', () => {
-    process.env.GROQ_API_KEY = 'groq-key';
+  it('answers with Google when Groq is not configured', () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key';
 
-    expect(primaryProvider()).toBe('groq');
+    expect(primaryProvider()).toBe('google');
     expect(fallbackProvider()).toBeNull();
   });
 
-  it('keeps the other configured provider as the backup', () => {
+  it('lets the environment pin the provider, and keeps the other as backup', () => {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'google-key';
     process.env.GROQ_API_KEY = 'groq-key';
+    process.env.AI_PROVIDER = 'google';
 
+    expect(primaryProvider()).toBe('google');
     expect(fallbackProvider()).toBe('groq');
-
-    process.env.AI_PROVIDER = 'groq';
-    expect(primaryProvider()).toBe('groq');
-    expect(fallbackProvider()).toBe('google');
   });
 
   it('lets the environment pin a model', () => {

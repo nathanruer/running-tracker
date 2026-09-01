@@ -7,22 +7,28 @@ export type AiProvider = 'google' | 'groq';
 
 /** Chat model of each provider, and the lighter one used to summarise conversations. */
 const MODELS: Record<AiProvider, { chat: string; summary: string }> = {
-  google: { chat: 'gemini-3-flash-preview', summary: 'gemini-3.1-flash-lite' },
+  google: { chat: 'gemini-3.5-flash-lite', summary: 'gemini-3.5-flash-lite' },
   groq: { chat: 'openai/gpt-oss-120b', summary: 'openai/gpt-oss-20b' },
 };
 
 export const AI_MAX_TOKENS = Number(process.env.AI_MAX_TOKENS ?? process.env.GROQ_MAX_TOKENS ?? 3000);
 export const AI_TEMPERATURE = 0.7;
+/** Past this silence, the provider is queueing us: the other one answers instead. */
+export const AI_FIRST_TOKEN_TIMEOUT_MS = Number(process.env.AI_FIRST_TOKEN_TIMEOUT_MS ?? 20_000);
 
 function hasKey(provider: AiProvider): boolean {
   return Boolean(provider === 'google' ? process.env.GOOGLE_GENERATIVE_AI_API_KEY : process.env.GROQ_API_KEY);
 }
 
-/** The provider answering the athlete: `AI_PROVIDER`, else whichever key is configured. */
+/**
+ * The provider answering the athlete: `AI_PROVIDER`, else Groq — it holds a second per answer and
+ * never skips a tool call, where Google's free tier swings between one second and a minute. Google
+ * takes over on its own when Groq's token ceiling is reached.
+ */
 export function primaryProvider(): AiProvider {
   const configured = process.env.AI_PROVIDER as AiProvider | undefined;
   if (configured === 'google' || configured === 'groq') return configured;
-  return hasKey('google') ? 'google' : 'groq';
+  return hasKey('groq') ? 'groq' : 'google';
 }
 
 /** The other provider, used when the first one is rate limited. */
